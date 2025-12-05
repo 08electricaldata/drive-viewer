@@ -19,6 +19,17 @@ h2 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   margin-top: 15px;
 }
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 8px;
+  border: 1px solid #ccc;
+}
+th {
+  background: #dce6f6;
+}
 </style>
 </head>
 <body>
@@ -36,9 +47,26 @@ async function loadDrive() {
     return;
   }
 
-  // ORIGINAL GVIZ URL YOU USED
   const sheetURL =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+
+  // Convert date string into sortable number
+  function sortKey(dateText) {
+    if (!dateText) return 0;
+
+    let str = dateText.toString().trim();
+    const parts = str.split(/[\/\-.]/);
+
+    if (parts.length >= 3) {
+      let d = Number(parts[0]);
+      let m = Number(parts[1]);
+      let y = Number(parts[2]);
+      return new Date(y, m - 1, d).getTime();
+    }
+
+    let t = Date.parse(str);
+    return isNaN(t) ? 0 : t;
+  }
 
   try {
     const response = await fetch(sheetURL);
@@ -50,18 +78,21 @@ async function loadDrive() {
     let history = [];
 
     rows.forEach(r => {
-      const C = r.c[2]?.v || "";  // DRIVE1  (Your original mapping)
-      const D = r.c[3]?.v || "";  // DRIVE2  (Your original mapping)
+      const C = r.c[2]?.v || "";  
+      const D = r.c[3]?.v || "";  
       const UID = `${C}-${D}`;
 
       if (UID === id) {
+        const DATE = r.c[4]?.f || r.c[4]?.v || "";
+
         history.push({
-          DATE: r.c[4]?.f || r.c[4]?.v || "",
+          DATE,
           JOB: r.c[5]?.v || "",
           TYPE1: r.c[6]?.v || "",
           TYPE2: r.c[7]?.v || "",
           WHO: r.c[9]?.v || "",
-          DATE2: r.c[10]?.f || r.c[10]?.v || ""
+          DATE2: r.c[10]?.f || r.c[10]?.v || "",
+          SORT: sortKey(DATE)
         });
       }
     });
@@ -71,12 +102,14 @@ async function loadDrive() {
       return;
     }
 
-    // Build table
+    // 🔥 SORT latest → oldest
+    history.sort((a, b) => b.SORT - a.SORT);
+
     let table = `
       <div class="card">
         <h3>${id}</h3>
-        <table border="1" cellpadding="6" style="border-collapse: collapse; width:100%;">
-          <tr style="background:#dce6f6;">
+        <table>
+          <tr>
             <th>Date</th>
             <th>Job</th>
             <th>Type1</th>
@@ -100,7 +133,6 @@ async function loadDrive() {
     });
 
     table += "</table></div>";
-
     document.getElementById("drive").innerHTML = table;
 
   } catch (err) {
