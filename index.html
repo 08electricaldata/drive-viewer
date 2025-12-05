@@ -38,66 +38,6 @@ th {
 <div id="drive">Loading data...</div>
 
 <script>
-// =============================
-// SAFE CSV PARSER (handles quoted commas)
-// =============================
-function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let value = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const next = text[i + 1];
-
-    if (char === '"' && next === '"') {
-      value += '"';
-      i++;
-    } else if (char === '"') {
-      insideQuotes = !insideQuotes;
-    } else if (char === ',' && !insideQuotes) {
-      row.push(value);
-      value = "";
-    } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-      if (value || row.length) {
-        row.push(value);
-        rows.push(row);
-        row = [];
-        value = "";
-      }
-    } else {
-      value += char;
-    }
-  }
-
-  if (value || row.length) {
-    row.push(value);
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-// Extract hyperlink from HYPERLINK("url","text")
-function extractHyperlink(cellValue) {
-  if (!cellValue) return { url: "", text: "" };
-  const match = cellValue.match(/HYPERLINK\("([^"]+)","([^"]+)"\)/i);
-  if (match) {
-    return { url: match[1], text: match[2] };
-  }
-  return { url: "", text: cellValue };
-}
-
-// Convert DD/MM/YYYY → sortable number
-function parseDateToNumber(str) {
-  if (!str) return 0;
-  const parts = str.split(/[\/\-.]/);
-  if (parts.length < 3) return 0;
-  return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
-}
-
-
 async function loadDrive() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
@@ -107,102 +47,57 @@ async function loadDrive() {
     return;
   }
 
-  // Your working CSV GID
+  // ORIGINAL GVIZ URL – this is what was working for you
   const sheetURL =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/export?format=csv&gid=1491695091";
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+
+  // Helper to convert the sheet date (E column) into a sortable number
+  function makeSortKey(dateCell) {
+    if (!dateCell) return 0;
+
+    // If Google gives a numeric (serial) date as value
+    if (typeof dateCell.v === "number") {
+      return dateCell.v; // already sortable
+    }
+
+    // If we only have the formatted text
+    const str = (dateCell.f || dateCell.v || "").toString().trim();
+    if (!str) return 0;
+
+    // Try DD/MM/YYYY, DD-MM-YYYY, etc.
+    const parts = str.split(/[\/\-.]/);
+    if (parts.length >= 3) {
+      const d = Number(parts[0]);
+      const m = Number(parts[1]);
+      const y = Number(parts[2]);
+      return new Date(y, m - 1, d).getTime();
+    }
+
+    const t = Date.parse(str);
+    return isNaN(t) ? 0 : t;
+  }
 
   try {
     const response = await fetch(sheetURL);
-    const csvText = await response.text();
-    const rows = parseCSV(csvText);
+    const text = await response.text();
+
+    const json = JSON.parse(text.substr(47).slice(0, -2));
+    const rows = json.table.rows;
 
     let history = [];
 
-    // Use correct column indexes from your sheet:
-    // 4 → DRIVE1 (BAT_A)
-    // 5 → DRIVE2 (P-200)
-    // 7 → DATE with hyperlink
-    // 8 → JOB / DETAILS
-    // 9 → TYPE1
-    // 10 → TYPE2
-    // 11 → WHO
-    // 12 → DATE2
-
-    for (let i = 1; i < rows.length; i++) {
-      const r = rows[i];
-
-      const DRIVE1 = r[4] || "";
-      const DRIVE2 = r[5] || "";
-      const UID = `${DRIVE1}-${DRIVE2}`;
+    rows.forEach(r => {
+      const C = r.c[2]?.v || "";  // DRIVE1  (same as your old code)
+      const D = r.c[3]?.v || "";  // DRIVE2
+      const UID = `${C}-${D}`;
 
       if (UID === id) {
-        const rawDate = r[7] || "";
-        const { url: dateURL, text: dateText } = extractHyperlink(rawDate);
+        const dateCell = r.c[4];  // DATE column (E)
+        const dateDisplay = dateCell?.f || dateCell?.v || "";
+        const sortKey = makeSortKey(dateCell);
 
         history.push({
-          DATE: dateText,
-          DATE_URL: dateURL,
-          JOB: r[8] || "",
-          TYPE1: r[9] || "",
-          TYPE2: r[10] || "",
-          WHO: r[11] || "",
-          DATE2: r[12] || "",
-          _sortDate: parseDateToNumber(dateText)
-        });
-      }
-    }
-
-    if (history.length === 0) {
-      document.getElementById("drive").innerHTML = "No history found for this drive.";
-      return;
-    }
-
-    // Sort newest → oldest
-    history.sort((a, b) => b._sortDate - a._sortDate);
-
-    // Build table
-    let table = `
-      <div class="card">
-        <h3>${id}</h3>
-        <table>
-          <tr>
-            <th>Date</th>
-            <th>Job</th>
-            <th>Type1</th>
-            <th>Type2</th>
-            <th>Who</th>
-            <th>Date2</th>
-          </tr>
-    `;
-
-    history.forEach(item => {
-      table += `
-        <tr>
-          <td>${
-            item.DATE_URL
-              ? `<a href="${item.DATE_URL}" target="_blank">${item.DATE}</a>`
-              : item.DATE
-          }</td>
-          <td>${item.JOB}</td>
-          <td>${item.TYPE1}</td>
-          <td>${item.TYPE2}</td>
-          <td>${item.WHO}</td>
-          <td>${item.DATE2}</td>
-        </tr>
-      `;
-    });
-
-    table += "</table></div>";
-    document.getElementById("drive").innerHTML = table;
-
-  } catch (error) {
-    console.error(error);
-    document.getElementById("drive").innerHTML = "Error loading data.";
-  }
-}
-
-loadDrive();
-</script>
-
-</body>
-</html>
+          DATE: dateDisplay,
+          JOB: r.c[5]?.v || "",
+          TYPE1: r.c[6]?.v || "",
+          TYPE2: r.c[7]?.v || "",
