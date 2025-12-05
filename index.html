@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Drive Details</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f2f6ff;
+}
+h2 {
+  color: #003f88;
+}
+.card {
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  margin-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<h2>Drive Information</h2>
+<div id="drive">Loading data...</div>
+
+<script>
+async function loadDrive() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");    // read ?id=
+
+  if (!id) {
+    document.getElementById("drive").innerHTML = "No drive ID found in QR code.";
+    return;
+  }
+
+  const sheetURL =
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+
+  try {
+    const response = await fetch(sheetURL);
+    const text = await response.text();
+    const json = JSON.parse(text.substr(47).slice(0, -2));
+    const rows = json.table.rows;
+
+    let match = null;
+
+    rows.forEach(r => {
+      const C = r.c[2]?.v || "";
+      const D = r.c[3]?.v || "";
+      const UID = `${C}-${D}`;   // Unique ID = C-D
+
+      if (UID === id) {
+        match = {
+          C, D,
+          E: r.c[4]?.v || "",
+          F: r.c[5]?.v || "",
+          G: r.c[6]?.v || "",
+          H: r.c[7]?.v || ""
+        };
+      }
+    });
+
+    if (!match) {
+      document.getElementById("drive").innerHTML = "Drive not found in sheet.";
+      return;
+    }
+
+    document.getElementById("drive").innerHTML = `
+      <div class="card">
+        <h3>${match.C} – ${match.D}</h3>
+        <p><b>E:</b> ${match.E}</p>
+        <p><b>F:</b> ${match.F}</p>
+        <p><b>G:</b> ${match.G}</p>
+        <p><b>H:</b> ${match.H}</p>
+      </div>
+    `;
+
+  } catch (err) {
+    document.getElementById("drive").innerHTML = "Error loading data.";
+  }
+}
+
+loadDrive();
+</script>
+
+</body>
+</html>
