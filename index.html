@@ -39,7 +39,7 @@ th {
 
 <script>
 // =============================
-// SAFE CSV PARSER (supports quoted commas)
+// SAFE CSV PARSER (handles quoted commas)
 // =============================
 function parseCSV(text) {
   const rows = [];
@@ -89,7 +89,7 @@ function extractHyperlink(cellValue) {
   return { url: "", text: cellValue };
 }
 
-// Convert DD/MM/YYYY to sortable date
+// Convert DD/MM/YYYY → sortable number
 function parseDateToNumber(str) {
   if (!str) return 0;
   const parts = str.split(/[\/\-.]/);
@@ -118,26 +118,35 @@ async function loadDrive() {
 
     let history = [];
 
-    // Row 0 = headers → start from row 1
+    // Use correct column indexes from your sheet:
+    // 4 → DRIVE1 (BAT_A)
+    // 5 → DRIVE2 (P-200)
+    // 7 → DATE with hyperlink
+    // 8 → JOB / DETAILS
+    // 9 → TYPE1
+    // 10 → TYPE2
+    // 11 → WHO
+    // 12 → DATE2
+
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i];
 
-      const C = r[2] || "";  // DRIVE1
-      const D = r[3] || "";  // DRIVE2
-      const UID = `${C}-${D}`;
+      const DRIVE1 = r[4] || "";
+      const DRIVE2 = r[5] || "";
+      const UID = `${DRIVE1}-${DRIVE2}`;
 
       if (UID === id) {
-        const rawDate = r[4] || "";
+        const rawDate = r[7] || "";
         const { url: dateURL, text: dateText } = extractHyperlink(rawDate);
 
         history.push({
           DATE: dateText,
           DATE_URL: dateURL,
-          JOB: r[5] || "",
-          TYPE1: r[6] || "",
-          TYPE2: r[7] || "",
-          WHO: r[9] || "",
-          DATE2: r[10] || "",
+          JOB: r[8] || "",
+          TYPE1: r[9] || "",
+          TYPE2: r[10] || "",
+          WHO: r[11] || "",
+          DATE2: r[12] || "",
           _sortDate: parseDateToNumber(dateText)
         });
       }
@@ -151,7 +160,7 @@ async function loadDrive() {
     // Sort newest → oldest
     history.sort((a, b) => b._sortDate - a._sortDate);
 
-    // Build output table
+    // Build table
     let table = `
       <div class="card">
         <h3>${id}</h3>
