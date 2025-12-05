@@ -54,13 +54,16 @@ async function loadDrive() {
       const UID = `${C}-${D}`;
 
       if (UID === id) {
+        const dateValue = r.c[4]?.f || r.c[4]?.v || "";
+
         history.push({
-          DATE: r.c[4]?.f || r.c[4]?.v || "",
+          DATE: dateValue,
           JOB: r.c[5]?.v || "",
           TYPE1: r.c[6]?.v || "",
           TYPE2: r.c[7]?.v || "",
           WHO: r.c[9]?.v || "",
-          DATE2: r.c[10]?.f || r.c[10]?.v || ""
+          DATE2: r.c[10]?.f || r.c[10]?.v || "",
+          _dateSort: new Date(dateValue)   // For sorting
         });
       }
     });
@@ -69,6 +72,9 @@ async function loadDrive() {
       document.getElementById("drive").innerHTML = "No history found for this drive.";
       return;
     }
+
+    // 🔥 SORT: Latest → Oldest
+    history.sort((a, b) => b._dateSort - a._dateSort);
 
     // Build table
     let table = `
@@ -79,7 +85,7 @@ async function loadDrive() {
             <th>Date</th>
             <th>Job</th>
             <th>Type1</th>
-            <th>Type2</th>
+            <th>Type2</th</th>
             <th>Who</th>
             <th>Date2</th>
           </tr>
@@ -99,7 +105,6 @@ async function loadDrive() {
     });
 
     table += "</table></div>";
-
     document.getElementById("drive").innerHTML = table;
 
   } catch (err) {
