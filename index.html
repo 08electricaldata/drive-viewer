@@ -19,17 +19,6 @@ h2 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   margin-top: 15px;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  padding: 8px;
-  border: 1px solid #ccc;
-}
-th {
-  background: #dce6f6;
-}
 </style>
 </head>
 <body>
@@ -47,35 +36,9 @@ async function loadDrive() {
     return;
   }
 
-  // ORIGINAL GVIZ URL – this is what was working for you
+  // ORIGINAL GVIZ URL YOU USED
   const sheetURL =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
-
-  // Helper to convert the sheet date (E column) into a sortable number
-  function makeSortKey(dateCell) {
-    if (!dateCell) return 0;
-
-    // If Google gives a numeric (serial) date as value
-    if (typeof dateCell.v === "number") {
-      return dateCell.v; // already sortable
-    }
-
-    // If we only have the formatted text
-    const str = (dateCell.f || dateCell.v || "").toString().trim();
-    if (!str) return 0;
-
-    // Try DD/MM/YYYY, DD-MM-YYYY, etc.
-    const parts = str.split(/[\/\-.]/);
-    if (parts.length >= 3) {
-      const d = Number(parts[0]);
-      const m = Number(parts[1]);
-      const y = Number(parts[2]);
-      return new Date(y, m - 1, d).getTime();
-    }
-
-    const t = Date.parse(str);
-    return isNaN(t) ? 0 : t;
-  }
 
   try {
     const response = await fetch(sheetURL);
@@ -87,17 +50,66 @@ async function loadDrive() {
     let history = [];
 
     rows.forEach(r => {
-      const C = r.c[2]?.v || "";  // DRIVE1  (same as your old code)
-      const D = r.c[3]?.v || "";  // DRIVE2
+      const C = r.c[2]?.v || "";  // DRIVE1  (Your original mapping)
+      const D = r.c[3]?.v || "";  // DRIVE2  (Your original mapping)
       const UID = `${C}-${D}`;
 
       if (UID === id) {
-        const dateCell = r.c[4];  // DATE column (E)
-        const dateDisplay = dateCell?.f || dateCell?.v || "";
-        const sortKey = makeSortKey(dateCell);
-
         history.push({
-          DATE: dateDisplay,
+          DATE: r.c[4]?.f || r.c[4]?.v || "",
           JOB: r.c[5]?.v || "",
           TYPE1: r.c[6]?.v || "",
           TYPE2: r.c[7]?.v || "",
+          WHO: r.c[9]?.v || "",
+          DATE2: r.c[10]?.f || r.c[10]?.v || ""
+        });
+      }
+    });
+
+    if (history.length === 0) {
+      document.getElementById("drive").innerHTML = "No history found for this drive.";
+      return;
+    }
+
+    // Build table
+    let table = `
+      <div class="card">
+        <h3>${id}</h3>
+        <table border="1" cellpadding="6" style="border-collapse: collapse; width:100%;">
+          <tr style="background:#dce6f6;">
+            <th>Date</th>
+            <th>Job</th>
+            <th>Type1</th>
+            <th>Type2</th>
+            <th>Who</th>
+            <th>Date2</th>
+          </tr>
+    `;
+
+    history.forEach(item => {
+      table += `
+        <tr>
+          <td>${item.DATE}</td>
+          <td>${item.JOB}</td>
+          <td>${item.TYPE1}</td>
+          <td>${item.TYPE2}</td>
+          <td>${item.WHO}</td>
+          <td>${item.DATE2}</td>
+        </tr>
+      `;
+    });
+
+    table += "</table></div>";
+
+    document.getElementById("drive").innerHTML = table;
+
+  } catch (err) {
+    document.getElementById("drive").innerHTML = "Error loading data.";
+  }
+}
+
+loadDrive();
+</script>
+
+</body>
+</html>
