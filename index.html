@@ -45,23 +45,59 @@ async function loadDrive() {
     const json = JSON.parse(text.substr(47).slice(0, -2));
     const rows = json.table.rows;
 
-    let match = null;
+// Collect ALL matching rows for history
+let history = [];
 
-    rows.forEach(r => {
-      const C = r.c[2]?.v || "";
-      const D = r.c[3]?.v || "";
-      const UID = `${C}-${D}`;   // Unique ID = C-D
+rows.forEach(r => {
+  const C = r.c[2]?.v || "";
+  const D = r.c[3]?.v || "";
+  const UID = `${C}-${D}`;
 
-      if (UID === id) {
-        match = {
-          C, D,
-          E: r.c[4]?.v || "",
-          F: r.c[5]?.v || "",
-          G: r.c[6]?.v || "",
-          H: r.c[7]?.v || ""
-        };
-      }
+  if (UID === id) {
+    history.push({
+      C, D,
+      E: r.c[4]?.v || "",
+      F: r.c[5]?.v || "",
+      G: r.c[6]?.v || "",
+      H: r.c[7]?.v || ""
     });
+  }
+});
+
+if (history.length === 0) {
+  document.getElementById("drive").innerHTML = "No data found for this drive.";
+  return;
+}
+
+// Build HTML history table
+let table = `
+  <div class="card">
+    <h3>${history[0].C} – ${history[0].D}</h3>
+    <table border="1" cellpadding="6" style="border-collapse: collapse; width:100%;">
+      <tr style="background:#dce6f6;">
+        <th>E</th>
+        <th>F</th>
+        <th>G</th>
+        <th>H</th>
+      </tr>
+`;
+
+history.forEach(item => {
+  table += `
+    <tr>
+      <td>${item.E}</td>
+      <td>${item.F}</td>
+      <td>${item.G}</td>
+      <td>${item.H}</td>
+    </tr>
+  `;
+});
+
+table += "</table></div>";
+
+document.getElementById("drive").innerHTML = table;
+
+
 
     if (!match) {
       document.getElementById("drive").innerHTML = "Drive not found in sheet.";
