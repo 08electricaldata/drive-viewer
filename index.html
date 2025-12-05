@@ -148,7 +148,12 @@ history.push({
     history.forEach(item => {
       table += `
         <tr>
-          <td>${item.DATE}</td>
+          <td>
+  ${item.DATE_URL 
+     ? `<a href="${item.DATE_URL}" target="_blank">${item.DATE}</a>`
+     : item.DATE}
+</td>
+
           <td>${item.JOB}</td>
           <td>${item.TYPE1}</td>
           <td>${item.TYPE2}</td>
