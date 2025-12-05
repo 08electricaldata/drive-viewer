@@ -39,6 +39,55 @@ async function loadDrive() {
   const sheetURL =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
 
+  // Helper: convert date string like "14/11/2024", "14-11-2024", "2024-11-14" into a number
+  function parseDateToNumber(str) {
+    if (!str) return 0;
+    str = String(str).trim();
+
+    // Case 1: ISO-like "2024-11-14" or "2024-11-14T00:00:00"
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      const parts = str.split(/[T ]/)[0].split("-");
+      const y = Number(parts[0]);
+      const m = Number(parts[1]);
+      const d = Number(parts[2]);
+      return new Date(y, m - 1, d).getTime();
+    }
+
+    // Case 2: "14/11/2024", "14-11-2024", "14.11.2024" etc.
+    const parts = str.split(/[\/\-.]/);
+    if (parts.length >= 3) {
+      let p1 = Number(parts[0]);
+      let p2 = Number(parts[1]);
+      let p3 = Number(parts[2]);
+
+      let d, m, y;
+
+      // Heuristic: Indian style DD/MM/YYYY
+      // If first part > 12 → definitely day
+      if (p1 > 12) {
+        d = p1;
+        m = p2;
+        y = p3;
+      } else if (p2 > 12) {
+        // second part > 12 → treat as MM/DD/YYYY (rare for you, but safe)
+        d = p2;
+        m = p1;
+        y = p3;
+      } else {
+        // default: DD/MM/YYYY
+        d = p1;
+        m = p2;
+        y = p3;
+      }
+
+      return new Date(y, m - 1, d).getTime();
+    }
+
+    // Fallback: whatever JS understands
+    const t = Date.parse(str);
+    return isNaN(t) ? 0 : t;
+  }
+
   try {
     const response = await fetch(sheetURL);
     const text = await response.text();
@@ -54,16 +103,17 @@ async function loadDrive() {
       const UID = `${C}-${D}`;
 
       if (UID === id) {
-        const dateValue = r.c[4]?.f || r.c[4]?.v || "";
+        const dateDisplay = r.c[4]?.f || r.c[4]?.v || ""; // what you already show
+        const sortKey = parseDateToNumber(dateDisplay);
 
         history.push({
-          DATE: dateValue,
+          DATE: dateDisplay,
           JOB: r.c[5]?.v || "",
           TYPE1: r.c[6]?.v || "",
           TYPE2: r.c[7]?.v || "",
           WHO: r.c[9]?.v || "",
           DATE2: r.c[10]?.f || r.c[10]?.v || "",
-          _dateSort: new Date(dateValue)   // For sorting
+          _sortDate: sortKey
         });
       }
     });
@@ -73,8 +123,8 @@ async function loadDrive() {
       return;
     }
 
-    // 🔥 SORT: Latest → Oldest
-    history.sort((a, b) => b._dateSort - a._dateSort);
+    // 🔥 SORT: Latest (biggest date) → Oldest
+    history.sort((a, b) => b._sortDate - a._sortDate);
 
     // Build table
     let table = `
@@ -85,7 +135,7 @@ async function loadDrive() {
             <th>Date</th>
             <th>Job</th>
             <th>Type1</th>
-            <th>Type2</th</th>
+            <th>Type2</th>
             <th>Who</th>
             <th>Date2</th>
           </tr>
@@ -105,15 +155,18 @@ async function loadDrive() {
     });
 
     table += "</table></div>";
+
     document.getElementById("drive").innerHTML = table;
 
   } catch (err) {
+    console.error(err);
     document.getElementById("drive").innerHTML = "Error loading data.";
   }
 }
 
 loadDrive();
 </script>
+
 
 </body>
 </html>
