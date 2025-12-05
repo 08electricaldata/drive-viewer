@@ -19,6 +19,17 @@ h2 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   margin-top: 15px;
 }
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 8px;
+  border: 1px solid #ccc;
+}
+th {
+  background: #dce6f6;
+}
 </style>
 </head>
 <body>
@@ -36,106 +47,87 @@ async function loadDrive() {
     return;
   }
 
+  // IMPORTANT → CSV EXPORT (supports hyperlinks)
   const sheetURL =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/export?format=csv&gid=0";
 
-  // Helper: convert date string like "14/11/2024", "14-11-2024", "2024-11-14" into a number
+  // Parse HYPERLINK("url","text") formula
+  function extractHyperlink(value) {
+    if (!value) return { url: "", text: "" };
+
+    const match = value.match(/HYPERLINK\("([^"]*)","([^"]*)"\)/i);
+    if (match) {
+      return { url: match[1], text: match[2] };
+    }
+    return { url: "", text: value }; // plain text
+  }
+
+  // Convert DD/MM/YYYY or similar to sortable date value
   function parseDateToNumber(str) {
     if (!str) return 0;
-    str = String(str).trim();
-
-    // Case 1: ISO-like "2024-11-14" or "2024-11-14T00:00:00"
-    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-      const parts = str.split(/[T ]/)[0].split("-");
-      const y = Number(parts[0]);
-      const m = Number(parts[1]);
-      const d = Number(parts[2]);
-      return new Date(y, m - 1, d).getTime();
-    }
-
-    // Case 2: "14/11/2024", "14-11-2024", "14.11.2024" etc.
     const parts = str.split(/[\/\-.]/);
-    if (parts.length >= 3) {
-      let p1 = Number(parts[0]);
-      let p2 = Number(parts[1]);
-      let p3 = Number(parts[2]);
-
-      let d, m, y;
-
-      // Heuristic: Indian style DD/MM/YYYY
-      // If first part > 12 → definitely day
-      if (p1 > 12) {
-        d = p1;
-        m = p2;
-        y = p3;
-      } else if (p2 > 12) {
-        // second part > 12 → treat as MM/DD/YYYY (rare for you, but safe)
-        d = p2;
-        m = p1;
-        y = p3;
-      } else {
-        // default: DD/MM/YYYY
-        d = p1;
-        m = p2;
-        y = p3;
-      }
-
-      return new Date(y, m - 1, d).getTime();
-    }
-
-    // Fallback: whatever JS understands
-    const t = Date.parse(str);
-    return isNaN(t) ? 0 : t;
+    if (parts.length < 3) return 0;
+    let d = Number(parts[0]);
+    let m = Number(parts[1]);
+    let y = Number(parts[2]);
+    return new Date(y, m - 1, d).getTime();
   }
 
   try {
     const response = await fetch(sheetURL);
-    const text = await response.text();
-
-    const json = JSON.parse(text.substr(47).slice(0, -2));
-    const rows = json.table.rows;
+    const csvText = await response.text();
+    const lines = csvText.split("\n").map(l => l.trim());
 
     let history = [];
 
-    rows.forEach(r => {
-      const C = r.c[2]?.v || "";  // DRIVE1
-      const D = r.c[3]?.v || "";  // DRIVE2
+    // CSV columns mapping:
+    // C = col 2 (DRIVE1)
+    // D = col 3 (DRIVE2)
+    // E = col 4 (DATE with hyperlink)
+    // F = col 5 JOB
+    // G = col 6 TYPE1
+    // H = col 7 TYPE2
+    // J = col 9 WHO
+    // K = col 10 DATE2
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(",");
+
+      const C = row[2] || "";
+      const D = row[3] || "";
       const UID = `${C}-${D}`;
 
       if (UID === id) {
-       const dateDisplay = r.c[4]?.f || r.c[4]?.v || "";
-       const dateURL = r.c[4]?.p?.link || "";  // <-- GET HYPERLINK HERE
+        const rawDate = row[4] || "";
+        const { url: dateURL, text: dateText } = extractHyperlink(rawDate);
 
-       const sortKey = parseDateToNumber(dateDisplay);
-
-history.push({
-  DATE: dateDisplay,
-  DATE_URL: dateURL,
-  JOB: r.c[5]?.v || "",
-  TYPE1: r.c[6]?.v || "",
-  TYPE2: r.c[7]?.v || "",
-  WHO: r.c[9]?.v || "",
-  DATE2: r.c[10]?.f || r.c[10]?.v || "",
-  _sortDate: sortKey
-});
-
+        history.push({
+          DATE: dateText,
+          DATE_URL: dateURL,
+          JOB: row[5] || "",
+          TYPE1: row[6] || "",
+          TYPE2: row[7] || "",
+          WHO: row[9] || "",
+          DATE2: row[10] || "",
+          _sortDate: parseDateToNumber(dateText)
+        });
       }
-    });
+    }
 
     if (history.length === 0) {
       document.getElementById("drive").innerHTML = "No history found for this drive.";
       return;
     }
 
-    // 🔥 SORT: Latest (biggest date) → Oldest
+    // Sort latest → oldest
     history.sort((a, b) => b._sortDate - a._sortDate);
 
     // Build table
     let table = `
       <div class="card">
         <h3>${id}</h3>
-        <table border="1" cellpadding="6" style="border-collapse: collapse; width:100%;">
-          <tr style="background:#dce6f6;">
+        <table>
+          <tr>
             <th>Date</th>
             <th>Job</th>
             <th>Type1</th>
@@ -148,12 +140,11 @@ history.push({
     history.forEach(item => {
       table += `
         <tr>
-          <td>
-  ${item.DATE_URL 
-     ? `<a href="${item.DATE_URL}" target="_blank">${item.DATE}</a>`
-     : item.DATE}
-</td>
-
+          <td>${
+            item.DATE_URL
+            ? `<a href="${item.DATE_URL}" target="_blank">${item.DATE}</a>`
+            : item.DATE
+          }</td>
           <td>${item.JOB}</td>
           <td>${item.TYPE1}</td>
           <td>${item.TYPE2}</td>
@@ -164,7 +155,6 @@ history.push({
     });
 
     table += "</table></div>";
-
     document.getElementById("drive").innerHTML = table;
 
   } catch (err) {
@@ -175,7 +165,6 @@ history.push({
 
 loadDrive();
 </script>
-
 
 </body>
 </html>
