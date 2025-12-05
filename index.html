@@ -29,7 +29,7 @@ h2 {
 <script>
 async function loadDrive() {
   const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");    // read ?id=
+  const id = params.get("id");
 
   if (!id) {
     document.getElementById("drive").innerHTML = "No drive ID found in QR code.";
@@ -42,77 +42,65 @@ async function loadDrive() {
   try {
     const response = await fetch(sheetURL);
     const text = await response.text();
+
     const json = JSON.parse(text.substr(47).slice(0, -2));
     const rows = json.table.rows;
 
-// Collect ALL matching rows for history
-let history = [];
+    let history = [];
 
-rows.forEach(r => {
-  const C = r.c[2]?.v || "";
-  const D = r.c[3]?.v || "";
-  const UID = `${C}-${D}`;
+    rows.forEach(r => {
+      const C = r.c[2]?.v || "";  // DRIVE1
+      const D = r.c[3]?.v || "";  // DRIVE2
+      const UID = `${C}-${D}`;
 
-  if (UID === id) {
-    history.push({
-      C, D,
-      E: r.c[4]?.v || "",
-      F: r.c[5]?.v || "",
-      G: r.c[6]?.v || "",
-      H: r.c[7]?.v || ""
+      if (UID === id) {
+        history.push({
+          DATE: r.c[4]?.f || r.c[4]?.v || "",
+          JOB: r.c[5]?.v || "",
+          TYPE1: r.c[6]?.v || "",
+          TYPE2: r.c[7]?.v || "",
+          WHO: r.c[9]?.v || "",
+          DATE2: r.c[10]?.f || r.c[10]?.v || ""
+        });
+      }
     });
-  }
-});
 
-if (history.length === 0) {
-  document.getElementById("drive").innerHTML = "No data found for this drive.";
-  return;
-}
-
-// Build HTML history table
-let table = `
-  <div class="card">
-    <h3>${history[0].C} – ${history[0].D}</h3>
-    <table border="1" cellpadding="6" style="border-collapse: collapse; width:100%;">
-      <tr style="background:#dce6f6;">
-        <th>E</th>
-        <th>F</th>
-        <th>G</th>
-        <th>H</th>
-      </tr>
-`;
-
-history.forEach(item => {
-  table += `
-    <tr>
-      <td>${item.E}</td>
-      <td>${item.F}</td>
-      <td>${item.G}</td>
-      <td>${item.H}</td>
-    </tr>
-  `;
-});
-
-table += "</table></div>";
-
-document.getElementById("drive").innerHTML = table;
-
-
-
-    if (!match) {
-      document.getElementById("drive").innerHTML = "Drive not found in sheet.";
+    if (history.length === 0) {
+      document.getElementById("drive").innerHTML = "No history found for this drive.";
       return;
     }
 
-    document.getElementById("drive").innerHTML = `
+    // Build table
+    let table = `
       <div class="card">
-        <h3>${match.C} – ${match.D}</h3>
-        <p><b>E:</b> ${match.E}</p>
-        <p><b>F:</b> ${match.F}</p>
-        <p><b>G:</b> ${match.G}</p>
-        <p><b>H:</b> ${match.H}</p>
-      </div>
+        <h3>${id}</h3>
+        <table border="1" cellpadding="6" style="border-collapse: collapse; width:100%;">
+          <tr style="background:#dce6f6;">
+            <th>Date</th>
+            <th>Job</th>
+            <th>Type1</th>
+            <th>Type2</th>
+            <th>Who</th>
+            <th>Date2</th>
+          </tr>
     `;
+
+    history.forEach(item => {
+      table += `
+        <tr>
+          <td>${item.DATE}</td>
+          <td>${item.JOB}</td>
+          <td>${item.TYPE1}</td>
+          <td>${item.TYPE2}</td>
+          <td>${item.WHO}</td>
+          <td>${item.DATE2}</td>
+        </tr>
+      `;
+    });
+
+    table += "</table></div>";
+
+    document.getElementById("drive").innerHTML = table;
 
   } catch (err) {
     document.getElementById("drive").innerHTML = "Error loading data.";
