@@ -103,18 +103,22 @@ async function loadDrive() {
       const UID = `${C}-${D}`;
 
       if (UID === id) {
-        const dateDisplay = r.c[4]?.f || r.c[4]?.v || ""; // what you already show
-        const sortKey = parseDateToNumber(dateDisplay);
+       const dateDisplay = r.c[4]?.f || r.c[4]?.v || "";
+       const dateURL = r.c[4]?.p?.link || "";  // <-- GET HYPERLINK HERE
 
-        history.push({
-          DATE: dateDisplay,
-          JOB: r.c[5]?.v || "",
-          TYPE1: r.c[6]?.v || "",
-          TYPE2: r.c[7]?.v || "",
-          WHO: r.c[9]?.v || "",
-          DATE2: r.c[10]?.f || r.c[10]?.v || "",
-          _sortDate: sortKey
-        });
+       const sortKey = parseDateToNumber(dateDisplay);
+
+history.push({
+  DATE: dateDisplay,
+  DATE_URL: dateURL,
+  JOB: r.c[5]?.v || "",
+  TYPE1: r.c[6]?.v || "",
+  TYPE2: r.c[7]?.v || "",
+  WHO: r.c[9]?.v || "",
+  DATE2: r.c[10]?.f || r.c[10]?.v || "",
+  _sortDate: sortKey
+});
+
       }
     });
 
