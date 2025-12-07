@@ -4,43 +4,14 @@
 <meta charset="UTF-8">
 <title>Drive Details</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  padding: 20px;
-  background: #f2f6ff;
-}
-h2 {
-  color: #003f88;
-  margin-bottom: 10px;
-}
-.card {
-  padding: 15px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  margin-top: 20px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-th, td {
-  padding: 10px;
-  border: 1px solid #d1d9e6;
-  text-align: left;
-}
-th {
-  background: #dce6f6;
-  font-weight: bold;
-}
-a {
-  color: #0057d9;
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
-}
+body { font-family: Arial, sans-serif; padding: 20px; background: #f2f6ff; }
+h2 { color: #003f88; margin-bottom: 10px; }
+.card { padding: 15px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); margin-top: 20px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { padding: 10px; border: 1px solid #d1d9e6; text-align: left; }
+th { background: #dce6f6; font-weight: bold; }
+a { color: #0057d9; text-decoration: none; }
+a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -61,20 +32,13 @@ async function loadDrive() {
   const sheetURL =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
 
-  // Convert date string into sortable number
   function sortKey(dateText) {
     if (!dateText) return 0;
-
     let str = dateText.toString().trim();
     const parts = str.split(/[\/\-.]/);
-
     if (parts.length >= 3) {
-      let d = Number(parts[0]);
-      let m = Number(parts[1]);
-      let y = Number(parts[2]);
-      return new Date(y, m - 1, d).getTime();
+      return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
     }
-
     let t = Date.parse(str);
     return isNaN(t) ? 0 : t;
   }
@@ -82,26 +46,32 @@ async function loadDrive() {
   try {
     const response = await fetch(sheetURL);
     const text = await response.text();
-
     const json = JSON.parse(text.substr(47).slice(0, -2));
     const rows = json.table.rows;
 
     let history = [];
 
     rows.forEach(r => {
-      const C = r.c[2]?.v || "";  
-      const D = r.c[3]?.v || "";  
-
+      const C = r.c[2]?.v || "";
+      const D = r.c[3]?.v || "";
       const UID = `${C}-${D}`;
 
       if (UID === id) {
         const DATE = r.c[4]?.f || r.c[4]?.v || "";
 
-        // 🔥 Extract hyperlink URL from Column E (index 4)
-        const LINK =
-          r.c[4]?.p?.link || 
-          r.c[4]?.p?.links?.[0]?.link ||
-          "";
+        // ⭐ FINAL UNIVERSAL HYPERLINK EXTRACTION
+        let LINK = "";
+
+        if (r.c[4]?.p?.link) {
+          LINK = r.c[4].p.link;
+        } else if (r.c[4]?.p?.links?.[0]?.link) {
+          LINK = r.c[4].p.links[0].link;
+        } else if (r.c[4]?.f && r.c[4].f.includes("HYPERLINK")) {
+          const match = r.c[4].f.match(/HYPERLINK\("([^"]+)"/i);
+          if (match) LINK = match[1];
+        } else if (r.c[4]?.v && r.c[4].v.toString().startsWith("http")) {
+          LINK = r.c[4].v;
+        }
 
         history.push({
           DATE,
@@ -121,7 +91,6 @@ async function loadDrive() {
       return;
     }
 
-    // Sort newest → oldest
     history.sort((a, b) => b.SORT - a.SORT);
 
     let table = `
