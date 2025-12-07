@@ -6,49 +6,74 @@
 
 <style>
     body {
+        margin: 0;
+        padding: 20px;
         font-family: "Segoe UI", Arial, sans-serif;
         background: #eef3ff;
-        margin: 0;
-        padding: 25px;
     }
 
     h2 {
-        color: #003f88;
         font-size: 26px;
+        color: #003f88;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    /* Search + Filters container */
+    .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
         margin-bottom: 15px;
     }
 
-    .card {
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    input, select {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #b8c6e0;
+        font-size: 15px;
+        outline: none;
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-    }
-
-    th, td {
-        padding: 12px 10px;
-        border-bottom: 1px solid #d6dcef;
-        text-align: left;
+    /* Export button */
+    .export-btn {
+        background: #0057d9;
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
         font-size: 15px;
     }
 
-    th {
-        background: #dce6f8;
-        font-weight: 600;
+    /* Card layout */
+    .card {
+        background: white;
+        padding: 15px;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        transition: 0.2s;
     }
 
-    td {
-        background: #ffffff;
+    .card:hover {
+        transform: scale(1.01);
+        background: #f7faff;
     }
 
+    .row {
+        margin: 5px 0;
+    }
+
+    .label {
+        font-weight: bold;
+        color: #003f88;
+    }
+
+    /* Open File button */
     .btn {
         display: inline-block;
+        margin-top: 10px;
         padding: 8px 14px;
         background: #0057d9;
         color: white;
@@ -57,25 +82,38 @@
         font-size: 14px;
     }
 
-    .btn:hover {
-        background: #003e9e;
+    /* Desktop layout sorting header */
+    .sort-header {
+        cursor: pointer;
+        user-select: none;
     }
 </style>
 </head>
 <body>
 
 <h2>Drive Information</h2>
-<div id="drive" class="card">Loading data...</div>
+
+<!-- Search + Filters -->
+<div class="controls">
+    <input id="searchBox" type="text" placeholder="Search by any field...">
+
+    <select id="filterType1">
+        <option value="">Filter by Type 1</option>
+    </select>
+
+    <select id="filterType2">
+        <option value="">Filter by Type 2</option>
+    </select>
+
+    <button class="export-btn" onclick="exportPDF()">Download PDF</button>
+</div>
+
+<div id="drive">Loading...</div>
 
 <script>
 async function loadDrive() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
-
-    if (!id) {
-        document.getElementById("drive").innerHTML = "No drive ID found in QR code.";
-        return;
-    }
 
     const sheetURL =
         "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
@@ -83,26 +121,21 @@ async function loadDrive() {
     function sortKey(dateText) {
         if (!dateText) return 0;
         let str = dateText.toString().trim();
-        const parts = str.split(/[\/\-.]/);
-        if (parts.length >= 3) {
-            let d = Number(parts[0]);
-            let m = Number(parts[1]);
-            let y = Number(parts[2]);
-            return new Date(y, m - 1, d).getTime();
-        }
-
+        const p = str.split(/[\/\-.]/);
+        if (p.length >= 3) return new Date(p[2], p[1] - 1, p[0]).getTime();
         let t = Date.parse(str);
         return isNaN(t) ? 0 : t;
     }
 
     try {
-        const response = await fetch(sheetURL);
-        const text = await response.text();
-
+        const resp = await fetch(sheetURL);
+        const text = await resp.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
         const rows = json.table.rows;
 
         let history = [];
+        let type1Set = new Set();
+        let type2Set = new Set();
 
         rows.forEach(r => {
             const C = r.c[2]?.v || "";
@@ -110,66 +143,96 @@ async function loadDrive() {
             const UID = `${C}-${D}`;
 
             if (UID === id) {
-                const DATE = r.c[4]?.f || r.c[4]?.v || "";
-                const LINK = r.c[10]?.v || "";
+                let t1 = r.c[6]?.v || "";
+                let t2 = r.c[7]?.v || "";
+
+                if (t1) type1Set.add(t1);
+                if (t2) type2Set.add(t2);
 
                 history.push({
-                    DATE,
+                    DATE: r.c[4]?.f || r.c[4]?.v || "",
                     JOB: r.c[5]?.v || "",
-                    TYPE1: r.c[6]?.v || "",
-                    TYPE2: r.c[7]?.v || "",
+                    TYPE1: t1,
+                    TYPE2: t2,
                     WHO: r.c[9]?.v || "",
-                    LINK,
-                    SORT: sortKey(DATE)
+                    LINK: r.c[10]?.v || "",
+                    SORT: sortKey(r.c[4]?.v || "")
                 });
             }
         });
 
-        if (history.length === 0) {
-            document.getElementById("drive").innerHTML = "No history found for this drive.";
-            return;
-        }
-
         history.sort((a, b) => b.SORT - a.SORT);
 
-        let html = `
-            <table>
-                <tr>
-                    <th>Date</th>
-                    <th>Job</th>
-                    <th>Type 1</th>
-                    <th>Type 2</th>
-                    <th>Who</th>
-                    <th>Document</th>
-                </tr>
-        `;
+        // Populate dynamic dropdowns
+        const f1 = document.getElementById("filterType1");
+        const f2 = document.getElementById("filterType2");
 
-        history.forEach(item => {
-            html += `
-                <tr>
-                    <td>${item.DATE}</td>
-                    <td>${item.JOB}</td>
-                    <td>${item.TYPE1}</td>
-                    <td>${item.TYPE2}</td>
-                    <td>${item.WHO}</td>
-                    <td>
-                        ${
-                            item.LINK
-                                ? `<a class="btn" href="${item.LINK}" target="_blank">Open File</a>`
-                                : `<span style="color:#888">No File</span>`
-                        }
-                    </td>
-                </tr>
-            `;
+        [...type1Set].sort().forEach(v => {
+            f1.innerHTML += `<option value="${v}">${v}</option>`;
         });
 
-        html += "</table>";
-        document.getElementById("drive").innerHTML = html;
+        [...type2Set].sort().forEach(v => {
+            f2.innerHTML += `<option value="${v}">${v}</option>`;
+        });
 
-    } catch (err) {
-        console.log(err);
+        window.fullData = history;
+        renderCards(history);
+
+    } catch (e) {
         document.getElementById("drive").innerHTML = "Error loading data.";
+        console.error(e);
     }
+}
+
+function renderCards(data) {
+    const box = document.getElementById("drive");
+    box.innerHTML = "";
+
+    if (data.length === 0) {
+        box.innerHTML = "No matching data.";
+        return;
+    }
+
+    data.forEach(item => {
+        box.innerHTML += `
+            <div class="card">
+                <div class="row"><span class="label">Date:</span> ${item.DATE}</div>
+                <div class="row"><span class="label">Job:</span> ${item.JOB}</div>
+                <div class="row"><span class="label">Type 1:</span> ${item.TYPE1}</div>
+                <div class="row"><span class="label">Type 2:</span> ${item.TYPE2}</div>
+                <div class="row"><span class="label">Who:</span> ${item.WHO}</div>
+                ${item.LINK ? `<a class="btn" href="${item.LINK}" target="_blank">Open File</a>` : ""}
+            </div>
+        `;
+    });
+}
+
+/* Search, filter and sorting */
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+document.getElementById("filterType1").addEventListener("change", applyFilters);
+document.getElementById("filterType2").addEventListener("change", applyFilters);
+
+function applyFilters() {
+    let q = document.getElementById("searchBox").value.toLowerCase();
+    let f1 = document.getElementById("filterType1").value;
+    let f2 = document.getElementById("filterType2").value;
+
+    let filtered = window.fullData.filter(r =>
+        (r.JOB.toLowerCase().includes(q) ||
+         r.TYPE1.toLowerCase().includes(q) ||
+         r.TYPE2.toLowerCase().includes(q) ||
+         r.WHO.toLowerCase().includes(q) ||
+         r.DATE.toLowerCase().includes(q)) &&
+        (f1 === "" || r.TYPE1 === f1) &&
+        (f2 === "" || r.TYPE2 === f2)
+    );
+
+    renderCards(filtered);
+}
+
+/* PDF Export */
+function exportPDF() {
+    window.print();
 }
 
 loadDrive();
