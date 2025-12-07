@@ -7,85 +7,93 @@
 <style>
     body {
         margin: 0;
-        padding: 20px;
+        padding: 25px;
         font-family: "Segoe UI", Arial, sans-serif;
-        background: #eef3ff;
+        background: #eef4ff;
     }
 
     h2 {
-        font-size: 26px;
+        font-size: 28px;
         color: #003f88;
-        margin-bottom: 15px;
         text-align: center;
+        margin-bottom: 20px;
     }
 
-    /* Search + Filters container */
     .controls {
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 10px;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
+        justify-content: center;
     }
 
     input, select {
         padding: 10px;
         border-radius: 8px;
-        border: 1px solid #b8c6e0;
+        border: 1px solid #b9c7e4;
         font-size: 15px;
         outline: none;
+        min-width: 200px;
     }
 
-    /* Export button */
     .export-btn {
         background: #0057d9;
         color: white;
-        padding: 10px 16px;
+        padding: 10px 18px;
         border-radius: 8px;
         border: none;
-        cursor: pointer;
         font-size: 15px;
+        cursor: pointer;
     }
 
-    /* Card layout */
-    .card {
+    .table-container {
         background: white;
         padding: 15px;
-        margin-bottom: 12px;
         border-radius: 12px;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.12);
-        transition: 0.2s;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        overflow-x: auto;
     }
 
-    .card:hover {
-        transform: scale(1.01);
-        background: #f7faff;
+    table {
+        width: 100%;
+        border-collapse: collapse;
     }
 
-    .row {
-        margin: 5px 0;
-    }
-
-    .label {
+    th {
+        background: #dce6f6;
         font-weight: bold;
-        color: #003f88;
+        padding: 12px;
+        cursor: pointer;
+        position: relative;
     }
 
-    /* Open File button */
+    th:hover {
+        background: #cddaf3;
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #e3e8f3;
+    }
+
+    tr:hover td {
+        background: #f3f7ff;
+    }
+
     .btn {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 8px 14px;
         background: #0057d9;
         color: white;
-        text-decoration: none;
+        padding: 7px 13px;
         border-radius: 6px;
+        text-decoration: none;
         font-size: 14px;
     }
 
-    /* Desktop layout sorting header */
-    .sort-header {
-        cursor: pointer;
-        user-select: none;
+    .arrow {
+        position: absolute;
+        right: 8px;
+        font-size: 12px;
+        opacity: 0.6;
     }
 </style>
 </head>
@@ -95,20 +103,34 @@
 
 <!-- Search + Filters -->
 <div class="controls">
-    <input id="searchBox" type="text" placeholder="Search by any field...">
+    <input id="searchBox" type="text" placeholder="Search anything...">
 
     <select id="filterType1">
-        <option value="">Filter by Type 1</option>
+        <option value="">Filter Type 1</option>
     </select>
 
     <select id="filterType2">
-        <option value="">Filter by Type 2</option>
+        <option value="">Filter Type 2</option>
     </select>
 
     <button class="export-btn" onclick="exportPDF()">Download PDF</button>
 </div>
 
-<div id="drive">Loading...</div>
+<div class="table-container">
+    <table id="driveTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable('DATE')">Date <span class="arrow">↕</span></th>
+                <th onclick="sortTable('JOB')">Job <span class="arrow">↕</span></th>
+                <th onclick="sortTable('TYPE1')">Type 1 <span class="arrow">↕</span></th>
+                <th onclick="sortTable('TYPE2')">Type 2 <span class="arrow">↕</span></th>
+                <th onclick="sortTable('WHO')">Who <span class="arrow">↕</span></th>
+                <th>Document</th>
+            </tr>
+        </thead>
+        <tbody id="driveBody"></tbody>
+    </table>
+</div>
 
 <script>
 async function loadDrive() {
@@ -120,11 +142,8 @@ async function loadDrive() {
 
     function sortKey(dateText) {
         if (!dateText) return 0;
-        let str = dateText.toString().trim();
-        const p = str.split(/[\/\-.]/);
-        if (p.length >= 3) return new Date(p[2], p[1] - 1, p[0]).getTime();
-        let t = Date.parse(str);
-        return isNaN(t) ? 0 : t;
+        const p = dateText.split(/[\/\-.]/);
+        return new Date(p[2], p[1] - 1, p[0]).getTime();
     }
 
     try {
@@ -140,97 +159,89 @@ async function loadDrive() {
         rows.forEach(r => {
             const C = r.c[2]?.v || "";
             const D = r.c[3]?.v || "";
-            const UID = `${C}-${D}`;
+            if (`${C}-${D}` !== id) return;
 
-            if (UID === id) {
-                let t1 = r.c[6]?.v || "";
-                let t2 = r.c[7]?.v || "";
+            const t1 = r.c[6]?.v || "";
+            const t2 = r.c[7]?.v || "";
 
-                if (t1) type1Set.add(t1);
-                if (t2) type2Set.add(t2);
+            if (t1) type1Set.add(t1);
+            if (t2) type2Set.add(t2);
 
-                history.push({
-                    DATE: r.c[4]?.f || r.c[4]?.v || "",
-                    JOB: r.c[5]?.v || "",
-                    TYPE1: t1,
-                    TYPE2: t2,
-                    WHO: r.c[9]?.v || "",
-                    LINK: r.c[10]?.v || "",
-                    SORT: sortKey(r.c[4]?.v || "")
-                });
-            }
+            history.push({
+                DATE: r.c[4]?.f || r.c[4]?.v || "",
+                JOB: r.c[5]?.v || "",
+                TYPE1: t1,
+                TYPE2: t2,
+                WHO: r.c[9]?.v || "",
+                LINK: r.c[10]?.v || "",
+                SORT: sortKey(r.c[4]?.v || "")
+            });
         });
 
         history.sort((a, b) => b.SORT - a.SORT);
+        window.fullData = history;
 
-        // Populate dynamic dropdowns
         const f1 = document.getElementById("filterType1");
         const f2 = document.getElementById("filterType2");
 
-        [...type1Set].sort().forEach(v => {
-            f1.innerHTML += `<option value="${v}">${v}</option>`;
-        });
+        [...type1Set].sort().forEach(v => f1.innerHTML += `<option value="${v}">${v}</option>`);
+        [...type2Set].sort().forEach(v => f2.innerHTML += `<option value="${v}">${v}</option>`);
 
-        [...type2Set].sort().forEach(v => {
-            f2.innerHTML += `<option value="${v}">${v}</option>`;
-        });
-
-        window.fullData = history;
-        renderCards(history);
+        renderTable(history);
 
     } catch (e) {
-        document.getElementById("drive").innerHTML = "Error loading data.";
         console.error(e);
+        document.getElementById("driveBody").innerHTML =
+            `<tr><td colspan="6">Error loading data.</td></tr>`;
     }
 }
 
-function renderCards(data) {
-    const box = document.getElementById("drive");
-    box.innerHTML = "";
+function renderTable(data) {
+    const body = document.getElementById("driveBody");
+    body.innerHTML = "";
 
-    if (data.length === 0) {
-        box.innerHTML = "No matching data.";
+    if (!data.length) {
+        body.innerHTML = `<tr><td colspan="6">No matching results.</td></tr>`;
         return;
     }
 
-    data.forEach(item => {
-        box.innerHTML += `
-            <div class="card">
-                <div class="row"><span class="label">Date:</span> ${item.DATE}</div>
-                <div class="row"><span class="label">Job:</span> ${item.JOB}</div>
-                <div class="row"><span class="label">Type 1:</span> ${item.TYPE1}</div>
-                <div class="row"><span class="label">Type 2:</span> ${item.TYPE2}</div>
-                <div class="row"><span class="label">Who:</span> ${item.WHO}</div>
-                ${item.LINK ? `<a class="btn" href="${item.LINK}" target="_blank">Open File</a>` : ""}
-            </div>
+    data.forEach(r => {
+        body.innerHTML += `
+            <tr>
+                <td>${r.DATE}</td>
+                <td>${r.JOB}</td>
+                <td>${r.TYPE1}</td>
+                <td>${r.TYPE2}</td>
+                <td>${r.WHO}</td>
+                <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open File</a>` : ""}</td>
+            </tr>
         `;
     });
 }
 
-/* Search, filter and sorting */
-document.getElementById("searchBox").addEventListener("input", applyFilters);
-document.getElementById("filterType1").addEventListener("change", applyFilters);
-document.getElementById("filterType2").addEventListener("change", applyFilters);
-
 function applyFilters() {
-    let q = document.getElementById("searchBox").value.toLowerCase();
-    let f1 = document.getElementById("filterType1").value;
-    let f2 = document.getElementById("filterType2").value;
+    const q = document.getElementById("searchBox").value.toLowerCase();
+    const f1 = document.getElementById("filterType1").value;
+    const f2 = document.getElementById("filterType2").value;
 
-    let filtered = window.fullData.filter(r =>
-        (r.JOB.toLowerCase().includes(q) ||
-         r.TYPE1.toLowerCase().includes(q) ||
-         r.TYPE2.toLowerCase().includes(q) ||
-         r.WHO.toLowerCase().includes(q) ||
-         r.DATE.toLowerCase().includes(q)) &&
+    const result = window.fullData.filter(r =>
+        (r.DATE + r.JOB + r.TYPE1 + r.TYPE2 + r.WHO).toLowerCase().includes(q) &&
         (f1 === "" || r.TYPE1 === f1) &&
         (f2 === "" || r.TYPE2 === f2)
     );
 
-    renderCards(filtered);
+    renderTable(result);
 }
 
-/* PDF Export */
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+document.getElementById("filterType1").addEventListener("change", applyFilters);
+document.getElementById("filterType2").addEventListener("change", applyFilters);
+
+function sortTable(key) {
+    window.fullData.reverse();
+    applyFilters();
+}
+
 function exportPDF() {
     window.print();
 }
