@@ -60,19 +60,6 @@
     .btn:hover {
         background: #003e9e;
     }
-
-    @media(max-width: 600px) {
-        table, thead, tbody, th, td, tr {
-            display: block;
-        }
-        th {
-            display: none;
-        }
-        td {
-            border: none;
-            padding: 8px 5px;
-        }
-    }
 </style>
 </head>
 <body>
@@ -124,9 +111,7 @@ async function loadDrive() {
 
             if (UID === id) {
                 const DATE = r.c[4]?.f || r.c[4]?.v || "";
-
-                // Column K – ONLY VALUE. Never show formula.
-                const linkValue = r.c[10]?.v || "";
+                const LINK = r.c[10]?.v || "";
 
                 history.push({
                     DATE,
@@ -134,8 +119,7 @@ async function loadDrive() {
                     TYPE1: r.c[6]?.v || "",
                     TYPE2: r.c[7]?.v || "",
                     WHO: r.c[9]?.v || "",
-                    DATE2: r.c[10]?.v || "",  // only plain text
-                    LINK: linkValue,          // raw URL hidden, used only for button
+                    LINK,
                     SORT: sortKey(DATE)
                 });
             }
@@ -156,7 +140,6 @@ async function loadDrive() {
                     <th>Type 1</th>
                     <th>Type 2</th>
                     <th>Who</th>
-                    <th>Date 2</th>
                     <th>Document</th>
                 </tr>
         `;
@@ -169,7 +152,6 @@ async function loadDrive() {
                     <td>${item.TYPE1}</td>
                     <td>${item.TYPE2}</td>
                     <td>${item.WHO}</td>
-                    <td>${item.DATE2}</td>
                     <td>
                         ${
                             item.LINK
