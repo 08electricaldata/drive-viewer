@@ -156,14 +156,17 @@ tr:hover td {
 <script>
 async function loadDrive() {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+    
+    // Clean ID
+    let id = (params.get("id") || "").trim();
+    id = id.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase();
 
     const sheetURL =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+        "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
 
     function sortKey(dateText) {
         if (!dateText) return 0;
-        let p = dateText.split(/[\/\-.]/);
+        const p = dateText.split(/[\/\-.]/);
         return new Date(p[2], p[1] - 1, p[0]).getTime();
     }
 
@@ -178,13 +181,15 @@ async function loadDrive() {
         let type2Set = new Set();
 
         rows.forEach(r => {
-            const C = r.c[2]?.v || "";
-            const D = r.c[3]?.v || "";
+            const C = (r.c[2]?.v || "").toString().trim();
+            const D = (r.c[3]?.v || "").toString().trim();
 
-            if (`${C}-${D}` !== id) return;
+            const UID = `${C}-${D}`.toLowerCase();
 
-            let t1 = r.c[6]?.v || "";
-            let t2 = r.c[7]?.v || "";
+            if (UID !== id) return;
+
+            const t1 = r.c[6]?.v || "";
+            const t2 = r.c[7]?.v || "";
 
             if (t1) type1Set.add(t1);
             if (t2) type2Set.add(t2);
@@ -200,9 +205,12 @@ async function loadDrive() {
             });
         });
 
-        history.sort((a,b) => b.SORT - a.SORT);
+        // Sort newest first
+        history.sort((a, b) => b.SORT - a.SORT);
+
         window.fullData = history;
 
+        // Populate filters
         const f1 = document.getElementById("filterType1");
         const f2 = document.getElementById("filterType2");
 
@@ -215,7 +223,7 @@ async function loadDrive() {
     } catch (e) {
         document.getElementById("drive").innerHTML = "Error loading data.";
         document.getElementById("driveBody").innerHTML =
-        `<tr><td colspan="6">Error loading data.</td></tr>`;
+            `<tr><td colspan="6">Error loading data.</td></tr>`;
     }
 }
 
