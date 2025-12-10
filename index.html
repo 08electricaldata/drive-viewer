@@ -5,65 +5,65 @@
 <title>Drive Details</title>
 
 <style>
-    body {
-        margin: 0;
+body {
+margin: 0;
         padding: 20px;
         padding: 25px;
-        font-family: "Segoe UI", Arial, sans-serif;
+font-family: "Segoe UI", Arial, sans-serif;
         background: #eef3ff;
         background: #eef4ff;
-    }
+}
 
-    h2 {
+h2 {
         font-size: 26px;
         font-size: 28px;
-        color: #003f88;
+color: #003f88;
         margin-bottom: 15px;
-        text-align: center;
+text-align: center;
         margin-bottom: 20px;
-    }
+}
 
     /* Search + Filters container */
-    .controls {
-        display: flex;
+.controls {
+display: flex;
         flex-direction: column;
         flex-wrap: wrap;
-        gap: 10px;
+gap: 10px;
         margin-bottom: 15px;
         margin-bottom: 20px;
         justify-content: center;
-    }
+}
 
-    input, select {
-        padding: 10px;
-        border-radius: 8px;
+input, select {
+padding: 10px;
+border-radius: 8px;
         border: 1px solid #b8c6e0;
         border: 1px solid #b9c7e4;
-        font-size: 15px;
-        outline: none;
+font-size: 15px;
+outline: none;
         min-width: 200px;
-    }
+}
 
     /* Export button */
-    .export-btn {
-        background: #0057d9;
-        color: white;
+.export-btn {
+background: #0057d9;
+color: white;
         padding: 10px 16px;
         padding: 10px 18px;
-        border-radius: 8px;
-        border: none;
+border-radius: 8px;
+border: none;
         cursor: pointer;
-        font-size: 15px;
+font-size: 15px;
         cursor: pointer;
-    }
+}
 
     /* Card layout */
     .card {
     .table-container {
-        background: white;
-        padding: 15px;
+background: white;
+padding: 15px;
         margin-bottom: 12px;
-        border-radius: 12px;
+border-radius: 12px;
         box-shadow: 0 3px 8px rgba(0,0,0,0.12);
         transition: 0.2s;
         box-shadow: 0 3px 10px rgba(0,0,0,0.15);
@@ -73,7 +73,7 @@
     table {
         width: 100%;
         border-collapse: collapse;
-    }
+}
 
     .card:hover {
         transform: scale(1.01);
@@ -84,13 +84,13 @@
         padding: 12px;
         cursor: pointer;
         position: relative;
-    }
+}
 
     .row {
         margin: 5px 0;
     th:hover {
         background: #cddaf3;
-    }
+}
 
     .label {
         font-weight: bold;
@@ -102,21 +102,21 @@
 
     tr:hover td {
         background: #f3f7ff;
-    }
+}
 
     /* Open File button */
-    .btn {
+.btn {
         display: inline-block;
         margin-top: 10px;
         padding: 8px 14px;
-        background: #0057d9;
-        color: white;
+background: #0057d9;
+color: white;
         text-decoration: none;
         padding: 7px 13px;
-        border-radius: 6px;
+border-radius: 6px;
         text-decoration: none;
-        font-size: 14px;
-    }
+font-size: 14px;
+}
 
     /* Desktop layout sorting header */
     .sort-header {
@@ -127,7 +127,7 @@
         right: 8px;
         font-size: 12px;
         opacity: 0.6;
-    }
+}
 </style>
 </head>
 <body>
@@ -139,17 +139,17 @@
     <input id="searchBox" type="text" placeholder="Search by any field...">
     <input id="searchBox" type="text" placeholder="Search anything...">
 
-    <select id="filterType1">
+<select id="filterType1">
         <option value="">Filter by Type 1</option>
         <option value="">Filter Type 1</option>
-    </select>
+</select>
 
-    <select id="filterType2">
+<select id="filterType2">
         <option value="">Filter by Type 2</option>
         <option value="">Filter Type 2</option>
-    </select>
+</select>
 
-    <button class="export-btn" onclick="exportPDF()">Download PDF</button>
+<button class="export-btn" onclick="exportPDF()">Download PDF</button>
 </div>
 
 <div id="drive">Loading...</div>
@@ -171,14 +171,14 @@
 
 <script>
 async function loadDrive() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
 
-    const sheetURL =
-        "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+const sheetURL =
+"https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
 
-    function sortKey(dateText) {
-        if (!dateText) return 0;
+function sortKey(dateText) {
+if (!dateText) return 0;
         let str = dateText.toString().trim();
         const p = str.split(/[\/\-.]/);
         if (p.length >= 3) return new Date(p[2], p[1] - 1, p[0]).getTime();
@@ -186,21 +186,21 @@ async function loadDrive() {
         return isNaN(t) ? 0 : t;
         const p = dateText.split(/[\/\-.]/);
         return new Date(p[2], p[1] - 1, p[0]).getTime();
-    }
+}
 
-    try {
-        const resp = await fetch(sheetURL);
-        const text = await resp.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
+try {
+const resp = await fetch(sheetURL);
+const text = await resp.text();
+const json = JSON.parse(text.substr(47).slice(0, -2));
+const rows = json.table.rows;
 
-        let history = [];
-        let type1Set = new Set();
-        let type2Set = new Set();
+let history = [];
+let type1Set = new Set();
+let type2Set = new Set();
 
-        rows.forEach(r => {
-            const C = r.c[2]?.v || "";
-            const D = r.c[3]?.v || "";
+rows.forEach(r => {
+const C = r.c[2]?.v || "";
+const D = r.c[3]?.v || "";
             const UID = `${C}-${D}`;
 
             if (UID === id) {
@@ -237,14 +237,14 @@ async function loadDrive() {
                 LINK: r.c[10]?.v || "",
                 SORT: sortKey(r.c[4]?.v || "")
             });
-        });
+});
 
-        history.sort((a, b) => b.SORT - a.SORT);
+history.sort((a, b) => b.SORT - a.SORT);
         window.fullData = history;
 
         // Populate dynamic dropdowns
-        const f1 = document.getElementById("filterType1");
-        const f2 = document.getElementById("filterType2");
+const f1 = document.getElementById("filterType1");
+const f2 = document.getElementById("filterType2");
 
         [...type1Set].sort().forEach(v => {
             f1.innerHTML += `<option value="${v}">${v}</option>`;
@@ -260,12 +260,12 @@ async function loadDrive() {
         renderCards(history);
         renderTable(history);
 
-    } catch (e) {
+} catch (e) {
         document.getElementById("drive").innerHTML = "Error loading data.";
-        console.error(e);
+console.error(e);
         document.getElementById("driveBody").innerHTML =
             `<tr><td colspan="6">Error loading data.</td></tr>`;
-    }
+}
 }
 
 function renderCards(data) {
@@ -279,8 +279,8 @@ function renderTable(data) {
         box.innerHTML = "No matching data.";
     if (!data.length) {
         body.innerHTML = `<tr><td colspan="6">No matching results.</td></tr>`;
-        return;
-    }
+return;
+}
 
     data.forEach(item => {
         box.innerHTML += `
@@ -302,8 +302,8 @@ function renderTable(data) {
                 <td>${r.WHO}</td>
                 <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open File</a>` : ""}</td>
             </tr>
-        `;
-    });
+       `;
+});
 }
 
 /* Search, filter and sorting */
@@ -328,9 +328,9 @@ function applyFilters() {
 
     const result = window.fullData.filter(r =>
         (r.DATE + r.JOB + r.TYPE1 + r.TYPE2 + r.WHO).toLowerCase().includes(q) &&
-        (f1 === "" || r.TYPE1 === f1) &&
-        (f2 === "" || r.TYPE2 === f2)
-    );
+(f1 === "" || r.TYPE1 === f1) &&
+(f2 === "" || r.TYPE2 === f2)
+);
 
     renderCards(filtered);
     renderTable(result);
@@ -347,7 +347,7 @@ function sortTable(key) {
 
 /* PDF Export */
 function exportPDF() {
-    window.print();
+window.print();
 }
 
 loadDrive();
