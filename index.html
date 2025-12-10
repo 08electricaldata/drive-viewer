@@ -12,6 +12,25 @@
         background: #eef4ff;
     }
 
+    /* ------------------- TOP BUTTON BAR ------------------- */
+    .top-nav {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    .top-btn {
+        padding: 10px 18px;
+        background: #0057d9;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        font-size: 15px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
     h2 {
         font-size: 28px;
         color: #003f88;
@@ -95,11 +114,20 @@
         font-size: 12px;
         opacity: 0.6;
     }
+
 </style>
 </head>
 <body>
 
+<!-- ================= TOP BUTTONS ================= -->
+<div class="top-nav">
+    <a href="drawings.html" class="top-btn">Drawings</a>
+    <button class="top-btn" onclick="showHistory()">History</button>
+    <a href="add.html" class="top-btn">Add</a>
+</div>
+
 <h2>Drive Information</h2>
+
 
 <!-- Search + Filters -->
 <div class="controls">
@@ -116,7 +144,7 @@
     <button class="export-btn" onclick="exportPDF()">Download PDF</button>
 </div>
 
-<div class="table-container">
+<div class="table-container" id="historySection">
     <table id="driveTable">
         <thead>
             <tr>
@@ -133,6 +161,12 @@
 </div>
 
 <script>
+/* ===================== SHOW HISTORY FUNCTION ===================== */
+/* This keeps user on SAME PAGE and only shows the data section */
+function showHistory() {
+    document.getElementById("historySection").scrollIntoView({ behavior: "smooth" });
+}
+
 async function loadDrive() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
@@ -213,7 +247,7 @@ function renderTable(data) {
                 <td>${r.TYPE1}</td>
                 <td>${r.TYPE2}</td>
                 <td>${r.WHO}</td>
-                <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open </a>` : ""}</td>
+                <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open</a>` : ""}</td>
             </tr>
         `;
     });
