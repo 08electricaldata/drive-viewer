@@ -5,161 +5,137 @@
 <title>Drive Details</title>
 
 <style>
-body {
-    margin: 0;
-    padding: 25px;
-    font-family: "Segoe UI", Arial, sans-serif;
-    background: #eef4ff;
-}
+    body {
+        margin: 0;
+        padding: 25px;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #eef4ff;
+    }
 
-h2 {
-    font-size: 28px;
-    color: #003f88;
-    text-align: center;
-    margin-bottom: 20px;
-}
+    h2 {
+        font-size: 28px;
+        color: #003f88;
+        text-align: center;
+        margin-bottom: 20px;
+    }
 
-/* Controls */
-.controls {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
-}
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+        justify-content: center;
+    }
 
-input, select {
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #b9c7e4;
-    font-size: 15px;
-    min-width: 200px;
-}
+    input, select {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #b9c7e4;
+        font-size: 15px;
+        outline: none;
+        min-width: 200px;
+    }
 
-.export-btn {
-    background: #0057d9;
-    color: white;
-    padding: 10px 18px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-}
+    .export-btn {
+        background: #0057d9;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: none;
+        font-size: 15px;
+        cursor: pointer;
+    }
 
-/* Card */
-.card {
-    background: white;
-    padding: 15px;
-    margin-bottom: 12px;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-    transition: 0.2s;
-}
+    .table-container {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        overflow-x: auto;
+    }
 
-.card:hover {
-    transform: scale(1.01);
-    background: #f7faff;
-}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-.row { margin: 5px 0; }
+    th {
+        background: #dce6f6;
+        font-weight: bold;
+        padding: 12px;
+        cursor: pointer;
+        position: relative;
+    }
 
-.label {
-    font-weight: bold;
-    color: #003f88;
-}
+    th:hover {
+        background: #cddaf3;
+    }
 
-.btn {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 8px 14px;
-    background: #0057d9;
-    color: white;
-    border-radius: 6px;
-    font-size: 14px;
-    text-decoration: none;
-}
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #e3e8f3;
+    }
 
-/* Table */
-.table-container {
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-    overflow-x: auto;
-}
+    tr:hover td {
+        background: #f3f7ff;
+    }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+    .btn {
+        background: #0057d9;
+        color: white;
+        padding: 7px 13px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 14px;
+    }
 
-th {
-    background: #dce6f6;
-    padding: 12px;
-    cursor: pointer;
-    position: relative;
-}
-
-th:hover { background: #cddaf3; }
-
-td {
-    padding: 12px;
-    border-bottom: 1px solid #e3e8f3;
-}
-
-tr:hover td {
-    background: #f3f7ff;
-}
-
-.arrow {
-    position: absolute;
-    right: 8px;
-    font-size: 12px;
-    opacity: 0.6;
-}
+    .arrow {
+        position: absolute;
+        right: 8px;
+        font-size: 12px;
+        opacity: 0.6;
+    }
 </style>
 </head>
 <body>
 
 <h2>Drive Information</h2>
 
+<!-- Search + Filters -->
 <div class="controls">
     <input id="searchBox" type="text" placeholder="Search anything...">
 
     <select id="filterType1">
-        <option value="">Filter by Type 1</option>
+        <option value="">Filter Type 1</option>
     </select>
 
     <select id="filterType2">
-        <option value="">Filter by Type 2</option>
+        <option value="">Filter Type 2</option>
     </select>
 
     <button class="export-btn" onclick="exportPDF()">Download PDF</button>
 </div>
 
-<div id="drive">Loading...</div>
-
 <div class="table-container">
-<table id="driveTable">
-<thead>
-<tr>
-    <th onclick="sortTable('DATE')">Date <span class="arrow">↕</span></th>
-    <th onclick="sortTable('JOB')">Job <span class="arrow">↕</span></th>
-    <th onclick="sortTable('TYPE1')">Type 1 <span class="arrow">↕</span></th>
-    <th onclick="sortTable('TYPE2')">Type 2 <span class="arrow">↕</span></th>
-    <th onclick="sortTable('WHO')">Who <span class="arrow">↕</span></th>
-    <th>Document</th>
-</tr>
-</thead>
-<tbody id="driveBody"></tbody>
-</table>
+    <table id="driveTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable('DATE')">Date <span class="arrow">↕</span></th>
+                <th onclick="sortTable('JOB')">Job <span class="arrow">↕</span></th>
+                <th onclick="sortTable('TYPE1')">Type 1 <span class="arrow">↕</span></th>
+                <th onclick="sortTable('TYPE2')">Type 2 <span class="arrow">↕</span></th>
+                <th onclick="sortTable('WHO')">Who <span class="arrow">↕</span></th>
+                <th>Document</th>
+            </tr>
+        </thead>
+        <tbody id="driveBody"></tbody>
+    </table>
 </div>
 
 <script>
 async function loadDrive() {
     const params = new URLSearchParams(window.location.search);
-    
-    // Clean ID
-    let id = (params.get("id") || "").trim();
-    id = id.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase();
+    const id = params.get("id");
 
     const sheetURL =
         "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
@@ -181,12 +157,9 @@ async function loadDrive() {
         let type2Set = new Set();
 
         rows.forEach(r => {
-            const C = (r.c[2]?.v || "").toString().trim();
-            const D = (r.c[3]?.v || "").toString().trim();
-
-            const UID = `${C}-${D}`.toLowerCase();
-
-            if (UID !== id) return;
+            const C = r.c[2]?.v || "";
+            const D = r.c[3]?.v || "";
+            if (`${C}-${D}` !== id) return;
 
             const t1 = r.c[6]?.v || "";
             const t2 = r.c[7]?.v || "";
@@ -205,49 +178,22 @@ async function loadDrive() {
             });
         });
 
-        // Sort newest first
         history.sort((a, b) => b.SORT - a.SORT);
-
         window.fullData = history;
 
-        // Populate filters
         const f1 = document.getElementById("filterType1");
         const f2 = document.getElementById("filterType2");
 
         [...type1Set].sort().forEach(v => f1.innerHTML += `<option value="${v}">${v}</option>`);
         [...type2Set].sort().forEach(v => f2.innerHTML += `<option value="${v}">${v}</option>`);
 
-        renderCards(history);
         renderTable(history);
 
     } catch (e) {
-        document.getElementById("drive").innerHTML = "Error loading data.";
+        console.error(e);
         document.getElementById("driveBody").innerHTML =
             `<tr><td colspan="6">Error loading data.</td></tr>`;
     }
-}
-
-function renderCards(data) {
-    const box = document.getElementById("drive");
-    box.innerHTML = "";
-
-    if (!data.length) {
-        box.innerHTML = "No matching data.";
-        return;
-    }
-
-    data.forEach(item => {
-        box.innerHTML += `
-        <div class="card">
-            <div class="row"><span class="label">Date:</span> ${item.DATE}</div>
-            <div class="row"><span class="label">Job:</span> ${item.JOB}</div>
-            <div class="row"><span class="label">Type 1:</span> ${item.TYPE1}</div>
-            <div class="row"><span class="label">Type 2:</span> ${item.TYPE2}</div>
-            <div class="row"><span class="label">Who:</span> ${item.WHO}</div>
-            ${item.LINK ? `<a class="btn" href="${item.LINK}" target="_blank">Open File</a>` : ""}
-        </div>
-        `;
-    });
 }
 
 function renderTable(data) {
@@ -261,37 +207,37 @@ function renderTable(data) {
 
     data.forEach(r => {
         body.innerHTML += `
-        <tr>
-            <td>${r.DATE}</td>
-            <td>${r.JOB}</td>
-            <td>${r.TYPE1}</td>
-            <td>${r.TYPE2}</td>
-            <td>${r.WHO}</td>
-            <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open File</a>` : ""}</td>
-        </tr>`;
+            <tr>
+                <td>${r.DATE}</td>
+                <td>${r.JOB}</td>
+                <td>${r.TYPE1}</td>
+                <td>${r.TYPE2}</td>
+                <td>${r.WHO}</td>
+                <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open </a>` : ""}</td>
+            </tr>
+        `;
     });
 }
-
-document.getElementById("searchBox").addEventListener("input", applyFilters);
-document.getElementById("filterType1").addEventListener("change", applyFilters);
-document.getElementById("filterType2").addEventListener("change", applyFilters);
 
 function applyFilters() {
     const q = document.getElementById("searchBox").value.toLowerCase();
     const f1 = document.getElementById("filterType1").value;
     const f2 = document.getElementById("filterType2").value;
 
-    const data = window.fullData.filter(r =>
+    const result = window.fullData.filter(r =>
         (r.DATE + r.JOB + r.TYPE1 + r.TYPE2 + r.WHO).toLowerCase().includes(q) &&
         (f1 === "" || r.TYPE1 === f1) &&
         (f2 === "" || r.TYPE2 === f2)
     );
 
-    renderCards(data);
-    renderTable(data);
+    renderTable(result);
 }
 
-function sortTable() {
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+document.getElementById("filterType1").addEventListener("change", applyFilters);
+document.getElementById("filterType2").addEventListener("change", applyFilters);
+
+function sortTable(key) {
     window.fullData.reverse();
     applyFilters();
 }
