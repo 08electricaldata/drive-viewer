@@ -101,7 +101,7 @@
         max-width: 600px;
         margin: auto;
     }
-    input, select, textarea {
+    input {
         width: 100%;
         padding: 10px;
         margin-bottom: 12px;
@@ -198,7 +198,7 @@
         <input type="date" id="add_date">
 
         <label>Job Description</label>
-        <input type="text" id="add_job" placeholder="Enter job work...">
+        <input type="text" id="add_job">
 
         <label>Type 1</label>
         <input type="text" id="add_t1">
@@ -210,7 +210,7 @@
         <input type="text" id="add_who">
 
         <label>Document Link</label>
-        <input type="text" id="add_link" placeholder="https://drive.google.com/...">
+        <input type="text" id="add_link">
 
         <button class="submit-btn">Submit</button>
     </div>
@@ -237,7 +237,7 @@ function showTab(e, tabId) {
     e.target.classList.add("active-tab");
 }
 
-/* ========== Read Drive ID from URL ========== */
+/* ========== READ DRIVE ID FROM URL ========== */
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 if (id) {
@@ -260,9 +260,12 @@ async function loadHistory() {
         let tbody = "";
 
         rows.forEach(r => {
-            const C = r.c[2]?.v || "";
-            const D = r.c[3]?.v || "";
-            if (`${C}-${D}` !== id) return;
+            // Correct drive ID = Column C + "-" + Column D
+            const p1 = r.c[2]?.v || r.c[2]?.f || "";
+            const p2 = r.c[3]?.v || r.c[3]?.f || "";
+            const driveID = `${p1}-${p2}`;
+
+            if (driveID !== id) return;
 
             tbody += `
                 <tr>
@@ -301,25 +304,21 @@ async function loadDrawings() {
         const grid = document.getElementById("drawGrid");
         grid.innerHTML = "";
 
-        const TARGET_ID = id;  // from URL ?id=
-        const LINK_COL = 14;   // Column O index
-
+        const LINK_COL = 14; // Column O
         let found = false;
 
         rows.forEach(r => {
-            // Build drive ID from master sheet
-            const part1 = r.c[1]?.v || ""; // Column B
-            const part2 = r.c[2]?.v || ""; // Column C
-            const DRIVE_ID = `${part1}-${part2}`;
+            const p1 = r.c[1]?.v || ""; // Column B
+            const p2 = r.c[2]?.v || ""; // Column C
+            const DRIVE_ID = `${p1}-${p2}`;
 
-            if (DRIVE_ID !== TARGET_ID) return;
+            if (DRIVE_ID !== id) return;
 
             const link = r.c[LINK_COL]?.v || "";
             if (!link) return;
 
             found = true;
 
-            // Create card
             const card = document.createElement("div");
             card.className = "draw-card";
             card.innerHTML = `
