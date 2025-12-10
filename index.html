@@ -2,382 +2,355 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Drive Viewer</title>
+<title>Drive Details</title>
 
 <style>
     body {
         margin: 0;
         padding: 20px;
+        padding: 25px;
         font-family: "Segoe UI", Arial, sans-serif;
+        background: #eef3ff;
         background: #eef4ff;
     }
 
-    /* ---------- Tabs Bar ---------- */
-    .tab-bar {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
+    h2 {
+        font-size: 26px;
+        font-size: 28px;
+        color: #003f88;
+        margin-bottom: 15px;
+        text-align: center;
         margin-bottom: 20px;
-        flex-wrap: wrap;
     }
-    .tab-btn {
-        padding: 10px 18px;
+
+    /* Search + Filters container */
+    .controls {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+        margin-bottom: 20px;
+        justify-content: center;
+    }
+
+    input, select {
+        padding: 10px;
         border-radius: 8px;
+        border: 1px solid #b8c6e0;
+        border: 1px solid #b9c7e4;
+        font-size: 15px;
+        outline: none;
+        min-width: 200px;
+    }
+
+    /* Export button */
+    .export-btn {
         background: #0057d9;
         color: white;
+        padding: 10px 16px;
+        padding: 10px 18px;
+        border-radius: 8px;
         border: none;
+        cursor: pointer;
         font-size: 15px;
         cursor: pointer;
     }
-    .active-tab {
-        background: #003f88 !important;
-    }
 
-    /* ---------- Sections ---------- */
-    .section { display: none; }
-    .visible { display: block; }
-
-    h2 {
-        text-align: center;
-        font-size: 26px;
-        color: #003f88;
-        margin-bottom: 20px;
-    }
-
-    /* ---------- Drawings ---------- */
-    .draw-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 15px;
-    }
-    .draw-card {
-        background: white;
-        padding: 15px;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .draw-card h3 {
-        margin-bottom: 10px;
-        font-size: 18px;
-        color: #003f88;
-    }
-
-    /* ---------- History ---------- */
+    /* Card layout */
+    .card {
     .table-container {
         background: white;
         padding: 15px;
+        margin-bottom: 12px;
         border-radius: 12px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        transition: 0.2s;
         box-shadow: 0 3px 10px rgba(0,0,0,0.15);
         overflow-x: auto;
     }
+
     table {
         width: 100%;
         border-collapse: collapse;
     }
+
+    .card:hover {
+        transform: scale(1.01);
+        background: #f7faff;
     th {
         background: #dce6f6;
+        font-weight: bold;
         padding: 12px;
+        cursor: pointer;
+        position: relative;
     }
+
+    .row {
+        margin: 5px 0;
+    th:hover {
+        background: #cddaf3;
+    }
+
+    .label {
+        font-weight: bold;
+        color: #003f88;
     td {
         padding: 12px;
         border-bottom: 1px solid #e3e8f3;
     }
+
+    tr:hover td {
+        background: #f3f7ff;
+    }
+
+    /* Open File button */
     .btn {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 8px 14px;
         background: #0057d9;
         color: white;
+        text-decoration: none;
         padding: 7px 13px;
         border-radius: 6px;
-        cursor: pointer;
-        border: none;
+        text-decoration: none;
+        font-size: 14px;
     }
 
-    /* ---------- Add Form ---------- */
-    .form-box {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-        max-width: 600px;
-        margin: auto;
-    }
-    input {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 12px;
-        border-radius: 8px;
-        border: 1px solid #b9c7e4;
-        font-size: 15px;
-    }
-    .submit-btn {
-        padding: 10px 20px;
-        background: #0057d9;
-        color: white;
-        border: none;
-        border-radius: 8px;
+    /* Desktop layout sorting header */
+    .sort-header {
         cursor: pointer;
-        font-size: 16px;
-    }
-
-    /* ---------- Modal Viewer ---------- */
-    .modal {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.7);
-        justify-content: center;
-        align-items: center;
-        z-index: 999;
-    }
-    .modal-content {
-        background: white;
-        padding: 10px;
-        border-radius: 12px;
-        max-width: 90vw;
-        max-height: 90vh;
-        position: relative;
-    }
-    .modal-close {
+        user-select: none;
+    .arrow {
         position: absolute;
-        top: 8px;
-        right: 12px;
-        border: none;
-        background: transparent;
-        font-size: 20px;
-        cursor: pointer;
+        right: 8px;
+        font-size: 12px;
+        opacity: 0.6;
     }
 </style>
 </head>
 <body>
 
-<!-- ---------- TABS ---------- -->
-<div class="tab-bar">
-    <button class="tab-btn active-tab" onclick="showTab(event,'drawings')">Drawings</button>
-    <button class="tab-btn" onclick="showTab(event,'history')">History</button>
-    <button class="tab-btn" onclick="showTab(event,'add')">Add</button>
+<h2>Drive Information</h2>
+
+<!-- Search + Filters -->
+<div class="controls">
+    <input id="searchBox" type="text" placeholder="Search by any field...">
+    <input id="searchBox" type="text" placeholder="Search anything...">
+
+    <select id="filterType1">
+        <option value="">Filter by Type 1</option>
+        <option value="">Filter Type 1</option>
+    </select>
+
+    <select id="filterType2">
+        <option value="">Filter by Type 2</option>
+        <option value="">Filter Type 2</option>
+    </select>
+
+    <button class="export-btn" onclick="exportPDF()">Download PDF</button>
 </div>
 
-<h2 id="pageTitle">Drive Information</h2>
-
-<!-- ========================================================= -->
-<!-- ======================= DRAWINGS TAB ===================== -->
-<!-- ========================================================= -->
-<div id="drawings" class="section visible">
-    <div id="drawGrid" class="draw-grid"></div>
+<div id="drive">Loading...</div>
+<div class="table-container">
+    <table id="driveTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable('DATE')">Date <span class="arrow">↕</span></th>
+                <th onclick="sortTable('JOB')">Job <span class="arrow">↕</span></th>
+                <th onclick="sortTable('TYPE1')">Type 1 <span class="arrow">↕</span></th>
+                <th onclick="sortTable('TYPE2')">Type 2 <span class="arrow">↕</span></th>
+                <th onclick="sortTable('WHO')">Who <span class="arrow">↕</span></th>
+                <th>Document</th>
+            </tr>
+        </thead>
+        <tbody id="driveBody"></tbody>
+    </table>
 </div>
 
-<!-- ========================================================= -->
-<!-- ======================= HISTORY TAB ====================== -->
-<!-- ========================================================= -->
-<div id="history" class="section">
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Job</th>
-                    <th>Type 1</th>
-                    <th>Type 2</th>
-                    <th>Who</th>
-                    <th>Document</th>
-                </tr>
-            </thead>
-            <tbody id="driveBody"></tbody>
-        </table>
-    </div>
-</div>
-
-<!-- ========================================================= -->
-<!-- ========================= ADD TAB ======================== -->
-<!-- ========================================================= -->
-<div id="add" class="section">
-    <div class="form-box">
-        <h3>Add New Entry</h3>
-
-        <label>Date</label>
-        <input type="date" id="add_date">
-
-        <label>Job Description</label>
-        <input type="text" id="add_job">
-
-        <label>Type 1</label>
-        <input type="text" id="add_t1">
-
-        <label>Type 2</label>
-        <input type="text" id="add_t2">
-
-        <label>Who</label>
-        <input type="text" id="add_who">
-
-        <label>Document Link</label>
-        <input type="text" id="add_link">
-
-        <button class="submit-btn">Submit</button>
-    </div>
-</div>
-
-<!-- ==================== MODAL ==================== -->
-<div id="viewerModal" class="modal" onclick="backgroundClose(event)">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeViewer()">×</button>
-        <div id="viewerBody"></div>
-    </div>
-</div>
-
-<!-- ========================================================= -->
-<!-- ======================= JAVASCRIPT ======================= -->
-<!-- ========================================================= -->
 <script>
-/* ========== TAB SYSTEM ========== */
-function showTab(e, tabId) {
-    document.querySelectorAll(".section").forEach(s => s.classList.remove("visible"));
-    document.getElementById(tabId).classList.add("visible");
+async function loadDrive() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
 
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active-tab"));
-    e.target.classList.add("active-tab");
-}
-
-/* ========== READ DRIVE ID FROM URL ========== */
-const params = new URLSearchParams(window.location.search);
-const id = params.get("id");
-if (id) {
-    document.getElementById("pageTitle").innerText = "Drive Information: " + id;
-}
-
-/* ========================================================= */
-/* ====================== HISTORY LOADING =================== */
-/* ========================================================= */
-async function loadHistory() {
     const sheetURL =
         "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
 
-    try {
-        const resp = await fetch(sheetURL);
-        const text = await resp.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-
-        const rows = json.table.rows;
-        let tbody = "";
-
-        rows.forEach(r => {
-            // Correct drive ID = Column C + "-" + Column D
-            const p1 = r.c[2]?.v || r.c[2]?.f || "";
-            const p2 = r.c[3]?.v || r.c[3]?.f || "";
-            const driveID = `${p1}-${p2}`;
-
-            if (driveID !== id) return;
-
-            tbody += `
-                <tr>
-                    <td>${r.c[4]?.f || r.c[4]?.v || ""}</td>
-                    <td>${r.c[5]?.v || ""}</td>
-                    <td>${r.c[6]?.v || ""}</td>
-                    <td>${r.c[7]?.v || ""}</td>
-                    <td>${r.c[9]?.v || ""}</td>
-                    <td>${r.c[10]?.v ? `<a class='btn' href='${r.c[10].v}' target='_blank'>Open</a>` : ""}</td>
-                </tr>`;
-        });
-
-        document.getElementById("driveBody").innerHTML =
-            tbody || "<tr><td colspan='6'>No records found.</td></tr>";
-
-    } catch (e) {
-        console.log(e);
-        document.getElementById("driveBody").innerHTML =
-            "<tr><td colspan='6'>Error loading history.</td></tr>";
+    function sortKey(dateText) {
+        if (!dateText) return 0;
+        let str = dateText.toString().trim();
+        const p = str.split(/[\/\-.]/);
+        if (p.length >= 3) return new Date(p[2], p[1] - 1, p[0]).getTime();
+        let t = Date.parse(str);
+        return isNaN(t) ? 0 : t;
+        const p = dateText.split(/[\/\-.]/);
+        return new Date(p[2], p[1] - 1, p[0]).getTime();
     }
-}
-
-/* ========================================================= */
-/* ================== DRAWINGS LOADING (COLUMN O) =========== */
-/* ========================================================= */
-async function loadDrawings() {
-    const sheetURL =
-        "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json&sheet=master";
 
     try {
         const resp = await fetch(sheetURL);
         const text = await resp.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
-
         const rows = json.table.rows;
-        const grid = document.getElementById("drawGrid");
-        grid.innerHTML = "";
 
-        const LINK_COL = 14; // Column O
-        let found = false;
+        let history = [];
+        let type1Set = new Set();
+        let type2Set = new Set();
 
         rows.forEach(r => {
-            const p1 = r.c[1]?.v || ""; // Column B
-            const p2 = r.c[2]?.v || ""; // Column C
-            const DRIVE_ID = `${p1}-${p2}`;
+            const C = r.c[2]?.v || "";
+            const D = r.c[3]?.v || "";
+            const UID = `${C}-${D}`;
 
-            if (DRIVE_ID !== id) return;
+            if (UID === id) {
+                let t1 = r.c[6]?.v || "";
+                let t2 = r.c[7]?.v || "";
 
-            const link = r.c[LINK_COL]?.v || "";
-            if (!link) return;
+                if (t1) type1Set.add(t1);
+                if (t2) type2Set.add(t2);
 
-            found = true;
+                history.push({
+                    DATE: r.c[4]?.f || r.c[4]?.v || "",
+                    JOB: r.c[5]?.v || "",
+                    TYPE1: t1,
+                    TYPE2: t2,
+                    WHO: r.c[9]?.v || "",
+                    LINK: r.c[10]?.v || "",
+                    SORT: sortKey(r.c[4]?.v || "")
+                });
+            }
+            if (`${C}-${D}` !== id) return;
 
-            const card = document.createElement("div");
-            card.className = "draw-card";
-            card.innerHTML = `
-                <h3>Module Drawing</h3>
-                <button class="btn">View PDF</button>
-            `;
+            const t1 = r.c[6]?.v || "";
+            const t2 = r.c[7]?.v || "";
 
-            card.querySelector(".btn").onclick = () => openViewer(link);
-            grid.appendChild(card);
+            if (t1) type1Set.add(t1);
+            if (t2) type2Set.add(t2);
+
+            history.push({
+                DATE: r.c[4]?.f || r.c[4]?.v || "",
+                JOB: r.c[5]?.v || "",
+                TYPE1: t1,
+                TYPE2: t2,
+                WHO: r.c[9]?.v || "",
+                LINK: r.c[10]?.v || "",
+                SORT: sortKey(r.c[4]?.v || "")
+            });
         });
 
-        if (!found) {
-            grid.innerHTML = "<p>No drawings found for this drive.</p>";
-        }
+        history.sort((a, b) => b.SORT - a.SORT);
+        window.fullData = history;
+
+        // Populate dynamic dropdowns
+        const f1 = document.getElementById("filterType1");
+        const f2 = document.getElementById("filterType2");
+
+        [...type1Set].sort().forEach(v => {
+            f1.innerHTML += `<option value="${v}">${v}</option>`;
+        });
+
+        [...type2Set].sort().forEach(v => {
+            f2.innerHTML += `<option value="${v}">${v}</option>`;
+        });
+        [...type1Set].sort().forEach(v => f1.innerHTML += `<option value="${v}">${v}</option>`);
+        [...type2Set].sort().forEach(v => f2.innerHTML += `<option value="${v}">${v}</option>`);
+
+        window.fullData = history;
+        renderCards(history);
+        renderTable(history);
 
     } catch (e) {
-        console.log(e);
-        document.getElementById("drawGrid").innerHTML =
-            "<p>Error loading drawings.</p>";
+        document.getElementById("drive").innerHTML = "Error loading data.";
+        console.error(e);
+        document.getElementById("driveBody").innerHTML =
+            `<tr><td colspan="6">Error loading data.</td></tr>`;
     }
 }
 
-/* ========================================================= */
-/* ======================== MODAL VIEWER ==================== */
-/* ========================================================= */
-function openViewer(url) {
-    const modal = document.getElementById("viewerModal");
-    const body = document.getElementById("viewerBody");
-
+function renderCards(data) {
+    const box = document.getElementById("drive");
+    box.innerHTML = "";
+function renderTable(data) {
+    const body = document.getElementById("driveBody");
     body.innerHTML = "";
 
-    if (url.match(/\.pdf/)) {
-        body.innerHTML = `<iframe src="${url}" style="width:85vw;height:80vh;border:none;"></iframe>`;
-    } else {
-        body.innerHTML = `<img src="${url}" style="max-width:85vw;max-height:80vh;">`;
+    if (data.length === 0) {
+        box.innerHTML = "No matching data.";
+    if (!data.length) {
+        body.innerHTML = `<tr><td colspan="6">No matching results.</td></tr>`;
+        return;
     }
 
-    modal.style.display = "flex";
+    data.forEach(item => {
+        box.innerHTML += `
+            <div class="card">
+                <div class="row"><span class="label">Date:</span> ${item.DATE}</div>
+                <div class="row"><span class="label">Job:</span> ${item.JOB}</div>
+                <div class="row"><span class="label">Type 1:</span> ${item.TYPE1}</div>
+                <div class="row"><span class="label">Type 2:</span> ${item.TYPE2}</div>
+                <div class="row"><span class="label">Who:</span> ${item.WHO}</div>
+                ${item.LINK ? `<a class="btn" href="${item.LINK}" target="_blank">Open File</a>` : ""}
+            </div>
+    data.forEach(r => {
+        body.innerHTML += `
+            <tr>
+                <td>${r.DATE}</td>
+                <td>${r.JOB}</td>
+                <td>${r.TYPE1}</td>
+                <td>${r.TYPE2}</td>
+                <td>${r.WHO}</td>
+                <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open File</a>` : ""}</td>
+            </tr>
+        `;
+    });
 }
 
-function closeViewer() {
-    document.getElementById("viewerModal").style.display = "none";
-    document.getElementById("viewerBody").innerHTML = "";
+/* Search, filter and sorting */
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+document.getElementById("filterType1").addEventListener("change", applyFilters);
+document.getElementById("filterType2").addEventListener("change", applyFilters);
+
+function applyFilters() {
+    let q = document.getElementById("searchBox").value.toLowerCase();
+    let f1 = document.getElementById("filterType1").value;
+    let f2 = document.getElementById("filterType2").value;
+
+    let filtered = window.fullData.filter(r =>
+        (r.JOB.toLowerCase().includes(q) ||
+         r.TYPE1.toLowerCase().includes(q) ||
+         r.TYPE2.toLowerCase().includes(q) ||
+         r.WHO.toLowerCase().includes(q) ||
+         r.DATE.toLowerCase().includes(q)) &&
+    const q = document.getElementById("searchBox").value.toLowerCase();
+    const f1 = document.getElementById("filterType1").value;
+    const f2 = document.getElementById("filterType2").value;
+
+    const result = window.fullData.filter(r =>
+        (r.DATE + r.JOB + r.TYPE1 + r.TYPE2 + r.WHO).toLowerCase().includes(q) &&
+        (f1 === "" || r.TYPE1 === f1) &&
+        (f2 === "" || r.TYPE2 === f2)
+    );
+
+    renderCards(filtered);
+    renderTable(result);
 }
 
-function backgroundClose(e) {
-    if (e.target.id === "viewerModal") closeViewer();
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+document.getElementById("filterType1").addEventListener("change", applyFilters);
+document.getElementById("filterType2").addEventListener("change", applyFilters);
+
+function sortTable(key) {
+    window.fullData.reverse();
+    applyFilters();
 }
 
-document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeViewer();
-});
+/* PDF Export */
+function exportPDF() {
+    window.print();
+}
 
-/* ========================================================= */
-/* ======================== INITIAL LOAD ==================== */
-/* ========================================================= */
-loadHistory();
-loadDrawings();
-
+loadDrive();
 </script>
 
 </body>
