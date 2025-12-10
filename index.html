@@ -33,11 +33,10 @@
         background: #003f88 !important;
     }
 
-    /* ---------- Hidden Sections ---------- */
+    /* ---------- Sections ---------- */
     .section { display: none; }
     .visible { display: block; }
 
-    /* ---------- Page Title ---------- */
     h2 {
         text-align: center;
         font-size: 26px;
@@ -45,7 +44,7 @@
         margin-bottom: 20px;
     }
 
-    /* ---------- Drawings Grid ---------- */
+    /* ---------- Drawings ---------- */
     .draw-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -58,13 +57,13 @@
         text-align: center;
         box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .draw-card a {
-        text-decoration: none;
-        color: #0057d9;
-        font-weight: bold;
+    .draw-card h3 {
+        margin-bottom: 10px;
+        font-size: 18px;
+        color: #003f88;
     }
 
-    /* ---------- History Table ---------- */
+    /* ---------- History ---------- */
     .table-container {
         background: white;
         padding: 15px;
@@ -79,7 +78,6 @@
     th {
         background: #dce6f6;
         padding: 12px;
-        cursor: pointer;
     }
     td {
         padding: 12px;
@@ -90,8 +88,8 @@
         color: white;
         padding: 7px 13px;
         border-radius: 6px;
-        font-size: 14px;
-        text-decoration: none;
+        cursor: pointer;
+        border: none;
     }
 
     /* ---------- Add Form ---------- */
@@ -121,49 +119,57 @@
         font-size: 16px;
     }
 
+    /* ---------- Modal Viewer ---------- */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+    }
+    .modal-content {
+        background: white;
+        padding: 10px;
+        border-radius: 12px;
+        max-width: 90vw;
+        max-height: 90vh;
+        position: relative;
+    }
+    .modal-close {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        cursor: pointer;
+    }
 </style>
 </head>
 <body>
 
 <!-- ---------- TABS ---------- -->
 <div class="tab-bar">
-    <button class="tab-btn active-tab" onclick="showTab('drawings')">Drawings</button>
-    <button class="tab-btn" onclick="showTab('history')">History</button>
-    <button class="tab-btn" onclick="showTab('add')">Add</button>
+    <button class="tab-btn active-tab" onclick="showTab(event,'drawings')">Drawings</button>
+    <button class="tab-btn" onclick="showTab(event,'history')">History</button>
+    <button class="tab-btn" onclick="showTab(event,'add')">Add</button>
 </div>
 
-<!-- ---------- Dynamic Title ---------- -->
 <h2 id="pageTitle">Drive Information</h2>
 
 <!-- ========================================================= -->
 <!-- ======================= DRAWINGS TAB ===================== -->
 <!-- ========================================================= -->
 <div id="drawings" class="section visible">
-    <div class="draw-grid">
-
-        <div class="draw-card">
-            <h3>Single Line Diagram</h3>
-            <a href="#">View PDF</a>
-        </div>
-
-        <div class="draw-card">
-            <h3>Control Circuit</h3>
-            <a href="#">View PDF</a>
-        </div>
-
-        <div class="draw-card">
-            <h3>Layout</h3>
-            <a href="#">View Image</a>
-        </div>
-
-    </div>
+    <div id="drawGrid" class="draw-grid"></div>
 </div>
 
 <!-- ========================================================= -->
 <!-- ======================= HISTORY TAB ====================== -->
 <!-- ========================================================= -->
 <div id="history" class="section">
-
     <div class="table-container">
         <table>
             <thead>
@@ -179,14 +185,12 @@
             <tbody id="driveBody"></tbody>
         </table>
     </div>
-
 </div>
 
 <!-- ========================================================= -->
 <!-- ========================= ADD TAB ======================== -->
 <!-- ========================================================= -->
 <div id="add" class="section">
-
     <div class="form-box">
         <h3>Add New Entry</h3>
 
@@ -210,31 +214,39 @@
 
         <button class="submit-btn">Submit</button>
     </div>
+</div>
 
+<!-- ==================== MODAL ==================== -->
+<div id="viewerModal" class="modal" onclick="backgroundClose(event)">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeViewer()">×</button>
+        <div id="viewerBody"></div>
+    </div>
 </div>
 
 <!-- ========================================================= -->
 <!-- ======================= JAVASCRIPT ======================= -->
 <!-- ========================================================= -->
 <script>
-
 /* ========== TAB SYSTEM ========== */
-function showTab(tab) {
+function showTab(e, tabId) {
     document.querySelectorAll(".section").forEach(s => s.classList.remove("visible"));
-    document.getElementById(tab).classList.add("visible");
+    document.getElementById(tabId).classList.add("visible");
 
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active-tab"));
-    event.target.classList.add("active-tab");
+    e.target.classList.add("active-tab");
 }
 
-/* ========== SET DRIVE NAME IN TITLE ========== */
+/* ========== Read Drive ID from URL ========== */
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 if (id) {
     document.getElementById("pageTitle").innerText = "Drive Information: " + id;
 }
 
-/* ========== Load History (your old script) ========== */
+/* ========================================================= */
+/* ====================== HISTORY LOADING =================== */
+/* ========================================================= */
 async function loadHistory() {
     const sheetURL =
         "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
@@ -263,14 +275,109 @@ async function loadHistory() {
                 </tr>`;
         });
 
-        document.getElementById("driveBody").innerHTML = tbody;
+        document.getElementById("driveBody").innerHTML =
+            tbody || "<tr><td colspan='6'>No records found.</td></tr>";
 
     } catch (e) {
         console.log(e);
+        document.getElementById("driveBody").innerHTML =
+            "<tr><td colspan='6'>Error loading history.</td></tr>";
     }
 }
 
+/* ========================================================= */
+/* ================== DRAWINGS LOADING (COLUMN O) =========== */
+/* ========================================================= */
+async function loadDrawings() {
+    const sheetURL =
+        "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json&sheet=master";
+
+    try {
+        const resp = await fetch(sheetURL);
+        const text = await resp.text();
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+
+        const rows = json.table.rows;
+        const grid = document.getElementById("drawGrid");
+        grid.innerHTML = "";
+
+        const TARGET_ID = id;  // from URL ?id=
+        const LINK_COL = 14;   // Column O index
+
+        let found = false;
+
+        rows.forEach(r => {
+            // Build drive ID from master sheet
+            const part1 = r.c[1]?.v || ""; // Column B
+            const part2 = r.c[2]?.v || ""; // Column C
+            const DRIVE_ID = `${part1}-${part2}`;
+
+            if (DRIVE_ID !== TARGET_ID) return;
+
+            const link = r.c[LINK_COL]?.v || "";
+            if (!link) return;
+
+            found = true;
+
+            // Create card
+            const card = document.createElement("div");
+            card.className = "draw-card";
+            card.innerHTML = `
+                <h3>Module Drawing</h3>
+                <button class="btn">View PDF</button>
+            `;
+
+            card.querySelector(".btn").onclick = () => openViewer(link);
+            grid.appendChild(card);
+        });
+
+        if (!found) {
+            grid.innerHTML = "<p>No drawings found for this drive.</p>";
+        }
+
+    } catch (e) {
+        console.log(e);
+        document.getElementById("drawGrid").innerHTML =
+            "<p>Error loading drawings.</p>";
+    }
+}
+
+/* ========================================================= */
+/* ======================== MODAL VIEWER ==================== */
+/* ========================================================= */
+function openViewer(url) {
+    const modal = document.getElementById("viewerModal");
+    const body = document.getElementById("viewerBody");
+
+    body.innerHTML = "";
+
+    if (url.match(/\.pdf/)) {
+        body.innerHTML = `<iframe src="${url}" style="width:85vw;height:80vh;border:none;"></iframe>`;
+    } else {
+        body.innerHTML = `<img src="${url}" style="max-width:85vw;max-height:80vh;">`;
+    }
+
+    modal.style.display = "flex";
+}
+
+function closeViewer() {
+    document.getElementById("viewerModal").style.display = "none";
+    document.getElementById("viewerBody").innerHTML = "";
+}
+
+function backgroundClose(e) {
+    if (e.target.id === "viewerModal") closeViewer();
+}
+
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeViewer();
+});
+
+/* ========================================================= */
+/* ======================== INITIAL LOAD ==================== */
+/* ========================================================= */
 loadHistory();
+loadDrawings();
 
 </script>
 
