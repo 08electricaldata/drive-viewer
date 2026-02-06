@@ -30,10 +30,12 @@ h2 {
 <script>
 async function loadDrive() {
   const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");    // read ?id=
+  const id = params.get("id");
+
+  const out = document.getElementById("drive");
 
   if (!id) {
-    document.getElementById("drive").innerHTML = "No drive ID found in QR code.";
+    out.innerHTML = "No drive ID found in URL.";
     return;
   }
 
@@ -41,52 +43,55 @@ async function loadDrive() {
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
 
   try {
-    const response = await fetch(sheetURL);
-    const text = await response.text();
-    const json = JSON.parse(text.substr(47).slice(0, -2));
+    const resp = await fetch(sheetURL);
+    const text = await resp.text();
+
+    const json = JSON.parse(text.substring(47, text.length - 2));
     const rows = json.table.rows;
 
     let match = null;
 
- const BAT = (r.c[1]?.v || "").toString().trim();
-const EQP = (r.c[2]?.v || "").toString().trim();
+    rows.forEach(r => {
+      const BAT = (r.c[1]?.v || "").toString().trim();
+      const EQP = (r.c[2]?.v || "").toString().trim();
 
-const UID = `${BAT}-${EQP}`.toUpperCase();
-const URL_ID = id.toUpperCase();
+      const UID = `${BAT}-${EQP}`.toUpperCase();
+      if (UID !== id.toUpperCase()) return;
 
-      if (UID === id) {
-        match = {
-          C, D,
-          E: r.c[4]?.v || "",
-          F: r.c[5]?.v || "",
-          G: r.c[6]?.v || "",
-          H: r.c[7]?.v || ""
-        };
-      }
+      match = {
+        BAT,
+        EQP,
+        DATE: r.c[4]?.v || "",
+        JOB: r.c[5]?.v || "",
+        TYPE1: r.c[6]?.v || "",
+        TYPE2: r.c[7]?.v || ""
+      };
     });
 
     if (!match) {
-      document.getElementById("drive").innerHTML = "Drive not found in sheet.";
+      out.innerHTML = "Drive not found in sheet.";
       return;
     }
 
-    document.getElementById("drive").innerHTML = `
+    out.innerHTML = `
       <div class="card">
-        <h3>${match.C} – ${match.D}</h3>
-        <p><b>E:</b> ${match.E}</p>
-        <p><b>F:</b> ${match.F}</p>
-        <p><b>G:</b> ${match.G}</p>
-        <p><b>H:</b> ${match.H}</p>
+        <h3>${match.BAT} – ${match.EQP}</h3>
+        <p><b>Date:</b> ${match.DATE}</p>
+        <p><b>Job:</b> ${match.JOB}</p>
+        <p><b>Type 1:</b> ${match.TYPE1}</p>
+        <p><b>Type 2:</b> ${match.TYPE2}</p>
       </div>
     `;
 
   } catch (err) {
-    document.getElementById("drive").innerHTML = "Error loading data.";
+    console.error(err);
+    out.innerHTML = "Error loading data.";
   }
 }
 
 loadDrive();
 </script>
+
 
 </body>
 </html>
