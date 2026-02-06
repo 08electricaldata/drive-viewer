@@ -48,10 +48,11 @@ async function loadDrive() {
 
     let match = null;
 
-    rows.forEach(r => {
-      const C = r.c[2]?.v || "";
-      const D = r.c[3]?.v || "";
-      const UID = `${C}-${D}`;   // Unique ID = C-D
+ const BAT = (r.c[1]?.v || "").toString().trim();
+const EQP = (r.c[2]?.v || "").toString().trim();
+
+const UID = `${BAT}-${EQP}`.toUpperCase();
+const URL_ID = id.toUpperCase();
 
       if (UID === id) {
         match = {
