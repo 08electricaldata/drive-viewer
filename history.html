@@ -79,6 +79,14 @@ th {
   white-space: nowrap;
   text-align: center;
 }
+.year-row td {
+  background: #e8f0ff;
+  color: #003f88;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px;
+  font-size: 15px;
+}
 
 </style>
 </head>
@@ -192,20 +200,34 @@ async function loadHistory() {
   const tbody = document.querySelector("#historyTable tbody");
   tbody.innerHTML = "";
 
-  rows.forEach(c => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${c[0]?.v || ""}</td>
-      <td>${c[1]?.v || ""}</td>
-      <td>${formatDate(c[4]?.v)}</td>
-      <td>${c[5]?.v || ""}</td>
-      <td>${c[6]?.v || ""}</td>
-      <td>${c[7]?.v || ""}</td>
-      <td>${c[9]?.v || ""}</td>
-      <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+let currentYear = "";
+
+rows.forEach(c => {
+  const d = parseDate(c[4]?.v);
+  const year = d.getFullYear();
+
+  if (year !== currentYear) {
+    currentYear = year;
+    const yr = document.createElement("tr");
+    yr.className = "year-row";
+    yr.innerHTML = `<td colspan="8">YEAR ${year}</td>`;
+    tbody.appendChild(yr);
+  }
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${c[0]?.v || ""}</td>
+    <td>${c[1]?.v || ""}</td>
+    <td>${formatDate(c[4]?.v)}</td>
+    <td>${c[5]?.v || ""}</td>
+    <td>${c[6]?.v || ""}</td>
+    <td>${c[7]?.v || ""}</td>
+    <td>${c[9]?.v || ""}</td>
+    <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
 
   document.getElementById("search").onkeyup = function () {
     const q = this.value.toLowerCase();
