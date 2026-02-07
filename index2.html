@@ -10,46 +10,73 @@ body {
   padding: 20px;
   background: #f2f6ff;
 }
-h2, h3 {
-  color: #003f88;
-}
+h2, h3 { color: #003f88; }
+
 .card {
-  padding: 15px;
+  padding: 18px;
   background: white;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  margin-top: 15px;
+  margin-top: 18px;
 }
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 15px;
+  gap: 18px;
+  margin-top: 10px;
 }
+
 .label {
   font-weight: bold;
   color: #003f88;
+}
+
+/* CONTROLS */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+.controls input {
+  padding: 6px;
+  width: 220px;
+}
+.controls button {
+  padding: 6px 12px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 /* TABLE */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 15px;
   font-size: 14px;
 }
 th, td {
   border: 1px solid #ccc;
   padding: 6px 8px;
-  text-align: left;
 }
 th {
   background: #003f88;
   color: white;
+  position: sticky;
+  top: 0;
 }
-a {
-  color: #003f88;
-  font-weight: bold;
-  text-decoration: none;
+th:nth-child(3),
+td:nth-child(3) {
+  width: 95px;
+  white-space: nowrap;
+}
+
+/* PRINT */
+@media print {
+  .controls { display: none; }
+  body { background: white; }
 }
 </style>
 </head>
@@ -57,102 +84,84 @@ a {
 <body>
 
 <h2>Drive Information</h2>
-
-<div id="drive">Loading drive details...</div>
+<div id="drive">Loading drive details…</div>
 <div id="history"></div>
 
 <script>
-// -------- DATE FORMATTER --------
-function formatDate(val) {
-
-  // Case 1: Date(2025,3,18)
-  if (typeof val === "string" && val.startsWith("Date(")) {
-    const parts = val.match(/\d+/g);
-    if (parts && parts.length === 3) {
-      const y = parts[0];
-      const m = String(Number(parts[1]) + 1).padStart(2, "0");
-      const d = String(parts[2]).padStart(2, "0");
+// ---------- DATE FORMAT ----------
+function formatDate(v) {
+  if (typeof v === "string" && v.startsWith("Date(")) {
+    const p = v.match(/\d+/g);
+    if (p) {
+      const y = p[0];
+      const m = String(+p[1] + 1).padStart(2,"0");
+      const d = String(p[2]).padStart(2,"0");
       return `${d}-${m}-${y}`;
     }
   }
-
-  // Case 2: DD/MM/YYYY
-  if (typeof val === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
-    return val.replace(/\//g, "-");
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+    return v.replace(/\//g,"-");
   }
-
-  return val ?? "";
+  return v ?? "";
 }
 
-// -------- LOAD DRIVE --------
+// ---------- LOAD DRIVE ----------
 async function loadDrive() {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
-  const out = document.getElementById("drive");
+  const id = new URLSearchParams(location.search).get("id");
+  if (!id) return;
 
-  if (!id) {
-    out.innerHTML = "No drive ID found in URL.";
-    return;
-  }
-
-  const driveURL =
+  const url =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
     "?gid=1274719919&tqx=out:json";
 
-  const resp = await fetch(driveURL);
-  const text = await resp.text();
-  const json = JSON.parse(text.substring(47, text.length - 2));
+  const r = await fetch(url);
+  const t = await r.text();
+  const j = JSON.parse(t.substring(47, t.length - 2));
 
-  let match = null;
+  let m = null;
 
-  json.table.rows.forEach(r => {
+  j.table.rows.forEach(r => {
     const c = r.c || [];
-    const BAT = (c[1]?.v || "").toString().trim();
-    const EQP = (c[2]?.v || "").toString().trim();
+    if (`${c[1]?.v}-${c[2]?.v}`.toUpperCase() !== id.toUpperCase()) return;
 
-    if (`${BAT}-${EQP}`.toUpperCase() !== id.toUpperCase()) return;
-
-    match = {
-      BAT,
-      EQP,
-      pumpType: c[4]?.v || "",
-      ratings: c[5]?.v || "",
-      flc: c[10]?.v || "",
-      sfu: c[14]?.v || "",
-      fuse: c[15]?.v || "",
-      contactor: c[16]?.v || "",
-      relay: c[17]?.v || "",
-      ctM: c[18]?.v || "",
-      ctP: c[19]?.v || "",
-      aux: c[20]?.v || ""
+    m = {
+      BAT: c[1]?.v,
+      EQP: c[2]?.v,
+      pumpType: c[4]?.v,
+      ratings: c[5]?.v,
+      flc: c[10]?.v,
+      sfu: c[14]?.v,
+      fuse: c[15]?.v,
+      contactor: c[16]?.v,
+      relay: c[17]?.v,
+      ctM: c[18]?.v,
+      ctP: c[19]?.v,
+      aux: c[20]?.v
     };
   });
 
-  if (!match) {
-    out.innerHTML = "Drive not found.";
-    return;
-  }
+  if (!m) return;
 
-  out.innerHTML = `
+  document.getElementById("drive").innerHTML = `
     <div class="card">
-      <h3>${match.BAT} – ${match.EQP}</h3>
-      <p><span class="label">Pump Type:</span> ${match.pumpType}</p>
+      <h3>${m.BAT} – ${m.EQP}</h3>
+      <p><span class="label">Pump Type:</span> ${m.pumpType}</p>
 
       <div class="grid">
         <div>
-          <p><span class="label">Ratings:</span> ${match.ratings}</p>
-          <p><span class="label">FLC:</span> ${match.flc}</p>
+          <p><span class="label">Ratings:</span> ${m.ratings}</p>
+          <p><span class="label">FLC:</span> ${m.flc}</p>
         </div>
         <div>
-          <p><span class="label">SFU:</span> ${match.sfu}</p>
-          <p><span class="label">Fuse:</span> ${match.fuse}</p>
-          <p><span class="label">Contactor:</span> ${match.contactor}</p>
-          <p><span class="label">Relay:</span> ${match.relay}</p>
+          <p><span class="label">SFU:</span> ${m.sfu}</p>
+          <p><span class="label">Fuse:</span> ${m.fuse}</p>
+          <p><span class="label">Contactor:</span> ${m.contactor}</p>
+          <p><span class="label">Relay:</span> ${m.relay}</p>
         </div>
         <div>
-          <p><span class="label">CT (M):</span> ${match.ctM}</p>
-          <p><span class="label">CT (P):</span> ${match.ctP}</p>
-          <p><span class="label">Aux Contactor:</span> ${match.aux}</p>
+          <p><span class="label">CT (M):</span> ${m.ctM}</p>
+          <p><span class="label">CT (P):</span> ${m.ctP}</p>
+          <p><span class="label">Aux Contactor:</span> ${m.aux}</p>
         </div>
       </div>
     </div>
@@ -161,50 +170,52 @@ async function loadDrive() {
   loadHistory(id);
 }
 
-// -------- LOAD HISTORY --------
+// ---------- LOAD HISTORY ----------
 async function loadHistory(id) {
   const out = document.getElementById("history");
 
-  const historyURL =
+  const url =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
     "?gid=751880096&tqx=out:json";
 
-  const resp = await fetch(historyURL);
-  const text = await resp.text();
-  const json = JSON.parse(text.substring(47, text.length - 2));
+  const r = await fetch(url);
+  const t = await r.text();
+  const j = JSON.parse(t.substring(47, t.length - 2));
 
-  const rows = json.table.rows;
-  const cols = json.table.cols;
+  const rows = j.table.rows;
+  const cols = j.table.cols;
+  const showCols = [0,1,4,5,6,7,9,10]; // A,B,E,F,G,H,J,K
 
-  let matched = [];
-
+  let data = [];
   rows.forEach(r => {
     const c = r.c || [];
-    const BAT = (c[2]?.v || "").toString().trim(); // C
-    const EQP = (c[3]?.v || "").toString().trim(); // D
-
-    if (`${BAT}-${EQP}`.toUpperCase() !== id.toUpperCase()) return;
-
-    matched.push(c);
+    if (`${c[2]?.v}-${c[3]?.v}`.toUpperCase() !== id.toUpperCase()) return;
+    data.push(c);
   });
 
-  if (!matched.length) {
+  if (!data.length) {
     out.innerHTML = "<b>No history data found.</b>";
     return;
   }
 
-  // Columns to SHOW (exclude C,D,I)
-  const showCols = [0,1,4,5,6,7,9,10]; // A,B,E,F,G,H,J,K
+  let html = `
+  <div class="card">
+    <h3>History</h3>
 
-  let html = `<div class="card"><h3>History Details</h3><table><thead><tr>`;
+    <div class="controls">
+      <input id="search" placeholder="Search…">
+      <button onclick="exportExcel()">Export Excel</button>
+      <button onclick="window.print()">Export PDF</button>
+    </div>
 
-  showCols.forEach(i => {
-    html += `<th>${cols[i]?.label || ""}</th>`;
-  });
+    <table id="historyTable">
+      <thead><tr>
+  `;
 
+  showCols.forEach(i => html += `<th>${cols[i].label}</th>`);
   html += "</tr></thead><tbody>";
 
-  matched.forEach(r => {
+  data.forEach(r => {
     html += "<tr>";
     showCols.forEach(i => {
       let v = formatDate(r[i]?.v ?? "");
@@ -216,6 +227,28 @@ async function loadHistory(id) {
 
   html += "</tbody></table></div>";
   out.innerHTML = html;
+
+  document.getElementById("search").onkeyup = function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll("#historyTable tbody tr")
+      .forEach(tr => tr.style.display =
+        tr.innerText.toLowerCase().includes(q) ? "" : "none");
+  };
+}
+
+// ---------- EXPORT ----------
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#historyTable tr").forEach(row => {
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "history.csv";
+  a.click();
 }
 
 loadDrive();
