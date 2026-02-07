@@ -225,7 +225,7 @@ async function loadHistory(id) {
   });
 
   // ✅ SORT: LATEST → OLDEST (FIXED)
-  data.sort((a, b) => parseDate(b[0]?.v) - parseDate(a[0]?.v));
+  data.sort((a, b) => parseDate(b[2]?.v) - parseDate(a[2]?.v));
 
   if (!data.length) {
     out.innerHTML = "<b>No history data found.</b>";
