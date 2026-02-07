@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>History</title>
+<title>Drive History</title>
 
 <style>
 body {
@@ -10,18 +10,36 @@ body {
   padding: 20px;
   background: #f2f6ff;
 }
-h2 {
-  text-align: center;
+
+h2, h3 {
   color: #003f88;
-  font-size: 32px;
-  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 700;
 }
+
+h2 { font-size: 34px; margin-bottom: 10px; }
+h3 { font-size: 22px; margin-bottom: 10px; }
+
 .card {
   background: white;
-  padding: 18px;
+  padding: 20px;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  margin-bottom: 20px;
 }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.label {
+  font-weight: bold;
+  color: #003f88;
+}
+
+/* CONTROLS */
 .controls {
   display: flex;
   gap: 10px;
@@ -39,6 +57,8 @@ h2 {
   border-radius: 4px;
   cursor: pointer;
 }
+
+/* TABLE */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -52,10 +72,46 @@ th {
   background: #003f88;
   color: white;
 }
+  /* Fix DATE column width */
+#historyTable th:nth-child(3),
+#historyTable td:nth-child(3) {
+  width: 110px;
+  white-space: nowrap;
+  text-align: center;
+}
+
 </style>
 </head>
 
 <body>
+
+<h2>Drive Information</h2>
+
+<div class="card">
+  <h3 id="driveId">—</h3>
+
+  <p><span class="label">Pump Type:</span> CIRCULATION PUMP</p>
+
+  <div class="grid">
+    <div>
+      <p><span class="label">Ratings:</span> 101</p>
+      <p><span class="label">FLC:</span> 178</p>
+    </div>
+
+    <div>
+      <p><span class="label">SFU:</span> 3 KX 2530-1YD001C</p>
+      <p><span class="label">Fuse:</span> NH2,315A,3NA3 144-7Y</p>
+      <p><span class="label">Contactor:</span> 3RT12 66, Siemens</p>
+      <p><span class="label">Relay:</span> 7SJ611</p>
+    </div>
+
+    <div>
+      <p><span class="label">CT (M):</span> 300/1 ,15VA,cl-1</p>
+      <p><span class="label">CT (P):</span> 300/5 ,10VA,cl-5P10</p>
+      <p><span class="label">Aux Contactor:</span> 3TH30 22-OAOU, 2NO+2NC, 240V AC</p>
+    </div>
+  </div>
+</div>
 
 <h2>History</h2>
 
@@ -85,8 +141,9 @@ th {
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
+document.getElementById("driveId").innerText = id || "";
 
-// ---- PARSE RAW DATE (COLUMN E = index 4) ----
+// ---------- DATE PARSE ----------
 function parseDate(v) {
   if (!v) return new Date(0);
 
@@ -94,46 +151,43 @@ function parseDate(v) {
     const p = v.match(/\d+/g);
     return new Date(p[0], p[1], p[2]);
   }
-
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
     const [d,m,y] = v.split("/");
     return new Date(y, m - 1, d);
   }
-
   if (/^\d{2}-\d{2}-\d{4}$/.test(v)) {
     const [d,m,y] = v.split("-");
     return new Date(y, m - 1, d);
   }
-
   return new Date(0);
 }
 
 function formatDate(v) {
   const d = parseDate(v);
-  if (isNaN(d)) return "";
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
+// ---------- LOAD HISTORY ----------
 async function loadHistory() {
   const url =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
     "?gid=751880096&tqx=out:json";
 
-  const res = await fetch(url);
-  const txt = await res.text();
-  const json = JSON.parse(txt.substring(47, txt.length - 2));
+  const r = await fetch(url);
+  const t = await r.text();
+  const j = JSON.parse(t.substring(47, t.length - 2));
 
   let rows = [];
 
-  json.table.rows.forEach(r => {
+  j.table.rows.forEach(r => {
     const c = r.c || [];
-    const UID = `${c[2]?.v}-${c[3]?.v}`.toUpperCase(); // DRIVE1-DRIVE2
-    if (UID !== id.toUpperCase()) return;
+    const uid = `${c[2]?.v}-${c[3]?.v}`.toUpperCase();
+    if (uid !== id?.toUpperCase()) return;
     rows.push(c);
   });
 
-  // ✅ SORT BY DATE COLUMN (E = index 4)
-  rows.sort((a, b) => parseDate(b[4]?.v) - parseDate(a[4]?.v));
+  // SORT BY DATE (Column E = index 4)
+  rows.sort((a,b) => parseDate(b[4]?.v) - parseDate(a[4]?.v));
 
   const tbody = document.querySelector("#historyTable tbody");
   tbody.innerHTML = "";
@@ -155,12 +209,13 @@ async function loadHistory() {
 
   document.getElementById("search").onkeyup = function () {
     const q = this.value.toLowerCase();
-    document.querySelectorAll("#historyTable tbody tr").forEach(tr => {
-      tr.style.display = tr.innerText.toLowerCase().includes(q) ? "" : "none";
-    });
+    document.querySelectorAll("#historyTable tbody tr")
+      .forEach(tr => tr.style.display =
+        tr.innerText.toLowerCase().includes(q) ? "" : "none");
   };
 }
 
+// ---------- EXPORT ----------
 function exportExcel() {
   let csv = [];
   document.querySelectorAll("#historyTable tr").forEach(row => {
