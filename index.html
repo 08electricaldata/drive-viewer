@@ -48,8 +48,8 @@ th {
 }
 a {
   color: #003f88;
-  text-decoration: none;
   font-weight: bold;
+  text-decoration: none;
 }
 </style>
 
@@ -63,7 +63,7 @@ a {
 
 <script>
 function formatDate(val) {
-  // Expecting DD/MM/YYYY → show DD-MM-YYYY
+  // DD/MM/YYYY → DD-MM-YYYY
   if (typeof val === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
     return val.replace(/\//g, "-");
   }
@@ -93,8 +93,9 @@ async function loadDrive() {
     let match = null;
 
     rows.forEach(r => {
-      const BAT = (r.c[1]?.v || "").toString().trim();
-      const EQP = (r.c[2]?.v || "").toString().trim();
+      const c = r.c || [];
+      const BAT = (c[1]?.v || "").toString().trim(); // B
+      const EQP = (c[2]?.v || "").toString().trim(); // C
       const UID = `${BAT}-${EQP}`.toUpperCase();
 
       if (UID !== id.toUpperCase()) return;
@@ -102,16 +103,16 @@ async function loadDrive() {
       match = {
         BAT,
         EQP,
-        pumpType: r.c[4]?.v || "",
-        ratings: r.c[5]?.v || "",
-        flc: r.c[10]?.v || "",
-        sfu: r.c[14]?.v || "",
-        fuse: r.c[15]?.v || "",
-        contactor: r.c[16]?.v || "",
-        relay: r.c[17]?.v || "",
-        ctM: r.c[18]?.v || "",
-        ctP: r.c[19]?.v || "",
-        aux: r.c[20]?.v || ""
+        pumpType: c[4]?.v || "",     // E
+        ratings: c[5]?.v || "",      // F
+        flc: c[10]?.v || "",          // K
+        sfu: c[14]?.v || "",          // O
+        fuse: c[15]?.v || "",         // P
+        contactor: c[16]?.v || "",    // Q
+        relay: c[17]?.v || "",        // R
+        ctM: c[18]?.v || "",          // S
+        ctP: c[19]?.v || "",          // T
+        aux: c[20]?.v || ""           // U
       };
     });
 
@@ -171,13 +172,20 @@ async function loadHistory(id) {
     let matched = [];
 
     rows.forEach(r => {
-      const BAT = (r.c[2]?.v || "").toString().trim(); // C
-      const EQP = (r.c[3]?.v || "").toString().trim(); // D
-      const UID = `${BAT}-${EQP}`.toUpperCase();
+      const c = r.c || [];
 
+      const BAT = (c[2]?.v || "").toString().trim(); // C
+      const EQP = (c[3]?.v || "").toString().trim(); // D
+      if (!BAT || !EQP) return;
+
+      const UID = `${BAT}-${EQP}`.toUpperCase();
       if (UID !== id.toUpperCase()) return;
 
-      matched.push(r.c.slice(0, 11)); // A → K
+      let row = [];
+      for (let i = 0; i <= 10; i++) {
+        row.push(c[i]?.v ?? "");
+      }
+      matched.push(row);
     });
 
     if (matched.length === 0) {
@@ -185,23 +193,24 @@ async function loadHistory(id) {
       return;
     }
 
-    let html = `<div class="card"><h3>History Details</h3><table><thead><tr>`;
+    let html = `
+      <div class="card">
+        <h3>History Details</h3>
+        <table>
+          <thead><tr>
+    `;
 
     cols.forEach(c => {
       html += `<th>${c.label || ""}</th>`;
     });
 
-    html += `</tr></thead><tbody>`;
+    html += "</tr></thead><tbody>";
 
     matched.forEach(row => {
       html += "<tr>";
-      row.forEach((cell, i) => {
-        let val = cell?.v ?? "";
-
-        // Date formatting
+      row.forEach((val, i) => {
         val = formatDate(val);
 
-        // Column K → URL
         if (i === 10 && val) {
           val = `<a href="${val}" target="_blank">Open</a>`;
         }
@@ -211,7 +220,7 @@ async function loadHistory(id) {
       html += "</tr>";
     });
 
-    html += `</tbody></table></div>`;
+    html += "</tbody></table></div>";
     out.innerHTML = html;
 
   } catch (err) {
