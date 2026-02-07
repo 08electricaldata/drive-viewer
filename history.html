@@ -94,33 +94,44 @@ td:nth-child(3) {
 <div id="history"></div>
 
 <script>
-// ---------- DATE FORMAT ----------
+// ---------- DATE FORMAT (DISPLAY) ----------
 function formatDate(v) {
   if (typeof v === "string" && v.startsWith("Date(")) {
     const p = v.match(/\d+/g);
     if (p) {
       const y = p[0];
-      const m = String(+p[1] + 1).padStart(2,"0");
-      const d = String(p[2]).padStart(2,"0");
+      const m = String(+p[1] + 1).padStart(2, "0");
+      const d = String(p[2]).padStart(2, "0");
       return `${d}-${m}-${y}`;
     }
   }
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
-    return v.replace(/\//g,"-");
+  if (typeof v === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+    return v.replace(/\//g, "-");
   }
   return v ?? "";
 }
 
 // ---------- DATE PARSER (FOR SORTING) ----------
 function parseDate(v) {
+
+  // Date(YYYY,M,D)
   if (typeof v === "string" && v.startsWith("Date(")) {
     const p = v.match(/\d+/g);
     if (p) return new Date(p[0], p[1], p[2]);
   }
+
+  // DD/MM/YYYY
   if (typeof v === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
-    const [d,m,y] = v.split("/");
+    const [d, m, y] = v.split("/");
     return new Date(y, m - 1, d);
   }
+
+  // DD-MM-YYYY  ✅ FIX
+  if (typeof v === "string" && /^\d{2}-\d{2}-\d{4}$/.test(v)) {
+    const [d, m, y] = v.split("-");
+    return new Date(y, m - 1, d);
+  }
+
   return new Date(0);
 }
 
@@ -213,7 +224,7 @@ async function loadHistory(id) {
     data.push(c);
   });
 
-  // 🔥 SORT BY DATE (LATEST → OLDEST)
+  // ✅ SORT: LATEST → OLDEST (FIXED)
   data.sort((a, b) => parseDate(b[0]?.v) - parseDate(a[0]?.v));
 
   if (!data.length) {
