@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -48,12 +48,12 @@ th {
 }
 a {
   color: #003f88;
-  font-weight: bold;
   text-decoration: none;
+  font-weight: bold;
 }
 </style>
-
 </head>
+
 <body>
 
 <h2>Drive Information</h2>
@@ -62,14 +62,16 @@ a {
 <div id="history"></div>
 
 <script>
+// ---------- DATE FORMATTER ----------
 function formatDate(val) {
-  // DD/MM/YYYY → DD-MM-YYYY
+  // Converts DD/MM/YYYY → DD-MM-YYYY (display only)
   if (typeof val === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
     return val.replace(/\//g, "-");
   }
   return val ?? "";
 }
 
+// ---------- LOAD DRIVE DETAILS ----------
 async function loadDrive() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
@@ -93,9 +95,8 @@ async function loadDrive() {
     let match = null;
 
     rows.forEach(r => {
-      const c = r.c || [];
-      const BAT = (c[1]?.v || "").toString().trim(); // B
-      const EQP = (c[2]?.v || "").toString().trim(); // C
+      const BAT = (r.c[1]?.v || "").toString().trim(); // Column B
+      const EQP = (r.c[2]?.v || "").toString().trim(); // Column C
       const UID = `${BAT}-${EQP}`.toUpperCase();
 
       if (UID !== id.toUpperCase()) return;
@@ -103,16 +104,16 @@ async function loadDrive() {
       match = {
         BAT,
         EQP,
-        pumpType: c[4]?.v || "",     // E
-        ratings: c[5]?.v || "",      // F
-        flc: c[10]?.v || "",          // K
-        sfu: c[14]?.v || "",          // O
-        fuse: c[15]?.v || "",         // P
-        contactor: c[16]?.v || "",    // Q
-        relay: c[17]?.v || "",        // R
-        ctM: c[18]?.v || "",          // S
-        ctP: c[19]?.v || "",          // T
-        aux: c[20]?.v || ""           // U
+        pumpType: r.c[4]?.v || "",     // E
+        ratings: r.c[5]?.v || "",      // F
+        flc: r.c[10]?.v || "",          // K
+        sfu: r.c[14]?.v || "",          // O
+        fuse: r.c[15]?.v || "",         // P
+        contactor: r.c[16]?.v || "",    // Q
+        relay: r.c[17]?.v || "",        // R
+        ctM: r.c[18]?.v || "",          // S
+        ctP: r.c[19]?.v || "",          // T
+        aux: r.c[20]?.v || ""           // U
       };
     });
 
@@ -154,6 +155,7 @@ async function loadDrive() {
   }
 }
 
+// ---------- LOAD HISTORY TABLE ----------
 async function loadHistory(id) {
   const out = document.getElementById("history");
 
@@ -172,20 +174,13 @@ async function loadHistory(id) {
     let matched = [];
 
     rows.forEach(r => {
-      const c = r.c || [];
-
-      const BAT = (c[2]?.v || "").toString().trim(); // C
-      const EQP = (c[3]?.v || "").toString().trim(); // D
-      if (!BAT || !EQP) return;
-
+      const BAT = (r.c[2]?.v || "").toString().trim(); // Column C
+      const EQP = (r.c[3]?.v || "").toString().trim(); // Column D
       const UID = `${BAT}-${EQP}`.toUpperCase();
+
       if (UID !== id.toUpperCase()) return;
 
-      let row = [];
-      for (let i = 0; i <= 10; i++) {
-        row.push(c[i]?.v ?? "");
-      }
-      matched.push(row);
+      matched.push(r.c.slice(0, 11)); // A → K
     });
 
     if (matched.length === 0) {
@@ -208,9 +203,11 @@ async function loadHistory(id) {
 
     matched.forEach(row => {
       html += "<tr>";
-      row.forEach((val, i) => {
+      row.forEach((cell, i) => {
+        let val = cell?.v ?? "";
         val = formatDate(val);
 
+        // Column K → URL
         if (i === 10 && val) {
           val = `<a href="${val}" target="_blank">Open</a>`;
         }
