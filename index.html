@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Drive Details</title>
+
 <style>
 body {
   font-family: Arial, sans-serif;
   padding: 20px;
   background: #f2f6ff;
 }
-h2 {
+h2, h3 {
   color: #003f88;
 }
 .card {
@@ -32,12 +33,33 @@ h2 {
   font-weight: bold;
   color: #003f88;
 }
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 14px;
+  background: white;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  text-align: left;
+}
+th {
+  background: #003f88;
+  color: white;
+}
 </style>
+
 </head>
 <body>
 
 <h2>Drive Information</h2>
-<div id="drive">Loading data...</div>
+
+<div id="drive">Loading drive details...</div>
+<div id="history"></div>
 
 <script>
 async function loadDrive() {
@@ -50,11 +72,12 @@ async function loadDrive() {
     return;
   }
 
-  const sheetURL =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?gid=1274719919&tqx=out:json";
+  const driveURL =
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+    "?gid=1274719919&tqx=out:json";
 
   try {
-    const resp = await fetch(sheetURL);
+    const resp = await fetch(driveURL);
     const text = await resp.text();
     const json = JSON.parse(text.substring(47, text.length - 2));
     const rows = json.table.rows;
@@ -62,8 +85,8 @@ async function loadDrive() {
     let match = null;
 
     rows.forEach(r => {
-      const BAT = (r.c[1]?.v || "").toString().trim();
-      const EQP = (r.c[2]?.v || "").toString().trim();
+      const BAT = (r.c[1]?.v || "").toString().trim();   // Column B
+      const EQP = (r.c[2]?.v || "").toString().trim();   // Column C
       const UID = `${BAT}-${EQP}`.toUpperCase();
 
       if (UID !== id.toUpperCase()) return;
@@ -71,16 +94,16 @@ async function loadDrive() {
       match = {
         BAT,
         EQP,
-        pumpType: r.c[4]?.v || "",
-        ratings: r.c[5]?.v || "",
-        flc: r.c[10]?.v || "",
-        sfu: r.c[14]?.v || "",
-        fuse: r.c[15]?.v || "",
-        contactor: r.c[16]?.v || "",
-        relay: r.c[17]?.v || "",
-        ctM: r.c[18]?.v || "",
-        ctP: r.c[19]?.v || "",
-        aux: r.c[20]?.v || ""
+        pumpType: r.c[4]?.v || "",     // E
+        ratings: r.c[5]?.v || "",      // F
+        flc: r.c[10]?.v || "",          // K
+        sfu: r.c[14]?.v || "",          // O
+        fuse: r.c[15]?.v || "",         // P
+        contactor: r.c[16]?.v || "",    // Q
+        relay: r.c[17]?.v || "",        // R
+        ctM: r.c[18]?.v || "",          // S
+        ctP: r.c[19]?.v || "",          // T
+        aux: r.c[20]?.v || ""           // U
       };
     });
 
@@ -116,9 +139,74 @@ async function loadDrive() {
       </div>
     `;
 
+    // Load history table AFTER drive loads
+    loadHistory(id);
+
   } catch (err) {
     console.error(err);
-    out.innerHTML = "Error loading data.";
+    out.innerHTML = "Error loading drive data.";
+  }
+}
+
+async function loadHistory(id) {
+  const out = document.getElementById("history");
+
+  const historyURL =
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+    "?gid=751880096&tqx=out:json";
+
+  try {
+    const resp = await fetch(historyURL);
+    const text = await resp.text();
+    const json = JSON.parse(text.substring(47, text.length - 2));
+
+    const cols = json.table.cols;
+    const rows = json.table.rows;
+
+    let matchedRows = [];
+
+    rows.forEach(r => {
+      const BAT = (r.c[2]?.v || "").toString().trim(); // Column C
+      const EQP = (r.c[3]?.v || "").toString().trim(); // Column D
+      const UID = `${BAT}-${EQP}`.toUpperCase();
+
+      if (UID !== id.toUpperCase()) return;
+
+      matchedRows.push(r.c.slice(2)); // C → last column
+    });
+
+    if (matchedRows.length === 0) {
+      out.innerHTML = "<p><b>No history data found.</b></p>";
+      return;
+    }
+
+    let html = `
+      <div class="card">
+        <h3>History Details</h3>
+        <table>
+          <thead><tr>
+    `;
+
+    cols.slice(2).forEach(c => {
+      html += `<th>${c.label || ""}</th>`;
+    });
+
+    html += "</tr></thead><tbody>";
+
+    matchedRows.forEach(row => {
+      html += "<tr>";
+      row.forEach(cell => {
+        html += `<td>${cell?.v ?? ""}</td>`;
+      });
+      html += "</tr>";
+    });
+
+    html += "</tbody></table></div>";
+    out.innerHTML = html;
+
+  } catch (err) {
+    console.error(err);
+    out.innerHTML = "Error loading history table.";
   }
 }
 
