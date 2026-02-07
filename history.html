@@ -11,8 +11,8 @@ body {
   background: #f2f6ff;
 }
 h2 {
-  color: #003f88;
   text-align: center;
+  color: #003f88;
   font-size: 32px;
   margin-bottom: 20px;
 }
@@ -74,7 +74,7 @@ th {
         <th>DATE</th>
         <th>DETAILS OF JOB</th>
         <th>JOB TYPE</th>
-        <th>JOB CATAGORY</th>
+        <th>JOB CATEGORY</th>
         <th>CARRIED OUT BY</th>
         <th>LINK</th>
       </tr>
@@ -86,23 +86,20 @@ th {
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
-// ---------- DATE PARSER (RAW VALUE ONLY) ----------
-function parseDateRaw(v) {
+// ---- PARSE RAW DATE (COLUMN E = index 4) ----
+function parseDate(v) {
   if (!v) return new Date(0);
 
-  // GViz Date(YYYY,M,D)
   if (typeof v === "string" && v.startsWith("Date(")) {
     const p = v.match(/\d+/g);
     return new Date(p[0], p[1], p[2]);
   }
 
-  // DD/MM/YYYY
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
     const [d,m,y] = v.split("/");
     return new Date(y, m - 1, d);
   }
 
-  // DD-MM-YYYY
   if (/^\d{2}-\d{2}-\d{4}$/.test(v)) {
     const [d,m,y] = v.split("-");
     return new Date(y, m - 1, d);
@@ -111,33 +108,32 @@ function parseDateRaw(v) {
   return new Date(0);
 }
 
-// ---------- FORMAT DATE FOR DISPLAY ----------
 function formatDate(v) {
-  const d = parseDateRaw(v);
-  if (isNaN(d)) return v;
+  const d = parseDate(v);
+  if (isNaN(d)) return "";
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-// ---------- LOAD HISTORY ----------
 async function loadHistory() {
   const url =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
     "?gid=751880096&tqx=out:json";
 
-  const r = await fetch(url);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
+  const res = await fetch(url);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
 
   let rows = [];
 
-  j.table.rows.forEach(row => {
-    const c = row.c || [];
-    if (`${c[2]?.v}-${c[3]?.v}`.toUpperCase() !== id.toUpperCase()) return;
+  json.table.rows.forEach(r => {
+    const c = r.c || [];
+    const UID = `${c[2]?.v}-${c[3]?.v}`.toUpperCase(); // DRIVE1-DRIVE2
+    if (UID !== id.toUpperCase()) return;
     rows.push(c);
   });
 
-  // ✅ CORRECT SORT: DATE COLUMN (INDEX 2)
-  rows.sort((a, b) => parseDateRaw(b[2]?.v) - parseDateRaw(a[2]?.v));
+  // ✅ SORT BY DATE COLUMN (E = index 4)
+  rows.sort((a, b) => parseDate(b[4]?.v) - parseDate(a[4]?.v));
 
   const tbody = document.querySelector("#historyTable tbody");
   tbody.innerHTML = "";
@@ -147,12 +143,12 @@ async function loadHistory() {
     tr.innerHTML = `
       <td>${c[0]?.v || ""}</td>
       <td>${c[1]?.v || ""}</td>
-      <td>${formatDate(c[2]?.v)}</td>
-      <td>${c[3]?.v || ""}</td>
-      <td>${c[4]?.v || ""}</td>
+      <td>${formatDate(c[4]?.v)}</td>
       <td>${c[5]?.v || ""}</td>
       <td>${c[6]?.v || ""}</td>
-      <td>${c[7]?.v ? `<a href="${c[7].v}" target="_blank">Open</a>` : ""}</td>
+      <td>${c[7]?.v || ""}</td>
+      <td>${c[9]?.v || ""}</td>
+      <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -165,11 +161,12 @@ async function loadHistory() {
   };
 }
 
-// ---------- EXPORT ----------
 function exportExcel() {
   let csv = [];
   document.querySelectorAll("#historyTable tr").forEach(row => {
-    csv.push([...row.children].map(td => `"${td.innerText.replace(/"/g,'""')}"`).join(","));
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
   });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
