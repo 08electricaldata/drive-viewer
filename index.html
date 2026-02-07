@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -20,6 +19,19 @@ h2 {
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   margin-top: 15px;
 }
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15px;
+  margin-top: 10px;
+}
+.block p {
+  margin: 6px 0;
+}
+.label {
+  font-weight: bold;
+  color: #003f88;
+}
 </style>
 </head>
 <body>
@@ -31,7 +43,6 @@ h2 {
 async function loadDrive() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
-
   const out = document.getElementById("drive");
 
   if (!id) {
@@ -45,7 +56,6 @@ async function loadDrive() {
   try {
     const resp = await fetch(sheetURL);
     const text = await resp.text();
-
     const json = JSON.parse(text.substring(47, text.length - 2));
     const rows = json.table.rows;
 
@@ -54,17 +64,23 @@ async function loadDrive() {
     rows.forEach(r => {
       const BAT = (r.c[1]?.v || "").toString().trim();
       const EQP = (r.c[2]?.v || "").toString().trim();
-
       const UID = `${BAT}-${EQP}`.toUpperCase();
+
       if (UID !== id.toUpperCase()) return;
 
       match = {
         BAT,
         EQP,
-        DATE: r.c[4]?.v || "",
-        JOB: r.c[5]?.v || "",
-        TYPE1: r.c[6]?.v || "",
-        TYPE2: r.c[7]?.v || ""
+        pumpType: r.c[4]?.v || "",
+        ratings: r.c[5]?.v || "",
+        flc: r.c[10]?.v || "",
+        sfu: r.c[14]?.v || "",
+        fuse: r.c[15]?.v || "",
+        contactor: r.c[16]?.v || "",
+        relay: r.c[17]?.v || "",
+        ctM: r.c[18]?.v || "",
+        ctP: r.c[19]?.v || "",
+        aux: r.c[20]?.v || ""
       };
     });
 
@@ -76,10 +92,27 @@ async function loadDrive() {
     out.innerHTML = `
       <div class="card">
         <h3>${match.BAT} – ${match.EQP}</h3>
-        <p><b>Date:</b> ${match.DATE}</p>
-        <p><b>Job:</b> ${match.JOB}</p>
-        <p><b>Type 1:</b> ${match.TYPE1}</p>
-        <p><b>Type 2:</b> ${match.TYPE2}</p>
+        <p><span class="label">Pump Type:</span> ${match.pumpType}</p>
+
+        <div class="grid">
+          <div class="block">
+            <p><span class="label">Ratings:</span> ${match.ratings}</p>
+            <p><span class="label">FLC:</span> ${match.flc}</p>
+          </div>
+
+          <div class="block">
+            <p><span class="label">SFU:</span> ${match.sfu}</p>
+            <p><span class="label">Fuse:</span> ${match.fuse}</p>
+            <p><span class="label">Contactor:</span> ${match.contactor}</p>
+            <p><span class="label">Relay:</span> ${match.relay}</p>
+          </div>
+
+          <div class="block">
+            <p><span class="label">CT (M):</span> ${match.ctM}</p>
+            <p><span class="label">CT (P):</span> ${match.ctP}</p>
+            <p><span class="label">Aux Contactor:</span> ${match.aux}</p>
+          </div>
+        </div>
       </div>
     `;
 
@@ -91,7 +124,6 @@ async function loadDrive() {
 
 loadDrive();
 </script>
-
 
 </body>
 </html>
