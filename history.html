@@ -72,7 +72,6 @@ th {
   background: #003f88;
   color: white;
 }
-  /* Fix DATE column width */
 #historyTable th:nth-child(3),
 #historyTable td:nth-child(3) {
   width: 110px;
@@ -87,7 +86,6 @@ th {
   padding: 8px;
   font-size: 15px;
 }
-
 </style>
 </head>
 
@@ -95,30 +93,8 @@ th {
 
 <h2>Drive Information</h2>
 
-<div class="card">
-  <h3 id="driveId">—</h3>
-
-  <p><span class="label">Pump Type:</span> CIRCULATION PUMP</p>
-
-  <div class="grid">
-    <div>
-      <p><span class="label">Ratings:</span> 101</p>
-      <p><span class="label">FLC:</span> 178</p>
-    </div>
-
-    <div>
-      <p><span class="label">SFU:</span> 3 KX 2530-1YD001C</p>
-      <p><span class="label">Fuse:</span> NH2,315A,3NA3 144-7Y</p>
-      <p><span class="label">Contactor:</span> 3RT12 66, Siemens</p>
-      <p><span class="label">Relay:</span> 7SJ611</p>
-    </div>
-
-    <div>
-      <p><span class="label">CT (M):</span> 300/1 ,15VA,cl-1</p>
-      <p><span class="label">CT (P):</span> 300/5 ,10VA,cl-5P10</p>
-      <p><span class="label">Aux Contactor:</span> 3TH30 22-OAOU, 2NO+2NC, 240V AC</p>
-    </div>
-  </div>
+<div id="driveInfo" class="card">
+  Loading drive information…
 </div>
 
 <h2>History</h2>
@@ -149,12 +125,77 @@ th {
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
-document.getElementById("driveId").innerText = id || "";
 
-// ---------- DATE PARSE ----------
+// ---------- LOAD DRIVE INFO (NEW PART) ----------
+async function loadDriveInfo() {
+  if (!id) return;
+
+  const url =
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+    "?gid=1274719919&tqx=out:json";
+
+  const r = await fetch(url);
+  const t = await r.text();
+  const j = JSON.parse(t.substring(47, t.length - 2));
+
+  let m = null;
+
+  j.table.rows.forEach(r => {
+    const c = r.c || [];
+    const uid = `${c[1]?.v}-${c[2]?.v}`.toUpperCase();
+    if (uid !== id.toUpperCase()) return;
+
+    m = {
+      BAT: c[1]?.v,
+      EQP: c[2]?.v,
+      pumpType: c[4]?.v,
+      ratings: c[5]?.v,
+      flc: c[10]?.v,
+      sfu: c[14]?.v,
+      fuse: c[15]?.v,
+      contactor: c[16]?.v,
+      relay: c[17]?.v,
+      ctM: c[18]?.v,
+      ctP: c[19]?.v,
+      aux: c[20]?.v
+    };
+  });
+
+  if (!m) {
+    document.getElementById("driveInfo").innerHTML = "Drive not found.";
+    return;
+  }
+
+  document.getElementById("driveInfo").innerHTML = `
+    <h3>${m.BAT} – ${m.EQP}</h3>
+
+    <p><span class="label">Pump Type:</span> ${m.pumpType}</p>
+
+    <div class="grid">
+      <div>
+        <p><span class="label">Ratings:</span> ${m.ratings} KW</p>
+        <p><span class="label">FLC:</span> ${m.flc} A</p>
+      </div>
+
+      <div>
+        <p><span class="label">SFU:</span> ${m.sfu}</p>
+        <p><span class="label">Fuse:</span> ${m.fuse}</p>
+        <p><span class="label">Contactor:</span> ${m.contactor}</p>
+        <p><span class="label">Relay:</span> ${m.relay}</p>
+      </div>
+
+      <div>
+        <p><span class="label">CT (M):</span> ${m.ctM}</p>
+        <p><span class="label">CT (P):</span> ${m.ctP}</p>
+        <p><span class="label">Aux Contactor:</span> ${m.aux}</p>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- HISTORY (UNCHANGED) ----------
 function parseDate(v) {
   if (!v) return new Date(0);
-
   if (typeof v === "string" && v.startsWith("Date(")) {
     const p = v.match(/\d+/g);
     return new Date(p[0], p[1], p[2]);
@@ -175,7 +216,6 @@ function formatDate(v) {
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-// ---------- LOAD HISTORY ----------
 async function loadHistory() {
   const url =
     "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
@@ -194,40 +234,38 @@ async function loadHistory() {
     rows.push(c);
   });
 
-  // SORT BY DATE (Column E = index 4)
   rows.sort((a,b) => parseDate(b[4]?.v) - parseDate(a[4]?.v));
 
   const tbody = document.querySelector("#historyTable tbody");
   tbody.innerHTML = "";
 
-let currentYear = "";
+  let currentYear = "";
 
-rows.forEach(c => {
-  const d = parseDate(c[4]?.v);
-  const year = d.getFullYear();
+  rows.forEach(c => {
+    const d = parseDate(c[4]?.v);
+    const year = d.getFullYear();
 
-  if (year !== currentYear) {
-    currentYear = year;
-    const yr = document.createElement("tr");
-    yr.className = "year-row";
-    yr.innerHTML = `<td colspan="8">YEAR ${year}</td>`;
-    tbody.appendChild(yr);
-  }
+    if (year !== currentYear) {
+      currentYear = year;
+      const yr = document.createElement("tr");
+      yr.className = "year-row";
+      yr.innerHTML = `<td colspan="8">YEAR ${year}</td>`;
+      tbody.appendChild(yr);
+    }
 
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${c[0]?.v || ""}</td>
-    <td>${c[1]?.v || ""}</td>
-    <td>${formatDate(c[4]?.v)}</td>
-    <td>${c[5]?.v || ""}</td>
-    <td>${c[6]?.v || ""}</td>
-    <td>${c[7]?.v || ""}</td>
-    <td>${c[9]?.v || ""}</td>
-    <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
-  `;
-  tbody.appendChild(tr);
-});
-
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${c[0]?.v || ""}</td>
+      <td>${c[1]?.v || ""}</td>
+      <td>${formatDate(c[4]?.v)}</td>
+      <td>${c[5]?.v || ""}</td>
+      <td>${c[6]?.v || ""}</td>
+      <td>${c[7]?.v || ""}</td>
+      <td>${c[9]?.v || ""}</td>
+      <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 
   document.getElementById("search").onkeyup = function () {
     const q = this.value.toLowerCase();
@@ -237,7 +275,6 @@ rows.forEach(c => {
   };
 }
 
-// ---------- EXPORT ----------
 function exportExcel() {
   let csv = [];
   document.querySelectorAll("#historyTable tr").forEach(row => {
@@ -251,6 +288,7 @@ function exportExcel() {
   a.click();
 }
 
+loadDriveInfo();
 loadHistory();
 </script>
 
