@@ -1,250 +1,232 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Drive Details</title>
 
 <style>
-    body {
-        margin: 0;
-        padding: 25px;
-        font-family: "Segoe UI", Arial, sans-serif;
-        background: #eef4ff;
-    }
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f2f6ff;
+}
+h2, h3 {
+  color: #003f88;
+}
+.card {
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  margin-top: 15px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15px;
+}
+.label {
+  font-weight: bold;
+  color: #003f88;
+}
 
-    h2 {
-        font-size: 28px;
-        color: #003f88;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .controls {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 20px;
-        justify-content: center;
-    }
-
-    input, select {
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #b9c7e4;
-        font-size: 15px;
-        outline: none;
-        min-width: 200px;
-    }
-
-    .export-btn {
-        background: #0057d9;
-        color: white;
-        padding: 10px 18px;
-        border-radius: 8px;
-        border: none;
-        font-size: 15px;
-        cursor: pointer;
-    }
-
-    .table-container {
-        background: white;
-        padding: 15px;
-        border-radius: 12px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-        overflow-x: auto;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th {
-        background: #dce6f6;
-        font-weight: bold;
-        padding: 12px;
-        cursor: pointer;
-        position: relative;
-    }
-
-    th:hover {
-        background: #cddaf3;
-    }
-
-    td {
-        padding: 12px;
-        border-bottom: 1px solid #e3e8f3;
-    }
-
-    tr:hover td {
-        background: #f3f7ff;
-    }
-
-    .btn {
-        background: #0057d9;
-        color: white;
-        padding: 7px 13px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 14px;
-    }
-
-    .arrow {
-        position: absolute;
-        right: 8px;
-        font-size: 12px;
-        opacity: 0.6;
-    }
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  text-align: left;
+}
+th {
+  background: #003f88;
+  color: white;
+}
+a {
+  color: #003f88;
+  font-weight: bold;
+  text-decoration: none;
+}
 </style>
+
 </head>
 <body>
 
 <h2>Drive Information</h2>
 
-<!-- Search + Filters -->
-<div class="controls">
-    <input id="searchBox" type="text" placeholder="Search anything...">
-
-    <select id="filterType1">
-        <option value="">Filter Type 1</option>
-    </select>
-
-    <select id="filterType2">
-        <option value="">Filter Type 2</option>
-    </select>
-
-    <button class="export-btn" onclick="exportPDF()">Download PDF</button>
-</div>
-
-<div class="table-container">
-    <table id="driveTable">
-        <thead>
-            <tr>
-                <th onclick="sortTable('DATE')">Date <span class="arrow">↕</span></th>
-                <th onclick="sortTable('JOB')">Job <span class="arrow">↕</span></th>
-                <th onclick="sortTable('TYPE1')">Type 1 <span class="arrow">↕</span></th>
-                <th onclick="sortTable('TYPE2')">Type 2 <span class="arrow">↕</span></th>
-                <th onclick="sortTable('WHO')">Who <span class="arrow">↕</span></th>
-                <th>Document</th>
-            </tr>
-        </thead>
-        <tbody id="driveBody"></tbody>
-    </table>
-</div>
+<div id="drive">Loading drive details...</div>
+<div id="history"></div>
 
 <script>
+function formatDate(val) {
+  // DD/MM/YYYY → DD-MM-YYYY
+  if (typeof val === "string" && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+    return val.replace(/\//g, "-");
+  }
+  return val ?? "";
+}
+
 async function loadDrive() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  const out = document.getElementById("drive");
 
-    const sheetURL =
-        "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+  if (!id) {
+    out.innerHTML = "No drive ID found in URL.";
+    return;
+  }
 
-    function sortKey(dateText) {
-        if (!dateText) return 0;
-        const p = dateText.split(/[\/\-.]/);
-        return new Date(p[2], p[1] - 1, p[0]).getTime();
-    }
+  const driveURL =
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+    "?gid=1274719919&tqx=out:json";
 
-    try {
-        const resp = await fetch(sheetURL);
-        const text = await resp.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
+  try {
+    const resp = await fetch(driveURL);
+    const text = await resp.text();
+    const json = JSON.parse(text.substring(47, text.length - 2));
+    const rows = json.table.rows;
 
-        let history = [];
-        let type1Set = new Set();
-        let type2Set = new Set();
+    let match = null;
 
-        rows.forEach(r => {
-            const C = r.c[2]?.v || "";
-            const D = r.c[3]?.v || "";
-            if (`${C}-${D}` !== id) return;
+    rows.forEach(r => {
+      const c = r.c || [];
+      const BAT = (c[1]?.v || "").toString().trim(); // B
+      const EQP = (c[2]?.v || "").toString().trim(); // C
+      const UID = `${BAT}-${EQP}`.toUpperCase();
 
-            const t1 = r.c[6]?.v || "";
-            const t2 = r.c[7]?.v || "";
+      if (UID !== id.toUpperCase()) return;
 
-            if (t1) type1Set.add(t1);
-            if (t2) type2Set.add(t2);
-
-            history.push({
-                DATE: r.c[4]?.f || r.c[4]?.v || "",
-                JOB: r.c[5]?.v || "",
-                TYPE1: t1,
-                TYPE2: t2,
-                WHO: r.c[9]?.v || "",
-                LINK: r.c[10]?.v || "",
-                SORT: sortKey(r.c[4]?.v || "")
-            });
-        });
-
-        history.sort((a, b) => b.SORT - a.SORT);
-        window.fullData = history;
-
-        const f1 = document.getElementById("filterType1");
-        const f2 = document.getElementById("filterType2");
-
-        [...type1Set].sort().forEach(v => f1.innerHTML += `<option value="${v}">${v}</option>`);
-        [...type2Set].sort().forEach(v => f2.innerHTML += `<option value="${v}">${v}</option>`);
-
-        renderTable(history);
-
-    } catch (e) {
-        console.error(e);
-        document.getElementById("driveBody").innerHTML =
-            `<tr><td colspan="6">Error loading data.</td></tr>`;
-    }
-}
-
-function renderTable(data) {
-    const body = document.getElementById("driveBody");
-    body.innerHTML = "";
-
-    if (!data.length) {
-        body.innerHTML = `<tr><td colspan="6">No matching results.</td></tr>`;
-        return;
-    }
-
-    data.forEach(r => {
-        body.innerHTML += `
-            <tr>
-                <td>${r.DATE}</td>
-                <td>${r.JOB}</td>
-                <td>${r.TYPE1}</td>
-                <td>${r.TYPE2}</td>
-                <td>${r.WHO}</td>
-                <td>${r.LINK ? `<a class='btn' href='${r.LINK}' target='_blank'>Open File</a>` : ""}</td>
-            </tr>
-        `;
+      match = {
+        BAT,
+        EQP,
+        pumpType: c[4]?.v || "",     // E
+        ratings: c[5]?.v || "",      // F
+        flc: c[10]?.v || "",          // K
+        sfu: c[14]?.v || "",          // O
+        fuse: c[15]?.v || "",         // P
+        contactor: c[16]?.v || "",    // Q
+        relay: c[17]?.v || "",        // R
+        ctM: c[18]?.v || "",          // S
+        ctP: c[19]?.v || "",          // T
+        aux: c[20]?.v || ""           // U
+      };
     });
+
+    if (!match) {
+      out.innerHTML = "Drive not found.";
+      return;
+    }
+
+    out.innerHTML = `
+      <div class="card">
+        <h3>${match.BAT} – ${match.EQP}</h3>
+        <p><span class="label">Pump Type:</span> ${match.pumpType}</p>
+
+        <div class="grid">
+          <div>
+            <p><span class="label">Ratings:</span> ${match.ratings}</p>
+            <p><span class="label">FLC:</span> ${match.flc}</p>
+          </div>
+          <div>
+            <p><span class="label">SFU:</span> ${match.sfu}</p>
+            <p><span class="label">Fuse:</span> ${match.fuse}</p>
+            <p><span class="label">Contactor:</span> ${match.contactor}</p>
+            <p><span class="label">Relay:</span> ${match.relay}</p>
+          </div>
+          <div>
+            <p><span class="label">CT (M):</span> ${match.ctM}</p>
+            <p><span class="label">CT (P):</span> ${match.ctP}</p>
+            <p><span class="label">Aux Contactor:</span> ${match.aux}</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    loadHistory(id);
+
+  } catch (err) {
+    console.error(err);
+    out.innerHTML = "Error loading drive data.";
+  }
 }
 
-function applyFilters() {
-    const q = document.getElementById("searchBox").value.toLowerCase();
-    const f1 = document.getElementById("filterType1").value;
-    const f2 = document.getElementById("filterType2").value;
+async function loadHistory(id) {
+  const out = document.getElementById("history");
 
-    const result = window.fullData.filter(r =>
-        (r.DATE + r.JOB + r.TYPE1 + r.TYPE2 + r.WHO).toLowerCase().includes(q) &&
-        (f1 === "" || r.TYPE1 === f1) &&
-        (f2 === "" || r.TYPE2 === f2)
-    );
+  const historyURL =
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+    "?gid=751880096&tqx=out:json";
 
-    renderTable(result);
-}
+  try {
+    const resp = await fetch(historyURL);
+    const text = await resp.text();
+    const json = JSON.parse(text.substring(47, text.length - 2));
 
-document.getElementById("searchBox").addEventListener("input", applyFilters);
-document.getElementById("filterType1").addEventListener("change", applyFilters);
-document.getElementById("filterType2").addEventListener("change", applyFilters);
+    const cols = json.table.cols.slice(0, 11); // A → K
+    const rows = json.table.rows;
 
-function sortTable(key) {
-    window.fullData.reverse();
-    applyFilters();
-}
+    let matched = [];
 
-function exportPDF() {
-    window.print();
+    rows.forEach(r => {
+      const c = r.c || [];
+
+      const BAT = (c[2]?.v || "").toString().trim(); // C
+      const EQP = (c[3]?.v || "").toString().trim(); // D
+      if (!BAT || !EQP) return;
+
+      const UID = `${BAT}-${EQP}`.toUpperCase();
+      if (UID !== id.toUpperCase()) return;
+
+      let row = [];
+      for (let i = 0; i <= 10; i++) {
+        row.push(c[i]?.v ?? "");
+      }
+      matched.push(row);
+    });
+
+    if (matched.length === 0) {
+      out.innerHTML = "<p><b>No history data found.</b></p>";
+      return;
+    }
+
+    let html = `
+      <div class="card">
+        <h3>History Details</h3>
+        <table>
+          <thead><tr>
+    `;
+
+    cols.forEach(c => {
+      html += `<th>${c.label || ""}</th>`;
+    });
+
+    html += "</tr></thead><tbody>";
+
+    matched.forEach(row => {
+      html += "<tr>";
+      row.forEach((val, i) => {
+        val = formatDate(val);
+
+        if (i === 10 && val) {
+          val = `<a href="${val}" target="_blank">Open</a>`;
+        }
+
+        html += `<td>${val}</td>`;
+      });
+      html += "</tr>";
+    });
+
+    html += "</tbody></table></div>";
+    out.innerHTML = html;
+
+  } catch (err) {
+    console.error(err);
+    out.innerHTML = "Error loading history table.";
+  }
 }
 
 loadDrive();
