@@ -61,6 +61,7 @@ async function loadDrive() {
       match = {
         BAT,
         EQP,
+        DATE: r.c[3]?.v || "",
         DATE: r.c[4]?.v || "",
         JOB: r.c[5]?.v || "",
         TYPE1: r.c[6]?.v || "",
