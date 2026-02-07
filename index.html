@@ -40,7 +40,7 @@ async function loadDrive() {
   }
 
   const sheetURL =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?tqx=out:json";
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?gid=1274719919&tqx=out:json";
 
   try {
     const resp = await fetch(sheetURL);
@@ -61,7 +61,6 @@ async function loadDrive() {
       match = {
         BAT,
         EQP,
-        DATE: r.c[3]?.v || "",
         DATE: r.c[4]?.v || "",
         JOB: r.c[5]?.v || "",
         TYPE1: r.c[6]?.v || "",
