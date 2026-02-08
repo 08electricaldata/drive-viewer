@@ -45,6 +45,13 @@ body {
   font-weight: 700;
 }
 
+/* ✅ CREDIT TEXT */
+.header-credit {
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
 /* ===== PAGE CONTENT ===== */
 .page {
   padding: 20px;
@@ -127,9 +134,13 @@ th {
   font-size: 15px;
 }
 
+/* MOBILE */
 @media (max-width: 600px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+  .header-credit {
+    display: none;
   }
 }
 </style>
@@ -142,7 +153,13 @@ th {
   <button onclick="goHome()">🏠</button>
   <button onclick="goBack()">🔁</button>
   <button onclick="goDriveInfo()">ℹ️</button>
+
   <div class="header-title">Drive History</div>
+
+  <!-- ✅ CREDIT -->
+  <div class="header-credit">
+    Designed and Maintained by Rakesh Chandra Sethy
+  </div>
 </div>
 
 <div class="page">
@@ -262,7 +279,7 @@ async function loadDriveInfo() {
   `;
 }
 
-/* ===== HISTORY (UNCHANGED) ===== */
+/* ===== HISTORY ===== */
 function parseDate(v) {
   if (!v) return new Date(0);
   if (typeof v === "string" && v.startsWith("Date(")) {
