@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,6 +25,7 @@ body {
   gap: 10px;
   padding: 12px;
 }
+
 .header-bar button {
   background: white;
   color: #003f88;
@@ -33,6 +35,7 @@ body {
   font-size: 16px;
   cursor: pointer;
 }
+
 .header-title {
   flex: 1;
   text-align: center;
@@ -42,8 +45,9 @@ body {
 
 /* ===== CONTENT ===== */
 .container {
-  padding: 20px;
+  padding: 15px;
 }
+
 .card {
   background: white;
   border-radius: 10px;
@@ -77,12 +81,22 @@ th, td {
   border: 1px solid #ccc;
   padding: 6px 8px;
 }
-th {
+
+/* STICKY HEADERS */
+thead tr:nth-child(1) th {
+  position: sticky;
+  top: 56px; /* below blue header */
   background: #003f88;
   color: white;
-  position: sticky;
-  top: 98px;
+  z-index: 20;
 }
+thead tr:nth-child(2) th {
+  position: sticky;
+  top: 92px; /* below first header row */
+  background: #eaf1ff;
+  z-index: 15;
+}
+
 tr:hover {
   background: #eef5ff;
   cursor: pointer;
@@ -95,48 +109,14 @@ tr:hover {
   font-size: 12px;
 }
 
-/* SECTION SEPARATOR */
+/* SECTION SEPARATOR (Column A blank) */
 .section-row {
   background: #dbe9ff !important;
   font-weight: 600;
 }
 
-/* ===== MOBILE CARD VIEW ===== */
-.mobile-cards {
-  display: none;
-}
-
-.motor-card {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  margin-bottom: 12px;
-  cursor: pointer;
-}
-.motor-card h4 {
-  margin: 0 0 8px;
-  color: #003f88;
-}
-.motor-card p {
-  margin: 4px 0;
-  font-size: 14px;
-}
-
-.section-card {
-  background: #dbe9ff;
-  padding: 10px;
-  border-radius: 8px;
-  font-weight: 700;
-  color: #003f88;
-  margin: 14px 0 8px;
-}
-
-/* ===== MOBILE ===== */
-@media (max-width: 768px) {
-  table { display: none; }
-  .controls { display: none; }
-  .mobile-cards { display: block; }
+@media print {
+  .header-bar, .controls, .filter-row { display: none; }
 }
 </style>
 </head>
@@ -158,7 +138,6 @@ tr:hover {
       <button onclick="window.print()">🖨 Export PDF</button>
     </div>
 
-    <!-- DESKTOP TABLE -->
     <table id="motorTable">
       <thead>
         <tr id="headerRow"></tr>
@@ -166,9 +145,6 @@ tr:hover {
       </thead>
       <tbody></tbody>
     </table>
-
-    <!-- MOBILE CARDS -->
-    <div class="mobile-cards" id="mobileCards"></div>
 
   </div>
 </div>
@@ -178,6 +154,7 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/13q1lrwYZ8RXHM6tQrod3dSJlC6DnEKwtAzpOdZNbwsg/gviz/tq" +
   "?gid=791642192&tqx=out:json";
 
+/* Columns: A,B,C,E,F,H,I,J,K,L,M,N */
 const COLS = [0,1,2,4,5,7,8,9,10,11,12,13];
 
 async function loadMotors() {
@@ -189,34 +166,34 @@ async function loadMotors() {
   const headerRow = document.getElementById("headerRow");
   const filterRow = document.getElementById("filterRow");
   const tbody = document.querySelector("#motorTable tbody");
-  const mobile = document.getElementById("mobileCards");
 
   headerRow.innerHTML = "";
   filterRow.innerHTML = "";
   tbody.innerHTML = "";
-  mobile.innerHTML = "";
 
-  /* HEADERS FROM ROW 3 */
-  const headerCells = rows[2].c;
+  /* ===== HEADERS FROM ROW 1 ===== */
+  const headerCells = rows[0].c;
+
   COLS.forEach(i => {
     const th = document.createElement("th");
     th.textContent = headerCells[i]?.v || "";
     headerRow.appendChild(th);
 
     const fh = document.createElement("th");
-    fh.innerHTML = "<input>";
+    fh.innerHTML = "<input placeholder='🔍'>";
     filterRow.appendChild(fh);
   });
 
-  /* DATA */
-  rows.slice(3).forEach(r => {
+  /* ===== DATA ROWS (FROM ROW 2 ONWARDS) ===== */
+  rows.slice(0).forEach(r => {
     const c = r.c || [];
+
+    // Validation: Column B must not be blank
     if (!c[1]?.v) return;
 
-    const id = `${c[1]?.v}-${c[2]?.v}`;
-
-    /* TABLE ROW */
     const tr = document.createElement("tr");
+
+    // Section separator if Column A blank
     if (!c[0]?.v) tr.classList.add("section-row");
 
     COLS.forEach(i => {
@@ -224,36 +201,21 @@ async function loadMotors() {
       td.textContent = c[i]?.v ?? "";
       tr.appendChild(td);
     });
-    tr.onclick = () =>
-      location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
+
+    tr.onclick = () => {
+      const id = `${c[1]?.v}-${c[2]?.v}`;
+      window.location.href =
+        "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+        encodeURIComponent(id);
+    };
+
     tbody.appendChild(tr);
-
-    /* MOBILE CARD */
-    if (!c[0]?.v) {
-      const sec = document.createElement("div");
-      sec.className = "section-card";
-      sec.textContent = c[1]?.v || "SECTION";
-      mobile.appendChild(sec);
-    }
-
-    const card = document.createElement("div");
-    card.className = "motor-card";
-    card.onclick = () =>
-      location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
-
-    card.innerHTML = `
-      <h4>${c[1]?.v} – ${c[2]?.v}</h4>
-      <p><b>Type:</b> ${c[4]?.v || ""}</p>
-      <p><b>Rating:</b> ${c[5]?.v || ""} KW</p>
-      <p><b>Make:</b> ${c[7]?.v || ""}</p>
-      <p><b>RPM:</b> ${c[9]?.v || ""}</p>
-    `;
-    mobile.appendChild(card);
   });
 
   setupFilters();
 }
 
+/* ===== FILTER ===== */
 function setupFilters() {
   document.querySelectorAll(".filter-row input")
     .forEach((input, idx) => {
@@ -269,6 +231,7 @@ function setupFilters() {
     });
 }
 
+/* ===== EXPORT ===== */
 function exportExcel() {
   let csv = [];
   document.querySelectorAll("#motorTable tr").forEach(row => {
@@ -282,8 +245,9 @@ function exportExcel() {
   a.click();
 }
 
+/* ===== NAV ===== */
 function goHome() {
-  location.href = "https://08electricaldata.github.io/";
+  window.location.href = "https://08electricaldata.github.io/";
 }
 function goBack() {
   history.back();
