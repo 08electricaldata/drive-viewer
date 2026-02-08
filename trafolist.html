@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Transformer Master List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ===== CONTENT ===== */
+.container {
+  padding: 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  padding: 15px;
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.controls button {
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+
+/* STICKY HEADERS */
+thead tr:nth-child(1) th {
+  position: sticky;
+  top: 56px; /* below blue header */
+  background: #003f88;
+  color: white;
+  z-index: 20;
+}
+thead tr:nth-child(2) th {
+  position: sticky;
+  top: 92px;
+  background: #eaf1ff;
+  z-index: 15;
+}
+
+tr:hover {
+  background: #eef5ff;
+  cursor: pointer;
+}
+
+.filter-row input {
+  width: 100%;
+  padding: 4px;
+  font-size: 12px;
+}
+
+/* SECTION SEPARATOR (Column A blank) */
+.section-row {
+  background: #dbe9ff !important;
+  font-weight: 600;
+}
+
+@media print {
+  .header-bar, .controls, .filter-row { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="goBack()">🔁</button>
+  <div class="header-title">TRANSFORMER MASTER LIST</div>
+</div>
+
+<div class="container">
+  <div class="card">
+
+    <div class="controls">
+      <button onclick="exportExcel()">📄 Export Excel</button>
+      <button onclick="window.print()">🖨 Export PDF</button>
+    </div>
+
+    <table id="xfmrTable">
+      <thead>
+        <tr id="headerRow"></tr>
+        <tr class="filter-row" id="filterRow"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+  </div>
+</div>
+
+<script>
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1bmSj5wXK2FfSLJh3aQl3cN57iXG8u-zVrxXr5ZOeRqE/gviz/tq" +
+  "?gid=1402868375&tqx=out:json";
+
+/* 👉 USE REQUIRED COLUMNS ONLY (adjust if needed) */
+const COLS = [0,1,2,3,4,5,6,7,8,9,10]; 
+
+async function loadTransformers() {
+  const res = await fetch(SHEET_URL);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
+
+  const rows = json.table.rows;
+  const headerRow = document.getElementById("headerRow");
+  const filterRow = document.getElementById("filterRow");
+  const tbody = document.querySelector("#xfmrTable tbody");
+
+  headerRow.innerHTML = "";
+  filterRow.innerHTML = "";
+  tbody.innerHTML = "";
+
+  /* ===== HEADERS FROM ROW 3 (DIRECT) ===== */
+  const headerCells = rows[2].c;
+
+  COLS.forEach(i => {
+    const th = document.createElement("th");
+    th.textContent = headerCells[i]?.v || "";
+    headerRow.appendChild(th);
+
+    const fh = document.createElement("th");
+    fh.innerHTML = "<input placeholder='🔍'>";
+    filterRow.appendChild(fh);
+  });
+
+  /* ===== DATA ROWS (FROM ROW 4 ONWARDS) ===== */
+  rows.slice(3).forEach(r => {
+    const c = r.c || [];
+
+    /* Validation: Column B must not be blank */
+    if (!c[1]?.v) return;
+
+    const tr = document.createElement("tr");
+
+    /* Section separator if Column A blank */
+    if (!c[0]?.v) tr.classList.add("section-row");
+
+    COLS.forEach(i => {
+      const td = document.createElement("td");
+      td.textContent = c[i]?.v ?? "";
+      tr.appendChild(td);
+    });
+
+    /* 👉 CLICK → DRIVE INFO */
+    tr.onclick = () => {
+      const transformerNo = c[2]?.v;
+      if (!transformerNo) return;
+
+      window.location.href =
+        "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+        encodeURIComponent("Transformer-" + transformerNo);
+    };
+
+    tbody.appendChild(tr);
+  });
+
+  setupFilters();
+}
+
+/* ===== FILTER ===== */
+function setupFilters() {
+  document.querySelectorAll(".filter-row input")
+    .forEach((input, idx) => {
+      input.addEventListener("keyup", () => {
+        const q = input.value.toLowerCase();
+        document.querySelectorAll("#xfmrTable tbody tr")
+          .forEach(tr => {
+            const cell = tr.children[idx];
+            tr.style.display =
+              cell.innerText.toLowerCase().includes(q) ? "" : "none";
+          });
+      });
+    });
+}
+
+/* ===== EXPORT ===== */
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#xfmrTable tr").forEach(row => {
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "transformer_master_list.csv";
+  a.click();
+}
+
+/* ===== NAV ===== */
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+
+loadTransformers();
+</script>
+
+</body>
+</html>
