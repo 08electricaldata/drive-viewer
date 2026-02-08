@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Motor Master List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ===== CONTENT ===== */
+.container {
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  padding: 15px;
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.controls button {
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+th {
+  background: #003f88;
+  color: white;
+  position: sticky;
+  top: 98px;
+}
+tr:hover {
+  background: #eef5ff;
+  cursor: pointer;
+}
+
+/* FILTER */
+.filter-row input {
+  width: 100%;
+  padding: 4px;
+  font-size: 12px;
+}
+
+/* SECTION SEPARATOR */
+.section-row {
+  background: #dbe9ff !important;
+  font-weight: 600;
+}
+
+/* ===== MOBILE CARD VIEW ===== */
+.mobile-cards {
+  display: none;
+}
+
+.motor-card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.motor-card h4 {
+  margin: 0 0 8px;
+  color: #003f88;
+}
+.motor-card p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.section-card {
+  background: #dbe9ff;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #003f88;
+  margin: 14px 0 8px;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  table { display: none; }
+  .controls { display: none; }
+  .mobile-cards { display: block; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="goBack()">🔁</button>
+  <div class="header-title">MOTOR MASTER LIST</div>
+</div>
+
+<div class="container">
+  <div class="card">
+
+    <div class="controls">
+      <button onclick="exportExcel()">📄 Export Excel</button>
+      <button onclick="window.print()">🖨 Export PDF</button>
+    </div>
+
+    <!-- DESKTOP TABLE -->
+    <table id="motorTable">
+      <thead>
+        <tr id="headerRow"></tr>
+        <tr class="filter-row" id="filterRow"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- MOBILE CARDS -->
+    <div class="mobile-cards" id="mobileCards"></div>
+
+  </div>
+</div>
+
+<script>
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/13q1lrwYZ8RXHM6tQrod3dSJlC6DnEKwtAzpOdZNbwsg/gviz/tq" +
+  "?gid=791642192&tqx=out:json";
+
+const COLS = [0,1,2,4,5,7,8,9,10,11,12,13];
+
+async function loadMotors() {
+  const res = await fetch(SHEET_URL);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
+
+  const rows = json.table.rows;
+  const headerRow = document.getElementById("headerRow");
+  const filterRow = document.getElementById("filterRow");
+  const tbody = document.querySelector("#motorTable tbody");
+  const mobile = document.getElementById("mobileCards");
+
+  headerRow.innerHTML = "";
+  filterRow.innerHTML = "";
+  tbody.innerHTML = "";
+  mobile.innerHTML = "";
+
+  /* HEADERS FROM ROW 3 */
+  const headerCells = rows[2].c;
+  COLS.forEach(i => {
+    const th = document.createElement("th");
+    th.textContent = headerCells[i]?.v || "";
+    headerRow.appendChild(th);
+
+    const fh = document.createElement("th");
+    fh.innerHTML = "<input>";
+    filterRow.appendChild(fh);
+  });
+
+  /* DATA */
+  rows.slice(3).forEach(r => {
+    const c = r.c || [];
+    if (!c[1]?.v) return;
+
+    const id = `${c[1]?.v}-${c[2]?.v}`;
+
+    /* TABLE ROW */
+    const tr = document.createElement("tr");
+    if (!c[0]?.v) tr.classList.add("section-row");
+
+    COLS.forEach(i => {
+      const td = document.createElement("td");
+      td.textContent = c[i]?.v ?? "";
+      tr.appendChild(td);
+    });
+    tr.onclick = () =>
+      location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
+    tbody.appendChild(tr);
+
+    /* MOBILE CARD */
+    if (!c[0]?.v) {
+      const sec = document.createElement("div");
+      sec.className = "section-card";
+      sec.textContent = c[1]?.v || "SECTION";
+      mobile.appendChild(sec);
+    }
+
+    const card = document.createElement("div");
+    card.className = "motor-card";
+    card.onclick = () =>
+      location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
+
+    card.innerHTML = `
+      <h4>${c[1]?.v} – ${c[2]?.v}</h4>
+      <p><b>Type:</b> ${c[4]?.v || ""}</p>
+      <p><b>Rating:</b> ${c[5]?.v || ""} KW</p>
+      <p><b>Make:</b> ${c[7]?.v || ""}</p>
+      <p><b>RPM:</b> ${c[9]?.v || ""}</p>
+    `;
+    mobile.appendChild(card);
+  });
+
+  setupFilters();
+}
+
+function setupFilters() {
+  document.querySelectorAll(".filter-row input")
+    .forEach((input, idx) => {
+      input.addEventListener("keyup", () => {
+        const q = input.value.toLowerCase();
+        document.querySelectorAll("#motorTable tbody tr")
+          .forEach(tr => {
+            const cell = tr.children[idx];
+            tr.style.display =
+              cell.innerText.toLowerCase().includes(q) ? "" : "none";
+          });
+      });
+    });
+}
+
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#motorTable tr").forEach(row => {
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "motor_master_list.csv";
+  a.click();
+}
+
+function goHome() {
+  location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+
+loadMotors();
+</script>
+
+</body>
+</html>
