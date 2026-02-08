@@ -12,7 +12,7 @@ body {
   background: #f2f6ff;
 }
 
-/* ===== STICKY HEADER ===== */
+/* ===== HEADER ===== */
 .header-bar {
   position: sticky;
   top: 0;
@@ -55,6 +55,22 @@ body {
   padding: 15px;
 }
 
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.controls button {
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 /* ===== TABLE ===== */
 table {
   width: 100%;
@@ -70,13 +86,24 @@ th {
   background: #003f88;
   color: white;
   position: sticky;
-  top: 56px;
+  top: 98px;
+}
+tr:hover {
+  background: #e8f0ff;
+  cursor: pointer;
 }
 
-@media (max-width: 768px) {
-  table {
-    font-size: 13px;
-  }
+/* FILTER ROW */
+.filter-row input {
+  width: 100%;
+  padding: 4px;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+@media print {
+  .header-bar, .controls, .filter-row { display: none; }
+  body { background: white; }
 }
 </style>
 </head>
@@ -92,25 +119,27 @@ th {
 
 <div class="container">
   <div class="card">
+
+    <div class="controls">
+      <button onclick="exportExcel()">📄 Export Excel</button>
+      <button onclick="window.print()">🖨 Export PDF</button>
+    </div>
+
     <table id="motorTable">
       <thead>
         <tr>
-          <th>COL A</th>
-          <th>COL B</th>
-          <th>COL C</th>
-          <th>COL E</th>
-          <th>COL F</th>
-          <th>COL H</th>
-          <th>COL I</th>
-          <th>COL J</th>
-          <th>COL K</th>
-          <th>COL L</th>
-          <th>COL M</th>
-          <th>COL N</th>
+          <th>A</th><th>B</th><th>C</th><th>E</th><th>F</th>
+          <th>H</th><th>I</th><th>J</th><th>K</th><th>L</th><th>M</th><th>N</th>
+        </tr>
+        <tr class="filter-row">
+          <th><input></th><th><input></th><th><input></th><th><input></th>
+          <th><input></th><th><input></th><th><input></th><th><input></th>
+          <th><input></th><th><input></th><th><input></th><th><input></th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
+
   </div>
 </div>
 
@@ -119,7 +148,6 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/13q1lrwYZ8RXHM6tQrod3dSJlC6DnEKwtAzpOdZNbwsg/gviz/tq" +
   "?gid=791642192&tqx=out:json";
 
-// Column indexes to show (A,B,C,E,F,H,I,J,K,L,M,N)
 const COLS = [0,1,2,4,5,7,8,9,10,11,12,13];
 
 async function loadMotors() {
@@ -127,14 +155,13 @@ async function loadMotors() {
   const txt = await res.text();
   const json = JSON.parse(txt.substring(47, txt.length - 2));
 
-  const rows = json.table.rows;
   const tbody = document.querySelector("#motorTable tbody");
   tbody.innerHTML = "";
 
-  rows.forEach(r => {
+  json.table.rows.forEach(r => {
     const c = r.c || [];
 
-    // ✅ VALIDATION: Column B must NOT be blank
+    // VALIDATION: Column B must not be blank
     if (!c[1]?.v) return;
 
     const tr = document.createElement("tr");
@@ -145,14 +172,55 @@ async function loadMotors() {
       tr.appendChild(td);
     });
 
+    // CLICK → OPEN DRIVE DETAILS
+    tr.onclick = () => {
+      const id = `${c[1]?.v}-${c[2]?.v}`;
+      window.location.href =
+        "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+        encodeURIComponent(id);
+    };
+
     tbody.appendChild(tr);
+  });
+
+  setupFilters();
+}
+
+// ===== FILTER =====
+function setupFilters() {
+  const inputs = document.querySelectorAll(".filter-row input");
+  inputs.forEach((input, colIndex) => {
+    input.addEventListener("keyup", () => {
+      const rows = document.querySelectorAll("#motorTable tbody tr");
+      rows.forEach(row => {
+        const cell = row.children[colIndex];
+        row.style.display =
+          cell.innerText.toLowerCase().includes(input.value.toLowerCase())
+            ? ""
+            : "none";
+      });
+    });
   });
 }
 
+// ===== EXPORT =====
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#motorTable tr").forEach(row => {
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "motor_master_list.csv";
+  a.click();
+}
+
+// ===== NAV =====
 function goHome() {
   window.location.href = "https://08electricaldata.github.io/";
 }
-
 function goBack() {
   history.back();
 }
