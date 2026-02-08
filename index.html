@@ -3,20 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <title>Drive Details</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  padding: 20px;
+  padding: 0;
+  margin: 0;
   background: #f2f6ff;
 }
-h2 {
-  color: #003f88;
-  text-align: center;
-  font-size: 34px;
-  font-weight: 700;
-  margin-bottom: 24px;
+
+/* ===== STICKY HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #f2f6ff;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.icon-btn:hover { opacity: 0.9; }
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 700;
+  color: #003f88;
+  margin-right: 50px; /* keeps title centered */
+}
+
+/* ===== CONTENT ===== */
+.container {
+  padding: 20px;
+}
+
 h3 {
   color: #003f88;
 }
@@ -24,7 +63,7 @@ h3 {
 .card {
   padding: 20px;
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   margin-top: 18px;
 }
@@ -46,26 +85,43 @@ h3 {
   text-align: left;
 }
 
-button {
-  padding: 10px 18px;
+.action-btn {
+  padding: 12px 20px;
   background: #003f88;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 15px;
 }
-button:hover {
-  opacity: 0.9;
+.action-btn:hover { opacity: 0.9; }
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .header-title {
+    font-size: 22px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<h2>Drive Information</h2>
+<!-- ===== HEADER ===== -->
+<div class="header-bar">
+  <div class="header-actions">
+    <button class="icon-btn" onclick="goHome()" title="Home">🏠</button>
+    <button class="icon-btn" onclick="goBack()" title="Back">🔁</button>
+  </div>
+  <div class="header-title">Drive Information</div>
+</div>
 
-<div id="drive">Loading drive details…</div>
+<div class="container">
+  <div id="drive">Loading drive details…</div>
+</div>
 
 <script>
 async function loadDrive() {
@@ -140,7 +196,7 @@ async function loadDrive() {
         </div>
 
         <div class="button-wrap">
-          <button onclick="openHistory()">View History</button>
+          <button class="action-btn" onclick="openHistory()">📜 View History</button>
         </div>
       </div>
     `;
@@ -159,6 +215,14 @@ function openHistory() {
     encodeURIComponent(id),
     "_blank"
   );
+}
+
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+
+function goBack() {
+  window.history.back();
 }
 
 loadDrive();
