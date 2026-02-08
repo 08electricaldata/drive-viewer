@@ -1,291 +1,258 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>08 Electrical Data</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Summary (Date / Month / Range)</title>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f2f6ff;
   margin: 0;
+  background: #f2f6ff;
 }
 
-.header {
+/* ===== STICKY HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   background: #003f88;
   color: white;
-  padding: 30px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.header-title {
+  flex: 1;
   text-align: center;
-}
-.header h1 { margin: 0; font-size: 36px; }
-.header p { margin-top: 8px; opacity: 0.9; }
-
-.container {
-  max-width: 1100px;
-  margin: 30px auto;
-  padding: 0 15px;
-  display: grid;
-  grid-template-columns: 280px 1fr 1fr;
-  gap: 20px;
+  font-size: 20px;
+  font-weight: 700;
 }
 
+/* ===== PAGE ===== */
+.page {
+  padding: 20px;
+}
+h2 {
+  text-align: center;
+  color: #003f88;
+  font-size: 32px;
+}
+
+/* ===== CARD ===== */
 .card {
   background: white;
+  padding: 20px;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  padding: 25px;
-  margin-bottom: 20px;
 }
 
-.card h2 {
-  margin-top: 0;
-  color: #003f88;
-  text-align: center;
-}
-
-/* ===== MASTER LIST ===== */
-.master-btns {
+/* ===== CONTROLS ===== */
+.controls {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+.controls input, .controls select {
+  padding: 6px;
+}
+.controls button {
+  padding: 6px 12px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.master-btns a {
-  text-decoration: none;
-}
-
-.master-btns button {
+/* ===== TABLE ===== */
+table {
   width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  background: #003f88;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.master-btns button:hover { opacity: 0.9; }
-
-/* ===== DRIVE SELECT ===== */
-.select-row {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-select {
-  padding: 12px;
-  font-size: 16px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  min-width: 260px;
-}
-
-.button-row {
-  margin-top: 20px;
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.button-row button {
-  padding: 12px 28px;
-  font-size: 16px;
-  background: #003f88;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.button-row button:hover { opacity: 0.9; }
-
-.footer {
-  text-align: center;
-  padding: 15px;
+  border-collapse: collapse;
   font-size: 14px;
-  color: #555;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+th {
+  background: #003f88;
+  color: white;
+}
+tr:hover {
+  background: #eef5ff;
+  cursor: pointer;
 }
 
-/* ===== MOBILE ===== */
-@media (max-width: 1000px) {
-  .container {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 600px) {
-  select, .button-row button { width: 100%; }
+@media print {
+  .header-bar, .controls { display: none; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h1>08 Electrical Data</h1>
-  <p>Drive Information & Maintenance History</p>
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="goBack()">🔁</button>
+  <div class="header-title">Summary</div>
 </div>
 
-<div class="container">
+<div class="page">
+<h2>Date / Month / Range Summary</h2>
 
-  <!-- ===== LEFT : MASTER LIST ===== -->
-  <div class="card">
-    <h2>Master List</h2>
+<div class="card">
+  <div class="controls">
+    <!-- DATE -->
+    <input type="date" id="singleDate">
 
-    <div class="master-btns">
-      <a href="https://08electricaldata.github.io/drive-viewer/motorlist.html">
-        <button>⚙️ Motor List</button>
-      </a>
+    <!-- MONTH -->
+    <input type="month" id="monthPick">
 
-      <a href="https://08electricaldata.github.io/drive-viewer/trafolist.html">
-        <button>⚡ Transformer List</button>
-      </a>
-    </div>
+    <!-- RANGE -->
+    <input type="date" id="fromDate">
+    <input type="date" id="toDate">
+
+    <button onclick="loadSummary()">Load</button>
+
+    <input id="search" placeholder="Search…">
+    <button onclick="exportExcel()">Export Excel</button>
+    <button onclick="window.print()">Export PDF</button>
   </div>
 
-  <!-- ===== MIDDLE : DRIVE SELECT ===== -->
-  <div class="card">
-    <h2>Select Drive</h2>
-
-    <div class="select-row">
-      <select id="mainDrive">
-        <option value="">Select Main Drive</option>
-      </select>
-
-      <select id="subDrive">
-        <option value="">Select Sub Drive</option>
-      </select>
-    </div>
-
-    <div class="button-row">
-      <button onclick="openPage('view')">VIEW</button>
-      <button onclick="openPage('history')">HISTORY</button>
-    </div>
-  </div>
-
-  <!-- ===== RIGHT : JOBS ===== -->
-  <div class="card">
-    <h2>Jobs</h2>
-
-    <div class="button-row">
-      <button onclick="openJobPage()">📅 DATEWISE JOBS</button>
-    </div>
-  </div>
-
+  <table id="summaryTable">
+    <thead>
+      <tr>
+        <th>BAT</th>
+        <th>EQP</th>
+        <th>TR NO</th>
+        <th>MONTH</th>
+        <th>DATE</th>
+        <th>DETAILS OF JOB</th>
+        <th>JOB TYPE</th>
+        <th>JOB CATEGORY</th>
+        <th>CARRIED OUT BY</th>
+        <th>LINK</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 </div>
-
-<div class="footer">
-  © 08 Electrical Data | GitHub Pages
 </div>
 
 <script>
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
-  "?gid=198891854&tqx=out:json";
+ "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+ "?gid=751880096&tqx=out:json";
 
-let headers = [];
-let rows = [];
-let sheetPassword = "";
+/* ===== NAV ===== */
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
 
-// ---------- LOAD SHEET ----------
-async function loadSheet() {
-  const cache = localStorage.getItem("driveSheetFull");
-  if (cache) {
-    const d = JSON.parse(cache);
-    headers = d.headers;
-    rows = d.rows;
-    sheetPassword = d.password;
-    buildMain();
-    return;
+/* ===== DATE HELPERS ===== */
+function toISO(v){
+  if(!v) return "";
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    return new Date(p[0],p[1],p[2]).toISOString().slice(0,10);
   }
-
-  const r = await fetch(SHEET_URL);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
-
-  headers = j.table.cols.slice(7).map(c => c.label);
-  rows = j.table.rows.map(r => r.c.map(c => c?.v || ""));
-  sheetPassword = (j.table.rows[2]?.c[6]?.v || "").toString().trim();
-
-  localStorage.setItem(
-    "driveSheetFull",
-    JSON.stringify({ headers, rows, password: sheetPassword })
-  );
-
-  buildMain();
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const[d,m,y]=v.split("/");
+    return `${y}-${m}-${d}`;
+  }
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const[d,m,y]=v.split("-");
+    return `${y}-${m}-${d}`;
+  }
+  return "";
+}
+function dispDate(v){
+  const i=toISO(v); if(!i) return "";
+  const[y,m,d]=i.split("-"); return `${d}-${m}-${y}`;
 }
 
-// ---------- MAIN DRIVE ----------
-function buildMain() {
-  const main = document.getElementById("mainDrive");
-  headers.forEach((h, i) => {
-    const o = document.createElement("option");
-    o.value = i;
-    o.textContent = h;
-    main.appendChild(o);
+/* ===== LOAD SUMMARY ===== */
+async function loadSummary(){
+  const d1=document.getElementById("singleDate").value;
+  const m1=document.getElementById("monthPick").value;
+  const f=document.getElementById("fromDate").value;
+  const t=document.getElementById("toDate").value;
+
+  const res=await fetch(SHEET_URL);
+  const txt=await res.text();
+  const j=JSON.parse(txt.substring(47,txt.length-2));
+
+  const tbody=document.querySelector("#summaryTable tbody");
+  tbody.innerHTML="";
+
+  j.table.rows.forEach(r=>{
+    const c=r.c||[];
+    const iso=toISO(c[4]?.v);
+    if(!iso) return;
+
+    let ok=false;
+    if(d1 && iso===d1) ok=true;
+    if(m1 && iso.startsWith(m1)) ok=true;
+    if(f && t && iso>=f && iso<=t) ok=true;
+    if(!ok) return;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${c[2]?.v||""}</td>
+      <td>${c[3]?.v||""}</td>
+      <td>${c[0]?.v||""}</td>
+      <td>${c[1]?.v||""}</td>
+      <td>${dispDate(c[4]?.v)}</td>
+      <td>${c[5]?.v||""}</td>
+      <td>${c[6]?.v||""}</td>
+      <td>${c[7]?.v||""}</td>
+      <td>${c[9]?.v||""}</td>
+      <td>${c[10]?.v?`<a href="${c[10].v}" target="_blank">Open</a>`:""}</td>
+    `;
+
+    /* CLICK → DRIVE INFO */
+    tr.onclick=()=>{
+      const id=`${c[2]?.v}-${c[3]?.v}`;
+      location.href=
+        "https://08electricaldata.github.io/drive-viewer/index.html?id="+
+        encodeURIComponent(id);
+    };
+
+    tbody.appendChild(tr);
   });
+
+  document.getElementById("search").onkeyup=function(){
+    const q=this.value.toLowerCase();
+    document.querySelectorAll("#summaryTable tbody tr")
+      .forEach(tr=>{
+        tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none";
+      });
+  };
 }
 
-document.getElementById("mainDrive").onchange = function () {
-  const idx = this.value;
-  const sub = document.getElementById("subDrive");
-  sub.innerHTML = "<option value=''>Select Sub Drive</option>";
-  if (idx === "") return;
-
-  rows.forEach(r => {
-    const val = r[+idx + 7];
-    if (val) {
-      const o = document.createElement("option");
-      o.value = val;
-      o.textContent = val;
-      sub.appendChild(o);
-    }
+/* ===== EXPORT ===== */
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("#summaryTable tr").forEach(r=>{
+    csv.push([...r.children].map(td=>`"${td.innerText.replace(/"/g,'""')}"`).join(","));
   });
-};
-
-// ---------- OPEN VIEW / HISTORY ----------
-function openPage(type) {
-  const mainSel = document.getElementById("mainDrive");
-  const subSel = document.getElementById("subDrive");
-
-  if (!mainSel.value || !subSel.value) {
-    alert("Please select Main Drive and Sub Drive");
-    return;
-  }
-
-  const entered = prompt("🔐 Enter Password");
-  if (entered !== sheetPassword) {
-    alert("Incorrect password");
-    return;
-  }
-
-  const id = `${mainSel.selectedOptions[0].text}-${subSel.value}`;
-  const base =
-    type === "view"
-      ? "drive-viewer/index.html?id="
-      : "drive-viewer/history.html?id=";
-
-  window.location.href =
-    "https://08electricaldata.github.io/" +
-    base +
-    encodeURIComponent(id);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="summary.csv";
+  a.click();
 }
-
-// ---------- OPEN DATEWISE JOBS ----------
-function openJobPage() {
-  const entered = prompt("🔐 Enter Password");
-  if (entered !== sheetPassword) {
-    alert("Incorrect password");
-    return;
-  }
-
-  window.location.href =
-    "https://08electricaldata.github.io/drive-viewer/summary-date.html";
-}
-
-loadSheet();
 </script>
 
 </body>
