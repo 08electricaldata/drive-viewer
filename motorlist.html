@@ -34,7 +34,6 @@ body {
   font-size: 16px;
   cursor: pointer;
 }
-.header-bar button:hover { opacity: 0.9; }
 
 .header-title {
   flex: 1;
@@ -80,7 +79,6 @@ table {
 th, td {
   border: 1px solid #ccc;
   padding: 6px 8px;
-  text-align: left;
 }
 th {
   background: #003f88;
@@ -89,21 +87,25 @@ th {
   top: 98px;
 }
 tr:hover {
-  background: #e8f0ff;
+  background: #eef5ff;
   cursor: pointer;
 }
 
-/* FILTER ROW */
+/* FILTER */
 .filter-row input {
   width: 100%;
   padding: 4px;
   font-size: 12px;
-  box-sizing: border-box;
+}
+
+/* SECTION SEPARATOR (Column A blank) */
+.section-row {
+  background: #dbe9ff !important;
+  font-weight: 600;
 }
 
 @media print {
   .header-bar, .controls, .filter-row { display: none; }
-  body { background: white; }
 }
 </style>
 </head>
@@ -127,15 +129,8 @@ tr:hover {
 
     <table id="motorTable">
       <thead>
-        <tr>
-          <th>A</th><th>B</th><th>C</th><th>E</th><th>F</th>
-          <th>H</th><th>I</th><th>J</th><th>K</th><th>L</th><th>M</th><th>N</th>
-        </tr>
-        <tr class="filter-row">
-          <th><input></th><th><input></th><th><input></th><th><input></th>
-          <th><input></th><th><input></th><th><input></th><th><input></th>
-          <th><input></th><th><input></th><th><input></th><th><input></th>
-        </tr>
+        <tr id="headerRow"></tr>
+        <tr class="filter-row" id="filterRow"></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -148,6 +143,7 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/13q1lrwYZ8RXHM6tQrod3dSJlC6DnEKwtAzpOdZNbwsg/gviz/tq" +
   "?gid=791642192&tqx=out:json";
 
+// Columns: A,B,C,E,F,H,I,J,K,L,M,N
 const COLS = [0,1,2,4,5,7,8,9,10,11,12,13];
 
 async function loadMotors() {
@@ -155,16 +151,39 @@ async function loadMotors() {
   const txt = await res.text();
   const json = JSON.parse(txt.substring(47, txt.length - 2));
 
+  const rows = json.table.rows;
+  const headerRow = document.getElementById("headerRow");
+  const filterRow = document.getElementById("filterRow");
   const tbody = document.querySelector("#motorTable tbody");
+
+  headerRow.innerHTML = "";
+  filterRow.innerHTML = "";
   tbody.innerHTML = "";
 
-  json.table.rows.forEach(r => {
+  /* ===== HEADERS FROM ROW 3 ===== */
+  const headerCells = rows[2].c;
+
+  COLS.forEach(i => {
+    const th = document.createElement("th");
+    th.textContent = headerCells[i]?.v || "";
+    headerRow.appendChild(th);
+
+    const fh = document.createElement("th");
+    fh.innerHTML = "<input>";
+    filterRow.appendChild(fh);
+  });
+
+  /* ===== DATA ROWS ===== */
+  rows.slice(3).forEach(r => {
     const c = r.c || [];
 
-    // VALIDATION: Column B must not be blank
+    // Validation: Column B must not be blank
     if (!c[1]?.v) return;
 
     const tr = document.createElement("tr");
+
+    // Section separator if Column A blank
+    if (!c[0]?.v) tr.classList.add("section-row");
 
     COLS.forEach(i => {
       const td = document.createElement("td");
@@ -172,7 +191,6 @@ async function loadMotors() {
       tr.appendChild(td);
     });
 
-    // CLICK → OPEN DRIVE DETAILS
     tr.onclick = () => {
       const id = `${c[1]?.v}-${c[2]?.v}`;
       window.location.href =
@@ -186,24 +204,23 @@ async function loadMotors() {
   setupFilters();
 }
 
-// ===== FILTER =====
+/* ===== FILTER ===== */
 function setupFilters() {
-  const inputs = document.querySelectorAll(".filter-row input");
-  inputs.forEach((input, colIndex) => {
-    input.addEventListener("keyup", () => {
-      const rows = document.querySelectorAll("#motorTable tbody tr");
-      rows.forEach(row => {
-        const cell = row.children[colIndex];
-        row.style.display =
-          cell.innerText.toLowerCase().includes(input.value.toLowerCase())
-            ? ""
-            : "none";
+  document.querySelectorAll(".filter-row input")
+    .forEach((input, idx) => {
+      input.addEventListener("keyup", () => {
+        const q = input.value.toLowerCase();
+        document.querySelectorAll("#motorTable tbody tr")
+          .forEach(tr => {
+            const cell = tr.children[idx];
+            tr.style.display =
+              cell.innerText.toLowerCase().includes(q) ? "" : "none";
+          });
       });
     });
-  });
 }
 
-// ===== EXPORT =====
+/* ===== EXPORT ===== */
 function exportExcel() {
   let csv = [];
   document.querySelectorAll("#motorTable tr").forEach(row => {
@@ -217,7 +234,7 @@ function exportExcel() {
   a.click();
 }
 
-// ===== NAV =====
+/* ===== NAV ===== */
 function goHome() {
   window.location.href = "https://08electricaldata.github.io/";
 }
