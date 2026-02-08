@@ -170,7 +170,7 @@ async function loadTransformers() {
   tbody.innerHTML = "";
 
   /* ===== HEADERS FROM ROW 3 (DIRECT) ===== */
-  const headerCells = rows[2].c;
+  const headerCells = rows[0].c;
 
   COLS.forEach(i => {
     const th = document.createElement("th");
@@ -183,7 +183,7 @@ async function loadTransformers() {
   });
 
   /* ===== DATA ROWS (FROM ROW 4 ONWARDS) ===== */
-  rows.slice(3).forEach(r => {
+  rows.slice(1).forEach(r => {
     const c = r.c || [];
 
     /* Validation: Column B must not be blank */
