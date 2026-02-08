@@ -210,12 +210,12 @@ async function loadDrive() {
 function openHistory() {
   const id = new URLSearchParams(window.location.search).get("id");
   if (!id) return;
-  window.open(
+
+  window.location.href =
     "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-    encodeURIComponent(id),
-    "_blank"
-  );
+    encodeURIComponent(id);
 }
+
 
 function goHome() {
   window.location.href = "https://08electricaldata.github.io/";
