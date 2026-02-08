@@ -44,7 +44,7 @@ body {
 
 /* ===== CONTENT ===== */
 .container {
-  padding: 20px;
+  padding: 15px;
 }
 
 .card {
@@ -80,12 +80,22 @@ th, td {
   border: 1px solid #ccc;
   padding: 6px 8px;
 }
-th {
+
+/* STICKY HEADERS */
+thead tr:nth-child(1) th {
+  position: sticky;
+  top: 56px; /* below blue header */
   background: #003f88;
   color: white;
-  position: sticky;
-  top: 98px;
+  z-index: 20;
 }
+thead tr:nth-child(2) th {
+  position: sticky;
+  top: 92px; /* below first header row */
+  background: #eaf1ff;
+  z-index: 15;
+}
+
 tr:hover {
   background: #eef5ff;
   cursor: pointer;
@@ -143,7 +153,7 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/13q1lrwYZ8RXHM6tQrod3dSJlC6DnEKwtAzpOdZNbwsg/gviz/tq" +
   "?gid=791642192&tqx=out:json";
 
-// Columns: A,B,C,E,F,H,I,J,K,L,M,N
+/* Columns: A,B,C,E,F,H,I,J,K,L,M,N */
 const COLS = [0,1,2,4,5,7,8,9,10,11,12,13];
 
 async function loadMotors() {
@@ -160,8 +170,8 @@ async function loadMotors() {
   filterRow.innerHTML = "";
   tbody.innerHTML = "";
 
-  /* ===== HEADERS FROM ROW 3 ===== */
-  const headerCells = rows[2].c;
+  /* ===== HEADERS FROM ROW 1 ===== */
+  const headerCells = rows[0].c;
 
   COLS.forEach(i => {
     const th = document.createElement("th");
@@ -169,12 +179,12 @@ async function loadMotors() {
     headerRow.appendChild(th);
 
     const fh = document.createElement("th");
-    fh.innerHTML = "<input>";
+    fh.innerHTML = "<input placeholder='🔍'>";
     filterRow.appendChild(fh);
   });
 
-  /* ===== DATA ROWS ===== */
-  rows.slice(3).forEach(r => {
+  /* ===== DATA ROWS (FROM ROW 2 ONWARDS) ===== */
+  rows.slice(1).forEach(r => {
     const c = r.c || [];
 
     // Validation: Column B must not be blank
