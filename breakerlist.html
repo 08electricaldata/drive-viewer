@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Breaker Master List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ===== CONTENT ===== */
+.container {
+  padding: 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  padding: 15px;
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.controls button {
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+
+thead th {
+  position: sticky;
+  top: 56px;
+  background: #003f88;
+  color: white;
+  z-index: 20;
+}
+
+.filter-row select {
+  width: 100%;
+  padding: 4px;
+  font-size: 12px;
+}
+
+tr:hover {
+  background: #eef5ff;
+  cursor: pointer;
+}
+
+@media print {
+  .header-bar, .controls, .filter-row { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="goBack()">🔁</button>
+  <div class="header-title">BREAKER MASTER LIST</div>
+</div>
+
+<div class="container">
+  <div class="card">
+
+    <div class="controls">
+      <button onclick="exportExcel()">📄 Export Excel</button>
+      <button onclick="window.print()">🖨 Export PDF</button>
+    </div>
+
+    <table id="breakerTable">
+      <thead>
+        <tr id="headerRow"></tr>
+        <tr class="filter-row" id="filterRow"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+  </div>
+</div>
+
+<script>
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1Auvcnu3kbyTIUWZ3fB6si-gA78EERK979gkRyzU62rY/gviz/tq" +
+  "?gid=1077252914&tqx=out:json";
+
+/* Columns A → J */
+const COLS = [0,1,2,3,4,5,6,7,8,9];
+
+let filters = {};
+let colorMap = {};
+
+// ---------- LOAD DATA ----------
+async function loadBreakers() {
+  const res = await fetch(SHEET_URL);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
+
+  const rows = json.table.rows;
+  const headerRow = document.getElementById("headerRow");
+  const filterRow = document.getElementById("filterRow");
+  const tbody = document.querySelector("#breakerTable tbody");
+
+  headerRow.innerHTML = "";
+  filterRow.innerHTML = "";
+  tbody.innerHTML = "";
+
+  /* ===== HEADERS ===== */
+  const headers = rows[0].c;
+
+  COLS.forEach((i, idx) => {
+    const th = document.createElement("th");
+    th.textContent = headers[i]?.v || "";
+    headerRow.appendChild(th);
+
+    const fh = document.createElement("th");
+    const sel = document.createElement("select");
+    sel.innerHTML = "<option value=''>All</option>";
+    sel.onchange = () => applyFilters();
+    filters[idx] = sel;
+    fh.appendChild(sel);
+    filterRow.appendChild(fh);
+  });
+
+  /* ===== COLLECT UNIQUE VALUES FOR DROPDOWNS ===== */
+  const uniques = COLS.map(() => new Set());
+
+  rows.slice(1).forEach(r => {
+    const c = r.c || [];
+    COLS.forEach((i, idx) => {
+      if (c[i]?.v) uniques[idx].add(c[i].v);
+    });
+  });
+
+  uniques.forEach((set, idx) => {
+    [...set].sort().forEach(v => {
+      const o = document.createElement("option");
+      o.value = v;
+      o.textContent = v;
+      filters[idx].appendChild(o);
+    });
+  });
+
+  /* ===== BUILD TABLE ===== */
+  rows.slice(1).forEach(r => {
+    const c = r.c || [];
+    if (!c[0]?.v) return;
+
+    const tr = document.createElement("tr");
+
+    /* ---- COLOR CODING BASED ON COLUMN B ---- */
+    const key = c[1]?.v || "";
+    if (key) {
+      if (!colorMap[key]) {
+        colorMap[key] = randomPastel();
+      }
+      tr.style.background = colorMap[key];
+    }
+
+    COLS.forEach(i => {
+      const td = document.createElement("td");
+      td.textContent = c[i]?.v ?? "";
+      tr.appendChild(td);
+    });
+
+    /* ---- ROW CLICK → BREAKER DETAIL PAGE ---- */
+    tr.onclick = () => {
+      const id = `${c[0]?.v}-${c[1]?.v}`;
+      window.location.href =
+        "https://08electricaldata.github.io/drive-viewer/breaker.html?id=" +
+        encodeURIComponent(id);
+    };
+
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- FILTERING ----------
+function applyFilters() {
+  document.querySelectorAll("#breakerTable tbody tr").forEach(tr => {
+    let show = true;
+    Object.keys(filters).forEach(idx => {
+      const val = filters[idx].value;
+      if (val && tr.children[idx].innerText !== val) {
+        show = false;
+      }
+    });
+    tr.style.display = show ? "" : "none";
+  });
+}
+
+// ---------- UTILITIES ----------
+function randomPastel() {
+  return `hsl(${Math.random()*360},70%,85%)`;
+}
+
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#breakerTable tr").forEach(row => {
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "breaker_master_list.csv";
+  a.click();
+}
+
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+
+loadBreakers();
+</script>
+
+</body>
+</html>
