@@ -171,7 +171,7 @@ async function loadMotors() {
   tbody.innerHTML = "";
 
   /* ===== HEADERS FROM ROW 1 ===== */
-  const headerCells = rows[-1].c;
+  const headerCells = rows[0].c;
 
   COLS.forEach(i => {
     const th = document.createElement("th");
