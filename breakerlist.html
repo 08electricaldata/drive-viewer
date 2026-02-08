@@ -219,12 +219,15 @@ async function loadBreakers() {
     });
 
     /* ---- ROW CLICK → BREAKER DETAIL PAGE ---- */
-    tr.onclick = () => {
-      const id = `${c[0]?.v}-${c[1]?.v}`;
-      window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/breaker.html?id=" +
-        encodeURIComponent(id);
-    };
+  tr.onclick = () => {
+  const breakerNo = c[4]?.v || "";   // Column E
+  if (!breakerNo) return;
+
+  window.location.href =
+    "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+    encodeURIComponent("Breaker-" + breakerNo);
+};
+
 
     tbody.appendChild(tr);
   });
