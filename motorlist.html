@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Motor Master List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== STICKY HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.header-bar button:hover { opacity: 0.9; }
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ===== CONTENT ===== */
+.container {
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  padding: 15px;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  text-align: left;
+}
+th {
+  background: #003f88;
+  color: white;
+  position: sticky;
+  top: 56px;
+}
+
+@media (max-width: 768px) {
+  table {
+    font-size: 13px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="goBack()">🔁</button>
+  <div class="header-title">MOTOR MASTER LIST</div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <table id="motorTable">
+      <thead>
+        <tr>
+          <th>COL A</th>
+          <th>COL B</th>
+          <th>COL C</th>
+          <th>COL E</th>
+          <th>COL F</th>
+          <th>COL H</th>
+          <th>COL I</th>
+          <th>COL J</th>
+          <th>COL K</th>
+          <th>COL L</th>
+          <th>COL M</th>
+          <th>COL N</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/13q1lrwYZ8RXHM6tQrod3dSJlC6DnEKwtAzpOdZNbwsg/gviz/tq" +
+  "?gid=791642192&tqx=out:json";
+
+// Column indexes to show (A,B,C,E,F,H,I,J,K,L,M,N)
+const COLS = [0,1,2,4,5,7,8,9,10,11,12,13];
+
+async function loadMotors() {
+  const res = await fetch(SHEET_URL);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
+
+  const rows = json.table.rows;
+  const tbody = document.querySelector("#motorTable tbody");
+  tbody.innerHTML = "";
+
+  rows.forEach(r => {
+    const c = r.c || [];
+
+    // ✅ VALIDATION: Column B must NOT be blank
+    if (!c[1]?.v) return;
+
+    const tr = document.createElement("tr");
+
+    COLS.forEach(i => {
+      const td = document.createElement("td");
+      td.textContent = c[i]?.v ?? "";
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+
+function goBack() {
+  history.back();
+}
+
+loadMotors();
+</script>
+
+</body>
+</html>
