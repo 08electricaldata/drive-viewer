@@ -7,8 +7,47 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  padding: 20px;
+  padding: 0;
+  margin: 0;
   background: #f2f6ff;
+}
+
+/* ===== STICKY HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.header-bar button:hover {
+  opacity: 0.9;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ===== PAGE CONTENT ===== */
+.page {
+  padding: 20px;
 }
 
 h2, h3 {
@@ -44,6 +83,7 @@ h3 { font-size: 22px; margin-bottom: 10px; }
   display: flex;
   gap: 10px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 .controls input {
   padding: 6px;
@@ -86,10 +126,26 @@ th {
   padding: 8px;
   font-size: 15px;
 }
+
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 </head>
 
 <body>
+
+<!-- ===== STICKY HEADER ===== -->
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="goBack()">🔁</button>
+  <button onclick="goDriveInfo()">ℹ️</button>
+  <div class="header-title">Drive History</div>
+</div>
+
+<div class="page">
 
 <h2>Drive Information</h2>
 
@@ -123,10 +179,26 @@ th {
   </table>
 </div>
 
+</div>
+
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
-// ---------- LOAD DRIVE INFO (NEW PART) ----------
+/* ===== HEADER BUTTONS ===== */
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+function goDriveInfo() {
+  if (!id) return;
+  window.location.href =
+    "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+    encodeURIComponent(id);
+}
+
+/* ===== LOAD DRIVE INFO ===== */
 async function loadDriveInfo() {
   if (!id) return;
 
@@ -168,7 +240,6 @@ async function loadDriveInfo() {
 
   document.getElementById("driveInfo").innerHTML = `
     <h3>${m.BAT} – ${m.EQP}</h3>
-
     <p><span class="label">Pump Type:</span> ${m.pumpType}</p>
 
     <div class="grid">
@@ -176,14 +247,12 @@ async function loadDriveInfo() {
         <p><span class="label">Ratings:</span> ${m.ratings} KW</p>
         <p><span class="label">FLC:</span> ${m.flc} A</p>
       </div>
-
       <div>
         <p><span class="label">SFU:</span> ${m.sfu}</p>
         <p><span class="label">Fuse:</span> ${m.fuse}</p>
         <p><span class="label">Contactor:</span> ${m.contactor}</p>
         <p><span class="label">Relay:</span> ${m.relay}</p>
       </div>
-
       <div>
         <p><span class="label">CT (M):</span> ${m.ctM}</p>
         <p><span class="label">CT (P):</span> ${m.ctP}</p>
@@ -193,7 +262,7 @@ async function loadDriveInfo() {
   `;
 }
 
-// ---------- HISTORY (UNCHANGED) ----------
+/* ===== HISTORY (UNCHANGED) ===== */
 function parseDate(v) {
   if (!v) return new Date(0);
   if (typeof v === "string" && v.startsWith("Date(")) {
