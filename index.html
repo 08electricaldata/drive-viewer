@@ -45,10 +45,20 @@ body {
 .header-title {
   flex: 1;
   text-align: center;
+  margin-right: 50px;
+}
+
+.header-title h1 {
+  margin: 0;
   font-size: 30px;
   font-weight: 700;
   color: #003f88;
-  margin-right: 50px; /* keeps title centered */
+}
+
+.header-title p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #555;
 }
 
 /* ===== CONTENT ===== */
@@ -101,7 +111,7 @@ h3 {
   .grid {
     grid-template-columns: 1fr;
   }
-  .header-title {
+  .header-title h1 {
     font-size: 22px;
   }
 }
@@ -116,7 +126,11 @@ h3 {
     <button class="icon-btn" onclick="goHome()" title="Home">🏠</button>
     <button class="icon-btn" onclick="goBack()" title="Back">🔁</button>
   </div>
-  <div class="header-title">Drive Information</div>
+
+  <div class="header-title">
+    <h1>Drive Information</h1>
+    <p>Designed and Maintained by Rakesh Chandra Sethy</p>
+  </div>
 </div>
 
 <div class="container">
@@ -202,7 +216,6 @@ async function loadDrive() {
     `;
 
   } catch (e) {
-    console.error(e);
     document.getElementById("drive").innerHTML = "Error loading drive data.";
   }
 }
@@ -215,7 +228,6 @@ function openHistory() {
     "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
     encodeURIComponent(id);
 }
-
 
 function goHome() {
   window.location.href = "https://08electricaldata.github.io/";
