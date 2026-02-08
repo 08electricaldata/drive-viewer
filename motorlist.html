@@ -184,7 +184,7 @@ async function loadMotors() {
   });
 
   /* ===== DATA ROWS (FROM ROW 2 ONWARDS) ===== */
-  rows.slice(1).forEach(r => {
+  rows.slice(0).forEach(r => {
     const c = r.c || [];
 
     // Validation: Column B must not be blank
