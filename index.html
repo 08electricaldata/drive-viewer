@@ -51,15 +51,6 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.action-btn {
-  margin-top: 15px;
-  padding: 10px 16px;
-  background: #003f88;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
 @media(max-width:768px){
   .grid { grid-template-columns: 1fr; }
 }
@@ -87,11 +78,9 @@ const SHEET_URL =
 async function loadData() {
   const id = new URLSearchParams(location.search).get("id");
   if (!id) {
-    showNotFound("No ID provided");
+    document.getElementById("content").innerHTML = "No ID provided.";
     return;
   }
-
-  const type = id.split("-")[0].toUpperCase();
 
   try {
     const res = await fetch(SHEET_URL);
@@ -99,50 +88,39 @@ async function loadData() {
     const json = JSON.parse(txt.substring(47, txt.length - 2));
     const rows = json.table.rows;
 
-    let found = null;
+    let c = null;
 
-    for (const r of rows) {
-      const c = r.c || [];
-      if ((c[2]?.v || "").toUpperCase() === id.toUpperCase()) {
-        found = c;
-        break;
-      }
-    }
+    rows.forEach(r => {
+      const col = r.c || [];
+      const uid = `${col[1]?.v}-${col[2]?.v}`.toUpperCase();
+      if (uid === id.toUpperCase()) c = col;
+    });
 
-    if (!found) {
-      showNotFound(`"${id}" not found in master sheet`);
+    if (!c) {
+      document.getElementById("content").innerHTML =
+        `<div class="card"><h3>Data Not Found</h3><p>${id}</p></div>`;
       return;
     }
 
-    if (type === "TRANSFORMER") showTransformer(found, id);
-    else if (type === "BREAKER") showBreaker(found);
-    else showDrive(found);
+    const BAT = (c[1]?.v || "").toUpperCase();
 
-  } catch (e) {
-    showNotFound("Error loading data");
+    if (BAT === "TRANSFORMER") showTransformer(c);
+    else if (BAT === "BREAKER") showBreaker(c);
+    else showDrive(c);
+
+  } catch {
+    document.getElementById("content").innerHTML =
+      `<div class="card"><h3>Error loading data</h3></div>`;
   }
 }
 
-function showNotFound(msg) {
-  const id = new URLSearchParams(location.search).get("id");
-  document.getElementById("content").innerHTML = `
-    <div class="card">
-      <h3>Data Not Found</h3>
-      <p>${msg}</p>
-      <button class="action-btn"
-        onclick="location.href='https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(id)}'">
-        📜 View History
-      </button>
-    </div>
-  `;
-}
-
-function showTransformer(c, id) {
+/* ===== TRANSFORMER ===== */
+function showTransformer(c) {
   document.getElementById("content").innerHTML = `
   <div class="card">
-    <h3>Transformer No: ${id.split("-")[1]}</h3>
+    <h3>Transformer No: ${c[2]?.v}</h3>
     <div class="grid">
-      <p><span class="label">TR SL No:</span> ${c[3]?.v}</p>
+      <p><span class="label">TR Sl No:</span> ${c[3]?.v}</p>
       <p><span class="label">Make:</span> ${c[4]?.v}</p>
       <p><span class="label">Rating:</span> ${c[5]?.v} KVA</p>
       <p><span class="label">From S/S:</span> ${c[6]?.v}</p>
@@ -154,21 +132,22 @@ function showTransformer(c, id) {
   </div>`;
 }
 
+/* ===== BREAKER ===== */
 function showBreaker(c) {
-  const type = (c[7]?.v || "").toUpperCase();
   document.getElementById("content").innerHTML = `
   <div class="card">
-    <h3>Breaker Details</h3>
+    <h3>Breaker: ${c[2]?.v}</h3>
     <div class="grid">
       <p><span class="label">Compartment No:</span> ${c[3]?.v}</p>
       <p><span class="label">Breaker Desc:</span> ${c[4]?.v}</p>
       <p><span class="label">Make:</span> ${c[5]?.v}</p>
       <p><span class="label">Rating:</span> ${c[6]?.v} A</p>
-      <p><span class="label">Type:</span> ${type === "HT" ? "HT" : "LT"}</p>
+      <p><span class="label">Type:</span> ${c[7]?.v}</p>
     </div>
   </div>`;
 }
 
+/* ===== DRIVE ===== */
 function showDrive(c) {
   document.getElementById("content").innerHTML = `
   <div class="card">
