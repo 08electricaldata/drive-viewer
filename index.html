@@ -6,54 +6,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f2f6ff;
-}
+body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 .header-bar {
-  position: sticky;
-  top: 0;
-  background: #f2f6ff;
-  padding: 12px 15px;
-  display: flex;
-  gap: 10px;
+  position: sticky; top: 0; z-index: 1000;
+  background: #f2f6ff; padding: 12px 15px;
+  display: flex; gap: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 .icon-btn {
-  background: #003f88;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 18px;
-  cursor: pointer;
+  background: #003f88; color: #fff; border: none;
+  border-radius: 8px; padding: 10px 12px;
+  font-size: 18px; cursor: pointer;
 }
-.header-title {
-  flex: 1;
-  text-align: center;
-}
-.container {
-  padding: 20px;
-}
+.header-title { flex: 1; text-align: center; }
+.container { padding: 20px; }
 .card {
-  background: #fff;
-  padding: 20px;
+  background: #fff; padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
-.label {
-  font-weight: bold;
-  color: #003f88;
-}
+.label { font-weight: bold; color: #003f88; }
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
 }
-@media(max-width:768px){
-  .grid { grid-template-columns: 1fr; }
+.button-wrap { margin-top: 25px; text-align: left; }
+.action-btn {
+  padding: 10px 18px;
+  background: #003f88; color: #fff;
+  border: none; border-radius: 8px;
+  cursor: pointer;
 }
+@media(max-width:768px){ .grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 
@@ -62,9 +47,7 @@ body {
 <div class="header-bar">
   <button class="icon-btn" onclick="goHome()">🏠</button>
   <button class="icon-btn" onclick="goBack()">🔁</button>
-  <div class="header-title">
-    <h2>Equipment Information</h2>
-  </div>
+  <div class="header-title"><h2>Equipment Information</h2></div>
 </div>
 
 <div class="container">
@@ -77,41 +60,30 @@ const SHEET_URL =
 
 async function loadData() {
   const id = new URLSearchParams(location.search).get("id");
-  if (!id) {
-    document.getElementById("content").innerHTML = "No ID provided.";
+  if (!id) return;
+
+  const res = await fetch(SHEET_URL);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
+  const rows = json.table.rows;
+
+  let c = null;
+  rows.forEach(r => {
+    const col = r.c || [];
+    const uid = `${col[1]?.v}-${col[2]?.v}`.toUpperCase();
+    if (uid === id.toUpperCase()) c = col;
+  });
+
+  if (!c) {
+    document.getElementById("content").innerHTML =
+      `<div class="card"><h3>Data Not Found</h3></div>`;
     return;
   }
 
-  try {
-    const res = await fetch(SHEET_URL);
-    const txt = await res.text();
-    const json = JSON.parse(txt.substring(47, txt.length - 2));
-    const rows = json.table.rows;
-
-    let c = null;
-
-    rows.forEach(r => {
-      const col = r.c || [];
-      const uid = `${col[1]?.v}-${col[2]?.v}`.toUpperCase();
-      if (uid === id.toUpperCase()) c = col;
-    });
-
-    if (!c) {
-      document.getElementById("content").innerHTML =
-        `<div class="card"><h3>Data Not Found</h3><p>${id}</p></div>`;
-      return;
-    }
-
-    const BAT = (c[1]?.v || "").toUpperCase();
-
-    if (BAT === "TRANSFORMER") showTransformer(c);
-    else if (BAT === "BREAKER") showBreaker(c);
-    else showDrive(c);
-
-  } catch {
-    document.getElementById("content").innerHTML =
-      `<div class="card"><h3>Error loading data</h3></div>`;
-  }
+  const BAT = (c[1]?.v || "").toUpperCase();
+  if (BAT === "TRANSFORMER") showTransformer(c);
+  else if (BAT === "BREAKER") showBreaker(c);
+  else showMotor(c);
 }
 
 /* ===== TRANSFORMER ===== */
@@ -129,6 +101,10 @@ function showTransformer(c) {
       <p><span class="label">LT SWBD:</span> ${c[9]?.v}</p>
       <p><span class="label">Rating:</span> ${c[10]?.v}</p>
     </div>
+
+    <div class="button-wrap">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+    </div>
   </div>`;
 }
 
@@ -136,34 +112,59 @@ function showTransformer(c) {
 function showBreaker(c) {
   document.getElementById("content").innerHTML = `
   <div class="card">
-    <h3>Breaker: ${c[2]?.v}</h3>
+    <h3>Breaker – ${c[2]?.v}</h3>
     <div class="grid">
       <p><span class="label">Compartment No:</span> ${c[3]?.v}</p>
       <p><span class="label">Breaker Desc:</span> ${c[4]?.v}</p>
       <p><span class="label">Make:</span> ${c[5]?.v}</p>
       <p><span class="label">Rating:</span> ${c[6]?.v} A</p>
       <p><span class="label">Type:</span> ${c[7]?.v}</p>
+      <p><span class="label">LT SWBD:</span> ${c[9]?.v}</p>
+      <p><span class="label">Panel Rating:</span> ${c[10]?.v}</p>
+    </div>
+
+    <div class="button-wrap">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
     </div>
   </div>`;
 }
 
-/* ===== DRIVE ===== */
-function showDrive(c) {
+/* ===== MOTOR / DRIVE ===== */
+function showMotor(c) {
   document.getElementById("content").innerHTML = `
   <div class="card">
     <h3>${c[1]?.v} – ${c[2]?.v}</h3>
     <p><span class="label">Pump Type:</span> ${c[4]?.v}</p>
-    <p><span class="label">Rating:</span> ${c[5]?.v} KW</p>
-    <p><span class="label">FLC:</span> ${c[10]?.v} A</p>
+
+    <div class="grid">
+      <p><span class="label">Rating:</span> ${c[5]?.v} KW</p>
+      <p><span class="label">FLC:</span> ${c[10]?.v} A</p>
+      <p><span class="label">SFU:</span> ${c[14]?.v}</p>
+      <p><span class="label">Fuse:</span> ${c[15]?.v}</p>
+      <p><span class="label">Contactor:</span> ${c[16]?.v}</p>
+      <p><span class="label">BMR / Relay / VFD:</span> ${c[17]?.v}</p>
+      <p><span class="label">CT (M):</span> ${c[18]?.v}</p>
+      <p><span class="label">CT (P):</span> ${c[19]?.v}</p>
+      <p><span class="label">Aux Contactor:</span> ${c[20]?.v}</p>
+      <p><span class="label">Ammeter:</span> ${c[21]?.v}</p>
+      <p><span class="label">Ind Lamp:</span> ${c[22]?.v}</p>
+      <p><span class="label">No of Spare Motors:</span> ${c[23]?.v}</p>
+    </div>
+
+    <div class="button-wrap">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+    </div>
   </div>`;
 }
 
-function goHome() {
-  location.href = "https://08electricaldata.github.io/";
+function openHistory() {
+  const id = new URLSearchParams(location.search).get("id");
+  location.href =
+    "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+    encodeURIComponent(id);
 }
-function goBack() {
-  history.back();
-}
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
 
 loadData();
 </script>
