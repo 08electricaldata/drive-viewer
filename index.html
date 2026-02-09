@@ -2,242 +2,168 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive Details</title>
+<title>Equipment Details</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  padding: 0;
   margin: 0;
   background: #f2f6ff;
 }
-
-/* ===== STICKY HEADER ===== */
 .header-bar {
   position: sticky;
   top: 0;
-  z-index: 1000;
   background: #f2f6ff;
   padding: 12px 15px;
   display: flex;
-  align-items: center;
   gap: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .icon-btn {
   background: #003f88;
-  color: white;
+  color: #fff;
   border: none;
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 18px;
   cursor: pointer;
 }
-.icon-btn:hover { opacity: 0.9; }
-
 .header-title {
   flex: 1;
   text-align: center;
-  margin-right: 50px;
 }
-
-.header-title h1 {
-  margin: 0;
-  font-size: 30px;
-  font-weight: 700;
-  color: #003f88;
-}
-
-.header-title p {
-  margin: 2px 0 0;
-  font-size: 13px;
-  color: #555;
-}
-
-/* ===== CONTENT ===== */
 .container {
   padding: 20px;
 }
-
-h3 {
-  color: #003f88;
-}
-
 .card {
+  background: #fff;
   padding: 20px;
-  background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  margin-top: 18px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 18px;
-  margin-top: 10px;
-}
-
 .label {
   font-weight: bold;
   color: #003f88;
 }
-
-.button-wrap {
-  margin-top: 20px;
-  text-align: left;
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
-
-.action-btn {
-  padding: 12px 20px;
-  background: #003f88;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 15px;
-}
-.action-btn:hover { opacity: 0.9; }
-
-/* ===== MOBILE ===== */
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .header-title h1 {
-    font-size: 22px;
-  }
+@media(max-width:768px){
+  .grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== HEADER ===== -->
 <div class="header-bar">
-  <div class="header-actions">
-    <button class="icon-btn" onclick="goHome()" title="Home">🏠</button>
-    <button class="icon-btn" onclick="goBack()" title="Back">🔁</button>
-  </div>
-
+  <button class="icon-btn" onclick="goHome()">🏠</button>
+  <button class="icon-btn" onclick="goBack()">🔁</button>
   <div class="header-title">
-    <h1>Drive Information</h1>
-    <p>Designed and Maintained by Rakesh Chandra Sethy</p>
+    <h2>Equipment Information</h2>
   </div>
 </div>
 
 <div class="container">
-  <div id="drive">Loading drive details…</div>
+  <div id="content">Loading data…</div>
 </div>
 
 <script>
-async function loadDrive() {
-  const id = new URLSearchParams(window.location.search).get("id");
-  if (!id) {
-    document.getElementById("drive").innerHTML = "No drive ID found.";
-    return;
-  }
+const SHEET_URL =
+"https://docs.google.com/spreadsheets/d/1a9CRieF-ii4WJNSUODIwlYWKdTIT63u2mlu9Rtj4ltg/gviz/tq?gid=0&tqx=out:json";
 
-  const sheetURL =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
-    "?gid=1274719919&tqx=out:json";
+async function loadData() {
+  const id = new URLSearchParams(location.search).get("id");
+  if (!id) return redirectHistory();
+
+  const type = id.split("-")[0].toUpperCase();
 
   try {
-    const res = await fetch(sheetURL);
+    const res = await fetch(SHEET_URL);
     const txt = await res.text();
     const json = JSON.parse(txt.substring(47, txt.length - 2));
     const rows = json.table.rows;
 
-    let m = null;
+    let found = null;
 
     rows.forEach(r => {
       const c = r.c || [];
-      const uid = `${c[1]?.v}-${c[2]?.v}`.toUpperCase();
-      if (uid !== id.toUpperCase()) return;
-
-      m = {
-        BAT: c[1]?.v,
-        EQP: c[2]?.v,
-        pumpType: c[4]?.v,
-        ratings: c[5]?.v,
-        flc: c[10]?.v,
-        sfu: c[14]?.v,
-        fuse: c[15]?.v,
-        contactor: c[16]?.v,
-        relay: c[17]?.v,
-        ctM: c[18]?.v,
-        ctP: c[19]?.v,
-        aux: c[20]?.v
-      };
+      if ((c[2]?.v || "").toUpperCase() === id.toUpperCase()) {
+        found = c;
+      }
     });
 
-    if (!m) {
-      document.getElementById("drive").innerHTML = "Drive not found in sheet.";
-      return;
-    }
+    if (!found) return redirectHistory();
 
-    document.getElementById("drive").innerHTML = `
-      <div class="card">
-        <h3>${m.BAT} – ${m.EQP}</h3>
+    if (type === "TRANSFORMER") showTransformer(found, id);
+    else if (type === "BREAKER") showBreaker(found);
+    else showDrive(found);
 
-        <p><span class="label">Pump Type:</span> ${m.pumpType}</p>
-
-        <div class="grid">
-          <div>
-            <p><span class="label">Ratings:</span> ${m.ratings} KW</p>
-            <p><span class="label">FLC:</span> ${m.flc} A</p>
-          </div>
-
-          <div>
-            <p><span class="label">SFU:</span> ${m.sfu}</p>
-            <p><span class="label">Fuse:</span> ${m.fuse}</p>
-            <p><span class="label">Contactor:</span> ${m.contactor}</p>
-            <p><span class="label">Relay:</span> ${m.relay}</p>
-          </div>
-
-          <div>
-            <p><span class="label">CT (M):</span> ${m.ctM}</p>
-            <p><span class="label">CT (P):</span> ${m.ctP}</p>
-            <p><span class="label">Aux Contactor:</span> ${m.aux}</p>
-          </div>
-        </div>
-
-        <div class="button-wrap">
-          <button class="action-btn" onclick="openHistory()">📜 View History</button>
-        </div>
-      </div>
-    `;
-
-  } catch (e) {
-    document.getElementById("drive").innerHTML = "Error loading drive data.";
+  } catch {
+    redirectHistory();
   }
 }
 
-function openHistory() {
-  const id = new URLSearchParams(window.location.search).get("id");
-  if (!id) return;
+function showTransformer(c, id) {
+  document.getElementById("content").innerHTML = `
+  <div class="card">
+    <h3>Transformer No: ${id.split("-")[1]}</h3>
+    <div class="grid">
+      <p><span class="label">TR SL No:</span> ${c[3]?.v}</p>
+      <p><span class="label">Make:</span> ${c[4]?.v}</p>
+      <p><span class="label">Rating:</span> ${c[5]?.v} KVA</p>
+      <p><span class="label">From S/S:</span> ${c[6]?.v}</p>
+      <p><span class="label">Unit S/S:</span> ${c[7]?.v}</p>
+      <p><span class="label">% Impedance:</span> ${c[8]?.v}</p>
+      <p><span class="label">LT SWBD:</span> ${c[9]?.v}</p>
+      <p><span class="label">Rating:</span> ${c[10]?.v}</p>
+    </div>
+  </div>`;
+}
 
-  window.location.href =
+function showBreaker(c) {
+  const type = (c[7]?.v || "").toUpperCase();
+  document.getElementById("content").innerHTML = `
+  <div class="card">
+    <h3>Breaker Details</h3>
+    <div class="grid">
+      <p><span class="label">Compartment No:</span> ${c[3]?.v}</p>
+      <p><span class="label">Breaker Desc:</span> ${c[4]?.v}</p>
+      <p><span class="label">Make:</span> ${c[5]?.v}</p>
+      <p><span class="label">Rating:</span> ${c[6]?.v} A</p>
+      <p><span class="label">Type:</span> ${type === "HT" ? "HT" : "LT"}</p>
+    </div>
+  </div>`;
+}
+
+function showDrive(c) {
+  document.getElementById("content").innerHTML = `
+  <div class="card">
+    <h3>${c[1]?.v} – ${c[2]?.v}</h3>
+    <p><span class="label">Pump Type:</span> ${c[4]?.v}</p>
+    <p><span class="label">Rating:</span> ${c[5]?.v} KW</p>
+    <p><span class="label">FLC:</span> ${c[10]?.v} A</p>
+  </div>`;
+}
+
+function redirectHistory() {
+  const id = new URLSearchParams(location.search).get("id");
+  location.href =
     "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
     encodeURIComponent(id);
 }
 
 function goHome() {
-  window.location.href = "https://08electricaldata.github.io/";
+  location.href = "https://08electricaldata.github.io/";
 }
-
 function goBack() {
-  window.history.back();
+  history.back();
 }
 
-loadDrive();
+loadData();
 </script>
 
 </body>
