@@ -51,6 +51,15 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+.action-btn {
+  margin-top: 15px;
+  padding: 10px 16px;
+  background: #003f88;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
 @media(max-width:768px){
   .grid { grid-template-columns: 1fr; }
 }
@@ -77,7 +86,10 @@ const SHEET_URL =
 
 async function loadData() {
   const id = new URLSearchParams(location.search).get("id");
-  if (!id) return redirectHistory();
+  if (!id) {
+    showNotFound("No ID provided");
+    return;
+  }
 
   const type = id.split("-")[0].toUpperCase();
 
@@ -89,22 +101,40 @@ async function loadData() {
 
     let found = null;
 
-    rows.forEach(r => {
+    for (const r of rows) {
       const c = r.c || [];
       if ((c[2]?.v || "").toUpperCase() === id.toUpperCase()) {
         found = c;
+        break;
       }
-    });
+    }
 
-    if (!found) return redirectHistory();
+    if (!found) {
+      showNotFound(`"${id}" not found in master sheet`);
+      return;
+    }
 
     if (type === "TRANSFORMER") showTransformer(found, id);
     else if (type === "BREAKER") showBreaker(found);
     else showDrive(found);
 
-  } catch {
-    redirectHistory();
+  } catch (e) {
+    showNotFound("Error loading data");
   }
+}
+
+function showNotFound(msg) {
+  const id = new URLSearchParams(location.search).get("id");
+  document.getElementById("content").innerHTML = `
+    <div class="card">
+      <h3>Data Not Found</h3>
+      <p>${msg}</p>
+      <button class="action-btn"
+        onclick="location.href='https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(id)}'">
+        📜 View History
+      </button>
+    </div>
+  `;
 }
 
 function showTransformer(c, id) {
@@ -147,13 +177,6 @@ function showDrive(c) {
     <p><span class="label">Rating:</span> ${c[5]?.v} KW</p>
     <p><span class="label">FLC:</span> ${c[10]?.v} A</p>
   </div>`;
-}
-
-function redirectHistory() {
-  const id = new URLSearchParams(location.search).get("id");
-  location.href =
-    "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-    encodeURIComponent(id);
 }
 
 function goHome() {
