@@ -80,6 +80,15 @@ th, td {
   border: 1px solid #ccc;
   padding: 6px 8px;
 }
+/* Reduce first column width */
+#xfmrTable th:first-child,
+#xfmrTable td:first-child {
+  width: 50px;
+  max-width: 50px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 
 /* STICKY HEADERS */
 thead tr:nth-child(1) th {
@@ -176,17 +185,16 @@ async function loadTransformers() {
   tbody.innerHTML = "";
 
   /* ===== HEADERS (ONLY FROM headers[]) ===== */
-  headers.forEach(h => {
-    if (!h) return;   // skip empty headings
+headers.forEach(h => {
+  const th = document.createElement("th");
+  th.textContent = h || "";
+  headerRow.appendChild(th);
 
-    const th = document.createElement("th");
-    th.textContent = h;
-    headerRow.appendChild(th);
+  const fh = document.createElement("th");
+  fh.innerHTML = "<input placeholder='🔍'>";
+  filterRow.appendChild(fh);
+});
 
-    const fh = document.createElement("th");
-    fh.innerHTML = "<input placeholder='🔍'>";
-    filterRow.appendChild(fh);
-  });
 
   /* ===== DATA ROWS (SKIP FIRST ROW) ===== */
   rows.slice(1).forEach(r => {   // ✅ skip duplicate header row
