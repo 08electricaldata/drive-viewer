@@ -16,14 +16,41 @@ body {
 .header {
   background: #003f88;
   color: white;
-  padding: 14px;
-  text-align: center;
+  padding: 14px 16px;
 }
-.header h1 {
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  gap: 10px;
+}
+
+.header-btn {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.header-btn:hover { opacity: 0.85; }
+
+.header-center {
+  text-align: center;
+  flex: 1;
+}
+
+.header-center h1 {
   margin: 0;
   font-size: 30px;
 }
-.header p {
+.header-center p {
   margin: 4px 0 0;
   font-size: 16px;
 }
@@ -97,16 +124,16 @@ th {
   top: 0;
 }
 
-/* ===== COLUMN WIDTHS (PROFESSIONAL) ===== */
+/* ===== COLUMN WIDTHS ===== */
 th:nth-child(1), td:nth-child(1) { width: 60px; }
 th:nth-child(2), td:nth-child(2) { width: 110px; }
 th:nth-child(3), td:nth-child(3) { width: 100px; }
 th:nth-child(4), td:nth-child(4) { width: 220px; }
 th:nth-child(5), td:nth-child(5) { width: 60px; }
 th:nth-child(6), td:nth-child(6) { width: 60px; }
-th:nth-child(7), td:nth-child(7) { width: 110px; } /* OH DATE */
-th:nth-child(8), td:nth-child(8) { width: 110px; } /* NEXT DUE */
-th:nth-child(9), td:nth-child(9) { width: auto; }  /* REFERENCE */
+th:nth-child(7), td:nth-child(7) { width: 110px; }
+th:nth-child(8), td:nth-child(8) { width: 110px; }
+th:nth-child(9), td:nth-child(9) { width: auto; }
 
 /* ===== HIGHLIGHTS ===== */
 .overdue-cell {
@@ -119,7 +146,7 @@ th:nth-child(9), td:nth-child(9) { width: auto; }  /* REFERENCE */
   font-weight: bold;
 }
 
-/* ===== ROW UX ===== */
+/* ===== UX ===== */
 tbody tr {
   cursor: pointer;
 }
@@ -128,16 +155,28 @@ tbody tr:hover {
 }
 
 @media print {
-  .controls { display: none; }
+  .controls, .header-left { display: none; }
 }
 </style>
 </head>
 
 <body>
 
+<!-- ===== HEADER ===== -->
 <div class="header">
-  <h1>MOTOR O/H DUE</h1>
-  <p>Designed and maintained by Rakesh Chandra Sethy</p>
+  <div class="header-bar">
+    <div class="header-left">
+      <button class="header-btn" onclick="goHome()" title="Home">🏠</button>
+      <button class="header-btn" onclick="goBack()" title="Back">🔁</button>
+    </div>
+
+    <div class="header-center">
+      <h1>MOTOR O/H DUE</h1>
+      <p>Designed and maintained by Rakesh Chandra Sethy</p>
+    </div>
+
+    <div style="width:60px"></div>
+  </div>
 </div>
 
 <div class="container">
@@ -182,7 +221,15 @@ tbody tr:hover {
 const SHEET =
 "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
 
-/* DATE HELPERS */
+/* NAV */
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+
+/* DATE */
 function parseDate(v) {
   if (!v) return null;
   if (typeof v === "string" && v.startsWith("Date(")) {
@@ -195,7 +242,7 @@ function fmt(d) {
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-/* LOAD DATA */
+/* LOAD */
 async function loadData() {
   const r = await fetch(SHEET);
   const t = await r.text();
@@ -208,12 +255,10 @@ async function loadData() {
 
   j.table.rows.forEach(r => {
     const c = r.c || [];
-
     if (!c[1]?.v && !c[2]?.v) return;
 
     const tr = document.createElement("tr");
 
-    /* SECTION ROW (COLUMN A EMPTY) */
     if (!c[0]?.v) {
       tr.classList.add("section-row");
     } else {
