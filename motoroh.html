@@ -61,10 +61,23 @@ th {
 .blank-oh { background: orange; color: white; font-weight: bold; }
 
 /* WIDTH FIX */
-th:nth-child(8), td:nth-child(8),
-th:nth-child(9), td:nth-child(9) {
-  min-width: 120px; white-space: nowrap;
+/* OH DATE */
+th:nth-child(7), td:nth-child(7) {
+  min-width: 130px;
+  white-space: nowrap;
 }
+
+/* NEXT DUE */
+th:nth-child(8), td:nth-child(8) {
+  min-width: 130px;
+  white-space: nowrap;
+}
+
+/* REFERENCE */
+th:nth-child(9), td:nth-child(9) {
+  min-width: 280px;
+}
+
 th:nth-child(10), td:nth-child(10) {
   min-width: 260px;
 }
