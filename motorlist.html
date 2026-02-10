@@ -146,19 +146,25 @@ tr:hover {
 </div>
 
 <script>
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/13q1lrwYZ8RXHM6tQrod3dSJlC6DnEKwtAzpOdZNbwsg/gviz/tq" +
-  "?gid=791642192&tqx=out:json";
-
-/* Columns: A,B,C,E,F,H,I,J,K,L,M,N */
-const COLS = [0,1,2,4,5,7,8,9,10,11,12,13];
+// 🔥 FAST JSON SOURCE
+const JSON_URL =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
 
 async function loadMotors() {
-  const res = await fetch(SHEET_URL);
-  const txt = await res.text();
-  const json = JSON.parse(txt.substring(47, txt.length - 2));
+  const cache = localStorage.getItem("motorJSON");
+  let data;
 
-  const rows = json.table.rows;
+  if (cache) {
+    data = JSON.parse(cache);
+  } else {
+    const res = await fetch(JSON_URL);
+    data = await res.json();
+    localStorage.setItem("motorJSON", JSON.stringify(data));
+  }
+
+  const headers = data.headers;
+  const rows = data.rows;
+
   const headerRow = document.getElementById("headerRow");
   const filterRow = document.getElementById("filterRow");
   const tbody = document.querySelector("#motorTable tbody");
@@ -167,12 +173,10 @@ async function loadMotors() {
   filterRow.innerHTML = "";
   tbody.innerHTML = "";
 
-  /* ===== HEADERS: DIRECTLY FROM ROW 1 (NO LOGIC) ===== */
-  const headerCells = rows[0].c;
-
-  COLS.forEach(i => {
+  /* ===== HEADERS ===== */
+  headers.forEach(h => {
     const th = document.createElement("th");
-    th.textContent = headerCells[i]?.v || "";
+    th.textContent = h;
     headerRow.appendChild(th);
 
     const fh = document.createElement("th");
@@ -180,22 +184,21 @@ async function loadMotors() {
     filterRow.appendChild(fh);
   });
 
-  /* ===== DATA PART (UNCHANGED – AS REQUESTED) ===== */
-  rows.slice(0).forEach(r => {
-    const c = r.c || [];
-    if (!c[1]?.v) return;
+  /* ===== DATA ===== */
+  rows.forEach(r => {
+    if (!r[1]) return;
 
     const tr = document.createElement("tr");
-    if (!c[0]?.v) tr.classList.add("section-row");
+    if (!r[0]) tr.classList.add("section-row");
 
-    COLS.forEach(i => {
+    r.forEach(v => {
       const td = document.createElement("td");
-      td.textContent = c[i]?.v ?? "";
+      td.textContent = v ?? "";
       tr.appendChild(td);
     });
 
     tr.onclick = () => {
-      const id = `${c[1]?.v}-${c[2]?.v}`;
+      const id = r[1] + "-" + r[2];
       window.location.href =
         "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
         encodeURIComponent(id);
