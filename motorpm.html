@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>MOTOR & MODULE PM STATUS</title>
+<title>Motor & Module PM Status</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -37,7 +37,6 @@ body {
   cursor: pointer;
 }
 .header-btn:hover { opacity: 0.85; }
-
 .header-center {
   text-align: center;
   flex: 1;
@@ -70,16 +69,16 @@ body {
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
-.summary .card h3 {
+.summary h3 {
   margin: 0;
   color: #003f88;
 }
-.summary .card p {
+.summary p {
   font-size: 26px;
   font-weight: bold;
   margin: 6px 0 0;
 }
-.overdue-count { color: red; }
+.overdue { color: red; }
 
 /* ===== CONTROLS ===== */
 .controls {
@@ -121,20 +120,24 @@ th {
 }
 
 /* ===== STATUS COLORS ===== */
-.due-over {
+.ok {
+  background: #c8f7c5;
+  color: black;
+  font-weight: bold;
+}
+.overdue-cell {
   background: red;
   color: yellow;
   font-weight: bold;
 }
-.due-ok {
-  background: #2ecc71;
-  color: black;
-  font-weight: bold;
-}
 
-/* UX */
-tbody tr { cursor: pointer; }
-tbody tr:hover { background: #eef5ff; }
+/* ===== UX ===== */
+tbody tr {
+  cursor: pointer;
+}
+tbody tr:hover {
+  background: #eef5ff;
+}
 
 @media print {
   .controls, .header-left { display: none; }
@@ -151,46 +154,57 @@ tbody tr:hover { background: #eef5ff; }
       <button class="header-btn" onclick="goHome()">🏠</button>
       <button class="header-btn" onclick="goBack()">🔁</button>
     </div>
+
     <div class="header-center">
-      <h1>MOTOR & MODULE PM STATUS</h1>
+      <h1>Motor & Module PM Status</h1>
       <p>Designed and maintained by Rakesh Chandra Sethy</p>
     </div>
+
     <div style="width:60px"></div>
   </div>
 </div>
 
 <div class="container">
 
+<!-- ===== SUMMARY ===== -->
 <div class="summary">
   <div class="card">
     <h3>Total Motors</h3>
-    <p id="totalCount">0</p>
+    <p id="totalMotors">0</p>
   </div>
   <div class="card">
     <h3>Overdue Modules 🔔</h3>
-    <p id="moduleOverdue" class="overdue-count">0</p>
+    <p id="overdueModules" class="overdue">0</p>
   </div>
   <div class="card">
     <h3>Overdue Motors 🔔</h3>
-    <p id="motorOverdue" class="overdue-count">0</p>
+    <p id="overdueMotors" class="overdue">0</p>
   </div>
 </div>
 
 <div class="controls">
-  <input id="search" placeholder="Search by Column B or C">
+  <input id="search" placeholder="Search Battery / Eqpt">
   <button onclick="exportExcel()">📥 Export Excel</button>
   <button onclick="window.print()">🖨 Print</button>
 </div>
 
 <table id="pmTable">
-<thead>
-<tr>
-  <th>A</th><th>B</th><th>C</th><th>D</th>
-  <th>F</th><th>M</th><th>N</th><th>O</th>
-  <th>P</th><th>MODULE PM (S)</th><th>MOTOR PM (T)</th>
-</tr>
-</thead>
-<tbody></tbody>
+  <thead>
+    <tr>
+      <th>RCS</th>
+      <th>BATTERY</th>
+      <th>EQPT NO</th>
+      <th>EQPT NAME</th>
+      <th>F</th>
+      <th>M</th>
+      <th>N</th>
+      <th>O</th>
+      <th>P</th>
+      <th>MODULE PM (S)</th>
+      <th>MOTOR PM (T)</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
 </table>
 
 </div>
@@ -199,93 +213,94 @@ tbody tr:hover { background: #eef5ff; }
 const SHEET =
 "https://docs.google.com/spreadsheets/d/1EHCIU88yac4PH2ORmYli1hwN1nQ9_226sdslI5SqXmc/gviz/tq?gid=1308094316&tqx=out:json";
 
-function goHome() {
-  window.location.href = "https://08electricaldata.github.io/";
-}
-function goBack() {
-  history.back();
-}
+/* NAV */
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
 
-function parseDate(v) {
-  if (!v) return null;
-  if (typeof v === "string" && v.startsWith("Date(")) {
-    const p = v.match(/\d+/g);
-    return new Date(p[0], p[1], p[2]);
+/* DATE */
+function parseDate(v){
+  if(!v) return null;
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    return new Date(p[0],p[1],p[2]);
   }
   return null;
 }
-function fmt(d) {
-  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+function fmt(d){
+  return d?`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`:"";
 }
 
-async function loadData() {
-  const r = await fetch(SHEET);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
+/* LOAD */
+async function loadData(){
+  const r=await fetch(SHEET);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(47,t.length-2));
 
-  const tbody = document.querySelector("#pmTable tbody");
-  const today = new Date(); today.setHours(0,0,0,0);
+  const tbody=document.querySelector("#pmTable tbody");
+  const today=new Date(); today.setHours(0,0,0,0);
 
-  let total=0, modOver=0, motOver=0;
+  let total=0, overS=0, overT=0;
 
-  j.table.rows.forEach(r => {
-    const c = r.c || [];
-    if (!c[1]?.v || !c[2]?.v) return;
+  j.table.rows.forEach(r=>{
+    const c=r.c||[];
+    if(!c[1]?.v||!c[2]?.v) return;
 
     total++;
 
-    const mod = parseDate(c[18]?.v);
-    const mot = parseDate(c[19]?.v);
+    const m=parseDate(c[12]?.v);
+    const n=parseDate(c[13]?.v);
+    const o=parseDate(c[14]?.v);
+    const p=parseDate(c[15]?.v);
+    const s=parseDate(c[18]?.v);
+    const t=parseDate(c[19]?.v);
 
-    const modOverdue = mod && mod < today;
-    const motOverdue = mot && mot < today;
+    const sOver=!s||s<today;
+    const tOver=!t||t<today;
+    if(sOver) overS++;
+    if(tOver) overT++;
 
-    if (modOverdue) modOver++;
-    if (motOverdue) motOver++;
-
-    const tr = document.createElement("tr");
-    tr.onclick = () => {
-      const id = `${c[1].v}-${c[2].v}`;
-      window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-        encodeURIComponent(id);
+    const tr=document.createElement("tr");
+    tr.onclick=()=> {
+      const id=`${c[1].v}-${c[2].v}`;
+      location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
     };
 
-    tr.innerHTML = `
+    tr.innerHTML=`
       <td>${c[0]?.v||""}</td>
       <td>${c[1]?.v||""}</td>
       <td>${c[2]?.v||""}</td>
       <td>${c[3]?.v||""}</td>
       <td>${c[5]?.v||""}</td>
-      <td>${c[12]?.v||""}</td>
-      <td>${c[13]?.v||""}</td>
-      <td>${c[14]?.v||""}</td>
-      <td>${c[15]?.v||""}</td>
-      <td class="${modOverdue?"due-over":"due-ok"}">${mod?fmt(mod):""}</td>
-      <td class="${motOverdue?"due-over":"due-ok"}">${mot?fmt(mot):""}</td>
+      <td>${fmt(m)}</td>
+      <td>${fmt(n)}</td>
+      <td>${fmt(o)}</td>
+      <td>${fmt(p)}</td>
+      <td class="${sOver?'overdue-cell':'ok'}">${fmt(s)}</td>
+      <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  totalCount.innerText = total;
-  moduleOverdue.innerText = modOver;
-  motorOverdue.innerText = motOver;
+  totalMotors.innerText=total;
+  overdueModules.innerText=overS;
+  overdueMotors.innerText=overT;
 
-  search.onkeyup = () => {
-    const q = search.value.toLowerCase();
+  search.onkeyup=function(){
+    const q=this.value.toLowerCase();
     document.querySelectorAll("#pmTable tbody tr").forEach(tr=>{
-      tr.style.display =
-        tr.children[1].innerText.toLowerCase().includes(q) ||
+      tr.style.display=
+        tr.children[1].innerText.toLowerCase().includes(q)||
         tr.children[2].innerText.toLowerCase().includes(q)
-        ? "" : "none";
+        ? "":"none";
     });
   };
 }
 
-function exportExcel() {
+/* EXPORT */
+function exportExcel(){
   let csv=[];
   document.querySelectorAll("#pmTable tr").forEach(r=>{
-    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
+    csv.push([...r.children].map(td=>`"${td.innerText.replace(/"/g,'""')}"`).join(","));
   });
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
