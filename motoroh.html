@@ -6,10 +6,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f2f6ff;
+body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
+
+/* ===== PASSWORD OVERLAY ===== */
+#lockScreen {
+  position: fixed;
+  inset: 0;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.lock-box {
+  background: white;
+  color: #003f88;
+  padding: 25px;
+  border-radius: 10px;
+  width: 300px;
+  text-align: center;
+}
+.lock-box input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+}
+.lock-box button {
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+.lock-error {
+  color: red;
+  margin-top: 8px;
+  font-size: 14px;
 }
 
 /* ===== HEADER ===== */
@@ -19,22 +53,12 @@ body {
   padding: 14px;
   text-align: center;
 }
-.header h1 {
-  margin: 0;
-  font-size: 30px;
-}
-.header p {
-  margin: 4px 0 0;
-  font-size: 16px;
-  opacity: 0.95;
-}
+.header h1 { margin: 0; font-size: 30px; }
+.header p { margin: 4px 0 0; font-size: 16px; }
 
 /* ===== CONTENT ===== */
-.container {
-  padding: 20px;
-}
+.container { padding: 20px; }
 
-/* ===== SUMMARY CARDS ===== */
 .summary {
   display: flex;
   gap: 16px;
@@ -50,31 +74,17 @@ body {
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
-.summary .card h3 {
-  margin: 0;
-  color: #003f88;
-  font-size: 18px;
-}
-.summary .card p {
-  margin: 6px 0 0;
-  font-size: 26px;
-  font-weight: bold;
-}
-.overdue-count {
-  color: red;
-}
+.summary .card h3 { margin: 0; color: #003f88; }
+.summary .card p { margin: 6px 0 0; font-size: 26px; font-weight: bold; }
+.overdue-count { color: red; }
 
-/* ===== CONTROLS ===== */
 .controls {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
-.controls input {
-  padding: 8px;
-  width: 260px;
-}
+.controls input { padding: 8px; width: 260px; }
 .controls button {
   padding: 8px 14px;
   background: #003f88;
@@ -84,7 +94,6 @@ body {
   cursor: pointer;
 }
 
-/* ===== TABLE ===== */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -104,28 +113,33 @@ th {
   top: 0;
 }
 
-/* 🔴 OVERDUE */
-.overdue {
-  background: red !important;
-  color: yellow !important;
+/* 🔴 OVERDUE CELL ONLY */
+.overdue-cell {
+  background: red;
+  color: yellow;
   font-weight: bold;
 }
 
-/* ===== MOBILE ===== */
-@media (max-width: 600px) {
-  table { font-size: 12px; }
-}
-
-/* ===== PRINT ===== */
 @media print {
-  body { background: white; }
-  .controls, .search-box { display: none; }
-  .summary { margin-bottom: 5px; }
+  .controls { display: none; }
 }
 </style>
 </head>
 
 <body>
+
+<!-- 🔐 PASSWORD SCREEN -->
+<div id="lockScreen">
+  <div class="lock-box">
+    <h2>🔒 Protected</h2>
+    <p>Enter password to continue</p>
+    <input type="password" id="pwd">
+    <button onclick="checkPassword()">Unlock</button>
+    <div id="pwdError" class="lock-error"></div>
+  </div>
+</div>
+
+<div id="mainContent" style="display:none;">
 
 <div class="header">
   <h1>MOTOR O/H DUE</h1>
@@ -134,7 +148,6 @@ th {
 
 <div class="container">
 
-  <!-- SUMMARY -->
   <div class="summary">
     <div class="card">
       <h3>Total Motors</h3>
@@ -146,25 +159,52 @@ th {
     </div>
   </div>
 
-  <!-- CONTROLS -->
   <div class="controls">
     <input id="search" placeholder="Search by Column B or C">
     <button onclick="exportExcel()">📥 Export Excel</button>
     <button onclick="window.print()">🖨 Print</button>
   </div>
 
-  <!-- TABLE -->
   <table id="dataTable">
     <thead></thead>
     <tbody></tbody>
   </table>
 
 </div>
+</div>
 
 <script>
-const SHEET_URL =
+/* ===== SHEET CONFIG ===== */
+const DATA_SHEET =
 "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
 
+/* PASSWORD FROM CELL A1 */
+const PASSWORD_SHEET =
+"https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?range=A1&tqx=out:json";
+
+let SHEET_PASSWORD = "";
+
+/* ===== FETCH PASSWORD ===== */
+async function fetchPassword() {
+  const r = await fetch(PASSWORD_SHEET);
+  const t = await r.text();
+  const j = JSON.parse(t.substring(47, t.length - 2));
+  SHEET_PASSWORD = j.table.rows[0].c[0].v;
+}
+fetchPassword();
+
+/* ===== CHECK PASSWORD ===== */
+function checkPassword() {
+  if (document.getElementById("pwd").value === SHEET_PASSWORD) {
+    document.getElementById("lockScreen").style.display = "none";
+    document.getElementById("mainContent").style.display = "block";
+    loadData();
+  } else {
+    document.getElementById("pwdError").innerText = "Wrong password";
+  }
+}
+
+/* ===== DATE HELPERS ===== */
 function parseDate(v) {
   if (!v) return null;
   if (typeof v === "string" && v.startsWith("Date(")) {
@@ -177,15 +217,18 @@ function parseDate(v) {
   }
   return null;
 }
+function formatDate(d) {
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
 
+/* ===== LOAD DATA ===== */
 async function loadData() {
-  const res = await fetch(SHEET_URL);
+  const res = await fetch(DATA_SHEET);
   const txt = await res.text();
   const json = JSON.parse(txt.substring(47, txt.length - 2));
 
   const rows = json.table.rows;
   const cols = json.table.cols;
-
   const thead = document.querySelector("#dataTable thead");
   const tbody = document.querySelector("#dataTable tbody");
 
@@ -200,44 +243,38 @@ async function loadData() {
       <th>${cols[8].label}</th>
       <th>${cols[9].label}</th>
       <th>${cols[11].label}</th>
-    </tr>
-  `;
+    </tr>`;
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  let total = 0;
-  let overdue = 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  let total = 0, overdue = 0;
 
   rows.forEach(r => {
     const c = r.c || [];
     total++;
 
-    const dueDate = parseDate(c[9]?.v);
-    const isOverdue = dueDate && dueDate < today;
+    const due = parseDate(c[9]?.v);
+    const isOverdue = due && due < today;
     if (isOverdue) overdue++;
 
     const tr = document.createElement("tr");
-    if (isOverdue) tr.classList.add("overdue");
-
     tr.innerHTML = `
-      <td>${c[0]?.v || ""}</td>
-      <td>${c[1]?.v || ""}</td>
-      <td>${c[2]?.v || ""}</td>
-      <td>${c[3]?.v || ""}</td>
-      <td>${c[4]?.v || ""}</td>
-      <td>${c[5]?.v || ""}</td>
-      <td>${c[8]?.v || ""}</td>
-      <td>${c[9]?.v || ""}</td>
-      <td>${c[11]?.v || ""}</td>
-    `;
+      <td>${c[0]?.v||""}</td>
+      <td>${c[1]?.v||""}</td>
+      <td>${c[2]?.v||""}</td>
+      <td>${c[3]?.v||""}</td>
+      <td>${c[4]?.v||""}</td>
+      <td>${c[5]?.v||""}</td>
+      <td>${c[8]?.v||""}</td>
+      <td class="${isOverdue?'overdue-cell':''}">
+        ${due ? formatDate(due) : ""}
+      </td>
+      <td>${c[11]?.v||""}</td>`;
     tbody.appendChild(tr);
   });
 
   document.getElementById("totalCount").innerText = total;
   document.getElementById("overdueCount").innerText = overdue;
 
-  /* SEARCH */
   document.getElementById("search").onkeyup = function () {
     const q = this.value.toLowerCase();
     document.querySelectorAll("#dataTable tbody tr").forEach(tr => {
@@ -248,7 +285,7 @@ async function loadData() {
   };
 }
 
-/* ===== EXPORT EXCEL ===== */
+/* ===== EXPORT ===== */
 function exportExcel() {
   let csv = [];
   document.querySelectorAll("#dataTable tr").forEach(row => {
@@ -261,8 +298,6 @@ function exportExcel() {
   a.download = "motor_oh_due.csv";
   a.click();
 }
-
-loadData();
 </script>
 
 </body>
