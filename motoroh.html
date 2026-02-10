@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MOTOR O/H DUE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: #003f88;
+  color: white;
+  padding: 14px;
+  text-align: center;
+}
+.header h1 {
+  margin: 0;
+  font-size: 30px;
+}
+.header p {
+  margin: 4px 0 0;
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+/* ===== CONTENT ===== */
+.container {
+  padding: 20px;
+}
+
+/* ===== SUMMARY CARDS ===== */
+.summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+.summary .card {
+  flex: 1;
+  min-width: 180px;
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.summary .card h3 {
+  margin: 0;
+  color: #003f88;
+  font-size: 18px;
+}
+.summary .card p {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: bold;
+}
+.overdue-count {
+  color: red;
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.controls input {
+  padding: 8px;
+  width: 260px;
+}
+.controls button {
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+th {
+  background: #003f88;
+  color: white;
+  position: sticky;
+  top: 0;
+}
+
+/* 🔴 OVERDUE */
+.overdue {
+  background: red !important;
+  color: yellow !important;
+  font-weight: bold;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 600px) {
+  table { font-size: 12px; }
+}
+
+/* ===== PRINT ===== */
+@media print {
+  body { background: white; }
+  .controls, .search-box { display: none; }
+  .summary { margin-bottom: 5px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>MOTOR O/H DUE</h1>
+  <p>Designed and maintained by Rakesh Chandra Sethy</p>
+</div>
+
+<div class="container">
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="card">
+      <h3>Total Motors</h3>
+      <p id="totalCount">0</p>
+    </div>
+    <div class="card">
+      <h3>Overdue Motors 🔔</h3>
+      <p id="overdueCount" class="overdue-count">0</p>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <input id="search" placeholder="Search by Column B or C">
+    <button onclick="exportExcel()">📥 Export Excel</button>
+    <button onclick="window.print()">🖨 Print</button>
+  </div>
+
+  <!-- TABLE -->
+  <table id="dataTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+</div>
+
+<script>
+const SHEET_URL =
+"https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
+
+function parseDate(v) {
+  if (!v) return null;
+  if (typeof v === "string" && v.startsWith("Date(")) {
+    const p = v.match(/\d+/g);
+    return new Date(p[0], p[1], p[2]);
+  }
+  if (/^\d{2}[\/-]\d{2}[\/-]\d{4}$/.test(v)) {
+    const [d,m,y] = v.includes("/") ? v.split("/") : v.split("-");
+    return new Date(y, m - 1, d);
+  }
+  return null;
+}
+
+async function loadData() {
+  const res = await fetch(SHEET_URL);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
+
+  const rows = json.table.rows;
+  const cols = json.table.cols;
+
+  const thead = document.querySelector("#dataTable thead");
+  const tbody = document.querySelector("#dataTable tbody");
+
+  thead.innerHTML = `
+    <tr>
+      <th>${cols[0].label}</th>
+      <th>${cols[1].label}</th>
+      <th>${cols[2].label}</th>
+      <th>${cols[3].label}</th>
+      <th>${cols[4].label}</th>
+      <th>${cols[5].label}</th>
+      <th>${cols[8].label}</th>
+      <th>${cols[9].label}</th>
+      <th>${cols[11].label}</th>
+    </tr>
+  `;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  let total = 0;
+  let overdue = 0;
+
+  rows.forEach(r => {
+    const c = r.c || [];
+    total++;
+
+    const dueDate = parseDate(c[9]?.v);
+    const isOverdue = dueDate && dueDate < today;
+    if (isOverdue) overdue++;
+
+    const tr = document.createElement("tr");
+    if (isOverdue) tr.classList.add("overdue");
+
+    tr.innerHTML = `
+      <td>${c[0]?.v || ""}</td>
+      <td>${c[1]?.v || ""}</td>
+      <td>${c[2]?.v || ""}</td>
+      <td>${c[3]?.v || ""}</td>
+      <td>${c[4]?.v || ""}</td>
+      <td>${c[5]?.v || ""}</td>
+      <td>${c[8]?.v || ""}</td>
+      <td>${c[9]?.v || ""}</td>
+      <td>${c[11]?.v || ""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("totalCount").innerText = total;
+  document.getElementById("overdueCount").innerText = overdue;
+
+  /* SEARCH */
+  document.getElementById("search").onkeyup = function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll("#dataTable tbody tr").forEach(tr => {
+      const b = tr.children[1].innerText.toLowerCase();
+      const c = tr.children[2].innerText.toLowerCase();
+      tr.style.display = (b.includes(q) || c.includes(q)) ? "" : "none";
+    });
+  };
+}
+
+/* ===== EXPORT EXCEL ===== */
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#dataTable tr").forEach(row => {
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "motor_oh_due.csv";
+  a.click();
+}
+
+loadData();
+</script>
+
+</body>
+</html>
