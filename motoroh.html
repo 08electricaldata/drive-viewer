@@ -6,51 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f2f6ff;
-}
+body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 
-/* ===== PASSWORD OVERLAY ===== */
-#lockScreen {
-  position: fixed;
-  inset: 0;
-  background: #003f88;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.lock-box {
-  background: white;
-  color: #003f88;
-  padding: 25px;
-  border-radius: 10px;
-  width: 300px;
-  text-align: center;
-}
-.lock-box input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 10px;
-}
-.lock-box button {
-  margin-top: 12px;
-  padding: 8px 14px;
-  background: #003f88;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-.lock-error {
-  color: red;
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-/* ===== HEADER ===== */
+/* HEADER */
 .header {
   background: #003f88;
   color: white;
@@ -60,110 +18,62 @@ body {
 .header h1 { margin: 0; font-size: 30px; }
 .header p { margin: 4px 0 0; font-size: 16px; }
 
-/* ===== CONTENT ===== */
+/* SUMMARY */
 .container { padding: 20px; }
-
-/* ===== SUMMARY ===== */
 .summary {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 15px;
+  display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 15px;
 }
 .summary .card {
-  flex: 1;
-  min-width: 200px;
-  background: white;
-  border-radius: 10px;
-  padding: 15px;
-  text-align: center;
+  flex: 1; min-width: 200px;
+  background: white; border-radius: 10px;
+  padding: 15px; text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 .summary .card h3 { margin: 0; color: #003f88; }
-.summary .card p { margin: 6px 0 0; font-size: 26px; font-weight: bold; }
+.summary .card p { font-size: 26px; font-weight: bold; margin: 6px 0 0; }
 .overdue-count { color: red; }
 
-/* ===== CONTROLS ===== */
+/* CONTROLS */
 .controls {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
 }
 .controls input { padding: 8px; width: 260px; }
 .controls button {
-  padding: 8px 14px;
-  background: #003f88;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: 8px 14px; background: #003f88;
+  color: white; border: none; border-radius: 4px; cursor: pointer;
 }
 
-/* ===== TABLE ===== */
+/* TABLE */
 table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
+  width: 100%; border-collapse: collapse; background: white;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  font-size: 14px;
 }
 th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
-  text-align: center;
+  border: 1px solid #ccc; padding: 8px; text-align: center;
 }
 th {
-  background: #003f88;
-  color: white;
-  position: sticky;
-  top: 0;
+  background: #003f88; color: white;
+  position: sticky; top: 0;
 }
 
-/* 🔴 NEXT DUE OVERDUE (COLUMN J) */
-.overdue-cell {
-  background: red;
-  color: yellow;
-  font-weight: bold;
+/* HIGHLIGHTS */
+.overdue-cell { background: red; color: yellow; font-weight: bold; }
+.blank-oh { background: orange; color: white; font-weight: bold; }
+
+/* WIDTH FIX */
+th:nth-child(8), td:nth-child(8),
+th:nth-child(9), td:nth-child(9) {
+  min-width: 120px; white-space: nowrap;
+}
+th:nth-child(10), td:nth-child(10) {
+  min-width: 260px;
 }
 
-/* 🟠 OH DATE BLANK (COLUMN I) */
-.blank-oh {
-  background: orange;
-  color: white;
-  font-weight: bold;
-}
-
-/* ===== COLUMN WIDTH FIX ===== */
-th:nth-child(8), td:nth-child(8) {  /* OH DATE */
-  min-width: 120px;
-  white-space: nowrap;
-}
-th:nth-child(9), td:nth-child(9) {  /* NEXT DUE */
-  min-width: 120px;
-  white-space: nowrap;
-}
-
-@media print {
-  .controls { display: none; }
-}
+@media print { .controls { display: none; } }
 </style>
 </head>
 
 <body>
-
-<!-- 🔐 PASSWORD -->
-<div id="lockScreen">
-  <div class="lock-box">
-    <h2>🔒 Protected</h2>
-    <p>Enter password</p>
-    <input type="password" id="pwd">
-    <button onclick="checkPassword()">Unlock</button>
-    <div id="pwdError" class="lock-error"></div>
-  </div>
-</div>
-
-<div id="mainContent" style="display:none;">
 
 <div class="header">
   <h1>MOTOR O/H DUE</h1>
@@ -172,126 +82,88 @@ th:nth-child(9), td:nth-child(9) {  /* NEXT DUE */
 
 <div class="container">
 
-  <div class="summary">
-    <div class="card">
-      <h3>Total Motors</h3>
-      <p id="totalCount">0</p>
-    </div>
-    <div class="card">
-      <h3>Overdue Motors 🔔</h3>
-      <p id="overdueCount" class="overdue-count">0</p>
-    </div>
+<div class="summary">
+  <div class="card">
+    <h3>Total Motors</h3>
+    <p id="totalCount">0</p>
   </div>
-
-  <div class="controls">
-    <input id="search" placeholder="Search by Column B or C">
-    <button onclick="exportExcel()">📥 Export Excel</button>
-    <button onclick="window.print()">🖨 Print</button>
+  <div class="card">
+    <h3>Overdue Motors 🔔</h3>
+    <p id="overdueCount" class="overdue-count">0</p>
   </div>
-
-  <table id="dataTable">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
-
 </div>
+
+<div class="controls">
+  <input id="search" placeholder="Search by Column B or C">
+  <button onclick="exportExcel()">📥 Export Excel</button>
+  <button onclick="window.print()">🖨 Print</button>
+</div>
+
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>RCS</th>
+      <th>BATTERY</th>
+      <th>EQPT NO</th>
+      <th>EQPT NAME</th>
+      <th>KW</th>
+      <th>FRQ</th>
+      <th>OH DATE</th>
+      <th>NEXT DUE</th>
+      <th>REFERENCE</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
 </div>
 
 <script>
-/* ===== PASSWORD FROM SHEET ===== */
-const PASSWORD_SHEET =
-"https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?range=A1&tqx=out:json";
-const DATA_SHEET =
+const SHEET =
 "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
 
-let SHEET_PASSWORD = "";
-
-async function fetchPassword() {
-  const r = await fetch(PASSWORD_SHEET);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
-  SHEET_PASSWORD = j.table.rows[0].c[0].v;
-}
-fetchPassword();
-
-function checkPassword() {
-  if (document.getElementById("pwd").value === SHEET_PASSWORD) {
-    document.getElementById("lockScreen").style.display = "none";
-    document.getElementById("mainContent").style.display = "block";
-    loadData();
-  } else {
-    document.getElementById("pwdError").innerText = "Wrong password";
-  }
-}
-
-/* ===== DATE HELPERS ===== */
 function parseDate(v) {
   if (!v) return null;
   if (typeof v === "string" && v.startsWith("Date(")) {
     const p = v.match(/\d+/g);
     return new Date(p[0], p[1], p[2]);
   }
-  if (/^\d{2}[\/-]\d{2}[\/-]\d{4}$/.test(v)) {
-    const [d,m,y] = v.includes("/") ? v.split("/") : v.split("-");
-    return new Date(y, m - 1, d);
-  }
   return null;
 }
-function formatDate(d) {
+function fmt(d) {
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-/* ===== LOAD DATA ===== */
 async function loadData() {
-  const res = await fetch(DATA_SHEET);
-  const txt = await res.text();
-  const json = JSON.parse(txt.substring(47, txt.length - 2));
+  const r = await fetch(SHEET);
+  const t = await r.text();
+  const j = JSON.parse(t.substring(47, t.length - 2));
 
-  const rows = json.table.rows;
-  const cols = json.table.cols;
-  const thead = document.querySelector("#dataTable thead");
   const tbody = document.querySelector("#dataTable tbody");
-
-  thead.innerHTML = `
-    <tr>
-      <th>${cols[0].label}</th>
-      <th>${cols[1].label}</th>
-      <th>${cols[2].label}</th>
-      <th>${cols[3].label}</th>
-      <th>${cols[4].label}</th>
-      <th>${cols[5].label}</th>
-      <th>${cols[8].label}</th>
-      <th>${cols[9].label}</th>
-      <th>${cols[11].label}</th>
-    </tr>`;
-
   const today = new Date(); today.setHours(0,0,0,0);
+
   let total = 0, overdue = 0;
 
-  rows.forEach(r => {
+  j.table.rows.forEach(r => {
     const c = r.c || [];
     total++;
 
-    const ohDate = parseDate(c[8]?.v);
-    const nextDue = parseDate(c[9]?.v);
-    const isOverdue = nextDue && nextDue < today;
-    if (isOverdue) overdue++;
+    const oh = parseDate(c[8]?.v);
+    const due = parseDate(c[9]?.v);
+    const isOver = due && due < today;
+    if (isOver) overdue++;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${c[0]?.v||""}</td>
       <td>${c[1]?.v||""}</td>
       <td>${c[2]?.v||""}</td>
-      <td>${c[3]?.v||""}</td>
       <td>${c[4]?.v||""}</td>
       <td>${c[5]?.v||""}</td>
-      <td>${c[8]?.v||""}</td>
-      <td class="${!ohDate?'blank-oh':''}">
-        ${ohDate ? formatDate(ohDate) : "BLANK"}
-      </td>
-      <td class="${isOverdue?'overdue-cell':''}">
-        ${nextDue ? formatDate(nextDue) : ""}
-      </td>
+      <td>${c[6]?.v||""}</td>
+      <td class="${!oh?'blank-oh':''}">${oh?fmt(oh):"BLANK"}</td>
+      <td class="${isOver?'overdue-cell':''}">${due?fmt(due):""}</td>
+      <td>${c[11]?.v||""}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -299,29 +171,29 @@ async function loadData() {
   document.getElementById("totalCount").innerText = total;
   document.getElementById("overdueCount").innerText = overdue;
 
-  document.getElementById("search").onkeyup = function () {
+  document.getElementById("search").onkeyup = function(){
     const q = this.value.toLowerCase();
-    document.querySelectorAll("#dataTable tbody tr").forEach(tr => {
-      const b = tr.children[1].innerText.toLowerCase();
-      const c = tr.children[2].innerText.toLowerCase();
-      tr.style.display = (b.includes(q) || c.includes(q)) ? "" : "none";
+    document.querySelectorAll("#dataTable tbody tr").forEach(tr=>{
+      tr.style.display =
+        tr.children[1].innerText.toLowerCase().includes(q) ||
+        tr.children[2].innerText.toLowerCase().includes(q)
+        ? "" : "none";
     });
   };
 }
 
-/* ===== EXPORT ===== */
 function exportExcel() {
-  let csv = [];
-  document.querySelectorAll("#dataTable tr").forEach(row => {
-    csv.push([...row.children].map(td =>
-      `"${td.innerText.replace(/"/g,'""')}"`
-    ).join(","));
+  let csv=[];
+  document.querySelectorAll("#dataTable tr").forEach(r=>{
+    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
   });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download = "motor_oh_due.csv";
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="motor_oh_due.csv";
   a.click();
 }
+
+loadData();
 </script>
 
 </body>
