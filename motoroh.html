@@ -6,91 +6,147 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
 
-/* HEADER */
-.header {
+/* ===== HEADER BAR ===== */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   background: #003f88;
   color: white;
-  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+}
+.top-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.top-bar button:hover { opacity: 0.9; }
+
+.top-title {
+  flex: 1;
   text-align: center;
 }
-.header h1 { margin: 0; font-size: 30px; }
-.header p { margin: 4px 0 0; font-size: 16px; }
+.top-title h1 {
+  margin: 0;
+  font-size: 26px;
+}
+.top-title p {
+  margin: 2px 0 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* ===== CONTENT ===== */
+.container { padding: 20px; }
 
 /* SUMMARY */
-.container { padding: 20px; }
 .summary {
-  display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 15px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
 }
 .summary .card {
-  flex: 1; min-width: 200px;
-  background: white; border-radius: 10px;
-  padding: 15px; text-align: center;
+  flex: 1;
+  min-width: 200px;
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 .summary .card h3 { margin: 0; color: #003f88; }
-.summary .card p { font-size: 26px; font-weight: bold; margin: 6px 0 0; }
+.summary .card p {
+  font-size: 26px;
+  font-weight: bold;
+  margin: 6px 0 0;
+}
 .overdue-count { color: red; }
 
 /* CONTROLS */
 .controls {
-  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 .controls input { padding: 8px; width: 260px; }
 .controls button {
-  padding: 8px 14px; background: #003f88;
-  color: white; border: none; border-radius: 4px; cursor: pointer;
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 /* TABLE */
 table {
-  width: 100%; border-collapse: collapse; background: white;
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 th, td {
-  border: 1px solid #ccc; padding: 8px; text-align: center;
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
 }
 th {
-  background: #003f88; color: white;
-  position: sticky; top: 0;
+  background: #003f88;
+  color: white;
+  position: sticky;
+  top: 52px;
 }
 
 /* HIGHLIGHTS */
-.overdue-cell { background: red; color: yellow; font-weight: bold; }
-.blank-oh { background: orange; color: white; font-weight: bold; }
-
-/* WIDTH FIX */
-/* OH DATE */
-th:nth-child(7), td:nth-child(7) {
-  min-width: 130px;
-  white-space: nowrap;
+.overdue-cell {
+  background: red;
+  color: yellow;
+  font-weight: bold;
+}
+.blank-row {
+  background: #fff2a8;
 }
 
-/* NEXT DUE */
-th:nth-child(8), td:nth-child(8) {
-  min-width: 130px;
-  white-space: nowrap;
+/* ROW INTERACTION */
+tbody tr {
+  cursor: pointer;
+}
+tbody tr:hover {
+  background: #e6f0ff;
 }
 
-/* REFERENCE */
-th:nth-child(9), td:nth-child(9) {
-  min-width: 280px;
+@media print {
+  .top-bar, .controls { display: none; }
 }
-
-th:nth-child(10), td:nth-child(10) {
-  min-width: 260px;
-}
-
-@media print { .controls { display: none; } }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h1>MOTOR O/H DUE</h1>
-  <p>Designed and maintained by Rakesh Chandra Sethy</p>
+<!-- ===== TOP BAR ===== -->
+<div class="top-bar">
+  <button title="Go to Home" onclick="goHome()">🏠</button>
+  <button title="Go Back" onclick="goBack()">🔙</button>
+
+  <div class="top-title">
+    <h1>MOTOR O/H DUE</h1>
+    <p>Designed and maintained by Rakesh Chandra Sethy</p>
+  </div>
 </div>
 
 <div class="container">
@@ -135,6 +191,15 @@ th:nth-child(10), td:nth-child(10) {
 const SHEET =
 "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
 
+/* NAV */
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+
+/* DATE HELPERS */
 function parseDate(v) {
   if (!v) return null;
   if (typeof v === "string" && v.startsWith("Date(")) {
@@ -147,6 +212,7 @@ function fmt(d) {
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
+/* LOAD DATA */
 async function loadData() {
   const r = await fetch(SHEET);
   const t = await r.text();
@@ -159,6 +225,9 @@ async function loadData() {
 
   j.table.rows.forEach(r => {
     const c = r.c || [];
+
+    if (!c[0]?.v) return; // stop empty rows
+
     total++;
 
     const oh = parseDate(c[8]?.v);
@@ -167,16 +236,29 @@ async function loadData() {
     if (isOver) overdue++;
 
     const tr = document.createElement("tr");
+    tr.title = "Click to view history";
+
+    if (!oh) tr.classList.add("blank-row");
+
+    tr.onclick = () => {
+      const id = `${c[1]?.v}-${c[2]?.v}`;
+      window.location.href =
+        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+        encodeURIComponent(id);
+    };
+
     tr.innerHTML = `
-      <td>${c[0]?.v||""}</td>
-      <td>${c[1]?.v||""}</td>
-      <td>${c[2]?.v||""}</td>
-      <td>${c[4]?.v||""}</td>
-      <td>${c[5]?.v||""}</td>
-      <td>${c[6]?.v||""}</td>
-      <td class="${!oh?'blank-oh':''}">${oh?fmt(oh):"BLANK"}</td>
-      <td class="${isOver?'overdue-cell':''}">${due?fmt(due):""}</td>
-      <td>${c[11]?.v||""}</td>
+      <td>${c[0]?.v || ""}</td>
+      <td>${c[1]?.v || ""}</td>
+      <td>${c[2]?.v || ""}</td>
+      <td>${c[4]?.v || ""}</td>
+      <td>${c[5]?.v || ""}</td>
+      <td>${c[6]?.v || ""}</td>
+      <td>${oh ? fmt(oh) : ""}</td>
+      <td class="${isOver ? "overdue-cell" : ""}">
+        ${due ? fmt(due) : ""}
+      </td>
+      <td>${c[11]?.v || ""}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -184,9 +266,9 @@ async function loadData() {
   document.getElementById("totalCount").innerText = total;
   document.getElementById("overdueCount").innerText = overdue;
 
-  document.getElementById("search").onkeyup = function(){
+  document.getElementById("search").onkeyup = function () {
     const q = this.value.toLowerCase();
-    document.querySelectorAll("#dataTable tbody tr").forEach(tr=>{
+    document.querySelectorAll("#dataTable tbody tr").forEach(tr => {
       tr.style.display =
         tr.children[1].innerText.toLowerCase().includes(q) ||
         tr.children[2].innerText.toLowerCase().includes(q)
@@ -195,14 +277,17 @@ async function loadData() {
   };
 }
 
+/* EXPORT */
 function exportExcel() {
-  let csv=[];
-  document.querySelectorAll("#dataTable tr").forEach(r=>{
-    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
+  let csv = [];
+  document.querySelectorAll("#dataTable tr").forEach(r => {
+    csv.push([...r.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
   });
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download="motor_oh_due.csv";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "motor_oh_due.csv";
   a.click();
 }
 
