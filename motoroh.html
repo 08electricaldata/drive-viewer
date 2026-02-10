@@ -12,47 +12,26 @@ body {
   background: #f2f6ff;
 }
 
-/* ===== HEADER BAR ===== */
-.top-bar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+/* ===== HEADER ===== */
+.header {
   background: #003f88;
   color: white;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-}
-.top-bar button {
-  background: white;
-  color: #003f88;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.top-bar button:hover { opacity: 0.9; }
-
-.top-title {
-  flex: 1;
+  padding: 14px;
   text-align: center;
 }
-.top-title h1 {
+.header h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: 30px;
 }
-.top-title p {
-  margin: 2px 0 0;
-  font-size: 14px;
-  opacity: 0.9;
+.header p {
+  margin: 4px 0 0;
+  font-size: 16px;
 }
 
-/* ===== CONTENT ===== */
+/* ===== CONTAINER ===== */
 .container { padding: 20px; }
 
-/* SUMMARY */
+/* ===== SUMMARY ===== */
 .summary {
   display: flex;
   gap: 16px;
@@ -68,7 +47,10 @@ body {
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
-.summary .card h3 { margin: 0; color: #003f88; }
+.summary .card h3 {
+  margin: 0;
+  color: #003f88;
+}
 .summary .card p {
   font-size: 26px;
   font-weight: bold;
@@ -76,14 +58,17 @@ body {
 }
 .overdue-count { color: red; }
 
-/* CONTROLS */
+/* ===== CONTROLS ===== */
 .controls {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
-.controls input { padding: 8px; width: 260px; }
+.controls input {
+  padding: 8px;
+  width: 240px;
+}
 .controls button {
   padding: 8px 14px;
   background: #003f88;
@@ -93,7 +78,7 @@ body {
   cursor: pointer;
 }
 
-/* TABLE */
+/* ===== TABLE ===== */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -109,44 +94,50 @@ th {
   background: #003f88;
   color: white;
   position: sticky;
-  top: 52px;
+  top: 0;
 }
 
-/* HIGHLIGHTS */
+/* ===== COLUMN WIDTHS (PROFESSIONAL) ===== */
+th:nth-child(1), td:nth-child(1) { width: 60px; }
+th:nth-child(2), td:nth-child(2) { width: 110px; }
+th:nth-child(3), td:nth-child(3) { width: 100px; }
+th:nth-child(4), td:nth-child(4) { width: 220px; }
+th:nth-child(5), td:nth-child(5) { width: 60px; }
+th:nth-child(6), td:nth-child(6) { width: 60px; }
+th:nth-child(7), td:nth-child(7) { width: 110px; } /* OH DATE */
+th:nth-child(8), td:nth-child(8) { width: 110px; } /* NEXT DUE */
+th:nth-child(9), td:nth-child(9) { width: auto; }  /* REFERENCE */
+
+/* ===== HIGHLIGHTS ===== */
 .overdue-cell {
   background: red;
   color: yellow;
   font-weight: bold;
 }
-.blank-row {
+.section-row {
   background: #fff2a8;
+  font-weight: bold;
 }
 
-/* ROW INTERACTION */
+/* ===== ROW UX ===== */
 tbody tr {
   cursor: pointer;
 }
 tbody tr:hover {
-  background: #e6f0ff;
+  background: #eef5ff;
 }
 
 @media print {
-  .top-bar, .controls { display: none; }
+  .controls { display: none; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== TOP BAR ===== -->
-<div class="top-bar">
-  <button title="Go to Home" onclick="goHome()">🏠</button>
-  <button title="Go Back" onclick="goBack()">🔙</button>
-
-  <div class="top-title">
-    <h1>MOTOR O/H DUE</h1>
-    <p>Designed and maintained by Rakesh Chandra Sethy</p>
-  </div>
+<div class="header">
+  <h1>MOTOR O/H DUE</h1>
+  <p>Designed and maintained by Rakesh Chandra Sethy</p>
 </div>
 
 <div class="container">
@@ -191,14 +182,6 @@ tbody tr:hover {
 const SHEET =
 "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
 
-/* NAV */
-function goHome() {
-  window.location.href = "https://08electricaldata.github.io/";
-}
-function goBack() {
-  history.back();
-}
-
 /* DATE HELPERS */
 function parseDate(v) {
   if (!v) return null;
@@ -226,21 +209,24 @@ async function loadData() {
   j.table.rows.forEach(r => {
     const c = r.c || [];
 
-    if (!c[0]?.v) return; // stop empty rows
+    if (!c[1]?.v && !c[2]?.v) return;
 
-    total++;
+    const tr = document.createElement("tr");
+
+    /* SECTION ROW (COLUMN A EMPTY) */
+    if (!c[0]?.v) {
+      tr.classList.add("section-row");
+    } else {
+      total++;
+    }
 
     const oh = parseDate(c[8]?.v);
     const due = parseDate(c[9]?.v);
     const isOver = due && due < today;
     if (isOver) overdue++;
 
-    const tr = document.createElement("tr");
-    tr.title = "Click to view history";
-
-    if (!oh) tr.classList.add("blank-row");
-
     tr.onclick = () => {
+      if (!c[0]?.v) return;
       const id = `${c[1]?.v}-${c[2]?.v}`;
       window.location.href =
         "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
