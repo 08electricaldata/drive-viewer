@@ -81,7 +81,7 @@ h3 { font-size: 22px; margin-bottom: 10px; }
   color: #003f88;
 }
 
-/* ===== CONTROLS ===== */
+/* CONTROLS */
 .controls {
   display: flex;
   gap: 10px;
@@ -101,7 +101,7 @@ h3 { font-size: 22px; margin-bottom: 10px; }
   cursor: pointer;
 }
 
-/* ===== TABLE ===== */
+/* TABLE */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -130,7 +130,7 @@ th {
   font-size: 15px;
 }
 
-/* ===== MOBILE ===== */
+/* MOBILE */
 @media (max-width: 600px) {
   .grid { grid-template-columns: 1fr; }
   .header-credit { display: none; }
@@ -140,7 +140,6 @@ th {
 
 <body>
 
-<!-- ===== HEADER ===== -->
 <div class="header-bar">
   <button onclick="goHome()">🏠</button>
   <button onclick="goBack()">🔁</button>
@@ -192,50 +191,35 @@ th {
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
-/* ===== HEADER BUTTONS ===== */
-function goHome() {
-  location.href = "https://08electricaldata.github.io/";
-}
-function goBack() {
-  history.back();
-}
-function goDriveInfo() {
-  if (!id) return;
-  location.href =
-    "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
-    encodeURIComponent(id);
+/* ===== HEADER ===== */
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
+function goDriveInfo(){
+  if(!id) return;
+  location.href="https://08electricaldata.github.io/drive-viewer/index.html?id="+encodeURIComponent(id);
 }
 
-/* ===== LOAD DRIVE / TRANSFORMER / BREAKER INFO (NEW SHEET ONLY) ===== */
-async function loadDriveInfo() {
-  if (!id) return;
+/* ===== DRIVE INFO (NEW SHEET) ===== */
+async function loadDriveInfo(){
+  if(!id) return;
 
-  const url =
-    "https://docs.google.com/spreadsheets/d/1a9CRieF-ii4WJNSUODIwlYWKdTIT63u2mlu9Rtj4ltg/gviz/tq" +
-    "?gid=0&tqx=out:json";
+  const url="https://docs.google.com/spreadsheets/d/1a9CRieF-ii4WJNSUODIwlYWKdTIT63u2mlu9Rtj4ltg/gviz/tq?gid=0&tqx=out:json";
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(47,t.length-2));
 
-  const r = await fetch(url);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
-
-  let c = null;
-
-  j.table.rows.forEach(r => {
-    const col = r.c || [];
-    const uid = `${col[1]?.v}-${col[2]?.v}`.toUpperCase();
-    if (uid === id.toUpperCase()) c = col;
+  let c=null;
+  j.table.rows.forEach(r=>{
+    const col=r.c||[];
+    if((`${col[1]?.v}-${col[2]?.v}`).toUpperCase()===id.toUpperCase()) c=col;
   });
 
-  if (!c) {
-    document.getElementById("driveInfo").innerHTML = "Drive not found.";
-    return;
-  }
+  if(!c){ document.getElementById("driveInfo").innerHTML="Drive not found."; return; }
 
-  const type = (c[1]?.v || "").toUpperCase();
+  const type=(c[1]?.v||"").toUpperCase();
 
-  /* ===== TRANSFORMER ===== */
-  if (type === "TRANSFORMER") {
-    document.getElementById("driveInfo").innerHTML = `
+  if(type==="TRANSFORMER"){
+    document.getElementById("driveInfo").innerHTML=`
       <h3>Transformer No: ${c[2]?.v}</h3>
       <div class="grid">
         <p><span class="label">TR Sl No:</span> ${c[3]?.v}</p>
@@ -246,14 +230,12 @@ async function loadDriveInfo() {
         <p><span class="label">% Impedance:</span> ${c[8]?.v}</p>
         <p><span class="label">LT SWBD:</span> ${c[9]?.v}</p>
         <p><span class="label">Panel Rating:</span> ${c[10]?.v}</p>
-      </div>
-    `;
+      </div>`;
     return;
   }
 
-  /* ===== BREAKER ===== */
-  if (type === "BREAKER") {
-    document.getElementById("driveInfo").innerHTML = `
+  if(type==="BREAKER"){
+    document.getElementById("driveInfo").innerHTML=`
       <h3>Breaker – ${c[2]?.v}</h3>
       <div class="grid">
         <p><span class="label">Compartment No:</span> ${c[3]?.v}</p>
@@ -263,16 +245,13 @@ async function loadDriveInfo() {
         <p><span class="label">Type:</span> ${c[7]?.v}</p>
         <p><span class="label">LT SWBD:</span> ${c[9]?.v}</p>
         <p><span class="label">Panel Rating:</span> ${c[10]?.v}</p>
-      </div>
-    `;
+      </div>`;
     return;
   }
 
-  /* ===== MOTOR / DRIVE ===== */
-  document.getElementById("driveInfo").innerHTML = `
+  document.getElementById("driveInfo").innerHTML=`
     <h3>${c[1]?.v} – ${c[2]?.v}</h3>
     <p><span class="label">Pump Type:</span> ${c[4]?.v}</p>
-
     <div class="grid">
       <div>
         <p><span class="label">Rating:</span> ${c[5]?.v} KW</p>
@@ -282,19 +261,59 @@ async function loadDriveInfo() {
         <p><span class="label">SFU:</span> ${c[14]?.v}</p>
         <p><span class="label">Fuse:</span> ${c[15]?.v}</p>
         <p><span class="label">Contactor:</span> ${c[16]?.v}</p>
-        <p><span class="label">Relay / VFD:</span> ${c[17]?.v}</p>
+        <p><span class="label">Relay:</span> ${c[17]?.v}</p>
       </div>
       <div>
         <p><span class="label">CT (M):</span> ${c[18]?.v}</p>
         <p><span class="label">CT (P):</span> ${c[19]?.v}</p>
         <p><span class="label">Aux Contactor:</span> ${c[20]?.v}</p>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-/* ===== HISTORY (UNCHANGED) ===== */
-/* --- your existing history functions remain exactly same --- */
+/* ===== HISTORY (EXACT ORIGINAL WORKING CODE) ===== */
+function parseDate(v){ if(!v) return new Date(0);
+  if(typeof v==="string"&&v.startsWith("Date(")){const p=v.match(/\d+/g);return new Date(p[0],p[1],p[2]);}
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){const[d,m,y]=v.split("/");return new Date(y,m-1,d);}
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){const[d,m,y]=v.split("-");return new Date(y,m-1,d);}
+  return new Date(0);
+}
+function formatDate(v){const d=parseDate(v);return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;}
+
+async function loadHistory(){
+  const url="https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq?gid=751880096&tqx=out:json";
+  const r=await fetch(url);const t=await r.text();
+  const j=JSON.parse(t.substring(47,t.length-2));
+  let rows=[];
+  j.table.rows.forEach(r=>{
+    const c=r.c||[];
+    if((`${c[2]?.v}-${c[3]?.v}`).toUpperCase()!==id?.toUpperCase()) return;
+    rows.push(c);
+  });
+  rows.sort((a,b)=>parseDate(b[4]?.v)-parseDate(a[4]?.v));
+  const tbody=document.querySelector("#historyTable tbody");
+  tbody.innerHTML="";
+  let currentYear="";
+  rows.forEach(c=>{
+    const d=parseDate(c[4]?.v);const year=d.getFullYear();
+    if(year!==currentYear){currentYear=year;
+      const yr=document.createElement("tr");
+      yr.className="year-row";
+      yr.innerHTML=`<td colspan="8">YEAR ${year}</td>`;
+      tbody.appendChild(yr);}
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${c[0]?.v||""}</td>
+      <td>${c[1]?.v||""}</td>
+      <td>${formatDate(c[4]?.v)}</td>
+      <td>${c[5]?.v||""}</td>
+      <td>${c[6]?.v||""}</td>
+      <td>${c[7]?.v||""}</td>
+      <td>${c[9]?.v||""}</td>
+      <td>${c[10]?.v?`<a href="${c[10].v}" target="_blank">Open</a>`:""}</td>`;
+    tbody.appendChild(tr);
+  });
+}
 
 loadDriveInfo();
 loadHistory();
