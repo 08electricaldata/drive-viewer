@@ -107,6 +107,7 @@ tr:hover {
   font-size: 12px;
 }
 
+/* SECTION SEPARATOR */
 .section-row {
   background: #dbe9ff !important;
   font-weight: 600;
@@ -174,8 +175,10 @@ async function loadTransformers() {
   filterRow.innerHTML = "";
   tbody.innerHTML = "";
 
-  /* ===== HEADERS ===== */
+  /* ===== HEADERS (ONLY FROM headers[]) ===== */
   headers.forEach(h => {
+    if (!h) return;   // skip empty headings
+
     const th = document.createElement("th");
     th.textContent = h;
     headerRow.appendChild(th);
@@ -185,13 +188,13 @@ async function loadTransformers() {
     filterRow.appendChild(fh);
   });
 
-  /* ===== DATA ROWS ===== */
-  rows.forEach(r => {
-    if (!r[1]) return; // Column B validation
+  /* ===== DATA ROWS (SKIP FIRST ROW) ===== */
+  rows.slice(1).forEach(r => {   // ✅ skip duplicate header row
+    if (!r[1]) return;           // Column B validation
 
     const tr = document.createElement("tr");
 
-    if (!r[0]) tr.classList.add("section-row"); // Column A blank = section
+    if (!r[0]) tr.classList.add("section-row");
 
     r.forEach(v => {
       const td = document.createElement("td");
@@ -199,7 +202,6 @@ async function loadTransformers() {
       tr.appendChild(td);
     });
 
-    /* 👉 CLICK → HISTORY PAGE */
     tr.onclick = () => {
       const transformerNo = r[2];
       if (!transformerNo) return;
