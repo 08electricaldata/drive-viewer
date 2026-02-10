@@ -184,8 +184,10 @@ async function loadTransformers() {
   filterRow.innerHTML = "";
   tbody.innerHTML = "";
 
-  /* ===== HEADERS (ONLY FROM headers[]) ===== */
-headers.forEach(h => {
+/* ===== HEADERS FROM FIRST DATA ROW ===== */
+const headingRow = rows[0];
+
+headingRow.forEach(h => {
   const th = document.createElement("th");
   th.textContent = h || "";
   headerRow.appendChild(th);
@@ -194,6 +196,7 @@ headers.forEach(h => {
   fh.innerHTML = "<input placeholder='🔍'>";
   filterRow.appendChild(fh);
 });
+
 
 
   /* ===== DATA ROWS (SKIP FIRST ROW) ===== */
