@@ -6,7 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
 
 /* ===== PASSWORD OVERLAY ===== */
 #lockScreen {
@@ -59,6 +63,7 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 /* ===== CONTENT ===== */
 .container { padding: 20px; }
 
+/* ===== SUMMARY ===== */
 .summary {
   display: flex;
   gap: 16px;
@@ -67,7 +72,7 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 }
 .summary .card {
   flex: 1;
-  min-width: 180px;
+  min-width: 200px;
   background: white;
   border-radius: 10px;
   padding: 15px;
@@ -78,6 +83,7 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 .summary .card p { margin: 6px 0 0; font-size: 26px; font-weight: bold; }
 .overdue-count { color: red; }
 
+/* ===== CONTROLS ===== */
 .controls {
   display: flex;
   gap: 10px;
@@ -94,6 +100,7 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
   cursor: pointer;
 }
 
+/* ===== TABLE ===== */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -113,11 +120,28 @@ th {
   top: 0;
 }
 
-/* 🔴 OVERDUE CELL ONLY */
+/* 🔴 NEXT DUE OVERDUE (COLUMN J) */
 .overdue-cell {
   background: red;
   color: yellow;
   font-weight: bold;
+}
+
+/* 🟠 OH DATE BLANK (COLUMN I) */
+.blank-oh {
+  background: orange;
+  color: white;
+  font-weight: bold;
+}
+
+/* ===== COLUMN WIDTH FIX ===== */
+th:nth-child(8), td:nth-child(8) {  /* OH DATE */
+  min-width: 120px;
+  white-space: nowrap;
+}
+th:nth-child(9), td:nth-child(9) {  /* NEXT DUE */
+  min-width: 120px;
+  white-space: nowrap;
 }
 
 @media print {
@@ -128,11 +152,11 @@ th {
 
 <body>
 
-<!-- 🔐 PASSWORD SCREEN -->
+<!-- 🔐 PASSWORD -->
 <div id="lockScreen">
   <div class="lock-box">
     <h2>🔒 Protected</h2>
-    <p>Enter password to continue</p>
+    <p>Enter password</p>
     <input type="password" id="pwd">
     <button onclick="checkPassword()">Unlock</button>
     <div id="pwdError" class="lock-error"></div>
@@ -174,17 +198,14 @@ th {
 </div>
 
 <script>
-/* ===== SHEET CONFIG ===== */
+/* ===== PASSWORD FROM SHEET ===== */
+const PASSWORD_SHEET =
+"https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?range=A1&tqx=out:json";
 const DATA_SHEET =
 "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
 
-/* PASSWORD FROM CELL A1 */
-const PASSWORD_SHEET =
-"https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?range=A1&tqx=out:json";
-
 let SHEET_PASSWORD = "";
 
-/* ===== FETCH PASSWORD ===== */
 async function fetchPassword() {
   const r = await fetch(PASSWORD_SHEET);
   const t = await r.text();
@@ -193,7 +214,6 @@ async function fetchPassword() {
 }
 fetchPassword();
 
-/* ===== CHECK PASSWORD ===== */
 function checkPassword() {
   if (document.getElementById("pwd").value === SHEET_PASSWORD) {
     document.getElementById("lockScreen").style.display = "none";
@@ -252,8 +272,9 @@ async function loadData() {
     const c = r.c || [];
     total++;
 
-    const due = parseDate(c[9]?.v);
-    const isOverdue = due && due < today;
+    const ohDate = parseDate(c[8]?.v);
+    const nextDue = parseDate(c[9]?.v);
+    const isOverdue = nextDue && nextDue < today;
     if (isOverdue) overdue++;
 
     const tr = document.createElement("tr");
@@ -265,10 +286,13 @@ async function loadData() {
       <td>${c[4]?.v||""}</td>
       <td>${c[5]?.v||""}</td>
       <td>${c[8]?.v||""}</td>
-      <td class="${isOverdue?'overdue-cell':''}">
-        ${due ? formatDate(due) : ""}
+      <td class="${!ohDate?'blank-oh':''}">
+        ${ohDate ? formatDate(ohDate) : "BLANK"}
       </td>
-      <td>${c[11]?.v||""}</td>`;
+      <td class="${isOverdue?'overdue-cell':''}">
+        ${nextDue ? formatDate(nextDue) : ""}
+      </td>
+    `;
     tbody.appendChild(tr);
   });
 
