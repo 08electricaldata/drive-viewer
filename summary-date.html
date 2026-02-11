@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -44,9 +45,7 @@ body {
 }
 
 /* ===== PAGE ===== */
-.page {
-  padding: 20px;
-}
+.page { padding: 20px; }
 
 h2 {
   color: #003f88;
@@ -71,9 +70,7 @@ h2 {
   flex-wrap: wrap;
   align-items: center;
 }
-.controls input[type="date"] {
-  padding: 6px;
-}
+.controls input[type="date"] { padding: 6px; }
 .controls input[type="text"] {
   padding: 6px;
   width: 220px;
@@ -159,107 +156,109 @@ td:nth-child(5) {
 
 <script>
 /* ===== NAV ===== */
-function goHome() {
-  window.location.href = "https://08electricaldata.github.io/";
-}
-function goBack() {
-  history.back();
-}
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
 
-/* ===== DATE HELPERS ===== */
-function parseDate(v) {
-  if (!v) return "";
-  if (typeof v === "string" && v.startsWith("Date(")) {
-    const p = v.match(/\d+/g);
-    const d = new Date(p[0], p[1], p[2]);
-    return d.toISOString().slice(0,10);
+/* ===== DATE NORMALIZER (FIXED) ===== */
+function toISODate(v){
+  if(!v) return "";
+
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    return new Date(p[0],p[1],p[2]).toISOString().slice(0,10);
   }
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
-    const [d,m,y] = v.split("/");
+
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const[d,m,y]=v.split("/");
     return `${y}-${m}-${d}`;
   }
-  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) {
-    const [d,m,y] = v.split("-");
+
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const[d,m,y]=v.split("-");
     return `${y}-${m}-${d}`;
   }
+
+  if(!isNaN(Date.parse(v))){
+    return new Date(v).toISOString().slice(0,10);
+  }
+
   return "";
 }
-function formatDate(v) {
-  const iso = parseDate(v);
-  if (!iso) return "";
-  const [y,m,d] = iso.split("-");
+
+function formatDate(v){
+  const iso=toISODate(v);
+  if(!iso) return "";
+  const[y,m,d]=iso.split("-");
   return `${d}-${m}-${y}`;
 }
 
 /* ===== LOAD SUMMARY ===== */
-async function loadSummary() {
-  const selDate = document.getElementById("dateInput").value;
-  if (!selDate) {
-    alert("Please select a date");
-    return;
-  }
+async function loadSummary(){
+  const selDate=document.getElementById("dateInput").value;
+  if(!selDate){ alert("Please select a date"); return; }
 
-  const url =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+  const url=
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq"+
     "?gid=751880096&tqx=out:json";
 
-  const r = await fetch(url);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(47,t.length-2));
 
-  const tbody = document.querySelector("#summaryTable tbody");
-  tbody.innerHTML = "";
+  const tbody=document.querySelector("#summaryTable tbody");
+  tbody.innerHTML="";
+  let found=false;
 
-  let found = false;
+  j.table.rows.forEach(r=>{
+    const c=r.c||[];
+    const rowDate=toISODate(c[4]?.v);
+    if(rowDate!==selDate) return;
 
-  j.table.rows.forEach(r => {
-    const c = r.c || [];
-    const rowDate = parseDate(c[4]?.v);
-    if (rowDate !== selDate) return;
-
-    found = true;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${c[2]?.v || ""}</td>
-      <td>${c[3]?.v || ""}</td>
-      <td>${c[0]?.v || ""}</td>
-      <td>${c[1]?.v || ""}</td>
+    found=true;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${c[2]?.v||""}</td>
+      <td>${c[3]?.v||""}</td>
+      <td>${c[0]?.v||""}</td>
+      <td>${c[1]?.v||""}</td>
       <td>${formatDate(c[4]?.v)}</td>
-      <td>${c[5]?.v || ""}</td>
-      <td>${c[6]?.v || ""}</td>
-      <td>${c[7]?.v || ""}</td>
-      <td>${c[9]?.v || ""}</td>
-      <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
+      <td>${c[5]?.v||""}</td>
+      <td>${c[6]?.v||""}</td>
+      <td>${c[7]?.v||""}</td>
+      <td>${c[9]?.v||""}</td>
+      <td>${c[10]?.v?`<a href="${c[10].v}" target="_blank">Open</a>`:""}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  if (!found) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;font-weight:600">
-      No records found for selected date
-    </td></tr>`;
+  if(!found){
+    tbody.innerHTML=`
+      <tr>
+        <td colspan="10" style="text-align:center;font-weight:600">
+          No records found for selected date
+        </td>
+      </tr>`;
   }
 
-  document.getElementById("search").onkeyup = function () {
-    const q = this.value.toLowerCase();
+  document.getElementById("search").onkeyup=function(){
+    const q=this.value.toLowerCase();
     document.querySelectorAll("#summaryTable tbody tr")
-      .forEach(tr => tr.style.display =
-        tr.innerText.toLowerCase().includes(q) ? "" : "none");
+      .forEach(tr=>tr.style.display=
+        tr.innerText.toLowerCase().includes(q)?"":"none");
   };
 }
 
 /* ===== EXPORT ===== */
-function exportExcel() {
-  let csv = [];
-  document.querySelectorAll("#summaryTable tr").forEach(row => {
-    csv.push([...row.children].map(td =>
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("#summaryTable tr").forEach(row=>{
+    csv.push([...row.children].map(td=>
       `"${td.innerText.replace(/"/g,'""')}"`
     ).join(","));
   });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download = "date_wise_summary.csv";
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="date_wise_summary.csv";
   a.click();
 }
 </script>
