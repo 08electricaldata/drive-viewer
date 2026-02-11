@@ -266,21 +266,35 @@ async function loadDriveInfo(){
     </div>`;
 }
 
-/* ===== DATE HELPERS ===== */
-function parseDate(v){
-  if(!v) return new Date(0);
-  if(typeof v==="string" && /^\d{2}\/\d{2}\/\d{4}$/.test(v)){
-    const[d,m,y]=v.split("/");
-    return new Date(y,m-1,d);
+/* ===== DATE NORMALIZER (NEW – REQUIRED) ===== */
+function normalizeDateKey(v){
+  if(!v) return "";
+
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return v;
+
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    const d=new Date(p[0],p[1],p[2]);
+    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
   }
-  return new Date(v);
-}
-function formatDate(v){
-  const d=parseDate(v);
-  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+
+  const d=new Date(v);
+  if(!isNaN(d)){
+    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+  }
+
+  return "";
 }
 
-/* ===== JOB BOOK JSON ===== */
+/* ===== FORMAT DATE (UNCHANGED DISPLAY) ===== */
+function formatDate(v){
+  const key=normalizeDateKey(v);
+  if(!key) return "";
+  const[d,m,y]=key.split("/");
+  return `${d}-${m}-${y}`;
+}
+
+/* ===== JOB BOOK JSON (FIXED) ===== */
 const JOBBOOK_JSON =
   "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/jobbook.json";
 
@@ -290,8 +304,9 @@ async function loadJobBook(){
   const r = await fetch(JOBBOOK_JSON);
   const j = await r.json();
   j.rows.forEach(r=>{
-    if(r[0] && r[1]){
-      jobBookMap[String(r[0]).trim()] = r[1];
+    const key = normalizeDateKey(r[0]);
+    if(key && r[1]){
+      jobBookMap[key] = r[1];
     }
   });
 }
@@ -317,7 +332,7 @@ async function loadHistory(){
     }catch(e){}
   }
 
-  all.sort((a,b)=>parseDate(b[4])-parseDate(a[4]));
+  all.sort((a,b)=>new Date(b[4])-new Date(a[4]));
   renderHistory(all);
 }
 
@@ -327,8 +342,8 @@ function renderHistory(rows){
   let currentYear="";
 
   rows.forEach(r=>{
-    const d=parseDate(r[4]);
-    const y=d.getFullYear();
+    const key=normalizeDateKey(r[4]);
+    const y=key.slice(-4);
 
     if(y!==currentYear){
       currentYear=y;
@@ -338,10 +353,7 @@ function renderHistory(rows){
       tbody.appendChild(yr);
     }
 
-    const link =
-      jobBookMap[r[4]]
-        ? jobBookMap[r[4]]
-        : r[10];
+    const link = jobBookMap[key] || r[10];
 
     const tr=document.createElement("tr");
     tr.innerHTML=`
