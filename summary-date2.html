@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Date-wise Summary</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  padding: 0;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== STICKY HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.header-bar button:hover { opacity: 0.9; }
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ===== PAGE ===== */
+.page { padding: 20px; }
+
+h2 {
+  color: #003f88;
+  text-align: center;
+  font-size: 34px;
+  margin-bottom: 10px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  margin-bottom: 20px;
+}
+
+/* CONTROLS */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.controls input[type="date"],
+.controls input[type="text"] {
+  padding: 6px;
+}
+.controls input[type="text"] { width: 220px; }
+.controls button {
+  padding: 6px 12px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+th {
+  background: #003f88;
+  color: white;
+}
+th:nth-child(5),
+td:nth-child(5) {
+  width: 110px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  table { font-size: 12px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="goBack()">🔁</button>
+  <div class="header-title">Date-wise Summary</div>
+</div>
+
+<div class="page">
+<h2>Summary by Date</h2>
+
+<div class="card">
+  <div class="controls">
+    <input type="date" id="dateInput">
+    <button onclick="loadSummary()">Load</button>
+    <input id="search" placeholder="Search…">
+    <button onclick="exportExcel()">Export Excel</button>
+    <button onclick="window.print()">Export PDF</button>
+  </div>
+
+  <table id="summaryTable">
+    <thead>
+      <tr>
+        <th>BAT</th>
+        <th>EQP</th>
+        <th>TR NO</th>
+        <th>MONTH</th>
+        <th>DATE</th>
+        <th>DETAILS OF JOB</th>
+        <th>JOB TYPE</th>
+        <th>JOB CATEGORY</th>
+        <th>CARRIED OUT BY</th>
+        <th>LINK</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+</div>
+
+<script>
+const HISTORY_BASE =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+
+/* ===== NAV ===== */
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
+
+/* ===== DATE HELPERS ===== */
+function parseDate(v){
+  if(!v) return "";
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const[d,m,y]=v.split("/");
+    return `${y}-${m}-${d}`;
+  }
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const[d,m,y]=v.split("-");
+    return `${y}-${m}-${d}`;
+  }
+  return "";
+}
+function formatDate(v){
+  const iso=parseDate(v);
+  if(!iso) return "";
+  const[y,m,d]=iso.split("-");
+  return `${d}-${m}-${y}`;
+}
+
+/* ===== LOAD SUMMARY FROM JSON ===== */
+async function loadSummary(){
+  const selDate=document.getElementById("dateInput").value;
+  if(!selDate){ alert("Please select a date"); return; }
+
+  const year=selDate.slice(0,4);
+  const url=HISTORY_BASE+year+".json";
+
+  const tbody=document.querySelector("#summaryTable tbody");
+  tbody.innerHTML="";
+
+  let found=false;
+
+  try{
+    const j=await (await fetch(url)).json();
+
+    j.rows.forEach(r=>{
+      const rowDate=parseDate(r[4]);
+      if(rowDate!==selDate) return;
+
+      found=true;
+
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${r[2]||""}</td>
+        <td>${r[3]||""}</td>
+        <td>${r[0]||""}</td>
+        <td>${r[1]||""}</td>
+        <td>${formatDate(r[4])}</td>
+        <td>${r[5]||""}</td>
+        <td>${r[6]||""}</td>
+        <td>${r[7]||""}</td>
+        <td>${r[9]||""}</td>
+        <td>${r[10]?`<a href="${r[10]}" target="_blank">Open</a>`:""}</td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){}
+
+  if(!found){
+    tbody.innerHTML=`
+      <tr>
+        <td colspan="10" style="text-align:center;font-weight:600">
+          No records found for selected date
+        </td>
+      </tr>`;
+  }
+
+  document.getElementById("search").onkeyup=function(){
+    const q=this.value.toLowerCase();
+    document.querySelectorAll("#summaryTable tbody tr")
+      .forEach(tr=>{
+        tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none";
+      });
+  };
+}
+
+/* ===== EXPORT ===== */
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("#summaryTable tr").forEach(row=>{
+    csv.push([...row.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="date_wise_summary.csv";
+  a.click();
+}
+</script>
+
+</body>
+</html>
