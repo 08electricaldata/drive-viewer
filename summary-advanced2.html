@@ -12,7 +12,7 @@ body {
   background: #f2f6ff;
 }
 
-/* ===== STICKY HEADER ===== */
+/* ===== HEADER ===== */
 .header-bar {
   position: sticky;
   top: 0;
@@ -43,18 +43,19 @@ body {
   font-weight: 700;
 }
 
-/* ===== PAGE CONTENT ===== */
-.page { padding: 20px; }
+/* ===== PAGE ===== */
+.page {
+  padding: 20px;
+}
 
 .card {
   background: white;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  margin-bottom: 20px;
 }
 
-/* ===== FILTER CONTROLS ===== */
+/* ===== CONTROLS ===== */
 .controls {
   display: flex;
   gap: 10px;
@@ -87,17 +88,6 @@ th {
   background: #003f88;
   color: white;
 }
-
-/* COLUMN WIDTH */
-#summaryTable th:nth-child(4),
-#summaryTable td:nth-child(4),
-#summaryTable th:nth-child(5),
-#summaryTable td:nth-child(5) {
-  white-space: nowrap;
-  text-align: center;
-}
-
-/* Hover */
 tbody tr:hover {
   background: #eef5ff;
   cursor: pointer;
@@ -119,124 +109,145 @@ tbody tr:hover {
 </div>
 
 <div class="page">
+  <div class="card">
 
-<div class="card">
-  <div class="controls">
-    <input type="date" id="fromDate">
-    <input type="date" id="toDate">
-    <button onclick="loadSummary()">Apply</button>
-    <button onclick="exportExcel()">Export Excel</button>
-    <button onclick="window.print()">Export PDF</button>
+    <div class="controls">
+      <input type="date" id="fromDate">
+      <input type="date" id="toDate">
+      <button onclick="loadSummary()">Apply</button>
+      <button onclick="exportExcel()">Export Excel</button>
+      <button onclick="window.print()">Export PDF</button>
+    </div>
+
+    <table id="summaryTable">
+      <thead>
+        <tr>
+          <th>BAT</th>
+          <th>EQP</th>
+          <th>TR NO</th>
+          <th>MONTH</th>
+          <th>DATE</th>
+          <th>DETAILS OF JOB</th>
+          <th>JOB TYPE</th>
+          <th>JOB CATEGORY</th>
+          <th>CARRIED OUT BY</th>
+          <th>LINK</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
   </div>
-
-  <table id="summaryTable">
-    <thead>
-      <tr>
-        <th>BAT</th>
-        <th>EQP</th>
-        <th>TR NO</th>
-        <th>MONTH</th>
-        <th>DATE</th>
-        <th>DETAILS OF JOB</th>
-        <th>JOB TYPE</th>
-        <th>JOB CATEGORY</th>
-        <th>CARRIED OUT BY</th>
-        <th>LINK</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
 </div>
 
 <script>
+/* ===== CONFIG ===== */
 const HISTORY_BASE =
   "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
 
 /* ===== NAV ===== */
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
-function goBack(){ history.back(); }
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
 
 /* ===== DATE HELPERS ===== */
-function parseDate(v){
-  if(!v) return null;
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
-    const[d,m,y]=v.split("/");
-    return new Date(y,m-1,d);
-  }
-  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
-    const[d,m,y]=v.split("-");
-    return new Date(y,m-1,d);
+function jsonDateToISO(v) {
+  if (!v) return null;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+    const [d, m, y] = v.split("/");
+    return `${y}-${m}-${d}`; // ISO
   }
   return null;
 }
-function formatDate(d){
-  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+function formatISO(iso) {
+  const [y, m, d] = iso.split("-");
+  return `${d}-${m}-${y}`;
 }
 
-/* ===== LOAD SUMMARY (JSON BASED) ===== */
-async function loadSummary(){
-  const from=document.getElementById("fromDate").valueAsDate;
-  const to=document.getElementById("toDate").valueAsDate;
-  if(!from || !to){ alert("Select From and To dates"); return; }
+/* ===== LOAD SUMMARY ===== */
+async function loadSummary() {
+  const fromISO = document.getElementById("fromDate").value;
+  const toISO   = document.getElementById("toDate").value;
 
-  const tbody=document.querySelector("#summaryTable tbody");
-  tbody.innerHTML="";
-
-  const years=[];
-  for(let y=from.getFullYear();y<=to.getFullYear();y++) years.push(y);
-
-  let rows=[];
-
-  for(const y of years){
-    try{
-      const j=await (await fetch(HISTORY_BASE+y+".json")).json();
-      rows=rows.concat(j.rows);
-    }catch(e){}
+  if (!fromISO || !toISO) {
+    alert("Please select From and To dates");
+    return;
   }
 
-  rows.forEach(r=>{
-    const d=parseDate(r[4]);
-    if(!d) return;
-    if(d<from || d>to) return;
+  const tbody = document.querySelector("#summaryTable tbody");
+  tbody.innerHTML = "";
 
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${r[2]||""}</td>
-      <td>${r[3]||""}</td>
-      <td>${r[0]||""}</td>
-      <td>${r[1]||""}</td>
-      <td>${formatDate(d)}</td>
-      <td>${r[5]||""}</td>
-      <td>${r[6]||""}</td>
-      <td>${r[7]||""}</td>
-      <td>${r[9]||""}</td>
-      <td>${r[10]?`<a href="${r[10]}" target="_blank">Open</a>`:""}</td>
+  const fromYear = +fromISO.slice(0,4);
+  const toYear   = +toISO.slice(0,4);
+
+  let rows = [];
+
+  for (let y = fromYear; y <= toYear; y++) {
+    try {
+      const res = await fetch(HISTORY_BASE + y + ".json");
+      const json = await res.json();
+      rows.push(...json.rows);
+    } catch (e) {}
+  }
+
+  let found = false;
+
+  rows.forEach(r => {
+    const iso = jsonDateToISO(r[4]);
+    if (!iso) return;
+
+    if (iso < fromISO || iso > toISO) return;
+
+    found = true;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r[2] || ""}</td>
+      <td>${r[3] || ""}</td>
+      <td>${r[0] || ""}</td>
+      <td>${r[1] || ""}</td>
+      <td>${formatISO(iso)}</td>
+      <td>${r[5] || ""}</td>
+      <td>${r[6] || ""}</td>
+      <td>${r[7] || ""}</td>
+      <td>${r[9] || ""}</td>
+      <td>${r[10] ? `<a href="${r[10]}" target="_blank">Open</a>` : ""}</td>
     `;
 
-    tr.onclick=()=>{
-      const id=`${r[2]}-${r[3]}`;
-      location.href=
-        "https://08electricaldata.github.io/drive-viewer/index.html?id="+
+    tr.onclick = () => {
+      const id = `${r[2]}-${r[3]}`;
+      window.location.href =
+        "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
         encodeURIComponent(id);
     };
 
     tbody.appendChild(tr);
   });
+
+  if (!found) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center;font-weight:600">
+          No records found for selected date range
+        </td>
+      </tr>`;
+  }
 }
 
 /* ===== EXPORT ===== */
-function exportExcel(){
-  let csv=[];
-  document.querySelectorAll("#summaryTable tr").forEach(row=>{
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#summaryTable tr").forEach(row => {
     csv.push([...row.children].map(td =>
       `"${td.innerText.replace(/"/g,'""')}"`
     ).join(","));
   });
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download="summary.csv";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "summary.csv";
   a.click();
 }
 </script>
