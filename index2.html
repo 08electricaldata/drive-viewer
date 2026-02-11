@@ -15,7 +15,7 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 }
 .header-title { flex: 1; text-align: center; }
 .header-title h2 { margin: 0; color: #003f88; }
-.header-title small { display: block; font-size: 15px; font-weight: 600; }
+.header-title small { font-size: 14px; font-weight: 600; }
 .icon-btn {
   background: #003f88; color: #fff;
   border: none; border-radius: 8px;
@@ -28,7 +28,9 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 }
 .label { font-weight: bold; color: #003f88; }
 .grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
 }
 .action-btn {
   margin-top: 20px; padding: 10px 18px;
@@ -56,10 +58,11 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 
 <script>
 const DRIVE_JSON =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+ "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+
 const HISTORY_YEARS=[2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE=
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+ "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
 
 function goHome(){location.href="https://08electricaldata.github.io/";}
 function goBack(){history.back();}
@@ -77,7 +80,7 @@ function fmt(d){
 }
 
 async function lastDates(id,map){
-  const res={}; Object.keys(map).forEach(k=>res[k]=null);
+  const out={}; Object.keys(map).forEach(k=>out[k]=null);
   for(const y of HISTORY_YEARS){
     try{
       const j=await (await fetch(HISTORY_BASE+y+".json")).json();
@@ -86,13 +89,13 @@ async function lastDates(id,map){
         const job=(r[7]||"").toUpperCase();
         const d=parseDate(r[4]);
         Object.entries(map).forEach(([k,v])=>{
-          if(job===v && (!res[k]||d>res[k])) res[k]=d;
+          if(job===v && (!out[k]||d>out[k])) out[k]=d;
         });
       });
     }catch(e){}
   }
-  Object.keys(res).forEach(k=>res[k]=res[k]?fmt(res[k]):"NO RECORDS");
-  return res;
+  Object.keys(out).forEach(k=>out[k]=out[k]?fmt(out[k]):"NO RECORDS");
+  return out;
 }
 
 async function loadData(){
@@ -105,10 +108,11 @@ async function loadData(){
   else showMotor(c,id);
 }
 
-/* ================= MOTOR ================= */
+/* ================= MOTOR (UNCHANGED) ================= */
 async function showMotor(c,id){
   const p=await lastDates(id.toUpperCase(),{
-    rep:"MOTOR REPLACEMENT",pm:"MOTOR PM",mod:"MODULE PM",vfd:"VFD PM"
+    rep:"MOTOR REPLACEMENT",pm:"MOTOR PM",
+    mod:"MODULE PM",vfd:"VFD PM"
   });
   content.innerHTML=`
   <div class="card"><h3>${c[1]} – ${c[2]}</h3>
@@ -134,11 +138,14 @@ async function showMotor(c,id){
   <button class="action-btn" onclick="openHistory()">📜 History</button></div>`;
 }
 
-/* ================= TRANSFORMER ================= */
+/* ================= TRANSFORMER (RESTORED) ================= */
 async function showTransformer(c,id){
   const t=await lastDates(id.toUpperCase(),{
-    pm:"TRANSFORMER PM",oh:"TRANSFORMER O/H",
-    leak:"TRANSFORMER L/A",top:"OIL TUPOP",chk:"T/F OIL CHECK"
+    pm:"TRANSFORMER PM",
+    oh:"TRANSFORMER O/H",
+    leak:"TRANSFORMER L/A",
+    top:"OIL TUPOP",
+    chk:"T/F OIL CHECK"
   });
   content.innerHTML=`
   <div class="card"><h3>Transformer – ${c[2]}</h3>
@@ -161,7 +168,7 @@ async function showTransformer(c,id){
   <button class="action-btn" onclick="openHistory()">📜 History</button></div>`;
 }
 
-/* ================= BREAKER ================= */
+/* ================= BREAKER (RESTORED) ================= */
 async function showBreaker(c,id){
   const b=await lastDates(id.toUpperCase(),{pm:"BREAKER PM"});
   content.innerHTML=`
@@ -182,7 +189,9 @@ async function showBreaker(c,id){
 
 function openHistory(){
   const id=new URLSearchParams(location.search).get("id");
-  location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
+  location.href=
+    "https://08electricaldata.github.io/drive-viewer/history.html?id="+
+    encodeURIComponent(id);
 }
 
 loadData();
