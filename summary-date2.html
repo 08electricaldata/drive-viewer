@@ -69,11 +69,11 @@ h2 {
   flex-wrap: wrap;
   align-items: center;
 }
-.controls input[type="date"],
+.controls input[type="date"] { padding: 6px; }
 .controls input[type="text"] {
   padding: 6px;
+  width: 220px;
 }
-.controls input[type="text"] { width: 220px; }
 .controls button {
   padding: 6px 12px;
   background: #003f88;
@@ -120,6 +120,7 @@ td:nth-child(5) {
 </div>
 
 <div class="page">
+
 <h2>Summary by Date</h2>
 
 <div class="card">
@@ -149,73 +150,85 @@ td:nth-child(5) {
     <tbody></tbody>
   </table>
 </div>
+
 </div>
 
 <script>
-const HISTORY_BASE =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
-
 /* ===== NAV ===== */
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ history.back(); }
 
-/* ===== DATE HELPERS ===== */
-function parseDate(v){
+/* ===== DATE NORMALIZER (FIXED) ===== */
+function toISODate(v){
   if(!v) return "";
+
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    return new Date(p[0],p[1],p[2]).toISOString().slice(0,10);
+  }
+
   if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
     const[d,m,y]=v.split("/");
     return `${y}-${m}-${d}`;
   }
+
   if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
     const[d,m,y]=v.split("-");
     return `${y}-${m}-${d}`;
   }
+
+  if(!isNaN(Date.parse(v))){
+    return new Date(v).toISOString().slice(0,10);
+  }
+
   return "";
 }
+
 function formatDate(v){
-  const iso=parseDate(v);
+  const iso=toISODate(v);
   if(!iso) return "";
   const[y,m,d]=iso.split("-");
   return `${d}-${m}-${y}`;
 }
 
-/* ===== LOAD SUMMARY FROM JSON ===== */
+/* ===== LOAD SUMMARY ===== */
 async function loadSummary(){
   const selDate=document.getElementById("dateInput").value;
   if(!selDate){ alert("Please select a date"); return; }
 
-  const year=selDate.slice(0,4);
-  const url=HISTORY_BASE+year+".json";
+  const url=
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq"+
+    "?gid=751880096&tqx=out:json";
+
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(47,t.length-2));
 
   const tbody=document.querySelector("#summaryTable tbody");
   tbody.innerHTML="";
-
   let found=false;
 
-  try{
-    const j=await (await fetch(url)).json();
+  j.table.rows.forEach(r=>{
+    const c=r.c||[];
+    const rowDate=toISODate(c[4]?.v);
+    if(rowDate!==selDate) return;
 
-    j.rows.forEach(r=>{
-      const rowDate=parseDate(r[4]);
-      if(rowDate!==selDate) return;
-
-      found=true;
-
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${r[2]||""}</td>
-        <td>${r[3]||""}</td>
-        <td>${r[0]||""}</td>
-        <td>${r[1]||""}</td>
-        <td>${formatDate(r[4])}</td>
-        <td>${r[5]||""}</td>
-        <td>${r[6]||""}</td>
-        <td>${r[7]||""}</td>
-        <td>${r[9]||""}</td>
-        <td>${r[10]?`<a href="${r[10]}" target="_blank">Open</a>`:""}</td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){}
+    found=true;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${c[2]?.v||""}</td>
+      <td>${c[3]?.v||""}</td>
+      <td>${c[0]?.v||""}</td>
+      <td>${c[1]?.v||""}</td>
+      <td>${formatDate(c[4]?.v)}</td>
+      <td>${c[5]?.v||""}</td>
+      <td>${c[6]?.v||""}</td>
+      <td>${c[7]?.v||""}</td>
+      <td>${c[9]?.v||""}</td>
+      <td>${c[10]?.v?`<a href="${c[10].v}" target="_blank">Open</a>`:""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 
   if(!found){
     tbody.innerHTML=`
@@ -229,9 +242,8 @@ async function loadSummary(){
   document.getElementById("search").onkeyup=function(){
     const q=this.value.toLowerCase();
     document.querySelectorAll("#summaryTable tbody tr")
-      .forEach(tr=>{
-        tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none";
-      });
+      .forEach(tr=>tr.style.display=
+        tr.innerText.toLowerCase().includes(q)?"":"none");
   };
 }
 
@@ -239,7 +251,7 @@ async function loadSummary(){
 function exportExcel(){
   let csv=[];
   document.querySelectorAll("#summaryTable tr").forEach(row=>{
-    csv.push([...row.children].map(td =>
+    csv.push([...row.children].map(td=>
       `"${td.innerText.replace(/"/g,'""')}"`
     ).join(","));
   });
