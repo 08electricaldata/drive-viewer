@@ -1,75 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Date-wise Summary</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f2f6ff;
+body{font-family:Arial;margin:0;background:#f2f6ff}
+.header-bar{
+  position:sticky;top:0;z-index:1000;
+  background:#003f88;color:#fff;
+  display:flex;align-items:center;gap:10px;
+  padding:12px
 }
-
-/* HEADER */
-.header-bar {
-  position: sticky;
-  top: 0;
-  background: #003f88;
-  color: #fff;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 1000;
+.header-bar button{
+  background:#fff;color:#003f88;
+  border:none;border-radius:6px;
+  padding:8px 12px;font-size:16px;cursor:pointer
 }
-.header-bar button {
-  background: #fff;
-  color: #003f88;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  cursor: pointer;
+.header-title{flex:1;text-align:center;font-size:20px;font-weight:700}
+.page{padding:20px}
+h2{text-align:center;color:#003f88;font-size:32px}
+.card{
+  background:#fff;padding:20px;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15)
 }
-.header-title {
-  flex: 1;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 700;
+.controls{
+  display:flex;gap:10px;flex-wrap:wrap;
+  margin-bottom:12px;align-items:center
 }
-
-/* PAGE */
-.page { padding: 20px; }
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+.controls input, .controls button{
+  padding:6px;font-size:14px
 }
-.controls {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+.controls button{
+  background:#003f88;color:#fff;
+  border:none;border-radius:4px;cursor:pointer
 }
-.controls input, .controls button {
-  padding: 6px;
+table{
+  width:100%;border-collapse:collapse;font-size:14px
 }
-
-/* TABLE */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+th,td{
+  border:1px solid #ccc;padding:6px 8px
 }
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px 8px;
+th{
+  background:#003f88;color:#fff
 }
-th {
-  background: #003f88;
-  color: #fff;
+th:nth-child(5),td:nth-child(5){
+  text-align:center;white-space:nowrap
 }
+@media(max-width:600px){table{font-size:12px}}
 </style>
 </head>
 
@@ -82,139 +62,135 @@ th {
 </div>
 
 <div class="page">
-  <div class="card">
-    <div class="controls">
-      <input type="date" id="dateInput">
-      <button onclick="loadSummary()">Load</button>
-      <input id="search" placeholder="Search…">
-      <button onclick="exportExcel()">Export Excel</button>
-      <button onclick="window.print()">Export PDF</button>
-    </div>
+<h2>Summary by Date</h2>
 
-    <table id="summaryTable">
-      <thead>
-        <tr>
-          <th>BAT</th>
-          <th>EQP</th>
-          <th>TR NO</th>
-          <th>MONTH</th>
-          <th>DATE</th>
-          <th>DETAILS OF JOB</th>
-          <th>JOB TYPE</th>
-          <th>JOB CATEGORY</th>
-          <th>CARRIED OUT BY</th>
-          <th>LINK</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+<div class="card">
+  <div class="controls">
+    <input type="date" id="dateInput">
+    <button onclick="loadSummary()">Load</button>
+    <input id="search" placeholder="Search…">
+    <button onclick="exportExcel()">Export Excel</button>
+    <button onclick="window.print()">Export PDF</button>
   </div>
+
+  <table id="summaryTable">
+    <thead>
+      <tr>
+        <th>BAT</th>
+        <th>EQP</th>
+        <th>TR NO</th>
+        <th>MONTH</th>
+        <th>DATE</th>
+        <th>DETAILS OF JOB</th>
+        <th>JOB TYPE</th>
+        <th>JOB CATEGORY</th>
+        <th>CARRIED OUT BY</th>
+        <th>LINK</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 </div>
 
 <script>
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
-function goBack(){ history.back(); }
+/* ===== NAV ===== */
+function goHome(){location.href="https://08electricaldata.github.io/";}
+function goBack(){history.back();}
 
-/* ================= DATE NORMALIZATION ================= */
-function normalizeDate(v) {
-  if (!v) return "";
+/* ===== DATE NORMALIZATION (NO TIMEZONE BUGS) ===== */
+function pickerKey(v){
+  if(!v) return null;
+  const [y,m,d]=v.split("-");
+  return +(y+m+d);
+}
 
-  // Google Date(yyyy,mm,dd)
-  if (typeof v === "string" && v.startsWith("Date(")) {
-    const p = v.match(/\d+/g);
-    const d = new Date(p[0], p[1], p[2]);
-    return d.toISOString().slice(0,10);
-  }
+function sheetKey(v){
+  if(!v) return null;
 
   // DD/MM/YYYY
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
-    const [d,m,y] = v.split("/");
-    return `${y}-${m}-${d}`;
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const [d,m,y]=v.split("/");
+    return +(y+m+d);
   }
 
-  // DD-MM-YYYY
-  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) {
-    const [d,m,y] = v.split("-");
-    return `${y}-${m}-${d}`;
+  // Google Date(yyyy,mm,dd)
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    const y=p[0];
+    const m=String(+p[1]+1).padStart(2,"0");
+    const d=String(p[2]).padStart(2,"0");
+    return +(y+m+d);
   }
 
-  // ISO already
-  if (/^\d{4}-\d{2}-\d{2}/.test(v)) {
-    return v.slice(0,10);
-  }
-
-  return "";
+  return null;
 }
 
-function displayDate(iso){
-  if(!iso) return "";
-  const [y,m,d]=iso.split("-");
-  return `${d}-${m}-${y}`;
+function fmtFromKey(k){
+  if(!k) return "";
+  const s=String(k);
+  return `${s.slice(6,8)}-${s.slice(4,6)}-${s.slice(0,4)}`;
 }
 
-/* ================= LOAD SUMMARY ================= */
-async function loadSummary() {
-  const selDate = document.getElementById("dateInput").value;
-  if (!selDate) {
-    alert("Please select a date");
-    return;
-  }
+/* ===== LOAD SUMMARY ===== */
+async function loadSummary(){
+  const pick=document.getElementById("dateInput").value;
+  if(!pick){alert("Please select a date");return;}
 
-  const url =
-    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+  const pickK=pickerKey(pick);
+
+  const url=
+    "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq"+
     "?gid=751880096&tqx=out:json";
 
-  const r = await fetch(url);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
+  const r=await fetch(url);
+  const t=await r.text();
+  const j=JSON.parse(t.substring(47,t.length-2));
 
-  const tbody = document.querySelector("#summaryTable tbody");
-  tbody.innerHTML = "";
-  let found = false;
+  const tbody=document.querySelector("#summaryTable tbody");
+  tbody.innerHTML="";
+  let found=false;
 
-  j.table.rows.forEach(r => {
-    const c = r.c || [];
-    const rowISO = normalizeDate(c[4]?.v);
+  j.table.rows.forEach(row=>{
+    const c=row.c||[];
+    const rowK=sheetKey(c[4]?.v);
+    if(rowK!==pickK) return;
 
-    if (rowISO !== selDate) return;
+    found=true;
 
-    found = true;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${c[2]?.v || ""}</td>
-      <td>${c[3]?.v || ""}</td>
-      <td>${c[0]?.v || ""}</td>
-      <td>${c[1]?.v || ""}</td>
-      <td>${displayDate(rowISO)}</td>
-      <td>${c[5]?.v || ""}</td>
-      <td>${c[6]?.v || ""}</td>
-      <td>${c[7]?.v || ""}</td>
-      <td>${c[9]?.v || ""}</td>
-      <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${c[2]?.v||""}</td>
+      <td>${c[3]?.v||""}</td>
+      <td>${c[0]?.v||""}</td>
+      <td>${c[1]?.v||""}</td>
+      <td>${fmtFromKey(rowK)}</td>
+      <td>${c[5]?.v||""}</td>
+      <td>${c[6]?.v||""}</td>
+      <td>${c[7]?.v||""}</td>
+      <td>${c[9]?.v||""}</td>
+      <td>${c[10]?.v?`<a href="${c[10].v}" target="_blank">Open</a>`:""}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  if (!found) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" style="text-align:center;font-weight:600">
-          No records found for selected date
-        </td>
-      </tr>`;
+  if(!found){
+    tbody.innerHTML=
+      `<tr><td colspan="10" style="text-align:center;font-weight:600">
+        No records found for selected date
+      </td></tr>`;
   }
 
-  document.getElementById("search").onkeyup = function(){
+  document.getElementById("search").onkeyup=function(){
     const q=this.value.toLowerCase();
     document.querySelectorAll("#summaryTable tbody tr")
       .forEach(tr=>{
-        tr.style.display = tr.innerText.toLowerCase().includes(q) ? "" : "none";
+        tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none";
       });
   };
 }
 
-/* ================= EXPORT ================= */
+/* ===== EXPORT ===== */
 function exportExcel(){
   let csv=[];
   document.querySelectorAll("#summaryTable tr").forEach(r=>{
