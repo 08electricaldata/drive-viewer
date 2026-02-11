@@ -6,102 +6,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f2f6ff;
-}
-
-/* ===== HEADER ===== */
-.header-bar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: #003f88;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-}
-
-.header-bar button {
-  background: white;
-  color: #003f88;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.header-bar button:hover { opacity: 0.9; }
-
-.header-title {
-  flex: 1;
-  text-align: center;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-/* ===== PAGE ===== */
-.page {
-  padding: 20px;
-}
-
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
-
-/* ===== CONTROLS ===== */
-.controls {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-.controls input {
-  padding: 6px;
-}
-.controls button {
-  padding: 6px 12px;
-  background: #003f88;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* ===== TABLE ===== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px 8px;
-}
-th {
-  background: #003f88;
-  color: white;
-}
-tbody tr:hover {
-  background: #eef5ff;
-  cursor: pointer;
-}
-
-@media print {
-  .header-bar, .controls { display: none; }
-}
+body{font-family:Arial;margin:0;background:#f2f6ff}
+.header-bar{position:sticky;top:0;background:#003f88;color:#fff;
+display:flex;gap:10px;padding:12px;z-index:1000}
+.header-bar button{background:#fff;color:#003f88;border:none;
+border-radius:6px;padding:8px 12px;cursor:pointer}
+.header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
+.page{padding:20px}
+.card{background:#fff;padding:20px;border-radius:10px;
+box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.controls input,.controls button{padding:6px}
+.controls button{background:#003f88;color:#fff;border:none;border-radius:4px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid #ccc;padding:6px}
+th{background:#003f88;color:#fff}
+tbody tr:hover{background:#eef5ff;cursor:pointer}
 </style>
 </head>
 
 <body>
 
-<!-- ===== HEADER ===== -->
 <div class="header-bar">
   <button onclick="goHome()">🏠</button>
   <button onclick="goBack()">🔁</button>
@@ -109,146 +34,113 @@ tbody tr:hover {
 </div>
 
 <div class="page">
-  <div class="card">
+<div class="card">
 
-    <div class="controls">
-      <input type="date" id="fromDate">
-      <input type="date" id="toDate">
-      <button onclick="loadSummary()">Apply</button>
-      <button onclick="exportExcel()">Export Excel</button>
-      <button onclick="window.print()">Export PDF</button>
-    </div>
+<div class="controls">
+  <input type="date" id="fromDate">
+  <input type="date" id="toDate">
+  <button onclick="loadSummary()">Apply</button>
+  <button onclick="exportExcel()">Export Excel</button>
+</div>
 
-    <table id="summaryTable">
-      <thead>
-        <tr>
-          <th>BAT</th>
-          <th>EQP</th>
-          <th>TR NO</th>
-          <th>MONTH</th>
-          <th>DATE</th>
-          <th>DETAILS OF JOB</th>
-          <th>JOB TYPE</th>
-          <th>JOB CATEGORY</th>
-          <th>CARRIED OUT BY</th>
-          <th>LINK</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+<table id="summaryTable">
+<thead>
+<tr>
+<th>BAT</th>
+<th>EQP</th>
+<th>TR NO</th>
+<th>MONTH</th>
+<th>DATE</th>
+<th>DETAILS OF JOB</th>
+<th>JOB TYPE</th>
+<th>JOB CATEGORY</th>
+<th>CARRIED OUT BY</th>
+<th>LINK</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
 
-  </div>
+</div>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const HISTORY_BASE =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+const BASE =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
 
-/* ===== NAV ===== */
-function goHome() {
-  window.location.href = "https://08electricaldata.github.io/";
-}
-function goBack() {
-  history.back();
-}
+function goHome(){location.href="https://08electricaldata.github.io/"}
+function goBack(){history.back()}
 
-/* ===== DATE HELPERS ===== */
-function jsonDateToISO(v) {
-  if (!v) return null;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
-    const [d, m, y] = v.split("/");
-    return `${y}-${m}-${d}`; // ISO
-  }
-  return null;
+function parseISO(v){
+ if(!v) return null;
+ if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+  const[d,m,y]=v.split("/");
+  return `${y}-${m}-${d}`;
+ }
+ return null;
 }
-function formatISO(iso) {
-  const [y, m, d] = iso.split("-");
-  return `${d}-${m}-${y}`;
+function fmt(iso){
+ const[y,m,d]=iso.split("-");
+ return `${d}-${m}-${y}`;
 }
 
-/* ===== LOAD SUMMARY ===== */
-async function loadSummary() {
-  const fromISO = document.getElementById("fromDate").value;
-  const toISO   = document.getElementById("toDate").value;
+async function loadSummary(){
+ const from=document.getElementById("fromDate").value;
+ const to=document.getElementById("toDate").value;
+ if(!from||!to){alert("Select date range");return}
 
-  if (!fromISO || !toISO) {
-    alert("Please select From and To dates");
-    return;
-  }
+ const tbody=document.querySelector("#summaryTable tbody");
+ tbody.innerHTML="";
 
-  const tbody = document.querySelector("#summaryTable tbody");
-  tbody.innerHTML = "";
+ const fromY=+from.slice(0,4), toY=+to.slice(0,4);
+ let found=false;
 
-  const fromYear = +fromISO.slice(0,4);
-  const toYear   = +toISO.slice(0,4);
+ for(let y=fromY;y<=toY;y++){
+  try{
+   const j=await (await fetch(BASE+y+".json")).json();
+   j.rows.forEach(r=>{
+    const iso=parseISO(r[4]);   // ✅ DATE = COLUMN E
+    if(!iso||iso<from||iso>to) return;
 
-  let rows = [];
-
-  for (let y = fromYear; y <= toYear; y++) {
-    try {
-      const res = await fetch(HISTORY_BASE + y + ".json");
-      const json = await res.json();
-      rows.push(...json.rows);
-    } catch (e) {}
-  }
-
-  let found = false;
-
-  rows.forEach(r => {
-    const iso = jsonDateToISO(r[4]);
-    if (!iso) return;
-
-    if (iso < fromISO || iso > toISO) return;
-
-    found = true;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${r[2] || ""}</td>
-      <td>${r[3] || ""}</td>
-      <td>${r[0] || ""}</td>
-      <td>${r[1] || ""}</td>
-      <td>${formatISO(iso)}</td>
-      <td>${r[5] || ""}</td>
-      <td>${r[6] || ""}</td>
-      <td>${r[7] || ""}</td>
-      <td>${r[9] || ""}</td>
-      <td>${r[10] ? `<a href="${r[10]}" target="_blank">Open</a>` : ""}</td>
-    `;
-
-    tr.onclick = () => {
-      const id = `${r[2]}-${r[3]}`;
-      window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
-        encodeURIComponent(id);
+    found=true;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+<td>${r[2]||""}</td>
+<td>${r[3]||""}</td>
+<td>${r[0]||""}</td>
+<td>${r[1]||""}</td>
+<td>${fmt(iso)}</td>
+<td>${r[5]||""}</td>
+<td>${r[6]||""}</td>
+<td>${r[7]||""}</td>
+<td>${r[9]||""}</td>
+<td>${r[10]?`<a href="${r[10]}" target="_blank">Open</a>`:""}</td>`;
+    tr.onclick=()=>{
+     const id=`${r[2]}-${r[3]}`;
+     location.href=
+     "https://08electricaldata.github.io/drive-viewer/index.html?id="+
+     encodeURIComponent(id);
     };
-
     tbody.appendChild(tr);
-  });
+   });
+  }catch(e){}
+ }
 
-  if (!found) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" style="text-align:center;font-weight:600">
-          No records found for selected date range
-        </td>
-      </tr>`;
-  }
+ if(!found){
+  tbody.innerHTML=`<tr><td colspan="10"
+  style="text-align:center;font-weight:600">
+  No records found</td></tr>`;
+ }
 }
 
-/* ===== EXPORT ===== */
-function exportExcel() {
-  let csv = [];
-  document.querySelectorAll("#summaryTable tr").forEach(row => {
-    csv.push([...row.children].map(td =>
-      `"${td.innerText.replace(/"/g,'""')}"`
-    ).join(","));
-  });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download = "summary.csv";
-  a.click();
+function exportExcel(){
+ let csv=[];
+ document.querySelectorAll("#summaryTable tr").forEach(r=>{
+  csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
+ });
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+ a.download="summary.csv";a.click();
 }
 </script>
 
