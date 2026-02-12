@@ -1,76 +1,40 @@
 
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Drive History</title>
+<title>Equipment Details</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  padding: 0;
-  margin: 0;
-  background: #f2f6ff;
-}
+body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 
-/* ===== STICKY HEADER ===== */
 .header-bar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: #003f88;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
+  position: sticky; top: 0; z-index: 1000;
+  background: #f2f6ff; padding: 10px 12px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 
-.header-bar button {
-  background: white;
-  color: #003f88;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.header-bar button:hover { opacity: 0.9; }
+.header-title { flex: 1; text-align: center; }
+.header-title h2 { margin: 0; color: #003f88; }
+.header-title small { display: block; font-size: 15px; font-weight: 600; }
 
-.header-title {
-  flex: 1;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 700;
+.icon-btn {
+  background: #003f88; color: #fff;
+  border: none; border-radius: 8px;
+  padding: 10px 12px; font-size: 18px; cursor: pointer;
 }
 
-.header-credit {
-  font-size: 16px;
-  font-weight: 500;
-  opacity: 0.9;
-  white-space: nowrap;
-}
-
-/* ===== PAGE ===== */
-.page { padding: 20px; }
-
-h2, h3 {
-  color: #003f88;
-  text-align: center;
-  font-weight: 700;
-}
-
-h2 { font-size: 34px; margin-bottom: 10px; }
-h3 { font-size: 22px; margin-bottom: 10px; }
+.container { padding: 20px; }
 
 .card {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  margin-bottom: 20px;
+  background: #fff; padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
+
+.label { font-weight: bold; color: #003f88; }
 
 .grid {
   display: grid;
@@ -78,64 +42,31 @@ h3 { font-size: 22px; margin-bottom: 10px; }
   gap: 16px;
 }
 
-.label {
-  font-weight: bold;
-  color: #003f88;
-}
-
-/* CONTROLS */
-.controls {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-.controls input {
-  padding: 6px;
-  width: 220px;
-}
-.controls button {
-  padding: 6px 12px;
+.action-btn {
+  margin-top: 20px;
+  padding: 10px 18px;
   background: #003f88;
-  color: white;
+  color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
-/* TABLE */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px 8px;
-}
-th {
-  background: #003f88;
-  color: white;
-}
-#historyTable th:nth-child(3),
-#historyTable td:nth-child(3) {
-  width: 110px;
-  white-space: nowrap;
-  text-align: center;
-}
-.year-row td {
-  background: #e8f0ff;
-  color: #003f88;
-  font-weight: 700;
-  text-align: center;
-  padding: 8px;
-  font-size: 15px;
-}
-
-/* MOBILE */
-@media (max-width: 600px) {
+/* ===== MOBILE SIDE-BY-SIDE ACTION BUTTONS ===== */
+@media(max-width:768px){
   .grid { grid-template-columns: 1fr; }
-  .header-credit { display: none; }
+
+  .action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .action-row .action-btn {
+    margin-top: 0;
+    width: 100%;
+  }
 }
 </style>
 </head>
@@ -143,214 +74,212 @@ th {
 <body>
 
 <div class="header-bar">
-  <button onclick="goHome()">🏠</button>
-  <button onclick="goBack()">🔁</button>
-  <button onclick="goDriveInfo()">ℹ️</button>
-
-  <div class="header-title">Drive History</div>
-
-  <div class="header-credit">
-    Designed and Maintained by Rakesh Chandra Sethy
+  <button class="icon-btn" onclick="goHome()">🏠</button>
+  <button class="icon-btn" onclick="goBack()">🔁</button>
+  <div class="header-title">
+    <h2>Equipment Information</h2>
+    <small>Designed and maintained by Rakesh Chandra Sethy</small>
   </div>
 </div>
 
-<div class="page">
-
-<h2>Drive Information</h2>
-
-<div id="driveInfo" class="card">
-  Loading drive information…
-</div>
-
-<h2>History</h2>
-
-<div class="card">
-  <div class="controls">
-    <input id="search" placeholder="Search…">
-    <button onclick="exportExcel()">Export Excel</button>
-    <button onclick="window.print()">Export PDF</button>
-  </div>
-
-  <table id="historyTable">
-    <thead>
-      <tr>
-        <th>TR NO</th>
-        <th>MONTH</th>
-        <th>DATE</th>
-        <th>DETAILS OF JOB</th>
-        <th>JOB TYPE</th>
-        <th>JOB CATEGORY</th>
-        <th>CARRIED OUT BY</th>
-        <th>LINK</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
+<div class="container">
+  <div id="content">Loading data…</div>
 </div>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+const DRIVE_JSON =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
 
-/* ===== HEADER ===== */
+const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ history.back(); }
-function goDriveInfo(){
+
+/* ===== ADD JOB REDIRECT (NEW) ===== */
+function addJob(){
+  const id = new URLSearchParams(location.search).get("id");
   if(!id) return;
-  location.href="https://08electricaldata.github.io/drive-viewer/index.html?id="+encodeURIComponent(id);
+  location.href =
+    "https://08electricaldata.github.io/qrsubmit.html?id=" +
+    encodeURIComponent(id);
 }
 
-/* ===== DRIVE INFO (UNCHANGED) ===== */
-async function loadDriveInfo(){
-  if(!id) return;
-
-  const url="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
-  const r=await fetch(url);
-  const j=await r.json();
-
-  let c=null;
-  j.rows.forEach(r=>{
-    if((`${r[1]}-${r[2]}`).toUpperCase()===id.toUpperCase()) c=r;
-  });
-
-  if(!c){
-    document.getElementById("driveInfo").innerHTML="Drive not found.";
-    return;
-  }
-
-  const type=(c[1]||"").toUpperCase();
-
-  if(type==="TRANSFORMER"){
-    document.getElementById("driveInfo").innerHTML=`
-      <h3>Transformer No: ${c[2]}</h3>
-      <div class="grid">
-        <p><span class="label">TR Sl No:</span> ${c[3]}</p>
-        <p><span class="label">Make:</span> ${c[4]}</p>
-        <p><span class="label">Rating:</span> ${c[5]} KVA</p>
-        <p><span class="label">From S/S:</span> ${c[6]}</p>
-        <p><span class="label">Unit S/S:</span> ${c[7]}</p>
-        <p><span class="label">% Impedance:</span> ${c[8]}</p>
-        <p><span class="label">LT SWBD:</span> ${c[9]}</p>
-        <p><span class="label">Panel Rating:</span> ${c[10]}</p>
-      </div>`;
-    return;
-  }
-
-  if(type==="BREAKER"){
-    document.getElementById("driveInfo").innerHTML=`
-      <h3>Breaker – ${c[2]}</h3>
-      <div class="grid">
-        <p><span class="label">Compartment No:</span> ${c[3]}</p>
-        <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
-        <p><span class="label">Make:</span> ${c[5]}</p>
-        <p><span class="label">Rating:</span> ${c[6]} A</p>
-        <p><span class="label">Type:</span> ${c[7]}</p>
-        <p><span class="label">LT SWBD:</span> ${c[9]}</p>
-        <p><span class="label">Panel Rating:</span> ${c[10]}</p>
-      </div>`;
-    return;
-  }
-
-  document.getElementById("driveInfo").innerHTML=`
-    <h3>${c[1]} – ${c[2]}</h3>
-    <p><span class="label">Pump Type:</span> ${c[4]}</p>
-    <div class="grid">
-      <div>
-        <p><span class="label">Rating:</span> ${c[5]} KW</p>
-        <p><span class="label">FLC:</span> ${c[10]} A</p>
-      </div>
-      <div>
-        <p><span class="label">SFU:</span> ${c[14]}</p>
-        <p><span class="label">Fuse:</span> ${c[15]}</p>
-        <p><span class="label">Contactor:</span> ${c[16]}</p>
-        <p><span class="label">Relay:</span> ${c[17]}</p>
-      </div>
-      <div>
-        <p><span class="label">CT (M):</span> ${c[18]}</p>
-        <p><span class="label">CT (P):</span> ${c[19]}</p>
-        <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
-      </div>
-    </div>`;
-}
-
-/* ===== DATE HELPERS ===== */
 function parseDate(v){
-  if(!v) return new Date(0);
-  if(typeof v==="string" && /^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+  if(!v) return null;
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
     const[d,m,y]=v.split("/");
     return new Date(y,m-1,d);
   }
   return new Date(v);
 }
-function formatDate(v){
-  const d=parseDate(v);
+
+function fmt(d){
+  if(!d || isNaN(d)) return "NO RECORDS";
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-/* ===== HISTORY (YEAR-WISE JSON COMBINE) ===== */
-const HISTORY_YEARS=[2026,2025,2024,2023,2022,2021,2020,2019];
-const HISTORY_BASE="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
-
-async function loadHistory(){
-  if(!id) return;
-  let all=[];
+async function lastDates(id,map){
+  const res={};
+  Object.keys(map).forEach(k=>res[k]=null);
 
   for(const y of HISTORY_YEARS){
     try{
-      const r=await fetch(HISTORY_BASE+y+".json");
-      if(!r.ok) continue;
-      const j=await r.json();
-      j.rows.forEach(row=>{
-        if((`${row[2]}-${row[3]}`).toUpperCase()===id.toUpperCase()){
-          all.push(row);
-        }
+      const j = await (await fetch(HISTORY_BASE + y + ".json")).json();
+      j.rows.forEach(r=>{
+        if(`${r[2]}-${r[3]}`.toUpperCase() !== id) return;
+        const job = (r[7] || "").toUpperCase().trim();
+        const d = parseDate(r[4]);
+        Object.entries(map).forEach(([k,v])=>{
+          if(job === v && (!res[k] || d > res[k])) res[k] = d;
+        });
       });
     }catch(e){}
   }
 
-  all.sort((a,b)=>parseDate(b[4])-parseDate(a[4]));
-  renderHistory(all);
+  Object.keys(res).forEach(k => res[k] = res[k] ? fmt(res[k]) : "NO RECORDS");
+  return res;
 }
 
-function renderHistory(rows){
-  const tbody=document.querySelector("#historyTable tbody");
-  tbody.innerHTML="";
-  let currentYear="";
+async function loadData(){
+  const id = new URLSearchParams(location.search).get("id");
+  if(!id) return;
 
-  rows.forEach(r=>{
-    const d=parseDate(r[4]);
-    const y=d.getFullYear();
+  const j = await (await fetch(DRIVE_JSON)).json();
+  const c = j.rows.find(r => `${r[1]}-${r[2]}`.toUpperCase() === id.toUpperCase());
 
-    if(y!==currentYear){
-      currentYear=y;
-      const yr=document.createElement("tr");
-      yr.className="year-row";
-      yr.innerHTML=`<td colspan="8">YEAR ${y}</td>`;
-      tbody.appendChild(yr);
-    }
+  if(!c){
+    content.innerHTML = "<div class='card'>Data Not Found</div>";
+    return;
+  }
 
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${r[0]||""}</td>
-      <td>${r[1]||""}</td>
-      <td>${formatDate(r[4])}</td>
-      <td>${r[5]||""}</td>
-      <td>${r[6]||""}</td>
-      <td>${r[7]||""}</td>
-      <td>${r[9]||""}</td>
-      <td>${r[10]?`<a href="${r[10]}" target="_blank">Open</a>`:""}</td>`;
-    tbody.appendChild(tr);
-  });
+  const TYPE = (c[1] || "").toUpperCase().trim();
 
-  if(!rows.length){
-    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;">No history found</td></tr>`;
+  if(TYPE === "TRANSFORMER"){
+    showTransformer(c, id.toUpperCase());
+  }
+  else if(TYPE === "BREAKER"){
+    showBreaker(c, id.toUpperCase());
+  }
+  else{
+    showMotor(c, id.toUpperCase());
   }
 }
 
-/* ===== INIT ===== */
-loadDriveInfo();
-loadHistory();
+/* ================= MOTOR ================= */
+async function showMotor(c,id){
+  const p = await lastDates(id,{
+    rep:"MOTOR REPLACEMENT",
+    pm:"MOTOR PM",
+    mod:"MODULE PM",
+    vfd:"VFD PM"
+  });
+
+  content.innerHTML = `
+  <div class="card">
+    <h3>${c[1]} – ${c[2]}</h3>
+
+    <div class="grid">
+      <p><span class="label">Rating:</span> ${c[5]} KW</p>
+      <p><span class="label">FLC:</span> ${c[10]} A</p>
+      <p><span class="label">SFU:</span> ${c[14]}</p>
+      <p><span class="label">Fuse:</span> ${c[15]}</p>
+      <p><span class="label">Contactor:</span> ${c[16]}</p>
+      <p><span class="label">Relay/VFD:</span> ${c[17]}</p>
+      <p><span class="label">CT (M):</span> ${c[18]}</p>
+      <p><span class="label">CT (P):</span> ${c[19]}</p>
+      <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
+      <p><span class="label">Ammeter:</span> ${c[21]}</p>
+      <p><span class="label">Ind Lamp:</span> ${c[22]}</p>
+      <p><span class="label">No of Spare Motors:</span> ${c[23]}</p>
+
+      <p><span class="label">Last Motor Replacement:</span> ${p.rep}</p>
+      <p><span class="label">Last Motor PM:</span> ${p.pm}</p>
+      <p><span class="label">Last Module PM:</span> ${p.mod}</p>
+      <p><span class="label">Last VFD PM:</span> ${p.vfd}</p>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
+    </div>
+  </div>`;
+}
+
+/* ================= TRANSFORMER ================= */
+async function showTransformer(c,id){
+  const t = await lastDates(id,{
+    pm:"TRANSFORMER PM",
+    oh:"TRANSFORMER O/H",
+    leak:"TRANSFORMER L/A",
+    top:"OIL TUPOP",
+    chk:"T/F OIL CHECK"
+  });
+
+  content.innerHTML = `
+  <div class="card">
+    <h3>Transformer – ${c[2]}</h3>
+
+    <div class="grid">
+      <p><span class="label">TR Sl No:</span> ${c[3]}</p>
+      <p><span class="label">Make:</span> ${c[4]}</p>
+      <p><span class="label">Rating:</span> ${c[5]} KVA</p>
+      <p><span class="label">From S/S:</span> ${c[6]}</p>
+      <p><span class="label">Unit S/S:</span> ${c[7]}</p>
+      <p><span class="label">% Impedance:</span> ${c[8]}</p>
+      <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+      <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+
+      <p><span class="label">Last Transformer PM:</span> ${t.pm}</p>
+      <p><span class="label">Last Transformer O/H:</span> ${t.oh}</p>
+      <p><span class="label">Last Oil Leakage Arrest:</span> ${t.leak}</p>
+      <p><span class="label">Last Oil Top-up:</span> ${t.top}</p>
+      <p><span class="label">Last Oil Checked:</span> ${t.chk}</p>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
+    </div>
+  </div>`;
+}
+
+/* ================= BREAKER ================= */
+async function showBreaker(c,id){
+  const b = await lastDates(id,{ pm:"BREAKER PM" });
+
+  content.innerHTML = `
+  <div class="card">
+    <h3>Breaker – ${c[2]}</h3>
+
+    <div class="grid">
+      <p><span class="label">Compartment No:</span> ${c[3]}</p>
+      <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
+      <p><span class="label">Make:</span> ${c[5]}</p>
+      <p><span class="label">Rating:</span> ${c[6]} A</p>
+      <p><span class="label">Type:</span> ${c[7]}</p>
+      <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+      <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+
+      <p><span class="label">Last Breaker PM:</span> ${b.pm}</p>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
+    </div>
+  </div>`;
+}
+
+function openHistory(){
+  const id = new URLSearchParams(location.search).get("id");
+  location.href =
+    "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+    encodeURIComponent(id);
+}
+
+loadData();
 </script>
 
 </body>
