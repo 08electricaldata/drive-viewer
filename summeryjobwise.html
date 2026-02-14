@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Jobwise History</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ===== PAGE ===== */
+.page { padding: 20px; }
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+select, button {
+  padding: 8px 12px;
+  font-size: 14px;
+}
+button {
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+th {
+  background: #003f88;
+  color: white;
+}
+tbody tr:hover {
+  background: #eef5ff;
+  cursor: pointer;
+}
+
+@media print {
+  .header-bar, .controls { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header-bar">
+  <button onclick="goHome()">🏠</button>
+  <button onclick="history.back()">🔁</button>
+  <div class="header-title">Jobwise History</div>
+</div>
+
+<div class="page">
+<div class="card">
+
+<div class="controls">
+  <select id="jobType">
+    <option value="">Select Job Type</option>
+  </select>
+  <button onclick="loadData()">Search</button>
+  <button onclick="exportCSV()">Export Excel</button>
+  <button onclick="window.print()">Export PDF</button>
+</div>
+
+<table id="resultTable">
+<thead>
+<tr>
+  <th>BAT</th>
+  <th>EQP</th>
+  <th>DATE</th>
+  <th>JOB TYPE</th>
+  <th>DETAILS</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
+</div>
+
+<script>
+/* ===== CONFIG ===== */
+const HISTORY_SHEET =
+  "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
+  "?gid=751880096&tqx=out:json";
+
+const JSON_URL =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dropdown/drives.json";
+
+/* ===== NAV ===== */
+function goHome() {
+  location.href = "https://08electricaldata.github.io/";
+}
+
+/* ===== LOAD JOB TYPES (COLUMN C) ===== */
+async function loadJobTypes() {
+  const r = await fetch(JSON_URL);
+  const d = await r.json();
+
+  const jobSet = new Set();
+  d.rows.forEach(r => {
+    if (r[2]) jobSet.add(r[2]);
+  });
+
+  const sel = document.getElementById("jobType");
+  [...jobSet].sort().forEach(v => {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v;
+    sel.appendChild(o);
+  });
+}
+
+/* ===== DATE PARSER ===== */
+function parseDate(v) {
+  if (!v) return "";
+  if (typeof v === "string" && v.startsWith("Date")) {
+    const p = v.match(/\d+/g);
+    return `${p[2]}-${String(+p[1]+1).padStart(2,"0")}-${p[0]}`;
+  }
+  return v;
+}
+
+/* ===== LOAD HISTORY ===== */
+async function loadData() {
+  const job = document.getElementById("jobType").value;
+  if (!job) return alert("Select Job Type");
+
+  const res = await fetch(HISTORY_SHEET);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(47, txt.length - 2));
+
+  const tbody = document.querySelector("#resultTable tbody");
+  tbody.innerHTML = "";
+
+  json.table.rows.forEach(r => {
+    const c = r.c || [];
+    if (c[6]?.v !== job) return;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${c[2]?.v || ""}</td>
+      <td>${c[3]?.v || ""}</td>
+      <td>${parseDate(c[4]?.v)}</td>
+      <td>${c[6]?.v || ""}</td>
+      <td>${c[5]?.v || ""}</td>
+    `;
+
+    tr.onclick = () => {
+      const id = `${c[2]?.v}-${c[3]?.v}`;
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+        encodeURIComponent(id);
+    };
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* ===== EXPORT ===== */
+function exportCSV() {
+  let csv = [];
+  document.querySelectorAll("tr").forEach(r => {
+    csv.push([...r.children].map(c => `"${c.innerText}"`).join(","));
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download = "jobwise-history.csv";
+  a.click();
+}
+
+/* INIT */
+loadJobTypes();
+</script>
+
+</body>
+</html>
