@@ -131,6 +131,7 @@ tbody tr:hover {
 <table id="resultTable">
 <thead>
 <tr>
+  <th>TR NO</th>
   <th>BAT</th>
   <th>EQP</th>
   <th>DATE</th>
@@ -245,6 +246,7 @@ async function loadData() {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td>${c[0]?.v || ""}</td>   <!-- 🔥 COLUMN A -->
       <td>${c[2]?.v || ""}</td>
       <td>${c[3]?.v || ""}</td>
       <td>${formatDate(dateObj)}</td>
