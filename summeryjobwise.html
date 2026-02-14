@@ -88,6 +88,15 @@ tbody tr:hover {
   cursor: pointer;
 }
 
+/* ===== NO RESULT ===== */
+.no-result {
+  text-align: center;
+  font-size: 16px;
+  color: #b00020;
+  margin-top: 15px;
+  font-weight: 600;
+}
+
 @media print {
   .header-bar, .controls { display: none; }
 }
@@ -109,6 +118,11 @@ tbody tr:hover {
   <select id="jobType">
     <option value="">Select Job Type</option>
   </select>
+
+  <select id="year">
+    <option value="">Select Year</option>
+  </select>
+
   <button onclick="loadData()">Search</button>
   <button onclick="exportCSV()">Export Excel</button>
   <button onclick="window.print()">Export PDF</button>
@@ -127,6 +141,10 @@ tbody tr:hover {
 <tbody></tbody>
 </table>
 
+<div id="noResult" class="no-result" style="display:none;">
+  ❌ No result found
+</div>
+
 </div>
 </div>
 
@@ -144,18 +162,18 @@ function goHome() {
   location.href = "https://08electricaldata.github.io/";
 }
 
-/* ===== LOAD JOB TYPES (COLUMN C) ===== */
+/* ===== LOAD JOB TYPES (JSON COLUMN C) ===== */
 async function loadJobTypes() {
   const r = await fetch(JSON_URL);
   const d = await r.json();
 
-  const jobSet = new Set();
+  const set = new Set();
   d.rows.forEach(r => {
-    if (r[2]) jobSet.add(r[2]);
+    if (r[2]) set.add(r[2]);
   });
 
   const sel = document.getElementById("jobType");
-  [...jobSet].sort().forEach(v => {
+  [...set].sort().forEach(v => {
     const o = document.createElement("option");
     o.value = v;
     o.textContent = v;
@@ -163,38 +181,74 @@ async function loadJobTypes() {
   });
 }
 
-/* ===== DATE PARSER ===== */
-function parseDate(v) {
-  if (!v) return "";
-  if (typeof v === "string" && v.startsWith("Date")) {
-    const p = v.match(/\d+/g);
-    return `${p[2]}-${String(+p[1]+1).padStart(2,"0")}-${p[0]}`;
+/* ===== LOAD YEARS ===== */
+function loadYears() {
+  const y = document.getElementById("year");
+  for (let i = 2018; i <= 2026; i++) {
+    const o = document.createElement("option");
+    o.value = i;
+    o.textContent = i;
+    y.appendChild(o);
   }
-  return v;
 }
 
-/* ===== LOAD HISTORY ===== */
+/* ===== DATE UTIL ===== */
+function parseDate(v) {
+  if (!v) return null;
+  if (typeof v === "string" && v.startsWith("Date")) {
+    const p = v.match(/\d+/g);
+    return new Date(p[0], p[1], p[2]);
+  }
+  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) {
+    const [d,m,y] = v.split("-");
+    return new Date(y, m - 1, d);
+  }
+  return null;
+}
+
+function formatDate(d) {
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+/* ===== LOAD DATA ===== */
 async function loadData() {
   const job = document.getElementById("jobType").value;
-  if (!job) return alert("Select Job Type");
+  const year = document.getElementById("year").value;
+
+  if (!job || !year) {
+    alert("Select Job Type and Year");
+    return;
+  }
 
   const res = await fetch(HISTORY_SHEET);
   const txt = await res.text();
   const json = JSON.parse(txt.substring(47, txt.length - 2));
 
   const tbody = document.querySelector("#resultTable tbody");
+  const noRes = document.getElementById("noResult");
   tbody.innerHTML = "";
+  noRes.style.display = "none";
+
+  let found = false;
 
   json.table.rows.forEach(r => {
     const c = r.c || [];
-    if (c[6]?.v !== job) return;
+
+    const jobType = c[7]?.v;   // 🔥 COLUMN H
+    const dateObj = parseDate(c[4]?.v); // 🔥 COLUMN E
+
+    if (!dateObj) return;
+    if (jobType !== job) return;
+    if (dateObj.getFullYear() != year) return;
+
+    found = true;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${c[2]?.v || ""}</td>
       <td>${c[3]?.v || ""}</td>
-      <td>${parseDate(c[4]?.v)}</td>
-      <td>${c[6]?.v || ""}</td>
+      <td>${formatDate(dateObj)}</td>
+      <td>${jobType}</td>
       <td>${c[5]?.v || ""}</td>
     `;
 
@@ -207,6 +261,8 @@ async function loadData() {
 
     tbody.appendChild(tr);
   });
+
+  if (!found) noRes.style.display = "block";
 }
 
 /* ===== EXPORT ===== */
@@ -223,6 +279,7 @@ function exportCSV() {
 
 /* INIT */
 loadJobTypes();
+loadYears();
 </script>
 
 </body>
