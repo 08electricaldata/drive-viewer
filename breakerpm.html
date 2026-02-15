@@ -51,9 +51,9 @@ th,td { border:1px solid #ccc; padding:8px; text-align:center; }
 th { background:#003f88; color:#fff; position:sticky; top:0; }
 
 /* COLUMN COLORS */
-td.col-desc { background:#fff4cc; }
-td.col-make { background:#e8f4ff; }
-td.col-pm   { background:#e9ffe8; }
+td.col-g { background:#fff4cc; }
+td.col-h { background:#e8f4ff; }
+td.col-m { background:#e9ffe8; }
 
 /* STATUS */
 .ok { background:#b6f2b6; font-weight:bold; }
@@ -99,17 +99,17 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
 <table id="tbl">
 <thead>
 <tr>
-<th>SL NO</th>
-<th>S/S</th>
-<th>BOARD NO</th>
-<th>BREAKER NO</th>
-<th>BREAKER UID</th>
-<th>COMPT. NO</th>
-<th>BKR DESC.</th>
-<th>MAKE</th>
-<th>FREQ.</th>
-<th>PM DATE</th>
-<th>NEXT DUE</th>
+  <th>SL NO</th>
+  <th>S/S</th>
+  <th>BOARD NO</th>
+  <th>BREAKER NO</th>
+  <th>BREAKER UID</th>
+  <th>COMPT. NO</th>
+  <th>BKR DESC.</th>
+  <th>MAKE</th>
+  <th>FREQ.</th>
+  <th>PM DATE</th>
+  <th>NEXT DUE</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -121,54 +121,67 @@ const JSON_URL =
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 
-/* DATE HELPERS */
+/* DATE PARSER – FIXED */
 function parseDate(v){
   if(!v) return null;
-  if(typeof v==="string" && v.includes("T")){
-    const d=new Date(v); return isNaN(d)?null:d;
+
+  if (typeof v === "string" && v.startsWith("Date")) {
+    const p = v.match(/\d+/g);
+    return new Date(p[0], p[1], p[2]);
   }
-  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
-    const [d,m,y]=v.split("-"); return new Date(y,m-1,d);
+
+  if (typeof v === "string" && v.includes("T")) {
+    const d = new Date(v);
+    return isNaN(d) ? null : d;
   }
+
+  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) {
+    const [d,m,y] = v.split("-");
+    return new Date(y, m-1, d);
+  }
+
   return null;
 }
+
 function fmt(d){
-  if(!d||isNaN(d)) return "";
+  if(!d || isNaN(d)) return "";
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
 async function load(){
-  const r=await fetch(JSON_URL);
-  const j=await r.json();
-  const tbody=document.querySelector("#tbl tbody");
-  const today=new Date(); today.setHours(0,0,0,0);
+  const r = await fetch(JSON_URL);
+  const j = await r.json();
+  const tbody = document.querySelector("#tbl tbody");
+  const today = new Date(); today.setHours(0,0,0,0);
 
   let tot=0, over=0, soon=0;
-  const years=new Set();
+  const years = new Set();
 
   j.rows.forEach(r=>{
-    const pm=parseDate(r[12]);
+    const pm = parseDate(r[12]);
     if(pm) years.add(pm.getFullYear());
   });
 
-  yearFilter.innerHTML='<option value="">All Years</option>';
+  yearFilter.innerHTML = '<option value="">All Years</option>';
   [...years].sort().forEach(y=>{
-    yearFilter.innerHTML+=`<option value="${y}">${y}</option>`;
+    yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
   });
 
   function render(){
-    tbody.innerHTML=""; tot=over=soon=0;
-    const ysel=yearFilter.value;
-    const q=search.value.toLowerCase();
+    tbody.innerHTML="";
+    tot=over=soon=0;
+    const ysel = yearFilter.value;
+    const q = search.value.toLowerCase();
 
     j.rows.forEach(r=>{
-      const pm=parseDate(r[12]);
+      const pm = parseDate(r[12]);
       if(ysel && (!pm || pm.getFullYear()!=ysel)) return;
       if(q && !r.join(" ").toLowerCase().includes(q)) return;
 
       tot++;
-      const next=parseDate(r[13]);
+      const next = parseDate(r[13]);
       let cls="ok";
+
       if(next){
         const diff=(next-today)/86400000;
         if(diff<0){ cls="overdue"; over++; }
@@ -182,18 +195,19 @@ async function load(){
           encodeURIComponent("BREAKER-"+String(r[3]).trim());
       };
 
-      tr.innerHTML=`
-      <td>${r[0]}</td>
-      <td>${r[1]}</td>
-      <td>${r[2]}</td>
-      <td>${r[3]}</td>
-      <td>${r[4]}</td>
-      <td>${r[5]}</td>
-      <td class="col-desc">${r[6]}</td>
-      <td class="col-make">${r[7]}</td>
-      <td>${r[10]}</td>
-      <td class="col-pm">${fmt(pm)}</td>
-      <td class="${cls}">${fmt(next)}</td>`;
+      tr.innerHTML = `
+        <td>${r[0]}</td>
+        <td>${r[1]}</td>
+        <td>${r[2]}</td>
+        <td>${r[3]}</td>
+        <td>${r[4]}</td>
+        <td>${r[5]}</td>
+        <td class="col-g">${r[6]}</td>
+        <td class="col-h">${r[7]}</td>
+        <td>${r[10]}</td>
+        <td class="col-m">${fmt(pm)}</td>
+        <td class="${cls}">${fmt(next)}</td>
+      `;
       tbody.appendChild(tr);
     });
 
@@ -213,7 +227,10 @@ function sendWhatsApp(){
     const tr=td.parentElement;
     msg+=`Breaker ${tr.children[3].innerText} → ${td.innerText}%0A`;
   });
-  if(msg.endsWith(":%0A")){ alert("No overdue breakers"); return; }
+  if(msg.endsWith(":%0A")){
+    alert("No overdue breakers");
+    return;
+  }
   window.open("https://wa.me/?text="+msg,"_blank");
 }
 
