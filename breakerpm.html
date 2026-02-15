@@ -55,6 +55,13 @@ td.col-g { background:#fff4cc; }
 td.col-h { background:#e8f4ff; }
 td.col-m { background:#e9ffe8; }
 
+/* DATE COLUMN WIDTH FIX */
+th:nth-child(10), th:nth-child(11),
+td:nth-child(10), td:nth-child(11) {
+  min-width:120px;
+  white-space:nowrap;
+}
+
 /* STATUS */
 .ok { background:#b6f2b6; font-weight:bold; }
 .warn { background:orange; font-weight:bold; }
@@ -121,81 +128,80 @@ const JSON_URL =
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 
-/* DATE PARSER – FIXED */
+/* DATE PARSER */
 function parseDate(v){
   if(!v) return null;
 
-  if (typeof v === "string" && v.startsWith("Date")) {
-    const p = v.match(/\d+/g);
-    return new Date(p[0], p[1], p[2]);
+  if(typeof v==="string" && v.startsWith("Date")){
+    const p=v.match(/\d+/g);
+    return new Date(p[0],p[1],p[2]);
   }
-
-  if (typeof v === "string" && v.includes("T")) {
-    const d = new Date(v);
-    return isNaN(d) ? null : d;
+  if(typeof v==="string" && v.includes("T")){
+    const d=new Date(v); return isNaN(d)?null:d;
   }
-
-  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) {
-    const [d,m,y] = v.split("-");
-    return new Date(y, m-1, d);
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const [d,m,y]=v.split("-");
+    return new Date(y,m-1,d);
   }
-
   return null;
 }
 
 function fmt(d){
-  if(!d || isNaN(d)) return "";
+  if(!d||isNaN(d)) return "";
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
 async function load(){
-  const r = await fetch(JSON_URL);
-  const j = await r.json();
-  const tbody = document.querySelector("#tbl tbody");
-  const today = new Date(); today.setHours(0,0,0,0);
+  const r=await fetch(JSON_URL);
+  const j=await r.json();
+  const tbody=document.querySelector("#tbl tbody");
+  const today=new Date(); today.setHours(0,0,0,0);
 
   let tot=0, over=0, soon=0;
-  const years = new Set();
+  const years=new Set();
 
   j.rows.forEach(r=>{
-    const pm = parseDate(r[12]);
+    if(!r[0]) return;            // ✅ SKIP BLANK ROWS
+    const pm=parseDate(r[12]);
     if(pm) years.add(pm.getFullYear());
   });
 
-  yearFilter.innerHTML = '<option value="">All Years</option>';
+  yearFilter.innerHTML='<option value="">All Years</option>';
   [...years].sort().forEach(y=>{
-    yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+    yearFilter.innerHTML+=`<option value="${y}">${y}</option>`;
   });
 
   function render(){
     tbody.innerHTML="";
     tot=over=soon=0;
-    const ysel = yearFilter.value;
-    const q = search.value.toLowerCase();
+    const ysel=yearFilter.value;
+    const q=search.value.toLowerCase();
 
     j.rows.forEach(r=>{
-      const pm = parseDate(r[12]);
-      if(ysel && (!pm || pm.getFullYear()!=ysel)) return;
+      if(!r[0]) return;           // ✅ SKIP BLANK ROWS
+
+      const pm=parseDate(r[12]);
+      if(ysel && (!pm||pm.getFullYear()!=ysel)) return;
       if(q && !r.join(" ").toLowerCase().includes(q)) return;
 
       tot++;
-      const next = parseDate(r[13]);
+      const next=parseDate(r[13]);
       let cls="ok";
 
       if(next){
         const diff=(next-today)/86400000;
-        if(diff<0){ cls="overdue"; over++; }
-        else if(diff<=30){ cls="warn"; soon++; }
+        if(diff<0){cls="overdue"; over++;}
+        else if(diff<=30){cls="warn"; soon++;}
       }
 
       const tr=document.createElement("tr");
       tr.onclick=()=> {
-        location.href =
-          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-          encodeURIComponent("BREAKER-"+String(r[3]).trim());
+        location.href=
+        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+        encodeURIComponent("BREAKER-"+String(r[3]).trim());
       };
 
-      tr.innerHTML = `
+      tr.innerHTML=`
         <td>${r[0]}</td>
         <td>${r[1]}</td>
         <td>${r[2]}</td>
@@ -206,8 +212,7 @@ async function load(){
         <td class="col-h">${r[7]}</td>
         <td>${r[10]}</td>
         <td class="col-m">${fmt(pm)}</td>
-        <td class="${cls}">${fmt(next)}</td>
-      `;
+        <td class="${cls}">${fmt(next)}</td>`;
       tbody.appendChild(tr);
     });
 
@@ -227,10 +232,7 @@ function sendWhatsApp(){
     const tr=td.parentElement;
     msg+=`Breaker ${tr.children[3].innerText} → ${td.innerText}%0A`;
   });
-  if(msg.endsWith(":%0A")){
-    alert("No overdue breakers");
-    return;
-  }
+  if(msg.endsWith(":%0A")){ alert("No overdue breakers"); return; }
   window.open("https://wa.me/?text="+msg,"_blank");
 }
 
