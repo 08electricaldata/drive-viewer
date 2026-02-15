@@ -285,6 +285,12 @@ async function loadData() {
       <td>${jobType}</td>
       <td>${c[5]?.v || ""}</td>
     `;
+    tr.onclick = () => {
+      const id = `${c[2]?.v}-${c[3]?.v}`;
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+        encodeURIComponent(id);
+    };
     tbody.appendChild(tr);
   });
 
