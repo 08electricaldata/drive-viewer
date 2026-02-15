@@ -180,7 +180,7 @@ async function loadJobTypes() {
 
   const set = new Set();
   d.rows.forEach(r => {
-    if (r[2]) set.add(r[2]);
+    if (r[1]) set.add(r[1]);
   });
 
   const sel = document.getElementById("jobType");
@@ -245,7 +245,7 @@ async function loadData() {
   json.table.rows.forEach(r => {
     const c = r.c || [];
 
-    const jobType = c[7]?.v;   // 🔥 COLUMN H
+    const jobType = c[6]?.v;   // 🔥 // COLUMN G
     const dateObj = parseDate(c[4]?.v); // 🔥 COLUMN E
 
     if (!dateObj) return;
