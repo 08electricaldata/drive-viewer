@@ -1,297 +1,293 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  
 <meta charset="UTF-8">
-<title>08 Electrical Data</title>
+<title>Equipment Details</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f2f6ff;
-  margin: 0;
+body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
+
+.header-bar {
+  position: sticky; top: 0; z-index: 1000;
+  background: #f2f6ff; padding: 10px 12px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 
-/* HEADER */
-.header {
-  background: #003f88;
-  color: white;
-  padding: 30px 15px;
-  text-align: center;
-}
-.header h1 { margin: 0; font-size: 36px; }
-.header p { margin-top: 8px; font-size: 18px; opacity: 0.95; }
-.header .credit { margin-top: 6px; font-size: 16px; font-weight: 500; }
+.header-title { flex: 1; text-align: center; }
+.header-title h2 { margin: 0; color: #003f88; }
+.header-title small { display: block; font-size: 15px; font-weight: 600; }
 
-/* LAYOUT */
-.container {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 15px;
-  display: grid;
-  grid-template-columns: 280px 1fr 280px;
-  gap: 20px;
+.icon-btn {
+  background: #ffffff;
+  color: #003f88;
+  border: 1px solid #003f88;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 18px;
+  cursor: pointer;
+  font-weight: bold;
 }
+
+.container { padding: 20px; }
 
 .card {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  padding: 25px;
+  background: #fff; padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 
-.card h2 {
-  margin-top: 0;
-  color: #003f88;
-  text-align: center;
+.label { font-weight: bold; color: #003f88; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
 }
 
-/* BUTTONS */
-.master-btns,
-.jobs-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
+.action-btn {
+  margin-top: 20px;
+  padding: 10px 18px;
   background: #003f88;
-  color: white;
+  color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
-button:hover { opacity: 0.9; }
 
-/* SELECT */
-.select-row {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-select {
-  padding: 12px;
-  font-size: 16px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  min-width: 260px;
-}
-
-/* BUTTON ROWS */
-.button-row {
-  margin-top: 20px;
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.button-row button {
-  width: auto;
-  min-width: 150px;
-}
-
-/* FOOTER */
-.footer {
-  text-align: center;
-  padding: 15px;
-  font-size: 14px;
-  color: #555;
-}
-
-/* RESPONSIVE */
-@media (max-width: 1000px) {
-  .container { grid-template-columns: 1fr; }
-}
-@media (max-width: 600px) {
-  select, .button-row button { width: 100%; }
+@media(max-width:768px){
+  .grid { grid-template-columns: 1fr; }
+  .action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .action-row .action-btn {
+    margin-top: 0;
+    width: 100%;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h1>08 Electrical Data</h1>
-  <p>Drive Information & Maintenance History</p>
-  <div class="credit">Designed and Maintained by RAKESH CHANDRA SETHY</div>
+<div class="header-bar">
+  <button class="icon-btn" onclick="goHome()">🏠 Home</button>
+  <button class="icon-btn" onclick="goBack()">⬅ Back</button>
+  <button class="icon-btn" onclick="addJob()">➕ ADD JOB</button>
+  <div class="header-title">
+    <h2>Equipment Information</h2>
+    <small>Designed and maintained by Rakesh Chandra Sethy</small>
+  </div>
 </div>
 
 <div class="container">
-
-<!-- MASTER LIST -->
-<div class="card">
-  <h2>Master List</h2>
-  <div class="master-btns">
-    <button onclick="secureOpen('motor')">⚙️ Motor List</button>
-    <button onclick="secureOpen('trafo')">⚡ Transformer List</button>
-    <button onclick="secureOpen('breaker')">🔌 Breaker List</button>
-  </div>
-</div>
-
-<!-- SELECT DRIVE -->
-<div class="card">
-  <h2>Select Drive</h2>
-
-  <div class="select-row">
-    <select id="mainDrive">
-      <option value="">Select Main Drive</option>
-    </select>
-    <select id="subDrive">
-      <option value="">Select Sub Drive</option>
-    </select>
-  </div>
-
-  <!-- ROW 1 -->
-  <div class="button-row">
-    <button onclick="secureView('view')">VIEW</button>
-    <button onclick="secureView('history')">HISTORY</button>
-    <button onclick="secureOpen('jobentry')">📝 NEW JOB ENTRY</button>
-  </div>
-
-  <!-- ROW 2 -->
-  <div class="button-row">
-    <button onclick="secureOpen('advanced')">📊 Advanced Summary</button>
-    <button onclick="openJob1()">📘 Job1 Summary</button>
-    <button onclick="openJob2()">📕 Job2 Summary</button>
-  </div>
-</div>
-
-<!-- JOBS -->
-<div class="card">
-  <h2>Jobs</h2>
-  <div class="jobs-btns">
-    <button onclick="secureOpen('motoroh')">🛠️ Motor O/H Data</button>
-    <button onclick="secureOpen('motorpm')">🧾 Motor PM Status</button>
-  </div>
-</div>
-
-</div>
-
-<div class="footer">
-  © 08 Electrical Data | Designed & Maintained by Rakesh Chandra Sethy (08 Electrical)
+  <div id="content">Loading data…</div>
 </div>
 
 <script>
-const JSON_URL =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dropdown/drives.json";
+const DRIVE_JSON =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
 
-let headers = [], rows = [], sheetPassword = "";
+const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
 
-/* LOAD JSON */
-async function loadSheet(){
-  const cache = localStorage.getItem("driveJSON");
-  if(cache){
-    const d = JSON.parse(cache);
-    headers = d.headers;
-    rows = d.rows;
-    sheetPassword = String(headers[6] || "").trim();
-    buildMain();
-    return;
-  }
-  const d = await (await fetch(JSON_URL)).json();
-  headers = d.headers;
-  rows = d.rows;
-  sheetPassword = String(headers[6] || "").trim();
-  localStorage.setItem("driveJSON", JSON.stringify(d));
-  buildMain();
+/* ===== NORMALIZE (🔥 FIX) ===== */
+function normalize(v){
+  return String(v || "")
+    .replace(/[–—?]/g, "-")
+    .toUpperCase()
+    .trim();
 }
 
-/* PASSWORD */
-function checkPassword(){
-  if(!sheetPassword){
-    alert("⏳ Data loading");
-    return false;
-  }
-  const p = prompt("🔐 Enter Password");
-  if(p === null) return false;
-  if(p.trim() !== sheetPassword){
-    alert("❌ Incorrect password");
-    return false;
-  }
-  return true;
-}
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
 
-/* BUILD MAIN DRIVE */
-function buildMain(){
-  const m = document.getElementById("mainDrive");
-  m.innerHTML = "<option value=''>Select Main Drive</option>";
-  headers.forEach((h,i)=>{
-    if(i < 7 || !h) return;
-    const o = document.createElement("option");
-    o.value = i;
-    o.textContent = h;
-    m.appendChild(o);
-  });
-}
-
-/* SUB DRIVE */
-document.getElementById("mainDrive").onchange = function(){
-  const sub = document.getElementById("subDrive");
-  sub.innerHTML = "<option value=''>Select Sub Drive</option>";
-  if(!this.value) return;
-  rows.forEach(r=>{
-    if(r[this.value]){
-      const o = document.createElement("option");
-      o.value = r[this.value];
-      o.textContent = r[this.value];
-      sub.appendChild(o);
-    }
-  });
-};
-
-/* VIEW / HISTORY */
-function secureView(type){
-  if(!checkPassword()) return;
-  const m = document.getElementById("mainDrive");
-  const s = document.getElementById("subDrive");
-  if(!m.value || !s.value){
-    alert("Please select Main Drive and Sub Drive");
-    return;
-  }
-  const id = m.selectedOptions[0].text + "-" + s.value;
-  const base = type === "view"
-    ? "drive-viewer/index.html?id="
-    : "drive-viewer/history.html?id=";
+/* ===== ADD JOB ===== */
+function addJob(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  if(!id) return;
   location.href =
-    "https://08electricaldata.github.io/" +
-    base +
+    "https://08electricaldata.github.io/qrsubmit.html?id=" +
     encodeURIComponent(id);
 }
 
-/* OPEN STATIC PAGES */
-function secureOpen(type){
-  if(!checkPassword()) return;
-  const map = {
-    motor: "drive-viewer/motorlist.html",
-    trafo: "drive-viewer/trafolist.html",
-    breaker: "drive-viewer/breakerlist.html",
-    advanced: "drive-viewer/summary-advanced.html",
-    motoroh: "drive-viewer/motoroh.html",
-    motorpm: "drive-viewer/motorpm.html",
-    jobentry: "jobsubmit.html"
-  };
-  location.href = "https://08electricaldata.github.io/" + map[type];
+function parseDate(v){
+  if(!v) return null;
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const[d,m,y]=v.split("/");
+    return new Date(y,m-1,d);
+  }
+  return new Date(v);
 }
 
-/* JOB SUMMARIES */
-function openJob1(){
-  if(!checkPassword()) return;
-  location.href =
-    "https://08electricaldata.github.io/drive-viewer/summeryjobwise1.html";
-}
-function openJob2(){
-  if(!checkPassword()) return;
-  location.href =
-    "https://08electricaldata.github.io/drive-viewer/summeryjobwise.html";
+function fmt(d){
+  if(!d || isNaN(d)) return "NO RECORDS";
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-loadSheet();
+async function lastDates(id,map){
+  const res={};
+  Object.keys(map).forEach(k=>res[k]=null);
+
+  for(const y of HISTORY_YEARS){
+    try{
+      const j = await (await fetch(HISTORY_BASE + y + ".json")).json();
+      j.rows.forEach(r=>{
+        if(normalize(`${r[2]}-${r[3]}`) !== id) return;
+
+        const job = normalize(r[7]);
+        const d = parseDate(r[4]);
+
+        Object.entries(map).forEach(([k,v])=>{
+          if(job === normalize(v) && (!res[k] || d > res[k])) {
+            res[k] = d;
+          }
+        });
+      });
+    }catch(e){}
+  }
+
+  Object.keys(res).forEach(
+    k => res[k] = res[k] ? fmt(res[k]) : "NO RECORDS"
+  );
+  return res;
+}
+
+async function loadData(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  if(!id) return;
+
+  const j = await (await fetch(DRIVE_JSON)).json();
+  const c = j.rows.find(
+    r => normalize(`${r[1]}-${r[2]}`) === id
+  );
+
+  if(!c){
+    content.innerHTML = "<div class='card'>Data Not Found</div>";
+    return;
+  }
+
+  const TYPE = normalize(c[1]);
+
+  if(TYPE === "TRANSFORMER") showTransformer(c,id);
+  else if(TYPE === "BREAKER") showBreaker(c,id);
+  else showMotor(c,id);
+}
+
+/* ================= MOTOR ================= */
+async function showMotor(c,id){
+  const p = await lastDates(id,{
+    rep:"MOTOR REPLACEMENT",
+    pm:"MOTOR PM",
+    mod:"MODULE PM",
+    vfd:"VFD PM"
+  });
+
+  content.innerHTML = `
+  <div class="card">
+    <h3>${c[1]} – ${c[2]}</h3>
+    <div class="grid">
+      <p><span class="label">Rating:</span> ${c[5]} KW</p>
+      <p><span class="label">FLC:</span> ${c[10]} A</p>
+      <p><span class="label">SFU:</span> ${c[14]}</p>
+      <p><span class="label">Fuse:</span> ${c[15]}</p>
+      <p><span class="label">Contactor:</span> ${c[16]}</p>
+      <p><span class="label">Relay/VFD:</span> ${c[17]}</p>
+      <p><span class="label">CT (M):</span> ${c[18]}</p>
+      <p><span class="label">CT (P):</span> ${c[19]}</p>
+      <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
+      <p><span class="label">Ammeter:</span> ${c[21]}</p>
+      <p><span class="label">Ind Lamp:</span> ${c[22]}</p>
+      <p><span class="label">No of Spare Motors:</span> ${c[23]}</p>
+
+      <p><span class="label">Last Motor Replacement:</span> ${p.rep}</p>
+      <p><span class="label">Last Motor PM:</span> ${p.pm}</p>
+      <p><span class="label">Last Module PM:</span> ${p.mod}</p>
+      <p><span class="label">Last VFD PM:</span> ${p.vfd}</p>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+    </div>
+  </div>`;
+}
+
+/* ================= TRANSFORMER ================= */
+async function showTransformer(c,id){
+  const t = await lastDates(id,{
+    pm:"TRANSFORMER PM",
+    oh:"TRANSFORMER O/H",
+    leak:"TRANSFORMER L/A",
+    top:"OIL TUPOP",
+    chk:"T/F OIL CHECK"
+  });
+
+  content.innerHTML = `
+  <div class="card">
+    <h3>Transformer – ${c[2]}</h3>
+    <div class="grid">
+      <p><span class="label">TR Sl No:</span> ${c[3]}</p>
+      <p><span class="label">Make:</span> ${c[4]}</p>
+      <p><span class="label">Rating:</span> ${c[5]} KVA</p>
+      <p><span class="label">From S/S:</span> ${c[6]}</p>
+      <p><span class="label">Unit S/S:</span> ${c[7]}</p>
+      <p><span class="label">% Impedance:</span> ${c[8]}</p>
+      <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+      <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+
+      <p><span class="label">Last Transformer PM:</span> ${t.pm}</p>
+      <p><span class="label">Last Transformer O/H:</span> ${t.oh}</p>
+      <p><span class="label">Last Oil Leakage Arrest:</span> ${t.leak}</p>
+      <p><span class="label">Last Oil Top-up:</span> ${t.top}</p>
+      <p><span class="label">Last Oil Checked:</span> ${t.chk}</p>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
+    </div>
+  </div>`;
+}
+
+/* ================= BREAKER ================= */
+async function showBreaker(c,id){
+  const b = await lastDates(id,{ pm:"BREAKER PM" });
+
+  content.innerHTML = `
+  <div class="card">
+    <h3>Breaker – ${c[2]}</h3>
+    <div class="grid">
+      <p><span class="label">Compartment No:</span> ${c[3]}</p>
+      <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
+      <p><span class="label">Make:</span> ${c[5]}</p>
+      <p><span class="label">Rating:</span> ${c[6]} A</p>
+      <p><span class="label">Type:</span> ${c[7]}</p>
+      <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+      <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+
+      <p><span class="label">Last Breaker PM:</span> ${b.pm}</p>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
+    </div>
+  </div>`;
+}
+
+function openHistory(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  location.href =
+    "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+    encodeURIComponent(id);
+}
+
+loadData();
 </script>
 
 </body>
