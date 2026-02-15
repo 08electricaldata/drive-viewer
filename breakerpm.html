@@ -51,9 +51,9 @@ th,td { border:1px solid #ccc; padding:8px; text-align:center; }
 th { background:#003f88; color:#fff; position:sticky; top:0; }
 
 /* COLUMN COLORS */
-td.col-g { background:#fff4cc; }
-td.col-h { background:#e8f4ff; }
-td.col-m { background:#e9ffe8; }
+td.col-desc { background:#fff4cc; }
+td.col-make { background:#e8f4ff; }
+td.col-pm   { background:#e9ffe8; }
 
 /* STATUS */
 .ok { background:#b6f2b6; font-weight:bold; }
@@ -99,10 +99,17 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
 <table id="tbl">
 <thead>
 <tr>
-<th>S/S</th><th>TYPE</th><th>BRKR NO</th><th>SL NO</th>
-<th>MAKE</th><th>RATING</th>
-<th>STATUS</th><th>O/H DATE</th>
-<th>LAST DATE</th><th>PM DATE</th><th>NEXT DUE</th>
+<th>SL NO</th>
+<th>S/S</th>
+<th>BOARD NO</th>
+<th>BREAKER NO</th>
+<th>BREAKER UID</th>
+<th>COMPT. NO</th>
+<th>BKR DESC.</th>
+<th>MAKE</th>
+<th>FREQ.</th>
+<th>PM DATE</th>
+<th>NEXT DUE</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -114,7 +121,7 @@ const JSON_URL =
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 
-/* DATE */
+/* DATE HELPERS */
 function parseDate(v){
   if(!v) return null;
   if(typeof v==="string" && v.includes("T")){
@@ -157,8 +164,7 @@ async function load(){
     j.rows.forEach(r=>{
       const pm=parseDate(r[12]);
       if(ysel && (!pm || pm.getFullYear()!=ysel)) return;
-
-      if(q && !(r.join(" ").toLowerCase().includes(q))) return;
+      if(q && !r.join(" ").toLowerCase().includes(q)) return;
 
       tot++;
       const next=parseDate(r[13]);
@@ -171,18 +177,22 @@ async function load(){
 
       const tr=document.createElement("tr");
       tr.onclick=()=> {
-        location.href=
+        location.href =
           "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-          encodeURIComponent("BREAKER-"+String(r[2]).trim());
+          encodeURIComponent("BREAKER-"+String(r[3]).trim());
       };
 
       tr.innerHTML=`
-      <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
-      <td>${r[4]}</td><td>${r[5]}</td>
-      <td class="col-g">${r[6]||""}</td>
-      <td class="col-h">${fmt(parseDate(r[7]))}</td>
-      <td>${fmt(parseDate(r[10]))}</td>
-      <td class="col-m">${fmt(pm)}</td>
+      <td>${r[0]}</td>
+      <td>${r[1]}</td>
+      <td>${r[2]}</td>
+      <td>${r[3]}</td>
+      <td>${r[4]}</td>
+      <td>${r[5]}</td>
+      <td class="col-desc">${r[6]}</td>
+      <td class="col-make">${r[7]}</td>
+      <td>${r[10]}</td>
+      <td class="col-pm">${fmt(pm)}</td>
       <td class="${cls}">${fmt(next)}</td>`;
       tbody.appendChild(tr);
     });
@@ -201,7 +211,7 @@ function sendWhatsApp(){
   let msg="🔔 Breaker PM Overdue List:%0A";
   document.querySelectorAll("td.overdue").forEach(td=>{
     const tr=td.parentElement;
-    msg+=`Breaker ${tr.children[2].innerText} → ${td.innerText}%0A`;
+    msg+=`Breaker ${tr.children[3].innerText} → ${td.innerText}%0A`;
   });
   if(msg.endsWith(":%0A")){ alert("No overdue breakers"); return; }
   window.open("https://wa.me/?text="+msg,"_blank");
