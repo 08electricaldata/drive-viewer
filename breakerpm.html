@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Breaker PM Status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
+
+/* HEADER */
+.header { background:#003f88; color:#fff; padding:14px 16px; }
+.header-bar { display:flex; align-items:center; justify-content:space-between; }
+.header-btn {
+  background:#fff; color:#003f88; border:none;
+  padding:6px 10px; border-radius:6px;
+  font-size:16px; cursor:pointer;
+}
+.header-center { text-align:center; flex:1; }
+.header-center h1 { margin:0; font-size:30px; }
+.header-center p { margin:4px 0 0; font-size:15px; }
+
+/* SUMMARY */
+.summary { display:flex; gap:16px; padding:15px; flex-wrap:wrap; }
+.summary .card {
+  background:#fff; border-radius:10px;
+  padding:15px; min-width:200px;
+  text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+.summary h3 { margin:0; color:#003f88; }
+.summary p { font-size:26px; font-weight:bold; margin:6px 0 0; }
+
+/* CONTROLS */
+.controls {
+  display:flex; gap:10px; padding:0 15px 10px; flex-wrap:wrap;
+}
+.controls input,.controls select {
+  padding:8px; font-size:14px;
+}
+.controls button {
+  padding:8px 14px; background:#003f88;
+  color:#fff; border:none; border-radius:4px; cursor:pointer;
+}
+
+/* TABLE */
+table {
+  width:100%; border-collapse:collapse;
+  background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+th,td { border:1px solid #ccc; padding:8px; text-align:center; }
+th { background:#003f88; color:#fff; position:sticky; top:0; }
+
+/* COLUMN COLORS */
+td.col-g { background:#fff4cc; }
+td.col-h { background:#e8f4ff; }
+td.col-m { background:#e9ffe8; }
+
+/* STATUS */
+.ok { background:#b6f2b6; font-weight:bold; }
+.warn { background:orange; font-weight:bold; }
+.overdue { background:red; color:yellow; font-weight:bold; }
+
+tbody tr:hover { background:#eef5ff; cursor:pointer; }
+
+@media print {
+  .controls,.header-bar{display:none;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="header-bar">
+    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+    <button class="header-btn" onclick="history.back()">⬅ Back</button>
+    <div class="header-center">
+      <h1>Breaker PM Status</h1>
+      <p>Designed & maintained by Rakesh Chandra Sethy</p>
+    </div>
+    <div style="width:60px"></div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="card"><h3>Total Breakers</h3><p id="tot">0</p></div>
+  <div class="card"><h3>Overdue 🔴</h3><p id="over">0</p></div>
+  <div class="card"><h3>Due in 30 Days 🟠</h3><p id="soon">0</p></div>
+</div>
+
+<div class="controls">
+  <input id="search" placeholder="Search S/S / Breaker / Make">
+  <select id="yearFilter"></select>
+  <button onclick="sendWhatsApp()">🔔 WhatsApp Alert</button>
+  <button onclick="exportExcel()">📥 Export Excel</button>
+  <button onclick="window.print()">🖨 Print</button>
+</div>
+
+<table id="tbl">
+<thead>
+<tr>
+<th>S/S</th><th>TYPE</th><th>BRKR NO</th><th>SL NO</th>
+<th>MAKE</th><th>RATING</th>
+<th>STATUS</th><th>O/H DATE</th>
+<th>LAST DATE</th><th>PM DATE</th><th>NEXT DUE</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<script>
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/breaker_pm.json";
+
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+
+/* DATE */
+function parseDate(v){
+  if(!v) return null;
+  if(typeof v==="string" && v.includes("T")){
+    const d=new Date(v); return isNaN(d)?null:d;
+  }
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const [d,m,y]=v.split("-"); return new Date(y,m-1,d);
+  }
+  return null;
+}
+function fmt(d){
+  if(!d||isNaN(d)) return "";
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+async function load(){
+  const r=await fetch(JSON_URL);
+  const j=await r.json();
+  const tbody=document.querySelector("#tbl tbody");
+  const today=new Date(); today.setHours(0,0,0,0);
+
+  let tot=0, over=0, soon=0;
+  const years=new Set();
+
+  j.rows.forEach(r=>{
+    const pm=parseDate(r[12]);
+    if(pm) years.add(pm.getFullYear());
+  });
+
+  yearFilter.innerHTML='<option value="">All Years</option>';
+  [...years].sort().forEach(y=>{
+    yearFilter.innerHTML+=`<option value="${y}">${y}</option>`;
+  });
+
+  function render(){
+    tbody.innerHTML=""; tot=over=soon=0;
+    const ysel=yearFilter.value;
+    const q=search.value.toLowerCase();
+
+    j.rows.forEach(r=>{
+      const pm=parseDate(r[12]);
+      if(ysel && (!pm || pm.getFullYear()!=ysel)) return;
+
+      if(q && !(r.join(" ").toLowerCase().includes(q))) return;
+
+      tot++;
+      const next=parseDate(r[13]);
+      let cls="ok";
+      if(next){
+        const diff=(next-today)/86400000;
+        if(diff<0){ cls="overdue"; over++; }
+        else if(diff<=30){ cls="warn"; soon++; }
+      }
+
+      const tr=document.createElement("tr");
+      tr.onclick=()=> {
+        location.href=
+          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+          encodeURIComponent("BREAKER-"+String(r[2]).trim());
+      };
+
+      tr.innerHTML=`
+      <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
+      <td>${r[4]}</td><td>${r[5]}</td>
+      <td class="col-g">${r[6]||""}</td>
+      <td class="col-h">${fmt(parseDate(r[7]))}</td>
+      <td>${fmt(parseDate(r[10]))}</td>
+      <td class="col-m">${fmt(pm)}</td>
+      <td class="${cls}">${fmt(next)}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    totElem.innerText=tot;
+    overElem.innerText=over;
+    soonElem.innerText=soon;
+  }
+
+  search.onkeyup=render;
+  yearFilter.onchange=render;
+  render();
+}
+
+function sendWhatsApp(){
+  let msg="🔔 Breaker PM Overdue List:%0A";
+  document.querySelectorAll("td.overdue").forEach(td=>{
+    const tr=td.parentElement;
+    msg+=`Breaker ${tr.children[2].innerText} → ${td.innerText}%0A`;
+  });
+  if(msg.endsWith(":%0A")){ alert("No overdue breakers"); return; }
+  window.open("https://wa.me/?text="+msg,"_blank");
+}
+
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("table tr").forEach(r=>{
+    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="breaker_pm_status.csv";
+  a.click();
+}
+
+const totElem=document.getElementById("tot");
+const overElem=document.getElementById("over");
+const soonElem=document.getElementById("soon");
+
+load();
+</script>
+
+</body>
+</html>
