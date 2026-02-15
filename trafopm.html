@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Transformer Maintenance Status</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
@@ -23,10 +26,6 @@ body {
   align-items: center;
   justify-content: space-between;
 }
-.header-left {
-  display: flex;
-  gap: 10px;
-}
 .header-btn {
   background: white;
   color: #003f88;
@@ -43,15 +42,49 @@ body {
 }
 .header-center h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 28px;
 }
 .header-center p {
   margin: 4px 0 0;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 /* ===== CONTAINER ===== */
 .container { padding: 20px; }
+
+/* ===== SUMMARY ===== */
+.summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.summary .card {
+  flex: 1;
+  min-width: 220px;
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.summary h3 { margin: 0; color: #003f88; }
+.summary p {
+  font-size: 26px;
+  font-weight: bold;
+  margin: 6px 0 0;
+}
+.overdue { color: red; }
+.due-soon { color: orange; }
+
+/* ===== CHART ===== */
+.chart-card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
 
 /* ===== CONTROLS ===== */
 .controls {
@@ -92,55 +125,90 @@ th {
   top: 0;
 }
 
-/* ===== STATUS COLORS ===== */
+/* ===== MAINTENANCE COLUMNS ===== */
+#trTable th:nth-child(7),
+#trTable td:nth-child(7) {
+  width: 140px;
+  background: #fff4cc;
+}
+#trTable th:nth-child(8),
+#trTable td:nth-child(8) {
+  width: 140px;
+  background: #e8f4ff;
+}
+#trTable th:nth-child(9),
+#trTable td:nth-child(9) {
+  width: 140px;
+  background: #e9ffe8;
+}
+
+/* ===== STATUS ===== */
 .ok {
   background: #c8f7c5;
   font-weight: bold;
 }
-.warn {
-  background: #fff3cd;
-  font-weight: bold;
-}
-.overdue {
+.overdue-cell {
   background: red;
   color: yellow;
   font-weight: bold;
 }
+.due-soon-cell {
+  background: orange;
+  color: black;
+  font-weight: bold;
+}
 
 /* ===== UX ===== */
-tbody tr {
-  cursor: pointer;
-}
-tbody tr:hover {
-  background: #eef5ff;
-}
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: #eef5ff; }
 
 @media print {
-  .controls, .header-left { display: none; }
+  .controls, .header-bar, .chart-card { display: none; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== HEADER ===== -->
 <div class="header">
   <div class="header-bar">
-    <div class="header-left">
+    <div>
       <button class="header-btn" onclick="goHome()">🏠 Home</button>
-      <button class="header-btn" onclick="goBack()">⬅ Back</button>
+      <button class="header-btn" onclick="history.back()">⬅ Back</button>
     </div>
-
     <div class="header-center">
       <h1>Transformer Maintenance Status</h1>
-      <p>Designed and maintained by Rakesh Chandra Sethy</p>
+      <p>Designed & maintained by Rakesh Chandra Sethy</p>
     </div>
-
     <div style="width:60px"></div>
   </div>
 </div>
 
 <div class="container">
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="card">
+    <h3>Total Transformers</h3>
+    <p id="totalTrf">0</p>
+  </div>
+  <div class="card">
+    <h3>Overdue 🔴</h3>
+    <p id="overdueTrf" class="overdue">0</p>
+  </div>
+  <div class="card">
+    <h3>Due in 30 Days 🟠</h3>
+    <p id="dueSoonTrf" class="due-soon">0</p>
+  </div>
+</div>
+
+<!-- CHART -->
+<div class="chart-card">
+  <h3 style="color:#003f88;text-align:center;margin-top:0">
+    Monthly PM Compliance
+  </h3>
+  <canvas id="pmChart" height="120"></canvas>
+</div>
 
 <div class="controls">
   <input id="search" placeholder="Search S/S / TRF No / Make">
@@ -157,7 +225,7 @@ tbody tr:hover {
   <th>TRF SL NO</th>
   <th>MAKE</th>
   <th>RATING</th>
-  <th>OIL LEAKAGE ARREST</th>
+  <th>OIL LEAKAGE</th>
   <th>O/H DATE</th>
   <th>PM DATE</th>
   <th>O/H FREQ</th>
@@ -171,99 +239,122 @@ tbody tr:hover {
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const SHEET =
-"https://docs.google.com/spreadsheets/d/1bmSj5wXK2FfSLJh3aQl3cN57iXG8u-zVrxXr5ZOeRqE/gviz/tq?gid=517456449&tqx=out:json";
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformer_pm.json";
 
-/* NAV */
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
-function goBack(){ history.back(); }
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
 
-/* DATE UTILS */
 function parseDate(v){
   if(!v) return null;
-  if(typeof v==="string" && v.startsWith("Date(")){
+  if(typeof v==="string" && v.startsWith("Date")){
     const p=v.match(/\d+/g);
     return new Date(p[0],p[1],p[2]);
+  }
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const [d,m,y]=v.split("-");
+    return new Date(y,m-1,d);
   }
   return null;
 }
 function fmt(d){
-  return d
-    ? `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`
-    : "";
+  return d?`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`:"";
 }
 
-/* LOAD DATA */
 async function loadData(){
-  const r = await fetch(SHEET);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
 
-  const tbody = document.querySelector("#trTable tbody");
-  const today = new Date(); today.setHours(0,0,0,0);
+  const tbody=document.querySelector("#trTable tbody");
+  tbody.innerHTML="";
 
-  j.table.rows.forEach(r=>{
-    const c = r.c || [];
-    if(!c[2]?.v) return;
+  const today=new Date(); today.setHours(0,0,0,0);
 
-    const oil = parseDate(c[6]?.v);
-    const oh  = parseDate(c[7]?.v);
-    const pm  = parseDate(c[8]?.v);
-    const last= parseDate(c[10]?.v);
-    const next= parseDate(c[11]?.v);
+  let total=0, overdue=0, dueSoon=0;
+  const monthCount=Array(12).fill(0);
 
-    const nextClass =
-      !next || next < today ? "overdue" : "ok";
+  data.rows.forEach(r=>{
+    if(!r[2]) return;
+    total++;
 
-    const tr = document.createElement("tr");
-    tr.onclick = () => {
-      const id = `TRANSFORMER-${c[0]?.v}-${c[2]?.v}`;
-      location.href =
-        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-        encodeURIComponent(id);
+    const nextDue=parseDate(r[11]);
+    let cls="ok";
+
+    if(!nextDue || nextDue<today){
+      cls="overdue-cell"; overdue++;
+    } else {
+      const diff=(nextDue-today)/(1000*60*60*24);
+      if(diff<=30){ cls="due-soon-cell"; dueSoon++; }
+    }
+
+    if(nextDue) monthCount[nextDue.getMonth()]++;
+
+    const tr=document.createElement("tr");
+    tr.onclick=()=>{
+      location.href=
+        "https://08electricaldata.github.io/drive-viewer/history.html?id="
+        +encodeURIComponent("TRANSFORMER-"+String(r[2]).trim());
     };
 
-    tr.innerHTML = `
-      <td>${c[0]?.v||""}</td>
-      <td>${c[1]?.v||""}</td>
-      <td>${c[2]?.v||""}</td>
-      <td>${c[3]?.v||""}</td>
-      <td>${c[4]?.v||""}</td>
-      <td>${c[5]?.v||""}</td>
-      <td class="warn">${fmt(oil)}</td>
-      <td class="warn">${fmt(oh)}</td>
-      <td class="warn">${fmt(pm)}</td>
-      <td>${c[9]?.v||""}</td>
-      <td>${fmt(last)}</td>
-      <td class="${nextClass}">${fmt(next)}</td>
+    tr.innerHTML=`
+      <td>${r[0]||""}</td>
+      <td>${r[1]||""}</td>
+      <td>${r[2]||""}</td>
+      <td>${r[3]||""}</td>
+      <td>${r[4]||""}</td>
+      <td>${r[5]||""}</td>
+      <td>${r[6]||""}</td>
+      <td>${fmt(parseDate(r[7]))}</td>
+      <td>${fmt(parseDate(r[8]))}</td>
+      <td>${r[9]||""}</td>
+      <td>${fmt(parseDate(r[10]))}</td>
+      <td class="${cls}">${fmt(nextDue)}</td>
     `;
-
     tbody.appendChild(tr);
   });
 
-  search.onkeyup = function(){
-    const q = this.value.toLowerCase();
+  totalTrf.innerText=total;
+  overdueTrf.innerText=overdue;
+  dueSoonTrf.innerText=dueSoon;
+
+  drawChart(monthCount);
+
+  search.onkeyup=function(){
+    const q=this.value.toLowerCase();
     document.querySelectorAll("#trTable tbody tr").forEach(tr=>{
-      tr.style.display =
-        tr.innerText.toLowerCase().includes(q) ? "" : "none";
+      tr.style.display=
+        tr.innerText.toLowerCase().includes(q)?"":"none";
     });
   };
 }
 
-/* EXPORT */
+function drawChart(data){
+  new Chart(document.getElementById("pmChart"),{
+    type:"bar",
+    data:{
+      labels:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+      datasets:[{
+        label:"PM Count",
+        data:data,
+        backgroundColor:"#003f88"
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{ display:false } }
+    }
+  });
+}
+
 function exportExcel(){
   let csv=[];
   document.querySelectorAll("#trTable tr").forEach(r=>{
-    csv.push(
-      [...r.children].map(td =>
-        `"${td.innerText.replace(/"/g,'""')}"`
-      ).join(",")
-    );
+    csv.push([...r.children].map(td=>`"${td.innerText.replace(/"/g,'""')}"`).join(","));
   });
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download="transformer_maintenance_status.csv";
+  a.download="transformer_pm_status.csv";
   a.click();
 }
 
