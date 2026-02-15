@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Transformer Maintenance Status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: #003f88;
+  color: white;
+  padding: 14px 16px;
+}
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-left {
+  display: flex;
+  gap: 10px;
+}
+.header-btn {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.header-btn:hover { opacity: 0.85; }
+.header-center {
+  text-align: center;
+  flex: 1;
+}
+.header-center h1 {
+  margin: 0;
+  font-size: 30px;
+}
+.header-center p {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+/* ===== CONTAINER ===== */
+.container { padding: 20px; }
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.controls input {
+  padding: 8px;
+  width: 260px;
+}
+.controls button {
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ===== TABLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+th {
+  background: #003f88;
+  color: white;
+  position: sticky;
+  top: 0;
+}
+
+/* ===== STATUS COLORS ===== */
+.ok {
+  background: #c8f7c5;
+  font-weight: bold;
+}
+.warn {
+  background: #fff3cd;
+  font-weight: bold;
+}
+.overdue {
+  background: red;
+  color: yellow;
+  font-weight: bold;
+}
+
+/* ===== UX ===== */
+tbody tr {
+  cursor: pointer;
+}
+tbody tr:hover {
+  background: #eef5ff;
+}
+
+@media print {
+  .controls, .header-left { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-bar">
+    <div class="header-left">
+      <button class="header-btn" onclick="goHome()">🏠 Home</button>
+      <button class="header-btn" onclick="goBack()">⬅ Back</button>
+    </div>
+
+    <div class="header-center">
+      <h1>Transformer Maintenance Status</h1>
+      <p>Designed and maintained by Rakesh Chandra Sethy</p>
+    </div>
+
+    <div style="width:60px"></div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="controls">
+  <input id="search" placeholder="Search S/S / TRF No / Make">
+  <button onclick="exportExcel()">📥 Export Excel</button>
+  <button onclick="window.print()">🖨 Print</button>
+</div>
+
+<table id="trTable">
+<thead>
+<tr>
+  <th>S/S</th>
+  <th>TYPE</th>
+  <th>TRF NO</th>
+  <th>TRF SL NO</th>
+  <th>MAKE</th>
+  <th>RATING</th>
+  <th>OIL LEAKAGE ARREST</th>
+  <th>O/H DATE</th>
+  <th>PM DATE</th>
+  <th>O/H FREQ</th>
+  <th>LAST DATE</th>
+  <th>NEXT DUE</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
+
+<script>
+/* ===== CONFIG ===== */
+const SHEET =
+"https://docs.google.com/spreadsheets/d/1bmSj5wXK2FfSLJh3aQl3cN57iXG8u-zVrxXr5ZOeRqE/gviz/tq?gid=517456449&tqx=out:json";
+
+/* NAV */
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
+
+/* DATE UTILS */
+function parseDate(v){
+  if(!v) return null;
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    return new Date(p[0],p[1],p[2]);
+  }
+  return null;
+}
+function fmt(d){
+  return d
+    ? `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`
+    : "";
+}
+
+/* LOAD DATA */
+async function loadData(){
+  const r = await fetch(SHEET);
+  const t = await r.text();
+  const j = JSON.parse(t.substring(47, t.length - 2));
+
+  const tbody = document.querySelector("#trTable tbody");
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  j.table.rows.forEach(r=>{
+    const c = r.c || [];
+    if(!c[2]?.v) return;
+
+    const oil = parseDate(c[6]?.v);
+    const oh  = parseDate(c[7]?.v);
+    const pm  = parseDate(c[8]?.v);
+    const last= parseDate(c[10]?.v);
+    const next= parseDate(c[11]?.v);
+
+    const nextClass =
+      !next || next < today ? "overdue" : "ok";
+
+    const tr = document.createElement("tr");
+    tr.onclick = () => {
+      const id = `TRANSFORMER-${c[0]?.v}-${c[2]?.v}`;
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+        encodeURIComponent(id);
+    };
+
+    tr.innerHTML = `
+      <td>${c[0]?.v||""}</td>
+      <td>${c[1]?.v||""}</td>
+      <td>${c[2]?.v||""}</td>
+      <td>${c[3]?.v||""}</td>
+      <td>${c[4]?.v||""}</td>
+      <td>${c[5]?.v||""}</td>
+      <td class="warn">${fmt(oil)}</td>
+      <td class="warn">${fmt(oh)}</td>
+      <td class="warn">${fmt(pm)}</td>
+      <td>${c[9]?.v||""}</td>
+      <td>${fmt(last)}</td>
+      <td class="${nextClass}">${fmt(next)}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  search.onkeyup = function(){
+    const q = this.value.toLowerCase();
+    document.querySelectorAll("#trTable tbody tr").forEach(tr=>{
+      tr.style.display =
+        tr.innerText.toLowerCase().includes(q) ? "" : "none";
+    });
+  };
+}
+
+/* EXPORT */
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("#trTable tr").forEach(r=>{
+    csv.push(
+      [...r.children].map(td =>
+        `"${td.innerText.replace(/"/g,'""')}"`
+      ).join(",")
+    );
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="transformer_maintenance_status.csv";
+  a.click();
+}
+
+loadData();
+</script>
+
+</body>
+</html>
