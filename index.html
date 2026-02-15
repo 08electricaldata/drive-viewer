@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,7 +38,11 @@ body {
   padding: 25px;
 }
 
-.card h2 { margin-top: 0; color: #003f88; text-align: center; }
+.card h2 {
+  margin-top: 0;
+  color: #003f88;
+  text-align: center;
+}
 
 .master-btns,
 .jobs-btns {
@@ -143,14 +146,12 @@ select {
     <button onclick="secureOpen('jobentry')">📝 NEW JOB ENTRY</button>
   </div>
 
-  <!-- ROW 2 (NEW) -->
-<!-- ROW 2 -->
-<div class="button-row" style="justify-content:center;">
-  <button onclick="secureOpen('advanced')">📊 Advanced Summary</button>
-  <button onclick="openJob1()">📘 Job1 Summary</button>
-  <button onclick="openJob2()">📕 Job2 Summary</button>
-</div>
-
+  <!-- ROW 2 -->
+  <div class="button-row">
+    <button onclick="secureOpen('advanced')">📊 Advanced Summary</button>
+    <button onclick="openJob1()">📘 Job1 Summary</button>
+    <button onclick="openJob2()">📕 Job2 Summary</button>
+  </div>
 </div>
 
 <!-- JOBS -->
@@ -203,7 +204,8 @@ function buildMain(){
   headers.forEach((h,i)=>{
     if(i<7||!h) return;
     const o=document.createElement("option");
-    o.value=i; o.textContent=h; m.appendChild(o);
+    o.value=i; o.textContent=h;
+    m.appendChild(o);
   });
 }
 
@@ -214,7 +216,8 @@ document.getElementById("mainDrive").onchange=function(){
   rows.forEach(r=>{
     if(r[this.value]){
       const o=document.createElement("option");
-      o.value=r[this.value]; o.textContent=r[this.value];
+      o.value=r[this.value];
+      o.textContent=r[this.value];
       sub.appendChild(o);
     }
   });
@@ -238,7 +241,6 @@ function secureOpen(type){
     motor:"drive-viewer/motorlist.html",
     trafo:"drive-viewer/trafolist.html",
     breaker:"drive-viewer/breakerlist.html",
-    date:"drive-viewer/summary-date.html",
     advanced:"drive-viewer/summary-advanced.html",
     motoroh:"drive-viewer/motoroh.html",
     motorpm:"drive-viewer/motorpm.html",
@@ -247,7 +249,6 @@ function secureOpen(type){
   location.href="https://08electricaldata.github.io/"+map[type];
 }
 
-/* NEW SUMMARY LINKS */
 function openJob1(){
   if(!checkPassword()) return;
   location.href="https://08electricaldata.github.io/drive-viewer/summeryjobwise1.html";
