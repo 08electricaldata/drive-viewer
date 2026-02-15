@@ -197,8 +197,12 @@ function formatDate(d) {
 
 /* ===== LOAD SUMMARY ===== */
 async function loadSummary() {
-  const from = document.getElementById("fromDate").valueAsDate;
-  const to = document.getElementById("toDate").valueAsDate;
+  let from = document.getElementById("fromDate").valueAsDate;
+let to = document.getElementById("toDate").valueAsDate;
+
+if (from) from.setHours(0, 0, 0, 0);        // start of day
+if (to) to.setHours(23, 59, 59, 999);       // end of day
+
 
   const res = await fetch(SHEET_URL);
   const txt = await res.text();
