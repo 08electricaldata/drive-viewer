@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ERS Master Data</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  background:#f2f6ff;
+}
+
+/* HEADER */
+.header{
+  background:#003f88;
+  color:#fff;
+  padding:14px 16px;
+}
+.header-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.header-btn{
+  background:#fff;
+  color:#003f88;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.header-center{
+  flex:1;
+  text-align:center;
+}
+.header-center h1{
+  margin:0;
+  font-size:28px;
+}
+.header-center p{
+  margin:4px 0 0;
+  font-size:14px;
+}
+
+/* CONTROLS */
+.controls{
+  padding:10px 15px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.controls input{
+  padding:8px;
+  width:260px;
+}
+.controls button{
+  padding:8px 14px;
+  background:#003f88;
+  color:#fff;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+/* TABLE */
+.table-wrap{
+  overflow:auto;
+  max-height:75vh;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  font-size:13px;
+}
+th,td{
+  border:1px solid #ccc;
+  padding:6px;
+  text-align:center;
+  white-space:nowrap;
+}
+th{
+  background:#003f88;
+  color:#fff;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+tbody tr:hover{
+  background:#eef5ff;
+}
+
+@media print{
+  .controls,.header-bar{display:none;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="header-bar">
+    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+    <button class="header-btn" onclick="history.back()">⬅ Back</button>
+    <div class="header-center">
+      <h1>ERS MASTER DATA</h1>
+      <p>Electrical Repair & Shifting – Master Transaction Register</p>
+    </div>
+    <div style="width:60px"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <input id="search" placeholder="Search ERS / Motor / Area / WO">
+  <button onclick="exportExcel()">📥 Export Excel</button>
+  <button onclick="window.print()">🖨 Print</button>
+</div>
+
+<div class="table-wrap">
+<table id="tbl">
+<thead>
+<tr>
+<th>SL NO</th>
+<th>DATE</th>
+<th>W.O NO</th>
+<th>ERS STATUS</th>
+<th>STATUS</th>
+<th>SHIFTED TO</th>
+<th>USE STATUS</th>
+<th>KW</th>
+<th>MAKE</th>
+<th>FRAME SIZE</th>
+<th>RPM</th>
+<th>MOUNTING</th>
+<th>MOTOR SL NO</th>
+<th>AREA</th>
+<th>EQUIPMENT DETAILS</th>
+<th>TYPE</th>
+<th>DRIVE 1</th>
+<th>DRIVE 2</th>
+<th>DATE</th>
+<th>W.O NO</th>
+<th>KW</th>
+<th>MAKE</th>
+<th>MOUNTING</th>
+<th>M/C NO</th>
+<th>AREA</th>
+<th>LAST MOTOR TR</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<script>
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
+
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+
+/* DATE FORMAT */
+function fmt(v){
+  if(!v) return "";
+  if(typeof v==="string" && v.startsWith("Date")){
+    const p=v.match(/\d+/g);
+    const d=new Date(p[0],p[1],p[2]);
+    return d.toLocaleDateString("en-GB");
+  }
+  if(typeof v==="string" && v.includes("T")){
+    const d=new Date(v);
+    return isNaN(d)?v:d.toLocaleDateString("en-GB");
+  }
+  return v;
+}
+
+/* LOAD DATA */
+async function load(){
+  const r=await fetch(JSON_URL);
+  const j=await r.json();
+  const tbody=document.querySelector("#tbl tbody");
+
+  j.rows.forEach(r=>{
+    if(!r[0]) return; // Column A empty → skip
+
+    const tr=document.createElement("tr");
+    tr.innerHTML = r.slice(0,26).map(v=>`<td>${fmt(v)}</td>`).join("");
+    tbody.appendChild(tr);
+  });
+
+  search.onkeyup=function(){
+    const q=this.value.toLowerCase();
+    document.querySelectorAll("#tbl tbody tr").forEach(tr=>{
+      tr.style.display =
+        tr.innerText.toLowerCase().includes(q) ? "" : "none";
+    });
+  };
+}
+
+/* EXPORT */
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("#tbl tr").forEach(r=>{
+    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="ERS_MASTER_DATA.csv";
+  a.click();
+}
+
+load();
+</script>
+
+</body>
+</html>
