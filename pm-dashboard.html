@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unified PM Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  background:#f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header{
+  background:#003f88;
+  color:#fff;
+  padding:14px 16px;
+}
+.header-bar{
+  display:flex;
+  align-items:center;
+}
+.header-bar button{
+  background:#fff;
+  color:#003f88;
+  border:none;
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:16px;
+  cursor:pointer;
+}
+.header-title{
+  flex:1;
+  text-align:center;
+}
+.header-title h1{
+  margin:0;
+  font-size:28px;
+}
+.header-title p{
+  margin:4px 0 0;
+  font-size:15px;
+}
+
+/* ===== CONTAINER ===== */
+.container{ padding:20px; }
+
+/* ===== SUMMARY ===== */
+.summary{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:15px;
+}
+.summary .card{
+  flex:1;
+  min-width:200px;
+  background:#fff;
+  border-radius:10px;
+  padding:15px;
+  text-align:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+.summary h3{ margin:0; color:#003f88; }
+.summary p{ font-size:26px; font-weight:bold; margin:6px 0 0; }
+.ok{ color:#2e7d32; }
+.due{ color:#ef6c00; }
+.over{ color:#c62828; }
+
+/* ===== CONTROLS ===== */
+.controls{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+select,input,button{
+  padding:8px;
+  font-size:14px;
+}
+button{
+  background:#003f88;
+  color:white;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+/* ===== TABLE ===== */
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+th,td{
+  border:1px solid #ccc;
+  padding:8px;
+  text-align:center;
+}
+th{
+  background:#003f88;
+  color:white;
+  position:sticky;
+  top:0;
+}
+tbody tr:hover{ background:#eef5ff; cursor:pointer; }
+
+/* ===== STATUS COLORS ===== */
+.row-ok{ background:#d4f8d4; }
+.row-due{ background:#ffe0b2; }
+.row-over{ background:#ffcccc; }
+
+@media print{
+  .controls,.header-bar button{ display:none; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="header-bar">
+    <button onclick="goHome()">🏠 Home</button>
+    <div class="header-title">
+      <h1>Unified PM Dashboard</h1>
+      <p>Motor • Transformer • Breaker</p>
+    </div>
+    <button onclick="sendWhatsApp()">📲 Alert</button>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="card">
+    <h3>Total Equipment</h3>
+    <p id="total">0</p>
+  </div>
+  <div class="card">
+    <h3>PM OK</h3>
+    <p id="ok" class="ok">0</p>
+  </div>
+  <div class="card">
+    <h3>PM Due ≤30 days</h3>
+    <p id="due" class="due">0</p>
+  </div>
+  <div class="card">
+    <h3>PM Overdue</h3>
+    <p id="over" class="over">0</p>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <input id="search" placeholder="Search Equipment">
+  <select id="year"></select>
+  <select id="month"></select>
+  <button onclick="render()">Apply</button>
+  <button onclick="exportExcel()">Export Excel</button>
+</div>
+
+<table id="pmTable">
+<thead>
+<tr>
+  <th>TYPE</th>
+  <th>S/S</th>
+  <th>EQP NO</th>
+  <th>NAME</th>
+  <th>PM DATE</th>
+  <th>NEXT DUE</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
+
+<script>
+/* ===== JSON SOURCES ===== */
+const SOURCES = [
+  { type:"Transformer", url:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformer_pm.json" },
+  { type:"Breaker", url:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/breaker_pm.json" },
+  { type:"Motor", url:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_pm.json" }
+];
+
+let ALL = [];
+
+/* ===== UTIL ===== */
+function parseDate(v){
+  if(!v) return null;
+  if(typeof v==="string" && v.startsWith("Date")){
+    const p=v.match(/\d+/g);
+    return new Date(p[0],p[1],p[2]);
+  }
+  if(/^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const [d,m,y]=v.split("-");
+    return new Date(y,m-1,d);
+  }
+  return null;
+}
+function fmt(d){
+  return d ? `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}` : "";
+}
+function status(d){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const diff=(d-today)/86400000;
+  if(diff<0) return "over";
+  if(diff<=30) return "due";
+  return "ok";
+}
+
+/* ===== LOAD ALL ===== */
+async function loadAll(){
+  for(const s of SOURCES){
+    const r=await fetch(s.url);
+    const j=await r.json();
+    j.rows.forEach(r=>{
+      const pm=parseDate(r[8]);
+      const next=parseDate(r[11]);
+      if(!next) return;
+
+      ALL.push({
+        type:s.type,
+        ss:r[0],
+        eqp:r[2],
+        name:r[3]||"",
+        pm,
+        next,
+        link:
+          s.type==="Transformer"
+            ? "TRANSFORMER-"+r[2]
+            : s.type==="Breaker"
+            ? "BREAKER-"+r[2]
+            : r[1]+"-"+r[2]
+      });
+    });
+  }
+  initFilters();
+  render();
+}
+
+/* ===== FILTERS ===== */
+function initFilters(){
+  const ySel=year, mSel=month;
+  const now=new Date();
+  for(let y=2018;y<=now.getFullYear();y++){
+    ySel.add(new Option(y,y));
+  }
+  ySel.value=now.getFullYear();
+
+  const months=["All","January","February","March","April","May","June","July","August","September","October","November","December"];
+  months.forEach((m,i)=>mSel.add(new Option(m,i)));
+  mSel.value=now.getMonth()+1;
+}
+
+/* ===== RENDER ===== */
+function render(){
+  const tbody=document.querySelector("#pmTable tbody");
+  tbody.innerHTML="";
+
+  let t=0,o=0,d=0,okc=0;
+  const sy=+year.value;
+  const sm=+month.value;
+
+  ALL.forEach(r=>{
+    if(r.next.getFullYear()!==sy) return;
+    if(sm!==0 && r.next.getMonth()+1!==sm) return;
+
+    const st=status(r.next);
+    t++;
+    if(st==="ok") okc++;
+    else if(st==="due") d++;
+    else o++;
+
+    const tr=document.createElement("tr");
+    tr.className="row-"+st;
+    tr.innerHTML=`
+      <td>${r.type}</td>
+      <td>${r.ss||""}</td>
+      <td>${r.eqp}</td>
+      <td>${r.name}</td>
+      <td>${fmt(r.pm)}</td>
+      <td>${fmt(r.next)}</td>
+    `;
+    tr.onclick=()=>location.href=
+      "https://08electricaldata.github.io/drive-viewer/history.html?id="+
+      encodeURIComponent(r.link);
+    tbody.appendChild(tr);
+  });
+
+  total.innerText=t;
+  ok.innerText=okc;
+  due.innerText=d;
+  over.innerText=o;
+
+  search.onkeyup=()=>{
+    const q=search.value.toLowerCase();
+    document.querySelectorAll("#pmTable tbody tr").forEach(tr=>{
+      tr.style.display=
+        tr.innerText.toLowerCase().includes(q)?"":"none";
+    });
+  };
+}
+
+/* ===== WHATSAPP ===== */
+function sendWhatsApp(){
+  const list=ALL.filter(r=>status(r.next)!=="ok");
+  if(!list.length){ alert("No PM alerts"); return; }
+
+  const msg=list.map(r=>
+    `🔔 ${r.type} ${r.eqp} PM due on ${fmt(r.next)}`
+  ).join("\n");
+
+  window.open("https://wa.me/?text="+encodeURIComponent("PM ALERT\n\n"+msg));
+}
+
+/* ===== EXPORT ===== */
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("#pmTable tr").forEach(r=>{
+    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.download="unified_pm_dashboard.csv";
+  a.click();
+}
+
+/* NAV */
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+
+loadAll();
+</script>
+
+</body>
+</html>
