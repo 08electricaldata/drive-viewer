@@ -69,15 +69,8 @@ th {
   display:inline-block;
 }
 
-/* COMPLETED badge */
-.completed {
-  background:#28a745;
-}
-
-/* default ERS status */
-.default-status {
-  background:#007bff;
-}
+.completed { background:#28a745; }
+.default-status { background:#007bff; }
 
 tbody tr:hover { background:#eef5ff; }
 
@@ -134,8 +127,7 @@ function parseDate(v){
   const d=new Date(v);
   return isNaN(d)?null:d;
 }
-
-function formatDate(d){
+function fmt(d){
   if(!d) return "";
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
@@ -143,38 +135,19 @@ function formatDate(d){
 async function load(){
   const res=await fetch(JSON_URL);
   const data=await res.json();
-  let rows=data.rows;
+  let rows=data.rows.filter(r=>r[1]||r[2]);
 
-  /* Only valid rows (Column B or C) */
-  rows=rows.filter(r=>r[1] || r[2]);
-
-  /* Descending sort by Date (Column B) */
-  rows.sort((a,b)=>{
-    const d1=parseDate(a[1]);
-    const d2=parseDate(b[1]);
-    return (d2||0)-(d1||0);
-  });
+  rows.sort((a,b)=>(parseDate(b[1])||0)-(parseDate(a[1])||0));
 
   const tbody=document.querySelector("#tbl tbody");
 
-  const areaSet=new Set();
-  const statusSet=new Set();
-  const ersSet=new Set();
-  const shiftedSet=new Set();
+  /* ===== UNIQUE COLOR MAPS ===== */
+  const shiftedColors={}, statusColors={};
+  let h1=0, h2=180;
 
   rows.forEach(r=>{
-    if(r[13]) areaSet.add(r[13]);
-    if(r[4]) statusSet.add(r[4]);
-    if(r[3]) ersSet.add(r[3]);
-    if(r[5]) shiftedSet.add(r[5]);
-  });
-
-  /* Unique color for SHIFTED TO (Column F) */
-  const shiftedColors={};
-  let hue=0;
-  shiftedSet.forEach(s=>{
-    shiftedColors[s]=`hsl(${hue},70%,45%)`;
-    hue+=40;
+    if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
+    if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
   });
 
   function render(){
@@ -184,31 +157,32 @@ async function load(){
     rows.forEach(r=>{
       if(q && !r.join(" ").toLowerCase().includes(q)) return;
 
+      /* Column D – ERS STATUS */
+      let ers="";
+      if(r[3]){
+        ers=r[3].toUpperCase().includes("COMPLETED")
+          ? `<span class="badge completed">${r[3]}</span>`
+          : `<span class="badge default-status">${r[3]}</span>`;
+      }
+
+      /* Column E – STATUS (unique color) */
+      let status=r[4]
+        ? `<span class="badge" style="background:${statusColors[r[4]]}">${r[4]}</span>`
+        : "";
+
+      /* Column F – SHIFTED TO (unique color) */
+      let shifted=r[5]
+        ? `<span class="badge" style="background:${shiftedColors[r[5]]}">${r[5]}</span>`
+        : "";
+
       const tr=document.createElement("tr");
-
-      /* Column D logic */
-      let ersStatus=r[3]||"";
-      let ersBadge="";
-      if(ersStatus.toUpperCase().includes("COMPLETED")){
-        ersBadge=`<span class="badge completed">${ersStatus}</span>`;
-      } else if(ersStatus){
-        ersBadge=`<span class="badge default-status">${ersStatus}</span>`;
-      }
-
-      /* Column F unique color */
-      let shifted=r[5]||"";
-      let shiftedBadge="";
-      if(shifted){
-        shiftedBadge=`<span class="badge" style="background:${shiftedColors[shifted]}">${shifted}</span>`;
-      }
-
       tr.innerHTML=`
         <td>${r[0]||""}</td>
-        <td>${formatDate(parseDate(r[1]))}</td>
+        <td>${fmt(parseDate(r[1]))}</td>
         <td>${r[2]||""}</td>
-        <td>${ersBadge}</td>
-        <td>${r[4]||""}</td>
-        <td>${shiftedBadge}</td>
+        <td>${ers}</td>
+        <td>${status}</td>
+        <td>${shifted}</td>
         <td>${r[6]||""}</td>
         <td>${r[7]||""}</td>
         <td>${r[8]||""}</td>
@@ -221,15 +195,14 @@ async function load(){
         <td>${r[15]||""}</td>
         <td>${r[16]||""}</td>
         <td>${r[17]||""}</td>
-        <td>${formatDate(parseDate(r[18]))}</td>
+        <td>${fmt(parseDate(r[18]))}</td>
         <td>${r[19]||""}</td>
         <td>${r[20]||""}</td>
         <td>${r[21]||""}</td>
         <td>${r[22]||""}</td>
         <td>${r[23]||""}</td>
         <td>${r[24]||""}</td>
-        <td>${r[25]||""}</td>
-      `;
+        <td>${r[25]||""}</td>`;
       tbody.appendChild(tr);
     });
   }
