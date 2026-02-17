@@ -2,100 +2,85 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ERS Master Data</title>
+<title>ERS MASTER DATA</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-  font-family: Arial, sans-serif;
-  margin:0;
-  background:#f2f6ff;
-}
+body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
 
 /* HEADER */
-.header{
-  background:#003f88;
-  color:#fff;
-  padding:14px 16px;
+.header { background:#003f88; color:#fff; padding:14px 16px; }
+.header-bar { display:flex; align-items:center; justify-content:space-between; }
+.header-btn {
+  background:#fff; color:#003f88; border:none;
+  padding:6px 10px; border-radius:6px;
+  font-size:16px; cursor:pointer;
 }
-.header-bar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-.header-btn{
-  background:#fff;
-  color:#003f88;
-  border:none;
-  padding:6px 10px;
-  border-radius:6px;
-  cursor:pointer;
-}
-.header-center{
-  flex:1;
-  text-align:center;
-}
-.header-center h1{
-  margin:0;
-  font-size:28px;
-}
-.header-center p{
-  margin:4px 0 0;
-  font-size:14px;
-}
+.header-center { text-align:center; flex:1; }
+.header-center h1 { margin:0; font-size:26px; }
 
 /* CONTROLS */
-.controls{
-  padding:10px 15px;
+.controls {
+  padding:15px;
   display:flex;
   gap:10px;
   flex-wrap:wrap;
 }
-.controls input{
+.controls input, .controls select {
   padding:8px;
-  width:260px;
+  font-size:14px;
 }
-.controls button{
-  padding:8px 14px;
-  background:#003f88;
-  color:#fff;
-  border:none;
-  border-radius:4px;
-  cursor:pointer;
+
+/* TABLE WRAPPER FOR SCROLL */
+.table-wrapper {
+  overflow-x:auto;
+  padding:10px;
 }
 
 /* TABLE */
-.table-wrap{
-  overflow:auto;
-  max-height:75vh;
-}
-table{
-  width:100%;
+table {
   border-collapse:collapse;
   background:#fff;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
+  table-layout:auto;         /* AUTO WIDTH */
+  width:max-content;         /* expand based on content */
+  min-width:100%;
+}
+
+th,td {
+  border:1px solid #ccc;
+  padding:8px 10px;
+  text-align:center;
+  white-space:nowrap;        /* prevent wrapping */
   font-size:13px;
 }
-th,td{
-  border:1px solid #ccc;
-  padding:6px;
-  text-align:center;
-  white-space:nowrap;
-}
-th{
+
+th {
   background:#003f88;
   color:#fff;
   position:sticky;
   top:0;
-  z-index:2;
-}
-tbody tr:hover{
-  background:#eef5ff;
+  z-index:1;
 }
 
-@media print{
-  .controls,.header-bar{display:none;}
+/* DATE COLUMNS MIN WIDTH */
+td:nth-child(2),
+td:nth-child(19) {
+  min-width:110px;
 }
+
+/* Hover */
+tbody tr:hover { background:#eef5ff; }
+
+/* STATUS BADGE */
+.status-badge {
+  color:#fff;
+  font-weight:bold;
+  padding:4px 8px;
+  border-radius:4px;
+  display:inline-block;
+}
+
 </style>
 </head>
 
@@ -104,51 +89,32 @@ tbody tr:hover{
 <div class="header">
   <div class="header-bar">
     <button class="header-btn" onclick="goHome()">🏠 Home</button>
-    <button class="header-btn" onclick="history.back()">⬅ Back</button>
     <div class="header-center">
       <h1>ERS MASTER DATA</h1>
-      <p>Electrical Repair & Shifting – Master Transaction Register</p>
     </div>
     <div style="width:60px"></div>
   </div>
 </div>
 
 <div class="controls">
-  <input id="search" placeholder="Search ERS / Motor / Area / WO">
-  <button onclick="exportExcel()">📥 Export Excel</button>
-  <button onclick="window.print()">🖨 Print</button>
+  <input id="search" placeholder="Search any field">
+  <select id="areaFilter"><option value="">All Areas</option></select>
+  <select id="statusFilter"><option value="">All Status</option></select>
+  <select id="ersFilter"><option value="">All ERS Status</option></select>
 </div>
 
-<div class="table-wrap">
+<div class="table-wrapper">
 <table id="tbl">
 <thead>
 <tr>
-<th>SL NO</th>
-<th>DATE</th>
-<th>W.O NO</th>
-<th>ERS STATUS</th>
-<th>STATUS</th>
-<th>SHIFTED TO</th>
-<th>USE STATUS</th>
-<th>KW</th>
-<th>MAKE</th>
-<th>FRAME SIZE</th>
-<th>RPM</th>
-<th>MOUNTING</th>
-<th>MOTOR SL NO</th>
-<th>AREA</th>
-<th>EQUIPMENT DETAILS</th>
-<th>TYPE</th>
-<th>DRIVE 1</th>
-<th>DRIVE 2</th>
-<th>DATE</th>
-<th>W.O NO</th>
-<th>KW</th>
-<th>MAKE</th>
-<th>MOUNTING</th>
-<th>M/C NO</th>
-<th>AREA</th>
-<th>LAST MOTOR TR</th>
+<th>SL</th><th>DATE</th><th>W.O NO</th><th>ERS STATUS</th>
+<th>STATUS</th><th>SHIFTED TO</th><th>USE STATUS</th>
+<th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th>
+<th>MOUNT</th><th>MOTOR SL</th><th>AREA</th>
+<th>EQPT DETAILS</th><th>TYPE</th><th>DRIVE1</th><th>DRIVE2</th>
+<th>DATE2</th><th>W.O2</th><th>KW2</th><th>MAKE2</th>
+<th>MOUNT2</th><th>M/C NO</th><th>AREA2</th>
+<th>LAST MOTORTR</th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -163,54 +129,119 @@ function goHome(){
   location.href="https://08electricaldata.github.io/";
 }
 
-/* DATE FORMAT */
-function fmt(v){
-  if(!v) return "";
-  if(typeof v==="string" && v.startsWith("Date")){
-    const p=v.match(/\d+/g);
-    const d=new Date(p[0],p[1],p[2]);
-    return d.toLocaleDateString("en-GB");
-  }
-  if(typeof v==="string" && v.includes("T")){
-    const d=new Date(v);
-    return isNaN(d)?v:d.toLocaleDateString("en-GB");
-  }
-  return v;
+function parseDate(v){
+  if(!v) return null;
+  const d=new Date(v);
+  return isNaN(d)?null:d;
 }
 
-/* LOAD DATA */
+function formatDate(d){
+  if(!d) return "";
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
 async function load(){
-  const r=await fetch(JSON_URL);
-  const j=await r.json();
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
+  let rows=data.rows;
+
+  /* Detect valid rows based on column B or C */
+  rows=rows.filter(r=>r[1] || r[2]);
+
+  /* Sort descending by DATE column B */
+  rows.sort((a,b)=>{
+    const d1=parseDate(a[1]);
+    const d2=parseDate(b[1]);
+    return (d2||0)-(d1||0);
+  });
+
   const tbody=document.querySelector("#tbl tbody");
 
-  j.rows.forEach(r=>{
-    if(!r[0]) return; // Column A empty → skip
+  const areaSet=new Set();
+  const statusSet=new Set();
+  const ersSet=new Set();
 
-    const tr=document.createElement("tr");
-    tr.innerHTML = r.slice(0,26).map(v=>`<td>${fmt(v)}</td>`).join("");
-    tbody.appendChild(tr);
+  rows.forEach(r=>{
+    if(r[13]) areaSet.add(r[13]);
+    if(r[4]) statusSet.add(r[4]);
+    if(r[3]) ersSet.add(r[3]);
   });
 
-  search.onkeyup=function(){
-    const q=this.value.toLowerCase();
-    document.querySelectorAll("#tbl tbody tr").forEach(tr=>{
-      tr.style.display =
-        tr.innerText.toLowerCase().includes(q) ? "" : "none";
+  const areaFilter=document.getElementById("areaFilter");
+  const statusFilter=document.getElementById("statusFilter");
+  const ersFilter=document.getElementById("ersFilter");
+
+  [...areaSet].sort().forEach(v=>areaFilter.innerHTML+=`<option>${v}</option>`);
+  [...statusSet].sort().forEach(v=>statusFilter.innerHTML+=`<option>${v}</option>`);
+  [...ersSet].sort().forEach(v=>ersFilter.innerHTML+=`<option>${v}</option>`);
+
+  /* Unique color for STATUS */
+  const statusColors={};
+  let hue=0;
+  statusSet.forEach(s=>{
+    statusColors[s]=`hsl(${hue},70%,45%)`;
+    hue+=45;
+  });
+
+  function render(){
+    tbody.innerHTML="";
+    const q=search.value.toLowerCase();
+    const areaSel=areaFilter.value;
+    const statusSel=statusFilter.value;
+    const ersSel=ersFilter.value;
+
+    rows.forEach(r=>{
+      if(areaSel && r[13]!==areaSel) return;
+      if(statusSel && r[4]!==statusSel) return;
+      if(ersSel && r[3]!==ersSel) return;
+      if(q && !r.join(" ").toLowerCase().includes(q)) return;
+
+      const tr=document.createElement("tr");
+
+      let statusCell = r[4]
+        ? `<span class="status-badge" style="background:${statusColors[r[4]]}">
+            ${r[4]}
+           </span>`
+        : "";
+
+      tr.innerHTML=`
+        <td>${r[0]||""}</td>
+        <td>${formatDate(parseDate(r[1]))}</td>
+        <td>${r[2]||""}</td>
+        <td>${r[3]||""}</td>
+        <td>${statusCell}</td>
+        <td>${r[5]||""}</td>
+        <td>${r[6]||""}</td>
+        <td>${r[7]||""}</td>
+        <td>${r[8]||""}</td>
+        <td>${r[9]||""}</td>
+        <td>${r[10]||""}</td>
+        <td>${r[11]||""}</td>
+        <td>${r[12]||""}</td>
+        <td>${r[13]||""}</td>
+        <td>${r[14]||""}</td>
+        <td>${r[15]||""}</td>
+        <td>${r[16]||""}</td>
+        <td>${r[17]||""}</td>
+        <td>${formatDate(parseDate(r[18]))}</td>
+        <td>${r[19]||""}</td>
+        <td>${r[20]||""}</td>
+        <td>${r[21]||""}</td>
+        <td>${r[22]||""}</td>
+        <td>${r[23]||""}</td>
+        <td>${r[24]||""}</td>
+        <td>${r[25]||""}</td>
+      `;
+      tbody.appendChild(tr);
     });
-  };
-}
+  }
 
-/* EXPORT */
-function exportExcel(){
-  let csv=[];
-  document.querySelectorAll("#tbl tr").forEach(r=>{
-    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
-  });
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download="ERS_MASTER_DATA.csv";
-  a.click();
+  search.onkeyup=render;
+  areaFilter.onchange=render;
+  statusFilter.onchange=render;
+  ersFilter.onchange=render;
+
+  render();
 }
 
 load();
