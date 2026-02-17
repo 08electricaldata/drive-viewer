@@ -26,14 +26,11 @@ body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
   gap:10px;
   flex-wrap:wrap;
 }
-.controls input, .controls select {
-  padding:8px;
-  font-size:14px;
-}
 
-/* TABLE WRAPPER FOR SCROLL */
+/* TABLE WRAPPER */
 .table-wrapper {
-  overflow-x:auto;
+  overflow:auto;
+  height:75vh;
   padding:10px;
 }
 
@@ -42,16 +39,16 @@ table {
   border-collapse:collapse;
   background:#fff;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
-  table-layout:auto;         /* AUTO WIDTH */
-  width:max-content;         /* expand based on content */
+  width:max-content;
   min-width:100%;
+  table-layout:auto;
 }
 
 th,td {
   border:1px solid #ccc;
   padding:8px 10px;
   text-align:center;
-  white-space:nowrap;        /* prevent wrapping */
+  white-space:nowrap;
   font-size:13px;
 }
 
@@ -60,26 +57,29 @@ th {
   color:#fff;
   position:sticky;
   top:0;
-  z-index:1;
+  z-index:2;
 }
 
-/* DATE COLUMNS MIN WIDTH */
-td:nth-child(2),
-td:nth-child(19) {
-  min-width:110px;
-}
-
-/* Hover */
-tbody tr:hover { background:#eef5ff; }
-
-/* STATUS BADGE */
-.status-badge {
-  color:#fff;
-  font-weight:bold;
+/* BADGES */
+.badge {
   padding:4px 8px;
   border-radius:4px;
+  color:#fff;
+  font-weight:bold;
   display:inline-block;
 }
+
+/* COMPLETED badge */
+.completed {
+  background:#28a745;
+}
+
+/* default ERS status */
+.default-status {
+  background:#007bff;
+}
+
+tbody tr:hover { background:#eef5ff; }
 
 </style>
 </head>
@@ -145,10 +145,10 @@ async function load(){
   const data=await res.json();
   let rows=data.rows;
 
-  /* Detect valid rows based on column B or C */
+  /* Only valid rows (Column B or C) */
   rows=rows.filter(r=>r[1] || r[2]);
 
-  /* Sort descending by DATE column B */
+  /* Descending sort by Date (Column B) */
   rows.sort((a,b)=>{
     const d1=parseDate(a[1]);
     const d2=parseDate(b[1]);
@@ -160,57 +160,55 @@ async function load(){
   const areaSet=new Set();
   const statusSet=new Set();
   const ersSet=new Set();
+  const shiftedSet=new Set();
 
   rows.forEach(r=>{
     if(r[13]) areaSet.add(r[13]);
     if(r[4]) statusSet.add(r[4]);
     if(r[3]) ersSet.add(r[3]);
+    if(r[5]) shiftedSet.add(r[5]);
   });
 
-  const areaFilter=document.getElementById("areaFilter");
-  const statusFilter=document.getElementById("statusFilter");
-  const ersFilter=document.getElementById("ersFilter");
-
-  [...areaSet].sort().forEach(v=>areaFilter.innerHTML+=`<option>${v}</option>`);
-  [...statusSet].sort().forEach(v=>statusFilter.innerHTML+=`<option>${v}</option>`);
-  [...ersSet].sort().forEach(v=>ersFilter.innerHTML+=`<option>${v}</option>`);
-
-  /* Unique color for STATUS */
-  const statusColors={};
+  /* Unique color for SHIFTED TO (Column F) */
+  const shiftedColors={};
   let hue=0;
-  statusSet.forEach(s=>{
-    statusColors[s]=`hsl(${hue},70%,45%)`;
-    hue+=45;
+  shiftedSet.forEach(s=>{
+    shiftedColors[s]=`hsl(${hue},70%,45%)`;
+    hue+=40;
   });
 
   function render(){
     tbody.innerHTML="";
     const q=search.value.toLowerCase();
-    const areaSel=areaFilter.value;
-    const statusSel=statusFilter.value;
-    const ersSel=ersFilter.value;
 
     rows.forEach(r=>{
-      if(areaSel && r[13]!==areaSel) return;
-      if(statusSel && r[4]!==statusSel) return;
-      if(ersSel && r[3]!==ersSel) return;
       if(q && !r.join(" ").toLowerCase().includes(q)) return;
 
       const tr=document.createElement("tr");
 
-      let statusCell = r[4]
-        ? `<span class="status-badge" style="background:${statusColors[r[4]]}">
-            ${r[4]}
-           </span>`
-        : "";
+      /* Column D logic */
+      let ersStatus=r[3]||"";
+      let ersBadge="";
+      if(ersStatus.toUpperCase().includes("COMPLETED")){
+        ersBadge=`<span class="badge completed">${ersStatus}</span>`;
+      } else if(ersStatus){
+        ersBadge=`<span class="badge default-status">${ersStatus}</span>`;
+      }
+
+      /* Column F unique color */
+      let shifted=r[5]||"";
+      let shiftedBadge="";
+      if(shifted){
+        shiftedBadge=`<span class="badge" style="background:${shiftedColors[shifted]}">${shifted}</span>`;
+      }
 
       tr.innerHTML=`
         <td>${r[0]||""}</td>
         <td>${formatDate(parseDate(r[1]))}</td>
         <td>${r[2]||""}</td>
-        <td>${r[3]||""}</td>
-        <td>${statusCell}</td>
-        <td>${r[5]||""}</td>
+        <td>${ersBadge}</td>
+        <td>${r[4]||""}</td>
+        <td>${shiftedBadge}</td>
         <td>${r[6]||""}</td>
         <td>${r[7]||""}</td>
         <td>${r[8]||""}</td>
@@ -237,10 +235,6 @@ async function load(){
   }
 
   search.onkeyup=render;
-  areaFilter.onchange=render;
-  statusFilter.onchange=render;
-  ersFilter.onchange=render;
-
   render();
 }
 
