@@ -9,7 +9,6 @@
 <style>
 body{font-family:Arial;margin:0;background:#f2f6ff}
 
-/* ===== TOP BAR ===== */
 .topbar{
   background:#003f88;color:white;
   padding:12px 15px;
@@ -22,7 +21,6 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 .container{max-width:1500px;margin:20px auto;padding:10px}
 
-/* ===== STATUS CARDS ===== */
 .status-panel{
   display:flex;gap:15px;flex-wrap:wrap;margin-bottom:20px
 }
@@ -45,7 +43,6 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   100%{transform:scale(1)}
 }
 
-/* ===== CHART ===== */
 .chart-box{
   background:white;padding:20px;
   border-radius:10px;
@@ -57,7 +54,6 @@ select{
   padding:6px 10px;margin-bottom:10px
 }
 
-/* ===== TABLE ===== */
 table{
   width:100%;border-collapse:collapse;
   background:white;box-shadow:0 2px 6px rgba(0,0,0,.15)
@@ -75,7 +71,6 @@ tr:hover{background:#eef5ff;cursor:pointer}
 .good{background:#99e699}
 .excellent{background:#33cc33;color:white}
 
-/* ===== POPUP ===== */
 .popup{
   display:none;position:fixed;
   top:0;left:0;width:100%;height:100%;
@@ -107,7 +102,6 @@ tr:hover{background:#eef5ff;cursor:pointer}
 
 <div class="container">
 
-<!-- STATUS COUNTERS -->
 <div class="status-panel">
   <div class="status-card critical">
     🔴 Critical (<30%)<br><span id="countCritical">0</span>
@@ -123,14 +117,12 @@ tr:hover{background:#eef5ff;cursor:pointer}
   </div>
 </div>
 
-<!-- YEAR DROPDOWN GRAPH -->
 <div class="chart-box">
   <label>Select Year:</label>
   <select id="yearSelect"></select>
   <canvas id="mainChart" height="100"></canvas>
 </div>
 
-<!-- TABLE -->
 <table id="dataTable">
 <thead></thead>
 <tbody></tbody>
@@ -138,7 +130,6 @@ tr:hover{background:#eef5ff;cursor:pointer}
 
 </div>
 
-<!-- POPUP -->
 <div class="popup" id="trendPopup">
   <div class="popup-content">
     <span class="close-btn" onclick="closePopup()">✖</span>
@@ -238,7 +229,7 @@ function animateValue(id,end){
   let start=0;
   let duration=800;
   let range=end-start;
-  let stepTime=Math.abs(Math.floor(duration/range));
+  let stepTime=Math.abs(Math.floor(duration/(range||1)));
   let obj=document.getElementById(id);
   let timer=setInterval(()=>{
     start++;
@@ -268,7 +259,14 @@ function buildTable(){
     displayCols.forEach(i=>{
       let td=document.createElement("td");
 
-      if(i==4){
+      if(i==3){
+        if(r[i]){
+          const dt=new Date(r[i]);
+          const options={day:'2-digit',month:'short',year:'numeric'};
+          td.textContent=dt.toLocaleDateString('en-GB',options).replace(/ /g,'-');
+        } else td.textContent="";
+      }
+      else if(i==4){
         let v=parseFloat(r[i])||0;
         td.textContent=v+"%";
         if(v<30)td.classList.add("low");
