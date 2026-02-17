@@ -9,7 +9,7 @@
 <style>
 body{font-family:Arial;margin:0;background:#f2f6ff}
 
-/* TOP BAR */
+/* ===== TOP BAR ===== */
 .topbar{
   background:#003f88;color:white;
   padding:12px 15px;
@@ -25,16 +25,45 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 .container{max-width:1500px;margin:20px auto;padding:10px}
 
-/* SEARCH */
-.search-box{
+/* ===== ALERT PANEL ===== */
+.alert-panel{
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
   margin-bottom:15px;
-  display:flex;justify-content:space-between;gap:10px
-}
-.search-box input{
-  padding:8px;width:250px;border-radius:5px;border:1px solid #ccc
 }
 
-/* TABLE */
+.alert-card{
+  flex:1;
+  min-width:220px;
+  padding:12px;
+  border-radius:8px;
+  color:white;
+  font-weight:bold;
+  box-shadow:0 3px 8px rgba(0,0,0,.2);
+  animation:pulse 2.5s infinite;
+}
+
+.critical{background:#cc0000;}
+.warning{background:#ff9900;}
+.highest{background:#003f88;}
+
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.03)}
+  100%{transform:scale(1)}
+}
+
+/* ===== SEARCH ===== */
+.search-box{
+  margin-bottom:15px;
+}
+.search-box input{
+  padding:8px;width:250px;
+  border-radius:5px;border:1px solid #ccc
+}
+
+/* ===== TABLE ===== */
 table{
   width:100%;
   border-collapse:collapse;
@@ -56,21 +85,21 @@ th{
 tr:hover{background:#eef5ff;cursor:pointer}
 .highlight{background:#ffeaea !important}
 
-/* WRAP STYLE FOR YEARLY COLUMNS */
+/* Wrap style */
 .wrap-cell{
   white-space:pre-line;
   text-align:left;
   line-height:1.4;
 }
 
-/* OIL LEVEL COLORS */
+/* Oil level colors */
 .low{background:#ff4d4d;color:white}
 .medium{background:#ffb84d}
 .normal{background:#ffff66}
 .good{background:#99e699}
 .excellent{background:#33cc33;color:white}
 
-/* TOP BOX */
+/* ===== CHART BOX ===== */
 .topbox{
   margin:20px 0;background:white;padding:15px;
   border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.15)
@@ -101,6 +130,19 @@ tr:hover{background:#eef5ff;cursor:pointer}
 
 <div class="container">
 
+<!-- ALERT PANEL -->
+<div class="alert-panel">
+  <div class="alert-card critical" id="criticalBox">
+    🔴 Critical Transformers: 0
+  </div>
+  <div class="alert-card warning" id="warningBox">
+    🟡 Warning Transformers: 0
+  </div>
+  <div class="alert-card highest" id="highestBox">
+    📈 Highest Consumption: -
+  </div>
+</div>
+
 <div class="search-box">
   <input type="text" id="searchInput" placeholder="Search Transformer...">
 </div>
@@ -118,7 +160,7 @@ tr:hover{background:#eef5ff;cursor:pointer}
 </div>
 
 <div class="footer">
-© 08 Electrical Data | Advanced Transformer Oil Monitoring
+© 08 Electrical Data | Transformer Oil Monitoring Dashboard
 </div>
 
 <script>
@@ -172,41 +214,48 @@ function oilClass(val){
 }
 
 function buildTable(data){
+
+  const dropCols=[5,7,9]; // F,H,J removed
+
   const thead=document.querySelector("#dataTable thead");
   const tbody=document.querySelector("#dataTable tbody");
-  thead.innerHTML="";tbody.innerHTML="";
+
+  thead.innerHTML="";
+  tbody.innerHTML="";
 
   let tr=document.createElement("tr");
-  headers.forEach(h=>{
+
+  headers.forEach((h,i)=>{
+    if(dropCols.includes(i)) return;
     let th=document.createElement("th");
     th.textContent=h;
     tr.appendChild(th);
   });
+
   thead.appendChild(tr);
 
   data.forEach(r=>{
     let tr=document.createElement("tr");
 
     r.forEach((c,i)=>{
+
+      if(dropCols.includes(i)) return;
+
       let td=document.createElement("td");
 
-      // Column D Date formatting
       if(i==3){
         td.textContent=formatDate(c);
       }
-      else{
-        // Wrap style columns F,H,J,L,M,N,O,P,Q
-        if([5,7,9,11,12,13,14,15,16].includes(i)){
-          if(c){
-            td.textContent=c.replace(/,\s*/g,",\n");
-            td.classList.add("wrap-cell");
-          }
-        }else{
-          td.textContent=c;
+      else if([11,12,13,14,15,16].includes(i)){
+        if(c){
+          td.textContent=c.replace(/,\s*/g,",\n");
+          td.classList.add("wrap-cell");
         }
       }
+      else{
+        td.textContent=c;
+      }
 
-      // Oil level color coding (Column E)
       if(i==4){
         td.classList.add(oilClass(parseFloat(c)||0));
       }
@@ -215,7 +264,6 @@ function buildTable(data){
     });
 
     tr.onclick=function(){
-      showTrend(r);
       const trf=r[2];
       location.href=
       "https://08electricaldata.github.io/drive-viewer/history.html?id=Transformer-"+trf;
@@ -233,7 +281,8 @@ function updateTop10(year){
   let sorted=fullData
     .map(r=>({
       name:r[2],
-      value:parseFloat(r[colIndex])||0
+      value:parseFloat(r[colIndex])||0,
+      oil:parseFloat(r[4])||0
     }))
     .sort((a,b)=>b.value-a.value);
 
@@ -241,6 +290,25 @@ function updateTop10(year){
 
   highlightHighest(sorted[0].name);
   drawChart(top10,year);
+
+  const criticalCount = fullData.filter(r =>
+    (parseFloat(r[4])||0) < 30
+  ).length;
+
+  const warningCount = fullData.filter(r =>{
+    let v=parseFloat(r[4])||0;
+    return v>=30 && v<50;
+  }).length;
+
+  document.getElementById("criticalBox").innerText =
+    "🔴 Critical Transformers: " + criticalCount;
+
+  document.getElementById("warningBox").innerText =
+    "🟡 Warning Transformers: " + warningCount;
+
+  document.getElementById("highestBox").innerText =
+    "📈 Highest Consumption ("+year+"): " +
+    sorted[0].name + " (" + sorted[0].value + ")";
 }
 
 function highlightHighest(name){
@@ -276,29 +344,6 @@ function drawChart(data,year){
   });
 }
 
-function showTrend(row){
-  const years=["2018","2019","2020","2021","2022","2023","2024","2025","2026"];
-  const values=[row[16],row[15],row[14],row[13],row[12],row[11],row[10],row[8],row[6]];
-
-  if(chartInstance) chartInstance.destroy();
-
-  chartInstance=new Chart(
-    document.getElementById("topChart"),
-    {
-      type:"line",
-      data:{
-        labels:years,
-        datasets:[{
-          label:"Trend - "+row[2],
-          data:values.map(v=>parseFloat(v)||0),
-          borderColor:"#003f88",
-          fill:false
-        }]
-      }
-    }
-  );
-}
-
 document.getElementById("searchInput").onkeyup=function(){
   const term=this.value.toLowerCase();
   const filtered=fullData.filter(r=>
@@ -309,10 +354,18 @@ document.getElementById("searchInput").onkeyup=function(){
 
 function exportTable(){
   let csv="";
-  headers.forEach(h=>csv+=h+",");
+  headers.forEach((h,i)=>{
+    if([5,7,9].includes(i)) return;
+    csv+=h+",";
+  });
   csv+="\n";
+
   fullData.forEach(r=>{
-    csv+=r.join(",")+"\n";
+    r.forEach((c,i)=>{
+      if([5,7,9].includes(i)) return;
+      csv+=c+",";
+    });
+    csv+="\n";
   });
 
   const blob=new Blob([csv],{type:"text/csv"});
