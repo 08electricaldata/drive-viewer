@@ -23,7 +23,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 .topbar button{background:white;color:#003f88}
 .topbar select{background:white;color:#003f88}
 
-.container{max-width:1400px;margin:20px auto;padding:10px}
+.container{max-width:1500px;margin:20px auto;padding:10px}
 
 /* SEARCH */
 .search-box{
@@ -36,21 +36,34 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 /* TABLE */
 table{
-  width:100%;border-collapse:collapse;
-  background:white;box-shadow:0 2px 6px rgba(0,0,0,.15);
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
 }
 th,td{
-  padding:8px;text-align:center;
-  border:1px solid #ddd;font-size:13px;
-  white-space:nowrap
+  padding:8px;
+  border:1px solid #ddd;
+  font-size:13px;
+  text-align:center;
 }
-th{background:#003f88;color:white;position:sticky;top:0}
-
+th{
+  background:#003f88;
+  color:white;
+  position:sticky;
+  top:0;
+}
 tr:hover{background:#eef5ff;cursor:pointer}
 .highlight{background:#ffeaea !important}
-.blink{animation:blink 1s infinite}
-@keyframes blink{50%{background:#ffcccc}}
 
+/* WRAP STYLE FOR YEARLY COLUMNS */
+.wrap-cell{
+  white-space:pre-line;
+  text-align:left;
+  line-height:1.4;
+}
+
+/* OIL LEVEL COLORS */
 .low{background:#ff4d4d;color:white}
 .medium{background:#ffb84d}
 .normal{background:#ffff66}
@@ -177,10 +190,24 @@ function buildTable(data){
     r.forEach((c,i)=>{
       let td=document.createElement("td");
 
-      if(i==3) td.textContent=formatDate(c);
-      else td.textContent=c;
+      // Column D Date formatting
+      if(i==3){
+        td.textContent=formatDate(c);
+      }
+      else{
+        // Wrap style columns F,H,J,L,M,N,O,P,Q
+        if([5,7,9,11,12,13,14,15,16].includes(i)){
+          if(c){
+            td.textContent=c.replace(/,\s*/g,",\n");
+            td.classList.add("wrap-cell");
+          }
+        }else{
+          td.textContent=c;
+        }
+      }
 
-      if(i==4){ // Oil level column
+      // Oil level color coding (Column E)
+      if(i==4){
         td.classList.add(oilClass(parseFloat(c)||0));
       }
 
@@ -213,13 +240,6 @@ function updateTop10(year){
   const top10=sorted.slice(0,10);
 
   highlightHighest(sorted[0].name);
-
-  if(sorted[0].value>100){
-    document.querySelector("table").classList.add("blink");
-  }else{
-    document.querySelector("table").classList.remove("blink");
-  }
-
   drawChart(top10,year);
 }
 
@@ -257,7 +277,6 @@ function drawChart(data,year){
 }
 
 function showTrend(row){
-  // simple yearly trend using columns
   const years=["2018","2019","2020","2021","2022","2023","2024","2025","2026"];
   const values=[row[16],row[15],row[14],row[13],row[12],row[11],row[10],row[8],row[6]];
 
