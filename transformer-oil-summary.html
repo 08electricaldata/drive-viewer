@@ -2,193 +2,167 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Transformer Oil Summary</title>
+<title>Transformer Oil Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{
-  font-family:Arial, sans-serif;
-  margin:0;
-  background:#f2f6ff;
-}
+body{font-family:Arial;margin:0;background:#f2f6ff}
 
-/* HEADER */
+/* TOP BAR */
 .topbar{
-  background:#003f88;
-  color:white;
+  background:#003f88;color:white;
   padding:12px 15px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display:flex;justify-content:space-between;align-items:center
 }
-
-.left-buttons{
-  display:flex;
-  gap:10px;
+.left-btns{display:flex;gap:10px}
+.topbar button,.topbar select{
+  padding:8px 12px;border:none;border-radius:5px;
+  font-weight:bold;cursor:pointer
 }
+.topbar button{background:white;color:#003f88}
+.topbar select{background:white;color:#003f88}
 
-.topbar button{
-  padding:8px 12px;
-  border:none;
-  border-radius:5px;
-  cursor:pointer;
-  background:white;
-  color:#003f88;
-  font-weight:bold;
+.container{max-width:1400px;margin:20px auto;padding:10px}
+
+/* SEARCH */
+.search-box{
+  margin-bottom:15px;
+  display:flex;justify-content:space-between;gap:10px
 }
-
-.topbar select{
-  padding:8px;
-  border-radius:5px;
-  border:none;
-  font-weight:bold;
+.search-box input{
+  padding:8px;width:250px;border-radius:5px;border:1px solid #ccc
 }
 
 /* TABLE */
-.container{
-  max-width:1200px;
-  margin:20px auto;
-  padding:10px;
-}
-
 table{
-  width:100%;
-  border-collapse:collapse;
-  background:white;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  width:100%;border-collapse:collapse;
+  background:white;box-shadow:0 2px 6px rgba(0,0,0,.15);
 }
-
 th,td{
-  padding:8px;
-  text-align:center;
-  border:1px solid #ddd;
-  font-size:13px;
+  padding:8px;text-align:center;
+  border:1px solid #ddd;font-size:13px;
+  white-space:nowrap
+}
+th{background:#003f88;color:white;position:sticky;top:0}
+
+tr:hover{background:#eef5ff;cursor:pointer}
+.highlight{background:#ffeaea !important}
+.blink{animation:blink 1s infinite}
+@keyframes blink{50%{background:#ffcccc}}
+
+.low{background:#ff4d4d;color:white}
+.medium{background:#ffb84d}
+.normal{background:#ffff66}
+.good{background:#99e699}
+.excellent{background:#33cc33;color:white}
+
+/* TOP BOX */
+.topbox{
+  margin:20px 0;background:white;padding:15px;
+  border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.15)
 }
 
-th{
-  background:#003f88;
-  color:white;
-  position:sticky;
-  top:0;
-}
-
-tr:hover{
-  background:#eef5ff;
-  cursor:pointer;
-}
-
-/* TOP 5 SECTION */
-.top5-box{
-  margin:20px 0;
-  background:white;
-  padding:15px;
-  border-radius:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-}
-
-.top5-box h3{
-  margin-top:0;
-  color:#003f88;
-}
-
-canvas{
-  margin-top:15px;
-}
-
-.footer{
-  text-align:center;
-  padding:15px;
-  font-size:14px;
-  color:#555;
-}
+.footer{text-align:center;padding:15px;font-size:14px;color:#555}
 </style>
 </head>
 
 <body>
 
 <div class="topbar">
-  <div class="left-buttons">
+  <div class="left-btns">
     <button onclick="history.back()">⬅ Back</button>
     <button onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
   </div>
-
   <div>
     Year:
     <select id="yearSelect"></select>
+    Chart:
+    <select id="chartType">
+      <option value="bar">Bar</option>
+      <option value="pie">Pie</option>
+    </select>
+    <button onclick="exportTable()">📥 Export Excel</button>
   </div>
 </div>
 
 <div class="container">
 
-  <div class="top5-box">
-    <h3 id="topTitle">Top 5 Transformers</h3>
-    <canvas id="topChart" height="100"></canvas>
-  </div>
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Search Transformer...">
+</div>
 
-  <table id="dataTable">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
+<div class="topbox">
+  <h3 id="topTitle">Top 10 Transformers Consumption</h3>
+  <canvas id="topChart" height="100"></canvas>
+</div>
+
+<table id="dataTable">
+<thead></thead>
+<tbody></tbody>
+</table>
 
 </div>
 
 <div class="footer">
-© 08 Electrical Data | Transformer Oil Monitoring
+© 08 Electrical Data | Advanced Transformer Oil Monitoring
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformeroil.json";
 
-let fullData = [];
-let headers = [];
-let chartInstance = null;
+let fullData=[], headers=[], chartInstance=null;
 
-async function loadData(){
-  const res = await fetch(JSON_URL);
-  const data = await res.json();
-
-  headers = data.headers;
-  fullData = data.rows;
+async function load(){
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
+  headers=data.headers;
+  fullData=data.rows;
 
   buildYearDropdown();
-  buildTable();
+  buildTable(fullData);
   setDefaultYear();
 }
 
 function buildYearDropdown(){
-  const years = ["2024","2025","2026"];
-  const sel = document.getElementById("yearSelect");
-  sel.innerHTML="";
+  const years=["2024","2025","2026"];
+  const sel=document.getElementById("yearSelect");
   years.forEach(y=>{
-    const opt=document.createElement("option");
-    opt.value=y;
-    opt.textContent=y;
-    sel.appendChild(opt);
+    const o=document.createElement("option");
+    o.value=y;o.textContent=y;sel.appendChild(o);
   });
-
-  sel.onchange = function(){
-    updateTop5(this.value);
-  }
+  sel.onchange=()=>updateTop10(sel.value);
+  document.getElementById("chartType").onchange=
+  ()=>updateTop10(sel.value);
 }
 
 function setDefaultYear(){
-  const lastYear = new Date().getFullYear()-1;
-  document.getElementById("yearSelect").value = lastYear;
-  updateTop5(lastYear);
+  const lastYear=new Date().getFullYear()-1;
+  document.getElementById("yearSelect").value=lastYear;
+  updateTop10(lastYear);
 }
 
-function buildTable(){
-  const thead = document.querySelector("#dataTable thead");
-  const tbody = document.querySelector("#dataTable tbody");
+function formatDate(d){
+  if(!d) return "";
+  const dt=new Date(d);
+  return dt.toLocaleDateString("en-GB").replace(/\//g,"-");
+}
 
-  thead.innerHTML="";
-  tbody.innerHTML="";
+function oilClass(val){
+  if(val<30) return "low";
+  if(val<50) return "medium";
+  if(val<70) return "normal";
+  if(val<85) return "good";
+  return "excellent";
+}
 
-  // Header
+function buildTable(data){
+  const thead=document.querySelector("#dataTable thead");
+  const tbody=document.querySelector("#dataTable tbody");
+  thead.innerHTML="";tbody.innerHTML="";
+
   let tr=document.createElement("tr");
   headers.forEach(h=>{
     let th=document.createElement("th");
@@ -197,78 +171,139 @@ function buildTable(){
   });
   thead.appendChild(tr);
 
-  // Rows
-  fullData.forEach(r=>{
+  data.forEach(r=>{
     let tr=document.createElement("tr");
 
-    r.forEach(c=>{
+    r.forEach((c,i)=>{
       let td=document.createElement("td");
-      td.textContent=c;
+
+      if(i==3) td.textContent=formatDate(c);
+      else td.textContent=c;
+
+      if(i==4){ // Oil level column
+        td.classList.add(oilClass(parseFloat(c)||0));
+      }
+
       tr.appendChild(td);
     });
 
-    // Click row → history page
     tr.onclick=function(){
-      const trf = r[2]; // Column C = TRF-No
+      showTrend(r);
+      const trf=r[2];
       location.href=
-      "https://08electricaldata.github.io/drive-viewer/history.html?id=Transformer-"+encodeURIComponent(trf);
-    }
+      "https://08electricaldata.github.io/drive-viewer/history.html?id=Transformer-"+trf;
+    };
 
     tbody.appendChild(tr);
   });
 }
 
-function updateTop5(year){
+function updateTop10(year){
 
-  let colIndex = null;
+  let colIndex = year=="2026"?6:
+                 year=="2025"?8:10;
 
-  if(year=="2026") colIndex = 6; // G
-  if(year=="2025") colIndex = 8; // I
-  if(year=="2024") colIndex = 10; // K
-
-  let sorted = fullData
+  let sorted=fullData
     .map(r=>({
       name:r[2],
       value:parseFloat(r[colIndex])||0
     }))
-    .sort((a,b)=>b.value-a.value)
-    .slice(0,5);
+    .sort((a,b)=>b.value-a.value);
 
-  drawChart(sorted,year);
-}
+  const top10=sorted.slice(0,10);
 
-function drawChart(data,year){
+  highlightHighest(sorted[0].name);
 
-  document.getElementById("topTitle").innerText=
-  "Top 5 Transformers Consumption - "+year;
-
-  const ctx = document.getElementById("topChart").getContext("2d");
-
-  if(chartInstance){
-    chartInstance.destroy();
+  if(sorted[0].value>100){
+    document.querySelector("table").classList.add("blink");
+  }else{
+    document.querySelector("table").classList.remove("blink");
   }
 
-  chartInstance = new Chart(ctx,{
-    type:"bar",
-    data:{
-      labels:data.map(d=>d.name),
-      datasets:[{
-        label:"Oil Qty",
-        data:data.map(d=>d.value),
-        backgroundColor:"#003f88"
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{display:false}
-      }
+  drawChart(top10,year);
+}
+
+function highlightHighest(name){
+  document.querySelectorAll("tbody tr").forEach(tr=>{
+    tr.classList.remove("highlight");
+    if(tr.cells[2].textContent==name){
+      tr.classList.add("highlight");
     }
   });
 }
 
-loadData();
+function drawChart(data,year){
 
+  const type=document.getElementById("chartType").value;
+
+  document.getElementById("topTitle").innerText=
+  "Top 10 Transformers Consumption - "+year;
+
+  const ctx=document.getElementById("topChart");
+
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance=new Chart(ctx,{
+    type:type,
+    data:{
+      labels:data.map(d=>d.name),
+      datasets:[{
+        data:data.map(d=>d.value),
+        backgroundColor:"#003f88"
+      }]
+    },
+    options:{plugins:{legend:{display:type=="pie"}}}
+  });
+}
+
+function showTrend(row){
+  // simple yearly trend using columns
+  const years=["2018","2019","2020","2021","2022","2023","2024","2025","2026"];
+  const values=[row[16],row[15],row[14],row[13],row[12],row[11],row[10],row[8],row[6]];
+
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance=new Chart(
+    document.getElementById("topChart"),
+    {
+      type:"line",
+      data:{
+        labels:years,
+        datasets:[{
+          label:"Trend - "+row[2],
+          data:values.map(v=>parseFloat(v)||0),
+          borderColor:"#003f88",
+          fill:false
+        }]
+      }
+    }
+  );
+}
+
+document.getElementById("searchInput").onkeyup=function(){
+  const term=this.value.toLowerCase();
+  const filtered=fullData.filter(r=>
+    r[2].toString().toLowerCase().includes(term)
+  );
+  buildTable(filtered);
+};
+
+function exportTable(){
+  let csv="";
+  headers.forEach(h=>csv+=h+",");
+  csv+="\n";
+  fullData.forEach(r=>{
+    csv+=r.join(",")+"\n";
+  });
+
+  const blob=new Blob([csv],{type:"text/csv"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="TransformerOil.csv";
+  link.click();
+}
+
+load();
 </script>
 
 </body>
