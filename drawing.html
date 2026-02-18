@@ -6,18 +6,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{font-family:Arial;margin:0;background:#f2f6ff}
+body{
+  font-family:Arial;
+  margin:0;
+  background:#f2f6ff
+}
 
 /* HEADER */
 .header{
-  background:#003f88;color:white;
-  padding:14px;text-align:center
+  background:#003f88;
+  color:white;
+  padding:14px;
+  text-align:center
 }
 
 /* LAYOUT */
 .container{padding:20px}
 .card{
-  background:white;padding:20px;
+  background:white;
+  padding:20px;
   border-radius:12px;
   box-shadow:0 2px 6px rgba(0,0,0,.15)
 }
@@ -37,7 +44,11 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   border-radius:10px;
   box-shadow:0 2px 5px rgba(0,0,0,.1);
   cursor:pointer;
-  text-align:center
+  text-align:center;
+  transition:.2s
+}
+.tile:hover{
+  transform:translateY(-3px)
 }
 .tile img{
   width:100%;
@@ -52,16 +63,18 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   color:#003f88
 }
 .tile small{
-  font-size:12px;color:#666
+  font-size:12px;
+  color:#666
 }
 
 /* VIEWER */
 .viewer{
   margin-top:25px;
-  height:600px;
+  height:650px;
   border:1px solid #ccc;
   border-radius:10px;
-  overflow:hidden
+  overflow:hidden;
+  display:none
 }
 .viewer iframe{
   width:100%;
@@ -76,7 +89,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 }
 
 @media(max-width:768px){
-  .viewer{height:400px}
+  .viewer{height:420px}
 }
 </style>
 </head>
@@ -100,16 +113,13 @@ function normalize(v){
   return String(v||"").toUpperCase().trim();
 }
 
-/* ===== EXTRACT DRIVE FILE ID ===== */
+/* ===== GOOGLE DRIVE → EMBEDDED PREVIEW (STABLE METHOD) ===== */
 function convertToPreview(link){
   if(!link) return "";
-  const match = link.match(/[-\w]{25,}/);
-  if(!match) return link;
-  const fileId = match[0];
-  return "https://drive.google.com/file/d/"+fileId+"/preview";
+  return "https://docs.google.com/gview?embedded=true&url=" + encodeURIComponent(link);
 }
 
-/* ===== THUMBNAIL ===== */
+/* ===== GOOGLE DRIVE THUMBNAIL ===== */
 function convertToThumbnail(link){
   const match = link.match(/[-\w]{25,}/);
   if(!match) return "";
@@ -125,6 +135,7 @@ function incrementDownload(id,index){
   localStorage.setItem(key,count);
   return count;
 }
+
 function getDownload(id,index){
   const key="draw_"+id+"_"+index;
   return localStorage.getItem(key)||0;
@@ -132,54 +143,78 @@ function getDownload(id,index){
 
 /* ===== LOAD PAGE ===== */
 async function load(){
+
   const id = normalize(new URLSearchParams(location.search).get("id"));
-  if(!id) return;
-
-  const j = await (await fetch(JSON_URL)).json();
-  const item = j.rows.find(r=>normalize(r.id)===id);
-
-  if(!item){
-    content.innerHTML =
-      "<div class='card no-data'>No Drawings Available</div>";
+  if(!id){
+    document.getElementById("content").innerHTML =
+      "<div class='card no-data'>Invalid ID</div>";
     return;
   }
 
-  let html=`<div class="card">
-              <h3>${id}</h3>
-              <div class="grid">`;
+  try{
+    const res = await fetch(JSON_URL);
+    const j = await res.json();
 
-  item.drawings.forEach((link,i)=>{
-    const thumb = convertToThumbnail(link);
-    const count = getDownload(id,i);
+    const item = j.rows.find(r=>normalize(r.id)===id);
 
-    html+=`
-      <div class="tile"
-           onclick="openDrawing('${id}',${i},'${link}')">
-        <img src="${thumb}" onerror="this.src='https://via.placeholder.com/300x200?text=PDF'">
-        <h4>Drawing ${i+1}</h4>
-        <small>Downloads: ${count}</small>
-      </div>`;
-  });
+    if(!item){
+      document.getElementById("content").innerHTML =
+        "<div class='card no-data'>No Drawings Available</div>";
+      return;
+    }
 
-  html+=`</div>
-         <div class="viewer" id="viewerBox" style="display:none">
-           <iframe id="pdfFrame"></iframe>
-         </div>
-         </div>`;
+    let html=`<div class="card">
+                <h3>${id}</h3>
+                <div class="grid">`;
 
-  content.innerHTML=html;
+    item.drawings.forEach((link,i)=>{
+
+      const thumb = convertToThumbnail(link);
+      const count = getDownload(id,i);
+
+      html+=`
+        <div class="tile"
+             onclick="openDrawing('${id}',${i},'${link}')">
+          <img src="${thumb}"
+               onerror="this.src='https://via.placeholder.com/300x200?text=PDF'">
+          <h4>Drawing ${i+1}</h4>
+          <small id="count_${i}">Downloads: ${count}</small>
+        </div>`;
+    });
+
+    html+=`</div>
+           <div class="viewer" id="viewerBox">
+             <iframe id="pdfFrame"></iframe>
+           </div>
+           </div>`;
+
+    document.getElementById("content").innerHTML=html;
+
+  }catch(e){
+    document.getElementById("content").innerHTML =
+      "<div class='card no-data'>Error loading drawings</div>";
+  }
 }
 
-/* ===== OPEN DRAWING ===== */
+/* ===== OPEN DRAWING (FIXED – NO RELOAD) ===== */
 function openDrawing(id,index,link){
+
   const preview = convertToPreview(link);
-  document.getElementById("pdfFrame").src=preview;
+
+  document.getElementById("pdfFrame").src = preview;
   document.getElementById("viewerBox").style.display="block";
 
   const newCount = incrementDownload(id,index);
 
-  // Update counter text
-  load();
+  const countEl = document.getElementById("count_"+index);
+  if(countEl){
+    countEl.innerText = "Downloads: " + newCount;
+  }
+
+  window.scrollTo({
+    top: document.getElementById("viewerBox").offsetTop - 20,
+    behavior:"smooth"
+  });
 }
 
 load();
