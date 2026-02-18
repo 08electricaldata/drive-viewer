@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Equipment Drawings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f6ff}
+
+/* HEADER */
+.header{
+  background:#003f88;color:white;
+  padding:14px;text-align:center
+}
+
+/* LAYOUT */
+.container{padding:20px}
+.card{
+  background:white;padding:20px;
+  border-radius:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15)
+}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:18px;
+  margin-top:20px
+}
+
+/* DRAWING TILE */
+.tile{
+  background:#f8fbff;
+  padding:12px;
+  border-radius:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,.1);
+  cursor:pointer;
+  text-align:center
+}
+.tile img{
+  width:100%;
+  height:140px;
+  object-fit:cover;
+  border-radius:8px;
+  margin-bottom:8px
+}
+.tile h4{
+  margin:5px 0;
+  font-size:14px;
+  color:#003f88
+}
+.tile small{
+  font-size:12px;color:#666
+}
+
+/* VIEWER */
+.viewer{
+  margin-top:25px;
+  height:600px;
+  border:1px solid #ccc;
+  border-radius:10px;
+  overflow:hidden
+}
+.viewer iframe{
+  width:100%;
+  height:100%;
+  border:none
+}
+
+.no-data{
+  color:red;
+  text-align:center;
+  font-weight:bold
+}
+
+@media(max-width:768px){
+  .viewer{height:400px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Equipment Drawings</h2>
+</div>
+
+<div class="container">
+  <div id="content">Loading drawings...</div>
+</div>
+
+<script>
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+
+/* ===== NORMALIZE ===== */
+function normalize(v){
+  return String(v||"").toUpperCase().trim();
+}
+
+/* ===== EXTRACT DRIVE FILE ID ===== */
+function convertToPreview(link){
+  if(!link) return "";
+  const match = link.match(/[-\w]{25,}/);
+  if(!match) return link;
+  const fileId = match[0];
+  return "https://drive.google.com/file/d/"+fileId+"/preview";
+}
+
+/* ===== THUMBNAIL ===== */
+function convertToThumbnail(link){
+  const match = link.match(/[-\w]{25,}/);
+  if(!match) return "";
+  const fileId = match[0];
+  return "https://drive.google.com/thumbnail?id="+fileId;
+}
+
+/* ===== DOWNLOAD COUNTER ===== */
+function incrementDownload(id,index){
+  const key="draw_"+id+"_"+index;
+  let count=localStorage.getItem(key);
+  count = count ? Number(count)+1 : 1;
+  localStorage.setItem(key,count);
+  return count;
+}
+function getDownload(id,index){
+  const key="draw_"+id+"_"+index;
+  return localStorage.getItem(key)||0;
+}
+
+/* ===== LOAD PAGE ===== */
+async function load(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  if(!id) return;
+
+  const j = await (await fetch(JSON_URL)).json();
+  const item = j.rows.find(r=>normalize(r.id)===id);
+
+  if(!item){
+    content.innerHTML =
+      "<div class='card no-data'>No Drawings Available</div>";
+    return;
+  }
+
+  let html=`<div class="card">
+              <h3>${id}</h3>
+              <div class="grid">`;
+
+  item.drawings.forEach((link,i)=>{
+    const thumb = convertToThumbnail(link);
+    const count = getDownload(id,i);
+
+    html+=`
+      <div class="tile"
+           onclick="openDrawing('${id}',${i},'${link}')">
+        <img src="${thumb}" onerror="this.src='https://via.placeholder.com/300x200?text=PDF'">
+        <h4>Drawing ${i+1}</h4>
+        <small>Downloads: ${count}</small>
+      </div>`;
+  });
+
+  html+=`</div>
+         <div class="viewer" id="viewerBox" style="display:none">
+           <iframe id="pdfFrame"></iframe>
+         </div>
+         </div>`;
+
+  content.innerHTML=html;
+}
+
+/* ===== OPEN DRAWING ===== */
+function openDrawing(id,index,link){
+  const preview = convertToPreview(link);
+  document.getElementById("pdfFrame").src=preview;
+  document.getElementById("viewerBox").style.display="block";
+
+  const newCount = incrementDownload(id,index);
+
+  // Update counter text
+  load();
+}
+
+load();
+</script>
+
+</body>
+</html>
