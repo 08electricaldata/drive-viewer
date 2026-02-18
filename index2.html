@@ -106,11 +106,15 @@ const DRIVE_JSON =
 const DRAWING_JSON =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
 
+const PLC_JSON =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
 
 let drawingAvailableMap = {};
+let plcAvailableMap = {};
 
 /* ===== NORMALIZE ===== */
 function normalize(v){
@@ -140,11 +144,18 @@ function openDrawings(){
   encodeURIComponent(id);
 }
 
+/* ===== PLC OPEN ===== */
+function openPLC(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  location.href =
+  "https://08electricaldata.github.io/drive-viewer/plc.html?id=" +
+  encodeURIComponent(id);
+}
+
 /* ===== PRELOAD DRAWINGS ===== */
 async function preloadDrawings(){
   try{
     const j = await (await fetch(DRAWING_JSON)).json();
-
     j.rows.forEach(item=>{
       const id = normalize(item.id);
       if(!id) return;
@@ -157,10 +168,17 @@ async function preloadDrawings(){
 
       drawingAvailableMap[id] = hasDrawing;
     });
+  }catch(e){}
+}
 
-  }catch(e){
-    console.log("Drawing preload failed");
-  }
+/* ===== PRELOAD PLC ===== */
+async function preloadPLC(){
+  try{
+    const j = await (await fetch(PLC_JSON)).json();
+    Object.keys(j.drives || {}).forEach(id=>{
+      plcAvailableMap[normalize(id)] = true;
+    });
+  }catch(e){}
 }
 
 function parseDate(v){
@@ -228,7 +246,29 @@ async function loadData(){
   else showMotor(c,id);
 }
 
-/* ================= MOTOR ================= */
+/* ===== APPLY BUTTON STATE ===== */
+function applyButtonState(id){
+  const drawBtn = document.getElementById("drawBtn");
+  const plcBtn = document.getElementById("plcBtn");
+
+  if(drawBtn && !drawingAvailableMap[id]){
+    drawBtn.disabled = true;
+    const badge = document.createElement("div");
+    badge.className="badge";
+    badge.innerText="🎨 No Drawing Available";
+    drawBtn.parentNode.appendChild(badge);
+  }
+
+  if(plcBtn && !plcAvailableMap[id]){
+    plcBtn.disabled = true;
+    const badge = document.createElement("div");
+    badge.className="badge";
+    badge.innerText="⚡ No PLC Address Available";
+    plcBtn.parentNode.appendChild(badge);
+  }
+}
+
+/* ===== MOTOR ===== */
 async function showMotor(c,id){
   const p = await lastDates(id,{
     rep:"MOTOR REPLACEMENT",
@@ -263,15 +303,16 @@ async function showMotor(c,id){
   <div class="action-row">
   <button class="action-btn" onclick="openHistory()">📜 History</button>
   <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
+  <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
   <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
 </div>
 
   </div>`;
 
-  applyDrawingState(id);
+  applyButtonState(id);
 }
 
-/* ================= TRANSFORMER ================= */
+/* ===== TRANSFORMER ===== */
 async function showTransformer(c,id){
   const t = await lastDates(id,{
     pm:"TRANSFORMER PM",
@@ -304,14 +345,15 @@ async function showTransformer(c,id){
     <div class="action-row">
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
+      <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
       <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
 
-  applyDrawingState(id);
+  applyButtonState(id);
 }
 
-/* ================= BREAKER ================= */
+/* ===== BREAKER ===== */
 async function showBreaker(c,id){
   const b = await lastDates(id,{ pm:"BREAKER PM" });
 
@@ -333,28 +375,12 @@ async function showBreaker(c,id){
     <div class="action-row">
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
+      <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
       <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
 
-  applyDrawingState(id);
-}
-
-/* ===== APPLY DRAWING BUTTON STATE ===== */
-function applyDrawingState(id){
-  const btn = document.getElementById("drawBtn");
-  if(!btn) return;
-
-  const available = drawingAvailableMap[id];
-
-  if(!available){
-    btn.disabled = true;
-
-    const badge = document.createElement("div");
-    badge.className="badge";
-    badge.innerText="🎨 No Drawing Available";
-    btn.parentNode.appendChild(badge);
-  }
+  applyButtonState(id);
 }
 
 function openHistory(){
@@ -367,6 +393,7 @@ function openHistory(){
 /* ===== INIT ===== */
 (async function(){
   await preloadDrawings();
+  await preloadPLC();
   loadData();
 })();
 </script>
