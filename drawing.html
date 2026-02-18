@@ -48,7 +48,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   box-shadow:0 2px 5px rgba(0,0,0,.1);
   cursor:pointer;
   text-align:center;
-  transition:0.2s
+  transition:.2s
 }
 .tile:hover{transform:scale(1.03)}
 
@@ -59,11 +59,13 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   border-radius:8px;
   margin-bottom:8px
 }
+
 .tile h4{
   margin:5px 0;
   font-size:14px;
   color:#003f88
 }
+
 .tile small{
   font-size:12px;color:#666
 }
@@ -75,7 +77,8 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   border:1px solid #ccc;
   border-radius:10px;
   overflow:hidden;
-  display:none
+  display:none;
+  position:relative
 }
 .viewer iframe{
   width:100%;
@@ -83,10 +86,10 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   border:none
 }
 
-/* BUTTON ROW */
+/* CONTROLS */
 .viewer-controls{
   margin-top:10px;
-  text-align:right;
+  text-align:right
 }
 .viewer-controls button{
   padding:8px 14px;
@@ -95,6 +98,18 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   color:white;
   border-radius:6px;
   cursor:pointer;
+  margin-left:8px
+}
+
+/* FULLSCREEN */
+.viewer.fullscreen{
+  position:fixed;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  z-index:9999;
+  background:white;
+  border-radius:0
 }
 
 .no-data{
@@ -127,19 +142,19 @@ function normalize(v){
   return String(v||"").toUpperCase().trim();
 }
 
-/* ===== Extract File ID ===== */
+/* ===== Extract Drive File ID ===== */
 function getFileId(link){
   const match = link.match(/[-\w]{25,}/);
   return match ? match[0] : null;
 }
 
-/* ===== Stable PDF Embed ===== */
+/* ===== Proper Google Drive Embed ===== */
 function convertToEmbed(link){
   const fileId = getFileId(link);
   if(!fileId) return link;
 
-  // ✅ using docs viewer for stable embed
-  return "https://docs.google.com/gview?embedded=1&url=https://drive.google.com/uc?id="+fileId;
+  // BEST working embed method
+  return "https://drive.google.com/file/d/"+fileId+"/preview";
 }
 
 /* ===== Thumbnail ===== */
@@ -178,7 +193,6 @@ async function load(){
   let html=`<div class="card">
               <h3>${id}</h3>`;
 
-  /* 🧠 AUTO DETECT DRAWING COLUMNS */
   Object.keys(item).forEach(group=>{
     if(group==="id") return;
     if(!Array.isArray(item[group])) return;
@@ -194,11 +208,11 @@ async function load(){
 
       html+=`
         <div class="tile"
-             onclick="openDrawing('${id}','${group}',${i},'${link}')">
+             onclick="openDrawing('${id}',${i},'${link}')">
           <img src="${thumb}"
                onerror="this.src='https://via.placeholder.com/300x200?text=PDF'">
           <h4>Drawing ${i+1}</h4>
-          <small>Downloads: ${count}</small>
+          <small id="count_${i}">Downloads: ${count}</small>
         </div>`;
     });
 
@@ -209,7 +223,9 @@ async function load(){
         <div class="viewer" id="viewerBox">
           <iframe id="pdfFrame"></iframe>
         </div>
+
         <div class="viewer-controls">
+          <button onclick="toggleFullScreen()">📱 Full Screen</button>
           <button onclick="printDrawing()">🖨 Print</button>
         </div>
         </div>`;
@@ -218,22 +234,33 @@ async function load(){
 }
 
 /* ===== OPEN DRAWING ===== */
-function openDrawing(id,group,index,link){
+function openDrawing(id,index,link){
+
   const embed = convertToEmbed(link);
 
-  document.getElementById("pdfFrame").src=embed;
-  document.getElementById("viewerBox").style.display="block";
+  const frame = document.getElementById("pdfFrame");
+  const viewer = document.getElementById("viewerBox");
 
-  incrementDownload(id,index);
-  load(); // refresh count
+  frame.src = embed;
+  viewer.style.display="block";
+
+  const newCount = incrementDownload(id,index);
+  document.getElementById("count_"+index).innerText =
+    "Downloads: "+newCount;
 }
 
 /* ===== PRINT ===== */
 function printDrawing(){
-  const iframe=document.getElementById("pdfFrame");
-  if(iframe && iframe.contentWindow){
-    iframe.contentWindow.print();
+  const frame=document.getElementById("pdfFrame");
+  if(frame && frame.contentWindow){
+    frame.contentWindow.print();
   }
+}
+
+/* ===== FULL SCREEN ===== */
+function toggleFullScreen(){
+  const viewer=document.getElementById("viewerBox");
+  viewer.classList.toggle("fullscreen");
 }
 
 load();
