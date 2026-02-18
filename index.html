@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -56,6 +57,17 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
   cursor: pointer;
 }
 
+.action-btn:disabled {
+  background:#ccc;
+  cursor:not-allowed;
+}
+
+.badge {
+  color:red;
+  font-weight:bold;
+  margin-top:10px;
+}
+
 @media(max-width:768px){
   .grid { grid-template-columns: 1fr; }
   .action-row {
@@ -90,13 +102,18 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 
 <script>
 const DRIVE_JSON =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+
+const DRAWING_JSON =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
 
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
 
-/* ===== NORMALIZE (🔥 FIX) ===== */
+let drawingAvailableMap = {};
+
+/* ===== NORMALIZE ===== */
 function normalize(v){
   return String(v || "")
     .replace(/[–—?]/g, "-")
@@ -112,14 +129,39 @@ function addJob(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
   if(!id) return;
   location.href =
-    "https://08electricaldata.github.io/qrsubmit.html?id=" +
-    encodeURIComponent(id);
+  "https://08electricaldata.github.io/qrsubmit.html?id=" +
+  encodeURIComponent(id);
 }
+
+/* ===== DRAWING OPEN ===== */
 function openDrawings(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
   location.href =
-    "https://08electricaldata.github.io/drawings/index.html?id=" +
-    encodeURIComponent(id);
+  "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" +
+  encodeURIComponent(id);
+}
+
+/* ===== PRELOAD DRAWINGS ===== */
+async function preloadDrawings(){
+  try{
+    const j = await (await fetch(DRAWING_JSON)).json();
+
+    j.rows.forEach(item=>{
+      const id = normalize(item.id);
+      if(!id) return;
+
+      const hasDrawing = Object.keys(item).some(k=>{
+        if(k==="id") return false;
+        if(!Array.isArray(item[k])) return false;
+        return item[k].some(link=>link && link.trim()!=="");
+      });
+
+      drawingAvailableMap[id] = hasDrawing;
+    });
+
+  }catch(e){
+    console.log("Drawing preload failed");
+  }
 }
 
 function parseDate(v){
@@ -136,6 +178,7 @@ function fmt(d){
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
+/* ===== LAST DATES ===== */
 async function lastDates(id,map){
   const res={};
   Object.keys(map).forEach(k=>res[k]=null);
@@ -164,6 +207,7 @@ async function lastDates(id,map){
   return res;
 }
 
+/* ===== LOAD DATA ===== */
 async function loadData(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
   if(!id) return;
@@ -219,11 +263,13 @@ async function showMotor(c,id){
 
   <div class="action-row">
   <button class="action-btn" onclick="openHistory()">📜 History</button>
-  <button class="action-btn" onclick="openDrawings()">📐 Drawings</button>
+  <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
   <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
 </div>
 
   </div>`;
+
+  applyDrawingState(id);
 }
 
 /* ================= TRANSFORMER ================= */
@@ -258,9 +304,12 @@ async function showTransformer(c,id){
 
     <div class="action-row">
       <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
       <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
+
+  applyDrawingState(id);
 }
 
 /* ================= BREAKER ================= */
@@ -284,19 +333,43 @@ async function showBreaker(c,id){
 
     <div class="action-row">
       <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
       <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
+
+  applyDrawingState(id);
+}
+
+/* ===== APPLY DRAWING BUTTON STATE ===== */
+function applyDrawingState(id){
+  const btn = document.getElementById("drawBtn");
+  if(!btn) return;
+
+  const available = drawingAvailableMap[id];
+
+  if(!available){
+    btn.disabled = true;
+
+    const badge = document.createElement("div");
+    badge.className="badge";
+    badge.innerText="🎨 No Drawing Available";
+    btn.parentNode.appendChild(badge);
+  }
 }
 
 function openHistory(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
   location.href =
-    "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-    encodeURIComponent(id);
+  "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+  encodeURIComponent(id);
 }
 
-loadData();
+/* ===== INIT ===== */
+(async function(){
+  await preloadDrawings();
+  loadData();
+})();
 </script>
 
 </body>
