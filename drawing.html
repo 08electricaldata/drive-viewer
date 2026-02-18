@@ -6,38 +6,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-  font-family:Arial;
-  margin:0;
-  background:#f2f6ff
-}
+body{font-family:Arial;margin:0;background:#f2f6ff}
 
 /* HEADER */
 .header{
-  background:#003f88;
-  color:white;
-  padding:14px;
-  text-align:center
+  background:#003f88;color:white;
+  padding:15px;text-align:center
 }
 
-/* LAYOUT */
 .container{padding:20px}
+
 .card{
-  background:white;
-  padding:20px;
+  background:white;padding:20px;
   border-radius:12px;
   box-shadow:0 2px 6px rgba(0,0,0,.15)
+}
+
+/* GROUP TITLE */
+.group-title{
+  margin-top:25px;
+  font-weight:bold;
+  color:#003f88;
+  font-size:18px;
+  border-bottom:2px solid #003f88;
+  padding-bottom:5px
 }
 
 /* GRID */
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
   gap:18px;
-  margin-top:20px
+  margin-top:15px
 }
 
-/* DRAWING TILE */
+/* TILE */
 .tile{
   background:#f8fbff;
   padding:12px;
@@ -45,14 +48,13 @@ body{
   box-shadow:0 2px 5px rgba(0,0,0,.1);
   cursor:pointer;
   text-align:center;
-  transition:.2s
+  transition:0.2s
 }
-.tile:hover{
-  transform:translateY(-3px)
-}
+.tile:hover{transform:scale(1.03)}
+
 .tile img{
   width:100%;
-  height:140px;
+  height:150px;
   object-fit:cover;
   border-radius:8px;
   margin-bottom:8px
@@ -63,13 +65,12 @@ body{
   color:#003f88
 }
 .tile small{
-  font-size:12px;
-  color:#666
+  font-size:12px;color:#666
 }
 
 /* VIEWER */
 .viewer{
-  margin-top:25px;
+  margin-top:30px;
   height:650px;
   border:1px solid #ccc;
   border-radius:10px;
@@ -82,6 +83,20 @@ body{
   border:none
 }
 
+/* BUTTON ROW */
+.viewer-controls{
+  margin-top:10px;
+  text-align:right;
+}
+.viewer-controls button{
+  padding:8px 14px;
+  border:none;
+  background:#003f88;
+  color:white;
+  border-radius:6px;
+  cursor:pointer;
+}
+
 .no-data{
   color:red;
   text-align:center;
@@ -89,7 +104,7 @@ body{
 }
 
 @media(max-width:768px){
-  .viewer{height:420px}
+  .viewer{height:450px}
 }
 </style>
 </head>
@@ -108,26 +123,33 @@ body{
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
 
-/* ===== NORMALIZE ===== */
 function normalize(v){
   return String(v||"").toUpperCase().trim();
 }
 
-/* ===== GOOGLE DRIVE → EMBEDDED PREVIEW (STABLE METHOD) ===== */
-function convertToPreview(link){
-  if(!link) return "";
-  return "https://docs.google.com/gview?embedded=true&url=" + encodeURIComponent(link);
+/* ===== Extract File ID ===== */
+function getFileId(link){
+  const match = link.match(/[-\w]{25,}/);
+  return match ? match[0] : null;
 }
 
-/* ===== GOOGLE DRIVE THUMBNAIL ===== */
+/* ===== Stable PDF Embed ===== */
+function convertToEmbed(link){
+  const fileId = getFileId(link);
+  if(!fileId) return link;
+
+  // ✅ using docs viewer for stable embed
+  return "https://docs.google.com/gview?embedded=1&url=https://drive.google.com/uc?id="+fileId;
+}
+
+/* ===== Thumbnail ===== */
 function convertToThumbnail(link){
-  const match = link.match(/[-\w]{25,}/);
-  if(!match) return "";
-  const fileId = match[0];
+  const fileId = getFileId(link);
+  if(!fileId) return "";
   return "https://drive.google.com/thumbnail?id="+fileId;
 }
 
-/* ===== DOWNLOAD COUNTER ===== */
+/* ===== Download Counter ===== */
 function incrementDownload(id,index){
   const key="draw_"+id+"_"+index;
   let count=localStorage.getItem(key);
@@ -135,86 +157,83 @@ function incrementDownload(id,index){
   localStorage.setItem(key,count);
   return count;
 }
-
 function getDownload(id,index){
-  const key="draw_"+id+"_"+index;
-  return localStorage.getItem(key)||0;
+  return localStorage.getItem("draw_"+id+"_"+index)||0;
 }
 
 /* ===== LOAD PAGE ===== */
 async function load(){
-
   const id = normalize(new URLSearchParams(location.search).get("id"));
-  if(!id){
-    document.getElementById("content").innerHTML =
-      "<div class='card no-data'>Invalid ID</div>";
+  if(!id) return;
+
+  const j = await (await fetch(JSON_URL)).json();
+  const item = j.rows.find(r=>normalize(r.id)===id);
+
+  if(!item){
+    content.innerHTML =
+      "<div class='card no-data'>No Drawings Available</div>";
     return;
   }
 
-  try{
-    const res = await fetch(JSON_URL);
-    const j = await res.json();
+  let html=`<div class="card">
+              <h3>${id}</h3>`;
 
-    const item = j.rows.find(r=>normalize(r.id)===id);
+  /* 🧠 AUTO DETECT DRAWING COLUMNS */
+  Object.keys(item).forEach(group=>{
+    if(group==="id") return;
+    if(!Array.isArray(item[group])) return;
 
-    if(!item){
-      document.getElementById("content").innerHTML =
-        "<div class='card no-data'>No Drawings Available</div>";
-      return;
-    }
+    html+=`<div class="group-title">${group.toUpperCase()}</div>
+           <div class="grid">`;
 
-    let html=`<div class="card">
-                <h3>${id}</h3>
-                <div class="grid">`;
-
-    item.drawings.forEach((link,i)=>{
+    item[group].forEach((link,i)=>{
+      if(!link) return;
 
       const thumb = convertToThumbnail(link);
       const count = getDownload(id,i);
 
       html+=`
         <div class="tile"
-             onclick="openDrawing('${id}',${i},'${link}')">
+             onclick="openDrawing('${id}','${group}',${i},'${link}')">
           <img src="${thumb}"
                onerror="this.src='https://via.placeholder.com/300x200?text=PDF'">
           <h4>Drawing ${i+1}</h4>
-          <small id="count_${i}">Downloads: ${count}</small>
+          <small>Downloads: ${count}</small>
         </div>`;
     });
 
-    html+=`</div>
-           <div class="viewer" id="viewerBox">
-             <iframe id="pdfFrame"></iframe>
-           </div>
-           </div>`;
+    html+=`</div>`;
+  });
 
-    document.getElementById("content").innerHTML=html;
+  html+=`
+        <div class="viewer" id="viewerBox">
+          <iframe id="pdfFrame"></iframe>
+        </div>
+        <div class="viewer-controls">
+          <button onclick="printDrawing()">🖨 Print</button>
+        </div>
+        </div>`;
 
-  }catch(e){
-    document.getElementById("content").innerHTML =
-      "<div class='card no-data'>Error loading drawings</div>";
-  }
+  content.innerHTML=html;
 }
 
-/* ===== OPEN DRAWING (FIXED – NO RELOAD) ===== */
-function openDrawing(id,index,link){
+/* ===== OPEN DRAWING ===== */
+function openDrawing(id,group,index,link){
+  const embed = convertToEmbed(link);
 
-  const preview = convertToPreview(link);
-
-  document.getElementById("pdfFrame").src = preview;
+  document.getElementById("pdfFrame").src=embed;
   document.getElementById("viewerBox").style.display="block";
 
-  const newCount = incrementDownload(id,index);
+  incrementDownload(id,index);
+  load(); // refresh count
+}
 
-  const countEl = document.getElementById("count_"+index);
-  if(countEl){
-    countEl.innerText = "Downloads: " + newCount;
+/* ===== PRINT ===== */
+function printDrawing(){
+  const iframe=document.getElementById("pdfFrame");
+  if(iframe && iframe.contentWindow){
+    iframe.contentWindow.print();
   }
-
-  window.scrollTo({
-    top: document.getElementById("viewerBox").offsetTop - 20,
-    behavior:"smooth"
-  });
 }
 
 load();
