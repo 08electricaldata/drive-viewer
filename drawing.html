@@ -10,8 +10,29 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 /* HEADER */
 .header{
-  background:#003f88;color:white;
-  padding:15px;text-align:center
+  background:#003f88;
+  color:white;
+  padding:10px 15px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.header h2{
+  flex:1;
+  text-align:center;
+  margin:0;
+}
+
+/* HEADER BUTTONS */
+.header-btn{
+  background:white;
+  color:#003f88;
+  border:1px solid #003f88;
+  border-radius:6px;
+  padding:6px 10px;
+  cursor:pointer;
+  font-weight:bold;
 }
 
 .container{padding:20px}
@@ -126,7 +147,10 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 <body>
 
+<!-- ✅ UPDATED HEADER WITH BUTTONS -->
 <div class="header">
+  <button class="header-btn" onclick="goHome()">🏠 Home</button>
+  <button class="header-btn" onclick="goBack()">⬅ Back</button>
   <h2>Equipment Drawings</h2>
 </div>
 
@@ -137,6 +161,14 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 <script>
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+
+/* ===== NAVIGATION ===== */
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+function goBack(){
+  history.back();
+}
 
 function normalize(v){
   return String(v||"").toUpperCase().trim();
@@ -152,8 +184,6 @@ function getFileId(link){
 function convertToEmbed(link){
   const fileId = getFileId(link);
   if(!fileId) return link;
-
-  // BEST working embed method
   return "https://drive.google.com/file/d/"+fileId+"/preview";
 }
 
@@ -235,9 +265,7 @@ async function load(){
 
 /* ===== OPEN DRAWING ===== */
 function openDrawing(id,index,link){
-
   const embed = convertToEmbed(link);
-
   const frame = document.getElementById("pdfFrame");
   const viewer = document.getElementById("viewerBox");
 
