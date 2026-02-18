@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLC Interconnection Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  padding:20px;
+  background:#f4f7ff;
+}
+
+.header{
+  background:#1f3c88;
+  color:#fff;
+  padding:15px;
+  border-radius:6px;
+  margin-bottom:20px;
+}
+
+.header h2{
+  margin:0;
+  font-size:20px;
+}
+
+.updated{
+  font-size:12px;
+  opacity:0.8;
+  margin-top:5px;
+}
+
+.section-title{
+  font-weight:bold;
+  margin:20px 0 10px;
+  padding:6px;
+  background:#e8edff;
+  border-left:4px solid #1f3c88;
+}
+
+table{
+  border-collapse:collapse;
+  width:100%;
+  background:#fff;
+  margin-bottom:25px;
+}
+
+th, td{
+  border:1px solid #ccc;
+  padding:6px;
+  font-size:13px;
+  text-align:left;
+}
+
+th{
+  background:#dbe4ff;
+}
+
+tr:hover{
+  background:#f2f6ff;
+}
+
+.no-data{
+  background:#fff;
+  padding:15px;
+  border-radius:6px;
+  color:red;
+  font-weight:bold;
+}
+
+.loader{
+  font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="app">
+  <div class="loader">Loading PLC data...</div>
+</div>
+
+<script>
+
+const JSON_URL = 
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+
+// Get ID from URL
+function getDriveFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
+}
+
+// Create table function
+function createTable(title, dataArray){
+
+  let html = `
+    <div class="section-title">${title}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Signal</th>
+          <th>Tag</th>
+          <th>Address</th>
+          <th>Description</th>
+          <th>Panel</th>
+          <th>TB No</th>
+          <th>RL</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  dataArray.forEach(row=>{
+    html += `
+      <tr>
+        <td>${row.signal || ""}</td>
+        <td>${row.tag || ""}</td>
+        <td>${row.address || ""}</td>
+        <td>${row.description || ""}</td>
+        <td>${row.panel || ""}</td>
+        <td>${row.tb || ""}</td>
+        <td>${row.rl || ""}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  return html;
+}
+
+// Main loader
+async function loadPLC(){
+
+  const app = document.getElementById("app");
+  const driveID = getDriveFromURL();
+
+  if(!driveID){
+    app.innerHTML = "<div class='no-data'>No Drive ID provided in URL.</div>";
+    return;
+  }
+
+  try{
+
+    const response = await fetch(JSON_URL);
+    const data = await response.json();
+
+    const drive = data.drives[driveID.toUpperCase()];
+
+    if(!drive){
+      app.innerHTML = `
+        <div class="no-data">
+          No PLC data found for: ${driveID}
+        </div>
+      `;
+      return;
+    }
+
+    let html = `
+      <div class="header">
+        <h2>PLC INTERCONNECTION — ${driveID}</h2>
+        <div class="updated">Last Updated: ${new Date(data.updated).toLocaleString()}</div>
+      </div>
+    `;
+
+    if(drive.inputs && drive.inputs.length){
+      html += createTable("INPUT SIGNALS", drive.inputs);
+    }
+
+    if(drive.outputs && drive.outputs.length){
+      html += createTable("OUTPUT SIGNALS", drive.outputs);
+    }
+
+    app.innerHTML = html;
+
+  }catch(err){
+    app.innerHTML = "<div class='no-data'>Error loading PLC JSON file.</div>";
+    console.error(err);
+  }
+
+}
+
+loadPLC();
+
+</script>
+
+</body>
+</html>
