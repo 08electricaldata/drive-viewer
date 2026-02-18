@@ -12,16 +12,26 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 .header{
   background:#003f88;
   color:white;
-  padding:10px 15px;
+  padding:12px 15px;
   display:flex;
   align-items:center;
   gap:10px;
 }
 
-.header h2{
+.header-title{
   flex:1;
   text-align:center;
+}
+
+.header-title h2{
   margin:0;
+}
+
+.header-title small{
+  display:block;
+  font-size:14px;
+  font-weight:500;
+  opacity:.9;
 }
 
 /* HEADER BUTTONS */
@@ -147,11 +157,15 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 <body>
 
-<!-- ✅ UPDATED HEADER WITH BUTTONS -->
+<!-- UPDATED HEADER -->
 <div class="header">
   <button class="header-btn" onclick="goHome()">🏠 Home</button>
   <button class="header-btn" onclick="goBack()">⬅ Back</button>
-  <h2>Equipment Drawings</h2>
+
+  <div class="header-title">
+    <h2>Equipment Drawings</h2>
+    <small>Designed and maintained by Rakesh Chandra Sethy</small>
+  </div>
 </div>
 
 <div class="container">
@@ -263,7 +277,6 @@ async function load(){
   content.innerHTML=html;
 }
 
-/* ===== OPEN DRAWING ===== */
 function openDrawing(id,index,link){
   const embed = convertToEmbed(link);
   const frame = document.getElementById("pdfFrame");
@@ -277,7 +290,6 @@ function openDrawing(id,index,link){
     "Downloads: "+newCount;
 }
 
-/* ===== PRINT ===== */
 function printDrawing(){
   const frame=document.getElementById("pdfFrame");
   if(frame && frame.contentWindow){
@@ -285,7 +297,6 @@ function printDrawing(){
   }
 }
 
-/* ===== FULL SCREEN ===== */
 function toggleFullScreen(){
   const viewer=document.getElementById("viewerBox");
   viewer.classList.toggle("fullscreen");
