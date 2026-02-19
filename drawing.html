@@ -161,6 +161,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 <div class="header">
   <button class="header-btn" onclick="goHome()">🏠 Home</button>
   <button class="header-btn" onclick="goBack()">⬅ Back</button>
+  <button class="header-btn" onclick="goDriveInfo()">ℹ️ Drive Info</button>
+  <button class="header-btn" onclick="goHistory()">📜 History</button>
+  <button class="header-btn" onclick="goPLC()">⚡ PLC-ADD</button>
 
   <div class="header-title">
     <h2>Equipment Drawings</h2>
@@ -182,6 +185,32 @@ function goHome(){
 }
 function goBack(){
   history.back();
+}
+
+/* ✅ NEW NAVIGATION BUTTONS */
+function getCurrentID(){
+  return new URLSearchParams(location.search).get("id");
+}
+
+function goDriveInfo(){
+  const id = getCurrentID();
+  location.href =
+  "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+  encodeURIComponent(id);
+}
+
+function goHistory(){
+  const id = getCurrentID();
+  location.href =
+  "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+  encodeURIComponent(id);
+}
+
+function goPLC(){
+  const id = getCurrentID();
+  location.href =
+  "https://08electricaldata.github.io/drive-viewer/plc.html?id=" +
+  encodeURIComponent(id);
 }
 
 function normalize(v){
@@ -222,7 +251,7 @@ function getDownload(id,index){
 
 /* ===== LOAD PAGE ===== */
 async function load(){
-  const id = normalize(new URLSearchParams(location.search).get("id"));
+  const id = normalize(getCurrentID());
   if(!id) return;
 
   const j = await (await fetch(JSON_URL)).json();
