@@ -69,10 +69,7 @@ body {
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
-.summary h3 {
-  margin: 0;
-  color: #003f88;
-}
+.summary h3 { margin: 0; color: #003f88; }
 .summary p {
   font-size: 26px;
   font-weight: bold;
@@ -87,10 +84,7 @@ body {
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
-.controls input {
-  padding: 8px;
-  width: 240px;
-}
+.controls input { padding: 8px; width: 240px; }
 .controls button {
   padding: 8px 14px;
   background: #003f88;
@@ -106,10 +100,11 @@ table {
   border-collapse: collapse;
   background: white;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  table-layout: fixed;
 }
 th, td {
   border: 1px solid #ccc;
-  padding: 8px;
+  padding: 7px 6px;
   text-align: center;
 }
 th {
@@ -117,6 +112,17 @@ th {
   color: white;
   position: sticky;
   top: 0;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* uniform width for MNOPST */
+th:nth-child(n+6),
+td:nth-child(n+6){
+  width: 110px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ===== STATUS COLORS ===== */
@@ -131,13 +137,25 @@ th {
   font-weight: bold;
 }
 
+/* ===== VISUAL PRO MODE ===== */
+
+/* zebra */
+#pmTable tbody tr:nth-child(even){
+  background:#fafcff;
+}
+
+/* drive band full row */
+.drive-row{
+  box-shadow: inset 6px 0 0 var(--drive-color);
+}
+
+/* hover */
+tbody tr:hover{
+  background:#e3f0ff !important;
+}
+
 /* ===== UX ===== */
-tbody tr {
-  cursor: pointer;
-}
-tbody tr:hover {
-  background: #eef5ff;
-}
+tbody tr { cursor: pointer; }
 
 @media print {
   .controls, .header-left { display: none; }
@@ -147,7 +165,6 @@ tbody tr:hover {
 
 <body>
 
-<!-- ===== HEADER ===== -->
 <div class="header">
   <div class="header-bar">
     <div class="header-left">
@@ -166,7 +183,6 @@ tbody tr:hover {
 
 <div class="container">
 
-<!-- ===== SUMMARY ===== -->
 <div class="summary">
   <div class="card">
     <h3>Total Motors</h3>
@@ -191,17 +207,17 @@ tbody tr:hover {
 <table id="pmTable">
   <thead>
     <tr>
-      <th>RCS</th>
-      <th>BATTERY</th>
-      <th>EQPT NO</th>
-      <th>EQPT NAME</th>
-      <th>F</th>
-      <th>M</th>
-      <th>N</th>
-      <th>O</th>
-      <th>P</th>
-      <th>MODULE PM (S)</th>
-      <th>MOTOR PM (T)</th>
+      <th>SL</th>
+      <th>Main Drive</th>
+      <th>Sub Drive</th>
+      <th>EQUPT NAME</th>
+      <th>LT/HT</th>
+      <th>Before OCT-25 Module</th>
+      <th>Before OCT-25 Motor</th>
+      <th>OCT25-MAR26 Module</th>
+      <th>OCT25-MAR26 Motor</th>
+      <th>Module Due</th>
+      <th>Motor Due</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -210,67 +226,90 @@ tbody tr:hover {
 </div>
 
 <script>
-const SHEET =
-"https://docs.google.com/spreadsheets/d/1EHCIU88yac4PH2ORmYli1hwN1nQ9_226sdslI5SqXmc/gviz/tq?gid=1308094316&tqx=out:json";
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/2026_oct_mar.json";
 
 /* NAV */
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ history.back(); }
 
 /* DATE */
-function parseDate(v){
+function parseISO(v){
   if(!v) return null;
-  if(typeof v==="string" && v.startsWith("Date(")){
-    const p=v.match(/\d+/g);
-    return new Date(p[0],p[1],p[2]);
-  }
-  return null;
+  const d=new Date(v);
+  return isNaN(d)?null:d;
 }
 function fmt(d){
-  return d?`${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`:"";
+  return d
+    ? `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`
+    : "";
+}
+
+/* professional drive color */
+const driveColorMap={};
+const palette=[
+  "#90caf9","#f48fb1","#a5d6a7","#ffcc80",
+  "#b39ddb","#80deea","#c5e1a5","#ffab91"
+];
+let colorIndex=0;
+
+function getDriveColor(key){
+  if(!driveColorMap[key]){
+    driveColorMap[key]=palette[colorIndex%palette.length];
+    colorIndex++;
+  }
+  return driveColorMap[key];
 }
 
 /* LOAD */
 async function loadData(){
-  const r=await fetch(SHEET);
-  const t=await r.text();
-  const j=JSON.parse(t.substring(47,t.length-2));
+
+  const r = await fetch(JSON_URL);
+  const j = await r.json();
 
   const tbody=document.querySelector("#pmTable tbody");
   const today=new Date(); today.setHours(0,0,0,0);
 
   let total=0, overS=0, overT=0;
 
-  j.table.rows.forEach(r=>{
-    const c=r.c||[];
-    if(!c[1]?.v||!c[2]?.v) return;
+  j.rows.forEach(row=>{
+
+    if(String(row[4]||"").toUpperCase()!=="S") return;
+    if(!row[1] || !row[2]) return;
 
     total++;
 
-    const m=parseDate(c[12]?.v);
-    const n=parseDate(c[13]?.v);
-    const o=parseDate(c[14]?.v);
-    const p=parseDate(c[15]?.v);
-    const s=parseDate(c[18]?.v);
-    const t=parseDate(c[19]?.v);
+    const m=parseISO(row[12]);
+    const n=parseISO(row[13]);
+    const o=parseISO(row[14]);
+    const p=parseISO(row[15]);
+    const s=parseISO(row[18]);
+    const t=parseISO(row[19]);
 
-    const sOver=!s||s<today;
-    const tOver=!t||t<today;
+    const sOver=!s || s<today;
+    const tOver=!t || t<today;
+
     if(sOver) overS++;
     if(tOver) overT++;
 
+    const drive=row[1]||"";
+    const bandColor=getDriveColor(drive);
+
     const tr=document.createElement("tr");
+    tr.classList.add("drive-row");
+    tr.style.setProperty("--drive-color", bandColor);
+
     tr.onclick=()=> {
-      const id=`${c[1].v}-${c[2].v}`;
+      const id=`${row[1]}-${row[2]}`;
       location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
     };
 
     tr.innerHTML=`
-      <td>${c[0]?.v||""}</td>
-      <td>${c[1]?.v||""}</td>
-      <td>${c[2]?.v||""}</td>
-      <td>${c[3]?.v||""}</td>
-      <td>${c[5]?.v||""}</td>
+      <td>${row[0]||""}</td>
+      <td><b>${drive}</b></td>
+      <td>${row[2]||""}</td>
+      <td>${row[3]||""}</td>
+      <td>${row[5]||""}</td>
       <td>${fmt(m)}</td>
       <td>${fmt(n)}</td>
       <td>${fmt(o)}</td>
@@ -278,6 +317,7 @@ async function loadData(){
       <td class="${sOver?'overdue-cell':'ok'}">${fmt(s)}</td>
       <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
     `;
+
     tbody.appendChild(tr);
   });
 
@@ -296,7 +336,6 @@ async function loadData(){
   };
 }
 
-/* EXPORT */
 function exportExcel(){
   let csv=[];
   document.querySelectorAll("#pmTable tr").forEach(r=>{
