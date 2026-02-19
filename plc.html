@@ -151,15 +151,12 @@ function getDriveFromURL(){
   return params.get("id");
 }
 
-function goBack(){
-  window.history.back();
-}
+function goBack(){ window.history.back(); }
 
 function goHome(){
   window.location.href = "https://08electricaldata.github.io/";
 }
 
-/* ✅ NEW DRIVE INFO BUTTON */
 function goDriveInfo(){
   const id = getDriveFromURL();
   window.location.href =
@@ -184,7 +181,9 @@ function goDrawing(){
 async function checkDrawingAvailability(id){
   try{
     const j = await (await fetch(DRAWING_JSON)).json();
-    const found = j.rows.find(r => String(r.id || "").toUpperCase() === id.toUpperCase());
+    const found = j.rows.find(r =>
+      String(r.id || "").toUpperCase() === id.toUpperCase()
+    );
     drawingAvailable = !!found;
   }catch(e){
     drawingAvailable = false;
@@ -242,25 +241,10 @@ async function loadPLC(){
 
     await checkDrawingAvailability(driveID);
 
-    const response = await fetch(JSON_URL);
-    const data = await response.json();
-
-    const drive = data.drives[driveID.toUpperCase()];
-
-    if(!drive){
-      app.innerHTML =
-      `<div class="no-data">
-        No PLC data found for: ${driveID}
-      </div>`;
-      return;
-    }
-
+    // Header + Buttons ALWAYS visible
     let html = `
       <div class="header">
         <h2>PLC ADDRESS OF DRIVE — ${driveID}</h2>
-        <div class="updated">
-          Last Updated: ${new Date(data.updated).toLocaleString("en-GB")}
-        </div>
       </div>
 
       <div class="button-bar">
@@ -269,6 +253,31 @@ async function loadPLC(){
         <button onclick="goDriveInfo()">ℹ️ Drive Info</button>
         <button onclick="goHistory()">📜 History</button>
         <button id="drawBtn" onclick="goDrawing()">📐 Drawings</button>
+      </div>
+    `;
+
+    const response = await fetch(JSON_URL);
+    const data = await response.json();
+    const drive = data.drives[driveID.toUpperCase()];
+
+    if(!drive){
+      html += `
+        <div class="no-data">
+          No PLC data found for: ${driveID}
+        </div>
+      `;
+      app.innerHTML = html;
+
+      if(!drawingAvailable){
+        document.getElementById("drawBtn").disabled = true;
+      }
+
+      return;
+    }
+
+    html += `
+      <div class="updated" style="text-align:center;margin-bottom:20px;">
+        Last Updated: ${new Date(data.updated).toLocaleString("en-GB")}
       </div>
     `;
 
