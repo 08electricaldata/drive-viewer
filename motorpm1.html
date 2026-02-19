@@ -100,11 +100,11 @@ table {
   border-collapse: collapse;
   background: white;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  table-layout: fixed; /* ⭐ uniform look */
+  table-layout: fixed;
 }
 th, td {
   border: 1px solid #ccc;
-  padding: 8px;
+  padding: 7px 6px;
   text-align: center;
 }
 th {
@@ -112,15 +112,17 @@ th {
   color: white;
   position: sticky;
   top: 0;
-  white-space: normal; /* ⭐ allow wrap */
+  white-space: normal;
   word-break: break-word;
   line-height: 1.2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* ⭐ uniform width for date columns */
+/* uniform width for MNOPST */
 th:nth-child(n+6),
 td:nth-child(n+6){
   width: 110px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ===== STATUS COLORS ===== */
@@ -135,14 +137,25 @@ td:nth-child(n+6){
   font-weight: bold;
 }
 
-/* ===== DRIVE COLOR BAND ===== */
-.drive-band {
-  font-weight: bold;
+/* ===== VISUAL PRO MODE ===== */
+
+/* zebra */
+#pmTable tbody tr:nth-child(even){
+  background:#fafcff;
+}
+
+/* drive band full row */
+.drive-row{
+  box-shadow: inset 6px 0 0 var(--drive-color);
+}
+
+/* hover */
+tbody tr:hover{
+  background:#e3f0ff !important;
 }
 
 /* ===== UX ===== */
 tbody tr { cursor: pointer; }
-tbody tr:hover { background: #eef5ff; }
 
 @media print {
   .controls, .header-left { display: none; }
@@ -152,7 +165,6 @@ tbody tr:hover { background: #eef5ff; }
 
 <body>
 
-<!-- ===== HEADER ===== -->
 <div class="header">
   <div class="header-bar">
     <div class="header-left">
@@ -233,11 +245,11 @@ function fmt(d){
     : "";
 }
 
-/* 🎨 color generator for Main Drive */
+/* professional drive color */
 const driveColorMap={};
 const palette=[
-  "#e3f2fd","#fce4ec","#e8f5e9","#fff3e0",
-  "#ede7f6","#e0f7fa","#f1f8e9","#fbe9e7"
+  "#90caf9","#f48fb1","#a5d6a7","#ffcc80",
+  "#b39ddb","#80deea","#c5e1a5","#ffab91"
 ];
 let colorIndex=0;
 
@@ -284,6 +296,8 @@ async function loadData(){
     const bandColor=getDriveColor(drive);
 
     const tr=document.createElement("tr");
+    tr.classList.add("drive-row");
+    tr.style.setProperty("--drive-color", bandColor);
 
     tr.onclick=()=> {
       const id=`${row[1]}-${row[2]}`;
@@ -292,7 +306,7 @@ async function loadData(){
 
     tr.innerHTML=`
       <td>${row[0]||""}</td>
-      <td class="drive-band" style="background:${bandColor}">${drive}</td>
+      <td><b>${drive}</b></td>
       <td>${row[2]||""}</td>
       <td>${row[3]||""}</td>
       <td>${row[5]||""}</td>
