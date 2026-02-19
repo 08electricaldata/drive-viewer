@@ -13,7 +13,6 @@ body{
   background:#f4f7ff;
 }
 
-/* ===== TOP CREDIT ===== */
 .top-credit{
   text-align:center;
   padding:10px;
@@ -23,7 +22,6 @@ body{
   letter-spacing:0.5px;
 }
 
-/* ===== HEADER ===== */
 .header{
   text-align:center;
   padding:20px 10px;
@@ -41,7 +39,6 @@ body{
   color:#555;
 }
 
-/* ===== BUTTON AREA ===== */
 .button-bar{
   display:flex;
   justify-content:center;
@@ -69,7 +66,6 @@ body{
   cursor:not-allowed;
 }
 
-/* ===== CONTENT ===== */
 .container{
   padding:0 20px 30px 20px;
   max-width:1200px;
@@ -119,7 +115,6 @@ tr:hover{
   font-weight:bold;
 }
 
-/* ===== MOBILE RESPONSIVE ===== */
 @media(max-width:768px){
   table{ font-size:11px; }
   th, td{ padding:4px; }
@@ -151,23 +146,27 @@ const DRAWING_JSON =
 
 let drawingAvailable = false;
 
-// Get Drive ID
 function getDriveFromURL(){
   const params = new URLSearchParams(window.location.search);
   return params.get("id");
 }
 
-// Back Button
 function goBack(){
   window.history.back();
 }
 
-// Home Button
 function goHome(){
   window.location.href = "https://08electricaldata.github.io/";
 }
 
-// History Button
+/* ✅ NEW DRIVE INFO BUTTON */
+function goDriveInfo(){
+  const id = getDriveFromURL();
+  window.location.href =
+  "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+  encodeURIComponent(id);
+}
+
 function goHistory(){
   const id = getDriveFromURL();
   window.location.href =
@@ -175,7 +174,6 @@ function goHistory(){
   encodeURIComponent(id);
 }
 
-// Drawing Button
 function goDrawing(){
   const id = getDriveFromURL();
   window.location.href =
@@ -183,7 +181,6 @@ function goDrawing(){
   encodeURIComponent(id);
 }
 
-// Check Drawing Availability
 async function checkDrawingAvailability(id){
   try{
     const j = await (await fetch(DRAWING_JSON)).json();
@@ -194,7 +191,6 @@ async function checkDrawingAvailability(id){
   }
 }
 
-// Create Table
 function createTable(title, dataArray){
 
   let html = `
@@ -232,7 +228,6 @@ function createTable(title, dataArray){
   return html;
 }
 
-// Main Loader
 async function loadPLC(){
 
   const app = document.getElementById("app");
@@ -271,6 +266,7 @@ async function loadPLC(){
       <div class="button-bar">
         <button onclick="goBack()">⬅ Back</button>
         <button onclick="goHome()">🏠 Home</button>
+        <button onclick="goDriveInfo()">ℹ️ Drive Info</button>
         <button onclick="goHistory()">📜 History</button>
         <button id="drawBtn" onclick="goDrawing()">📐 Drawings</button>
       </div>
@@ -286,7 +282,6 @@ async function loadPLC(){
 
     app.innerHTML = html;
 
-    // Disable drawing button if not available
     if(!drawingAvailable){
       document.getElementById("drawBtn").disabled = true;
     }
