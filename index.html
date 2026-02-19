@@ -234,10 +234,20 @@ async function loadData(){
     r => normalize(`${r[1]}-${r[2]}`) === id
   );
 
-  if(!c){
-    content.innerHTML = "<div class='card'>Data Not Found</div>";
-    return;
-  }
+if(!c){
+
+  content.innerHTML =
+    "<div class='card'>Drive data not found… opening history…</div>";
+
+  setTimeout(()=>{
+    location.href =
+      "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+      encodeURIComponent(id);
+  }, 800);
+
+  return;
+}
+
 
   const TYPE = normalize(c[1]);
 
