@@ -346,10 +346,25 @@ function applyTabIndicators(id){
   const plcBtn = document.getElementById("plcTabBtn");
   const drawBtn = document.getElementById("drawingTabBtn");
 
-  if(!plcAvailableMap[id]){
+  function applyTabIndicators(id){
+
+  const plcBtn = document.getElementById("plcTabBtn");
+  const drawBtn = document.getElementById("drawingTabBtn");
+
+  if(plcAvailableMap[id]){
+    document.getElementById("plcIndicator").style.display="inline-block";
+  }else{
     document.getElementById("plcIndicator").style.display="none";
     plcBtn.disabled = true;
   }
+
+  if(drawingAvailableMap[id]){
+    document.getElementById("drawingBadge").innerText = "●";
+  }else{
+    drawBtn.disabled = true;
+  }
+}
+
 
   if(!drawingAvailableMap[id]){
     drawBtn.disabled = true;
@@ -554,7 +569,7 @@ async function loadPLC(){
     const response = await fetch(PLC_JSON);
     const data = await response.json();
 
-    const drive = data.drives[id];
+    const drive = data.drives[id.toUpperCase()];
 
     if(!drive){
       tabContent.innerHTML = `
@@ -744,14 +759,22 @@ function printDrawing(){
 
 function toggleFullScreen(){
   const viewer=document.getElementById("viewerBox");
-  viewer.style.position="fixed";
-  viewer.style.top="0";
-  viewer.style.left="0";
-  viewer.style.width="100%";
-  viewer.style.height="100%";
-  viewer.style.zIndex="9999";
-  viewer.style.background="white";
+
+  if(viewer.classList.contains("fullscreen")){
+    viewer.classList.remove("fullscreen");
+    viewer.style="";
+  }else{
+    viewer.classList.add("fullscreen");
+    viewer.style.position="fixed";
+    viewer.style.top="0";
+    viewer.style.left="0";
+    viewer.style.width="100%";
+    viewer.style.height="100%";
+    viewer.style.zIndex="9999";
+    viewer.style.background="white";
+  }
 }
+
 
 
 /* =========================================================
