@@ -64,6 +64,11 @@ body{
   background:#162d66;
 }
 
+.button-bar button:disabled{
+  background:#ccc;
+  cursor:not-allowed;
+}
+
 /* ===== CONTENT ===== */
 .container{
   padding:0 20px 30px 20px;
@@ -116,19 +121,9 @@ tr:hover{
 
 /* ===== MOBILE RESPONSIVE ===== */
 @media(max-width:768px){
-
-  table{
-    font-size:11px;
-  }
-
-  th, td{
-    padding:4px;
-  }
-
-  .header h2{
-    font-size:18px;
-  }
-
+  table{ font-size:11px; }
+  th, td{ padding:4px; }
+  .header h2{ font-size:18px; }
 }
 
 </style>
@@ -141,17 +136,20 @@ tr:hover{
 </div>
 
 <div class="container">
-
   <div id="app">
     <div class="loader">Loading PLC data...</div>
   </div>
-
 </div>
 
 <script>
 
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+
+const DRAWING_JSON =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+
+let drawingAvailable = false;
 
 // Get Drive ID
 function getDriveFromURL(){
@@ -169,6 +167,32 @@ function goHome(){
   window.location.href = "https://08electricaldata.github.io/";
 }
 
+// History Button
+function goHistory(){
+  const id = getDriveFromURL();
+  window.location.href =
+  "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+  encodeURIComponent(id);
+}
+
+// Drawing Button
+function goDrawing(){
+  const id = getDriveFromURL();
+  window.location.href =
+  "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" +
+  encodeURIComponent(id);
+}
+
+// Check Drawing Availability
+async function checkDrawingAvailability(id){
+  try{
+    const j = await (await fetch(DRAWING_JSON)).json();
+    const found = j.rows.find(r => String(r.id || "").toUpperCase() === id.toUpperCase());
+    drawingAvailable = !!found;
+  }catch(e){
+    drawingAvailable = false;
+  }
+}
 
 // Create Table
 function createTable(title, dataArray){
@@ -205,7 +229,6 @@ function createTable(title, dataArray){
   });
 
   html += `</tbody></table>`;
-
   return html;
 }
 
@@ -222,17 +245,18 @@ async function loadPLC(){
 
   try{
 
+    await checkDrawingAvailability(driveID);
+
     const response = await fetch(JSON_URL);
     const data = await response.json();
 
     const drive = data.drives[driveID.toUpperCase()];
 
     if(!drive){
-      app.innerHTML = `
-        <div class="no-data">
-          No PLC data found for: ${driveID}
-        </div>
-      `;
+      app.innerHTML =
+      `<div class="no-data">
+        No PLC data found for: ${driveID}
+      </div>`;
       return;
     }
 
@@ -247,6 +271,8 @@ async function loadPLC(){
       <div class="button-bar">
         <button onclick="goBack()">⬅ Back</button>
         <button onclick="goHome()">🏠 Home</button>
+        <button onclick="goHistory()">📜 History</button>
+        <button id="drawBtn" onclick="goDrawing()">📐 Drawings</button>
       </div>
     `;
 
@@ -259,6 +285,11 @@ async function loadPLC(){
     }
 
     app.innerHTML = html;
+
+    // Disable drawing button if not available
+    if(!drawingAvailable){
+      document.getElementById("drawBtn").disabled = true;
+    }
 
   }catch(err){
     app.innerHTML = "<div class='no-data'>Error loading PLC JSON file.</div>";
