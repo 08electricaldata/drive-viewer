@@ -346,32 +346,20 @@ function applyTabIndicators(id){
   const plcBtn = document.getElementById("plcTabBtn");
   const drawBtn = document.getElementById("drawingTabBtn");
 
-  function applyTabIndicators(id){
-
-  const plcBtn = document.getElementById("plcTabBtn");
-  const drawBtn = document.getElementById("drawingTabBtn");
-
   if(plcAvailableMap[id]){
     document.getElementById("plcIndicator").style.display="inline-block";
   }else{
     document.getElementById("plcIndicator").style.display="none";
-    plcBtn.disabled = true;
+    if(plcBtn) plcBtn.disabled = true;
   }
 
   if(drawingAvailableMap[id]){
     document.getElementById("drawingBadge").innerText = "●";
   }else{
-    drawBtn.disabled = true;
+    if(drawBtn) drawBtn.disabled = true;
   }
 }
 
-
-  if(!drawingAvailableMap[id]){
-    drawBtn.disabled = true;
-  }else{
-    document.getElementById("drawingBadge").innerText = "●";
-  }
-}
 
 /* =========================================================
    MAIN DRIVE INFO LOADER (FULL ORIGINAL STRUCTURE)
