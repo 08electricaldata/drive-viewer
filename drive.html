@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Unified Drive Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;margin:0;background:#f4f7ff}
+
+/* TOP */
+.top-credit{
+  text-align:center;
+  padding:10px;
+  background:#1f3c88;
+  color:#fff;
+  font-size:13px;
+}
+
+.header{
+  text-align:center;
+  padding:20px 10px;
+}
+
+.header h2{margin:0}
+
+/* NAV */
+.nav-bar{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+
+.nav-btn{
+  padding:8px 16px;
+  border:none;
+  background:#003f88;
+  color:white;
+  border-radius:6px;
+  cursor:pointer;
+  position:relative;
+  transition:0.3s;
+}
+
+.nav-btn.active{
+  background:#ff9800;
+}
+
+.badge{
+  position:absolute;
+  top:-6px;
+  right:-6px;
+  background:red;
+  color:white;
+  font-size:11px;
+  padding:2px 6px;
+  border-radius:50%;
+}
+
+.indicator{
+  width:8px;
+  height:8px;
+  background:#4caf50;
+  border-radius:50%;
+  display:inline-block;
+  margin-left:6px;
+}
+
+/* CONTENT */
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:0 20px 40px;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  opacity:0;
+  transform:translateY(10px);
+  transition:.3s;
+}
+
+.card.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.section-title{
+  margin-top:20px;
+  font-weight:bold;
+  color:#003f88;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+th,td{
+  border:1px solid #ccc;
+  padding:6px;
+  font-size:13px;
+}
+
+th{background:#e6ecff}
+
+/* PRINT */
+@media print{
+  .nav-bar{display:none}
+  body{background:white}
+}
+
+.no-data{
+  text-align:center;
+  color:red;
+  font-weight:bold;
+}
+
+</style>
+</head>
+<body>
+
+<div class="top-credit">
+Designed and Maintained by RAKESH CHANDRA SETHY
+</div>
+
+<div class="header">
+  <h2 id="driveTitle">Loading...</h2>
+</div>
+
+<div class="nav-bar">
+  <button class="nav-btn" id="btn-info" onclick="showTab('info')">ℹ️ Info</button>
+  <button class="nav-btn" id="btn-plc" onclick="showTab('plc')">
+    ⚡ PLC <span id="plcIndicator"></span>
+  </button>
+  <button class="nav-btn" id="btn-drawing" onclick="showTab('drawing')">
+    📐 Drawings <span id="drawBadge"></span>
+  </button>
+  <button class="nav-btn" id="btn-history" onclick="showTab('history')">📜 History</button>
+  <button class="nav-btn" onclick="printReport()">🖨 Print</button>
+</div>
+
+<div class="container">
+  <div id="content" class="card">Loading...</div>
+</div>
+
+<script>
+
+const DRIVE_JSON="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+const PLC_JSON="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+const DRAWING_JSON="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+const HISTORY_BASE="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+const YEARS=[2026,2025,2024,2023,2022,2021,2020,2019];
+
+let DRIVE_ID="";
+let driveData=null;
+let plcData=null;
+let drawingData=null;
+
+function normalize(v){return String(v||"").toUpperCase().trim();}
+function getID(){return normalize(new URLSearchParams(location.search).get("id"));}
+
+function animate(){
+  content.classList.remove("show");
+  setTimeout(()=>content.classList.add("show"),50);
+}
+
+function showTab(tab){
+
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("btn-"+tab)?.classList.add("active");
+
+  if(tab==="info") renderInfo();
+  if(tab==="plc") renderPLC();
+  if(tab==="drawing") renderDrawing();
+  if(tab==="history") renderHistory();
+
+  animate();
+}
+
+/* ========= INFO ========= */
+function renderInfo(){
+  if(!driveData){
+    content.innerHTML="<div class='no-data'>No Drive Data</div>";
+    return;
+  }
+
+  content.innerHTML=`
+  <h3>${driveData[1]} – ${driveData[2]}</h3>
+  <p><b>Rating:</b> ${driveData[5]||""}</p>
+  <p><b>FLC:</b> ${driveData[10]||""}</p>
+  `;
+}
+
+/* ========= PLC ========= */
+function renderPLC(){
+  if(!plcData?.drives?.[DRIVE_ID]){
+    content.innerHTML="<div class='no-data'>No PLC Data</div>";
+    return;
+  }
+
+  const drive=plcData.drives[DRIVE_ID];
+  let html="";
+
+  if(drive.inputs?.length){
+    html+=`<div class="section-title">INPUTS</div>`+buildTable(drive.inputs);
+  }
+  if(drive.outputs?.length){
+    html+=`<div class="section-title">OUTPUTS</div>`+buildTable(drive.outputs);
+  }
+
+  content.innerHTML=html;
+}
+
+/* ========= DRAWING ========= */
+function renderDrawing(){
+  const item=drawingData?.rows?.find(r=>normalize(r.id)===DRIVE_ID);
+  if(!item){
+    content.innerHTML="<div class='no-data'>No Drawings Available</div>";
+    return;
+  }
+
+  let html="";
+  Object.keys(item).forEach(k=>{
+    if(k==="id"||!Array.isArray(item[k])) return;
+    html+=`<div class="section-title">${k}</div>`;
+    item[k].forEach((link,i)=>{
+      html+=`<p><a href="${link}" target="_blank">Drawing ${i+1}</a></p>`;
+    });
+  });
+
+  content.innerHTML=html;
+}
+
+/* ========= HISTORY ========= */
+async function renderHistory(){
+
+  let yearSelect=`<select onchange="filterHistory(this.value)">
+  <option value="ALL">All Years</option>
+  ${YEARS.map(y=>`<option value="${y}">${y}</option>`).join("")}
+  </select>`;
+
+  content.innerHTML=yearSelect+`<div id="historyBox"></div>`;
+
+  filterHistory("ALL");
+}
+
+async function filterHistory(year){
+
+  let html="";
+
+  const yearsToLoad = year==="ALL"?YEARS:[year];
+
+  for(const y of yearsToLoad){
+    try{
+      const j=await (await fetch(HISTORY_BASE+y+".json")).json();
+      const rows=j.rows.filter(r=>normalize(`${r[2]}-${r[3]}`)===DRIVE_ID);
+      if(rows.length){
+        html+=`<div class="section-title">${y}</div>`;
+        rows.forEach(r=>{
+          html+=`<p>${r[4]} - ${r[7]}</p>`;
+        });
+      }
+    }catch(e){}
+  }
+
+  document.getElementById("historyBox").innerHTML=
+  html||"<div class='no-data'>No History</div>";
+}
+
+function buildTable(arr){
+  let h=`<table><tr>
+  <th>Signal</th><th>Tag</th><th>Address</th>
+  <th>Description</th><th>Panel</th><th>TB</th><th>RL</th>
+  </tr>`;
+  arr.forEach(r=>{
+    h+=`<tr>
+    <td>${r.signal||""}</td>
+    <td>${r.tag||""}</td>
+    <td>${r.address||""}</td>
+    <td>${r.description||""}</td>
+    <td>${r.panel||""}</td>
+    <td>${r.tb||""}</td>
+    <td>${r.rl||""}</td>
+    </tr>`;
+  });
+  return h+"</table>";
+}
+
+function printReport(){
+  window.print();
+}
+
+/* ========= INIT ========= */
+(async function(){
+
+  DRIVE_ID=getID();
+  driveTitle.innerText="Drive — "+DRIVE_ID;
+
+  const dj=await (await fetch(DRIVE_JSON)).json();
+  driveData=dj.rows.find(r=>normalize(`${r[1]}-${r[2]}`)===DRIVE_ID);
+
+  plcData=await (await fetch(PLC_JSON)).json();
+  drawingData=await (await fetch(DRAWING_JSON)).json();
+
+  /* Green PLC indicator */
+  if(plcData?.drives?.[DRIVE_ID]){
+    document.getElementById("plcIndicator").className="indicator";
+  }
+
+  /* Drawing badge count */
+  const item=drawingData?.rows?.find(r=>normalize(r.id)===DRIVE_ID);
+  if(item){
+    let count=0;
+    Object.keys(item).forEach(k=>{
+      if(k==="id") return;
+      if(Array.isArray(item[k])) count+=item[k].filter(l=>l).length;
+    });
+    if(count>0){
+      document.getElementById("drawBadge").innerHTML=
+      `<span class="badge">${count}</span>`;
+    }
+  }
+
+  showTab("info");
+
+})();
+</script>
+
+</body>
+</html>
