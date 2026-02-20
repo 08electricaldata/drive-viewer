@@ -112,6 +112,8 @@ tr:hover{background:#eef5ff;cursor:pointer}
   <div>
     <button onclick="history.back()">⬅ Back</button>
     <button onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
+    <button onclick="openTrafoList()">⚡ Transformer List</button>
+    <button onclick="openTrafoPM()">⚡ PM Status</button>
   </div>
 </div>
 
@@ -122,10 +124,9 @@ tr:hover{background:#eef5ff;cursor:pointer}
   <p>Designed and Maintained by Rakesh Chandra Sethy</p>
 </div>
 
-
 <div class="status-panel">
   <div class="status-card critical">
-    🔴 Critical (<30%)<br><span id="countCritical">0</span>
+    🔴 Critical (&lt;30%)<br><span id="countCritical">0</span>
   </div>
   <div class="status-card avg">
     🟡 30–50%<br><span id="countAvg">0</span>
@@ -134,7 +135,7 @@ tr:hover{background:#eef5ff;cursor:pointer}
     🟠 50–70%<br><span id="countMedium">0</span>
   </div>
   <div class="status-card safe">
-    🟢 Safe (>70%)<br><span id="countSafe">0</span>
+    🟢 Safe (&gt;70%)<br><span id="countSafe">0</span>
   </div>
 </div>
 
@@ -166,6 +167,14 @@ tr:hover{background:#eef5ff;cursor:pointer}
 
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformeroil.json";
+
+/* ✅ NEW NAV FUNCTIONS */
+function openTrafoList(){
+  location.href="https://08electricaldata.github.io/drive-viewer/trafolist.html";
+}
+function openTrafoPM(){
+  location.href="https://08electricaldata.github.io/drive-viewer/trafopm.html";
+}
 
 let fullData=[], headers=[], mainChart=null, trendChart=null;
 
