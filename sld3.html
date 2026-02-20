@@ -2,160 +2,231 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>IEC SLD – Board Layout</title>
+<title>HT Board IEC SLD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f2f6ff;
-}
+body{font-family:Arial;margin:0;background:#f2f6ff}
 
 .header{
   background:#003f88;
   color:white;
   padding:12px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.header button{
+  background:white;
+  color:#003f88;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.header-title{
+  flex:1;
   text-align:center;
   font-weight:bold;
+  font-size:20px;
+}
+
+.container{padding:15px}
+.card{
+  background:white;
+  border-radius:10px;
+  padding:15px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15)
 }
 
 #wrap{
   height:600px;
-  background:white;
-  margin:20px;
+  overflow:hidden;
   border:1px solid #ccc;
 }
-
-svg{
+#sld{
   width:100%;
   height:100%;
 }
 
-/* Styles */
-.bus{ stroke:black; stroke-width:6; }
-.line{ stroke:black; stroke-width:3; }
-.label{ font-size:12px; text-anchor:middle; }
-
-.power{ stroke:#00cc44; stroke-width:4;
-  stroke-dasharray:10 6;
+/* IEC styles */
+.bus{
+  stroke:black;
+  stroke-width:6;
+}
+.flow{
+  stroke:#00cc44;
+  stroke-width:4;
+  stroke-dasharray:8 6;
   animation:flow 1s linear infinite;
 }
-
 @keyframes flow{
-  from{stroke-dashoffset:0;}
-  to{stroke-dashoffset:-32;}
+  from{stroke-dashoffset:0}
+  to{stroke-dashoffset:-28}
+}
+
+.label{
+  font-size:11px;
+  text-anchor:middle;
 }
 
 </style>
 </head>
+
 <body>
 
-<div class="header">US-08E-244-HT-BOARD – IEC SLD</div>
+<div class="header">
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="history.back()">⬅ Back</button>
+  <div class="header-title" id="title">SLD</div>
+</div>
 
+<div class="container">
+<div class="card">
 <div id="wrap">
-<svg viewBox="0 0 1600 700" id="sld"></svg>
+<svg id="sld" viewBox="0 0 1600 700"></svg>
+</div>
+</div>
 </div>
 
 <script>
+
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+
+function getParam(n){
+  return new URL(location.href).searchParams.get(n);
+}
+
 const svg=document.getElementById("sld");
 
-function line(x1,y1,x2,y2,cls="line"){
+function clear(){ svg.innerHTML=""; }
+
+function line(x1,y1,x2,y2,cls=""){
   const l=document.createElementNS("http://www.w3.org/2000/svg","line");
   l.setAttribute("x1",x1);
   l.setAttribute("y1",y1);
   l.setAttribute("x2",x2);
   l.setAttribute("y2",y2);
-  l.setAttribute("class",cls);
+  if(cls) l.setAttribute("class",cls);
   svg.appendChild(l);
 }
 
-function text(x,y,t){
-  const el=document.createElementNS("http://www.w3.org/2000/svg","text");
-  el.setAttribute("x",x);
-  el.setAttribute("y",y);
-  el.setAttribute("class","label");
-  el.textContent=t;
-  svg.appendChild(el);
+function text(x,y,str){
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",x);
+  t.setAttribute("y",y);
+  t.setAttribute("class","label");
+  t.textContent=str;
+  svg.appendChild(t);
 }
 
-function breaker(x,y,label){
-  // top & bottom contacts
-  line(x,y-22,x,y-8);
-  line(x,y+8,x,y+22);
-
-  // blade
-  line(x-10,y,x+10,y);
-
-  text(x,y+35,label);
-}
-
-function transformer(x,y,name){
+/* Transformer symbol */
+function transformer(x,y,label){
   const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
   c1.setAttribute("cx",x-12);
   c1.setAttribute("cy",y);
-  c1.setAttribute("r",12);
+  c1.setAttribute("r",10);
   c1.setAttribute("stroke","black");
   c1.setAttribute("fill","none");
 
   const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
   c2.setAttribute("cx",x+12);
   c2.setAttribute("cy",y);
-  c2.setAttribute("r",12);
+  c2.setAttribute("r",10);
   c2.setAttribute("stroke","black");
   c2.setAttribute("fill","none");
 
   svg.appendChild(c1);
   svg.appendChild(c2);
-
-  text(x,y-25,name);
+  text(x,y+28,label);
 }
 
-/* ================= DRAW ================= */
+/* Breaker symbol */
+function breaker(x,y,label){
+  line(x,y-20,x,y-8);
+  line(x,y+8,x,y+20);
+  line(x-12,y,x+12,y);
+  text(x,y+32,label);
+}
 
-const BUS_A_Y=300;
-const BUS_B_Y=300;
+async function load(){
 
-const LEFT_START=150;
-const RIGHT_START=1450;
+  const id=getParam("id");
+  if(!id) return;
 
-/* LEFT INCOMER */
+  document.getElementById("title").innerText=id+" — IEC SLD";
 
-transformer(400,120,"TR-2244");
-line(400,135,400,250,"power");
-breaker(400,270,"US-08E-2244-HT-244");
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
+  const board=data.boards?.[id];
+  if(!board) return;
 
-/* RIGHT INCOMER */
+  draw(board);
+}
 
-transformer(1200,120,"TR-2245");
-line(1200,135,1200,250,"power");
-breaker(1200,270,"US-08E-2245-HT-244");
+function draw(board){
 
-/* BUS A LEFT */
-line(150,300,800,300,"bus");
+  clear();
 
-/* BUS B RIGHT */
-line(800,300,1450,300,"bus");
+  const BUS_A_Y=320;
+  const BUS_B_Y=380;
 
-/* BUS COUPLER CENTER */
-line(800,300,800,350,"power");
-breaker(800,330,"BUS COUPLER");
+  const LEFT_START=100;
+  const RIGHT_END=1500;
 
-/* LEFT OUTGOINGS */
-const leftOut=["P-841","SPARE","HT-001"];
-leftOut.forEach((name,i)=>{
-  const x=250+(i*200);
-  line(x,300,x,420);
-  breaker(x,390,name);
-});
+  /* Bus A */
+  line(LEFT_START,BUS_A_Y,800,BUS_A_Y,"bus");
 
-/* RIGHT OUTGOINGS */
-const rightOut=["P-842","HT-002","SPARE"];
-rightOut.forEach((name,i)=>{
-  const x=950+(i*200);
-  line(x,300,x,420);
-  breaker(x,390,name);
-});
+  /* Bus B */
+  line(800,BUS_B_Y,RIGHT_END,BUS_B_Y,"bus");
+
+  /* Bus Coupler in center */
+  line(800,BUS_A_Y,800,BUS_B_Y,"flow");
+  breaker(800,350,board.busCouplers[0]?.breakerId||"BC");
+
+  /* Left incomer */
+  const leftInc=board.incomers.find(i=>i.bus==="A");
+  if(leftInc){
+    transformer(300,160,leftInc.source);
+    line(300,180,300,BUS_A_Y-25,"flow");
+    breaker(300,BUS_A_Y-40,leftInc.breakerId);
+  }
+
+  /* Right incomer */
+  const rightInc=board.incomers.find(i=>i.bus==="B");
+  if(rightInc){
+    transformer(1200,160,rightInc.source);
+    line(1200,180,1200,BUS_B_Y-25,"flow");
+    breaker(1200,BUS_B_Y-40,rightInc.breakerId);
+  }
+
+  /* Outgoings Left */
+  const leftOut=board.outgoings.filter(o=>o.bus==="A");
+  const leftSpacing=600/(leftOut.length+1);
+
+  leftOut.forEach((o,i)=>{
+    const x=LEFT_START+leftSpacing*(i+1);
+    line(x,BUS_A_Y+25,x,520);
+    breaker(x,BUS_A_Y+40,o.breakerId);
+  });
+
+  /* Outgoings Right */
+  const rightOut=board.outgoings.filter(o=>o.bus==="B");
+  const rightSpacing=600/(rightOut.length+1);
+
+  rightOut.forEach((o,i)=>{
+    const x=800+rightSpacing*(i+1);
+    line(x,BUS_B_Y+25,x,520);
+    breaker(x,BUS_B_Y+40,o.breakerId);
+  });
+}
+
+load();
 
 </script>
 
