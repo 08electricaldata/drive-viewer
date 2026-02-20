@@ -14,9 +14,12 @@ function clearSVG(){svg.innerHTML=""}
 // ---------- primitives ----------
 function line(x1,y1,x2,y2,cls="bus"){
   const e=document.createElementNS("http://www.w3.org/2000/svg","line");
-  e.setAttribute("x1",x1);e.setAttribute("y1",y1);
-  e.setAttribute("x2",x2);e.setAttribute("y2",y2);
-  e.setAttribute("class",cls);svg.appendChild(e);
+  e.setAttribute("x1",x1);
+  e.setAttribute("y1",y1);
+  e.setAttribute("x2",x2);
+  e.setAttribute("y2",y2);
+  e.setAttribute("class",cls);
+  svg.appendChild(e);
 }
 
 function text(x,y,str,anchor="middle",cls="label"){
@@ -29,50 +32,39 @@ function text(x,y,str,anchor="middle",cls="label"){
   svg.appendChild(t);
 }
 
-// ⭐⭐⭐ NEW — SMART WRAP FUNCTION ⭐⭐⭐
-function wrappedText(x, y, str, maxWidth = 110) {
-  const words = String(str).split(" ");
-  const lineHeight = 18;
+// ⭐⭐⭐ SAFE WRAP (NO WHITE SCREEN) ⭐⭐⭐
+function wrappedText(x,y,str,maxCharsPerLine=14){
+  const words=String(str).split(" ");
+  const lineHeight=18;
 
-  let line = "";
-  let lineNumber = 0;
+  let lines=[];
+  let current="";
 
-  const textEl = document.createElementNS("http://www.w3.org/2000/svg","text");
-  textEl.setAttribute("x", x);
-  textEl.setAttribute("y", y);
+  words.forEach(w=>{
+    if((current+w).length>maxCharsPerLine){
+      lines.push(current.trim());
+      current=w+" ";
+    }else{
+      current+=w+" ";
+    }
+  });
+  lines.push(current.trim());
+
+  const textEl=document.createElementNS("http://www.w3.org/2000/svg","text");
+  textEl.setAttribute("x",x);
+  textEl.setAttribute("y",y);
   textEl.setAttribute("text-anchor","middle");
   textEl.setAttribute("class","label");
 
-  svg.appendChild(textEl);
-
-  words.forEach(word=>{
-    const testLine = line + word + " ";
-    const testTspan = document.createElementNS("http://www.w3.org/2000/svg","tspan");
-    testTspan.textContent = testLine;
-    textEl.appendChild(testTspan);
-
-    if (testTspan.getComputedTextLength() > maxWidth && line !== "") {
-      testTspan.remove();
-
-      const tspan = document.createElementNS("http://www.w3.org/2000/svg","tspan");
-      tspan.setAttribute("x", x);
-      tspan.setAttribute("dy", lineNumber === 0 ? 0 : lineHeight);
-      tspan.textContent = line.trim();
-      textEl.appendChild(tspan);
-
-      line = word + " ";
-      lineNumber++;
-    } else {
-      testTspan.remove();
-      line = testLine;
-    }
+  lines.forEach((ln,i)=>{
+    const tspan=document.createElementNS("http://www.w3.org/2000/svg","tspan");
+    tspan.setAttribute("x",x);
+    tspan.setAttribute("dy",i===0?0:lineHeight);
+    tspan.textContent=ln;
+    textEl.appendChild(tspan);
   });
 
-  const last = document.createElementNS("http://www.w3.org/2000/svg","tspan");
-  last.setAttribute("x", x);
-  last.setAttribute("dy", lineNumber === 0 ? 0 : lineHeight);
-  last.textContent = line.trim();
-  textEl.appendChild(last);
+  svg.appendChild(textEl);
 }
 
 // ---------- board title ----------
@@ -88,16 +80,21 @@ function drawBoardTitle(name){
 // ---------- transformer ----------
 function transformer(x,y,name){
   const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c1.setAttribute("cx",x-12);c1.setAttribute("cy",y);
-  c1.setAttribute("r",10);c1.setAttribute("stroke","#000");
+  c1.setAttribute("cx",x-12);
+  c1.setAttribute("cy",y);
+  c1.setAttribute("r",10);
+  c1.setAttribute("stroke","#000");
   c1.setAttribute("fill","none");
 
   const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c2.setAttribute("cx",x+12);c2.setAttribute("cy",y);
-  c2.setAttribute("r",10);c2.setAttribute("stroke","#000");
+  c2.setAttribute("cx",x+12);
+  c2.setAttribute("cy",y);
+  c2.setAttribute("r",10);
+  c2.setAttribute("stroke","#000");
   c2.setAttribute("fill","none");
 
-  svg.appendChild(c1);svg.appendChild(c2);
+  svg.appendChild(c1);
+  svg.appendChild(c2);
   text(x,y-18,name);
 }
 
@@ -118,9 +115,9 @@ function breaker(x,y,label,side=null,isCoupler=false){
   if(isCoupler){
     text(x,y-24,label);
   }else if(side==="left"){
-    text(x-120,y+5,label,"end");
+    text(x-140,y+5,label,"end");
   }else if(side==="right"){
-    text(x+120,y+5,label,"start");
+    text(x+140,y+5,label,"start");
   }
 }
 
@@ -135,19 +132,24 @@ function arrowDown(x,y){
 
 // ================= LOAD =================
 async function loadSLD(){
-  const boardId=getParam("id");
-  if(!boardId){boardInfo.innerText="❌ Board id missing";return;}
+  try{
+    const boardId=getParam("id");
+    if(!boardId){boardInfo.innerText="❌ Board id missing";return;}
 
-  title.innerText=boardId+" — Professional SLD";
+    title.innerText=boardId+" — Professional SLD";
 
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
-  const board=data.boards?.[boardId];
+    const res=await fetch(JSON_URL);
+    const data=await res.json();
+    const board=data.boards?.[boardId];
 
-  if(!board){boardInfo.innerText="❌ Board not found";return;}
+    if(!board){boardInfo.innerText="❌ Board not found";return;}
 
-  boardInfo.innerText=`Incomers: ${board.topology.totalIncomers}`;
-  draw(board,boardId);
+    boardInfo.innerText=`Incomers: ${board.topology.totalIncomers}`;
+    draw(board,boardId);
+  }catch(err){
+    console.error(err);
+    boardInfo.innerText="❌ Drawing error — check console";
+  }
 }
 
 // ================= DRAW =================
@@ -161,7 +163,7 @@ function draw(board,boardId){
 
   drawBoardTitle(boardId);
 
-  // BUS
+  // BUS A & B
   line(100,BUS_Y,mid-GAP/2,BUS_Y,"bus");
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y,"bus");
 
@@ -187,10 +189,10 @@ function draw(board,boardId){
     breaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // OUTGOINGS — POSITION BASED
+  // POSITION-BASED OUTGOINGS
   let maxPos=0;
   [...board.incomers,...board.outgoings,...(board.busCouplers||[])]
-  .forEach(r=>{ if(r.position>maxPos) maxPos=r.position; });
+    .forEach(r=>{ if(r.position>maxPos) maxPos=r.position; });
 
   const leftMargin=120;
   const rightMargin=W-120;
@@ -207,8 +209,7 @@ function draw(board,boardId){
     breaker(x,BUS_Y+66,null);
     arrowDown(x,BUS_Y+82);
 
-    // ⭐⭐⭐ WRAPPED LABEL — FIXED OVERLAP ⭐⭐⭐
-    wrappedText(x,BUS_Y+165,o.breakerId,120);
+    wrappedText(x,BUS_Y+165,o.breakerId,16);
   });
 }
 
