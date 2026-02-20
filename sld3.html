@@ -1,81 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>HT Board Professional SLD</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body{font-family:Arial;margin:0;background:#f2f6ff}
-
-/* HEADER */
-.header-bar{
-  position:sticky;top:0;z-index:1000;
-  background:#003f88;color:#fff;
-  display:flex;align-items:center;gap:10px;
-  padding:12px;
-}
-.header-bar button{
-  background:#fff;color:#003f88;border:none;
-  border-radius:6px;padding:8px 12px;
-  font-size:16px;cursor:pointer;
-}
-.header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
-
-.container{padding:12px}
-.card{
-  background:#fff;border-radius:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-  padding:12px;
-}
-
-#wrap{
-  overflow:auto;border:1px solid #ccc;
-  background:#fff;height:68vh;
-}
-#sldCanvas{width:100%;height:100%}
-
-/* GRAPHICS */
-.bus{stroke:#000;stroke-width:4}
-.power-line{
-  stroke:#00cc44;stroke-width:4;
-  stroke-dasharray:10 6;
-  animation:flow 1s linear infinite;
-}
-@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
-
-.label{font-size:18px;font-weight:600;text-anchor:middle}
-.cbtext{font-size:16px;font-weight:bold;text-anchor:middle}
-.board-title{
-  font-size:24px;font-weight:900;
-  fill:#003f88;text-anchor:middle;
-}
-.info{font-weight:bold;color:#003f88;margin-bottom:8px}
-
-@media(max-width:768px){
-  .label{font-size:19px}
-  .cbtext{font-size:17px}
-}
-</style>
-</head>
-
-<body>
-
-<div class="header-bar">
-  <button onclick="goHome()">🏠 Home</button>
-  <button onclick="goBack()">⬅ Back</button>
-  <div class="header-title" id="title">HT BOARD SLD</div>
-</div>
-
-<div class="container">
-  <div class="card">
-    <div class="info" id="boardInfo">Loading...</div>
-    <div id="wrap">
-      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
-    </div>
-  </div>
-</div>
-
 <script>
 // ================= CONFIG =================
 const JSON_URL =
@@ -96,12 +18,61 @@ function line(x1,y1,x2,y2,cls="bus"){
   e.setAttribute("x2",x2);e.setAttribute("y2",y2);
   e.setAttribute("class",cls);svg.appendChild(e);
 }
+
 function text(x,y,str,anchor="middle",cls="label"){
   const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-  t.setAttribute("x",x);t.setAttribute("y",y);
+  t.setAttribute("x",x);
+  t.setAttribute("y",y);
   t.setAttribute("text-anchor",anchor);
-  t.setAttribute("class",cls);t.textContent=str;
+  t.setAttribute("class",cls);
+  t.textContent=str;
   svg.appendChild(t);
+}
+
+// ⭐⭐⭐ NEW — SMART WRAP FUNCTION ⭐⭐⭐
+function wrappedText(x, y, str, maxWidth = 110) {
+  const words = String(str).split(" ");
+  const lineHeight = 18;
+
+  let line = "";
+  let lineNumber = 0;
+
+  const textEl = document.createElementNS("http://www.w3.org/2000/svg","text");
+  textEl.setAttribute("x", x);
+  textEl.setAttribute("y", y);
+  textEl.setAttribute("text-anchor","middle");
+  textEl.setAttribute("class","label");
+
+  svg.appendChild(textEl);
+
+  words.forEach(word=>{
+    const testLine = line + word + " ";
+    const testTspan = document.createElementNS("http://www.w3.org/2000/svg","tspan");
+    testTspan.textContent = testLine;
+    textEl.appendChild(testTspan);
+
+    if (testTspan.getComputedTextLength() > maxWidth && line !== "") {
+      testTspan.remove();
+
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg","tspan");
+      tspan.setAttribute("x", x);
+      tspan.setAttribute("dy", lineNumber === 0 ? 0 : lineHeight);
+      tspan.textContent = line.trim();
+      textEl.appendChild(tspan);
+
+      line = word + " ";
+      lineNumber++;
+    } else {
+      testTspan.remove();
+      line = testLine;
+    }
+  });
+
+  const last = document.createElementNS("http://www.w3.org/2000/svg","tspan");
+  last.setAttribute("x", x);
+  last.setAttribute("dy", lineNumber === 0 ? 0 : lineHeight);
+  last.textContent = line.trim();
+  textEl.appendChild(last);
 }
 
 // ---------- board title ----------
@@ -147,9 +118,9 @@ function breaker(x,y,label,side=null,isCoupler=false){
   if(isCoupler){
     text(x,y-24,label);
   }else if(side==="left"){
-    text(x-120,y+5,label,"end");   // 🔥 shifted more left
+    text(x-120,y+5,label,"end");
   }else if(side==="right"){
-    text(x+120,y+5,label,"start"); // 🔥 shifted more right
+    text(x+120,y+5,label,"start");
   }
 }
 
@@ -190,18 +161,16 @@ function draw(board,boardId){
 
   drawBoardTitle(boardId);
 
-  // ===== BUS A =====
+  // BUS
   line(100,BUS_Y,mid-GAP/2,BUS_Y,"bus");
-
-  // ===== BUS B =====
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y,"bus");
 
-  // ===== BUS COUPLER =====
+  // COUPLER
   if(board.busCouplers?.length){
     breaker(mid,BUS_Y,"BUS COUPLER",null,true);
   }
 
-  // ===== INCOMERS =====
+  // INCOMERS
   const incomers=[
     ...board.incomers,
     ...board.dgIncomers,
@@ -212,23 +181,16 @@ function draw(board,boardId){
 
   incomers.forEach((inc,i)=>{
     const x=spacing*(i+1);
-
     transformer(x,120,inc.source);
     line(x,140,x,BUS_Y-30,"power-line");
-
     const side=(i===0)?"left":"right";
     breaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // ===== OUTGOINGS — POSITION BASED (FIXED) =====
+  // OUTGOINGS — POSITION BASED
   let maxPos=0;
-  [
-    ...board.incomers,
-    ...board.outgoings,
-    ...(board.busCouplers||[])
-  ].forEach(r=>{
-    if(r.position>maxPos) maxPos=r.position;
-  });
+  [...board.incomers,...board.outgoings,...(board.busCouplers||[])]
+  .forEach(r=>{ if(r.position>maxPos) maxPos=r.position; });
 
   const leftMargin=120;
   const rightMargin=W-120;
@@ -245,12 +207,10 @@ function draw(board,boardId){
     breaker(x,BUS_Y+66,null);
     arrowDown(x,BUS_Y+82);
 
-    // 🔥 label lowered properly
-    text(x,BUS_Y+170,o.breakerId);
+    // ⭐⭐⭐ WRAPPED LABEL — FIXED OVERLAP ⭐⭐⭐
+    wrappedText(x,BUS_Y+165,o.breakerId,120);
   });
 }
 
 loadSLD();
 </script>
-</body>
-</html>
