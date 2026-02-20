@@ -168,6 +168,8 @@ tbody tr:hover {
     <div class="header-left">
       <button class="header-btn" onclick="goHome()" title="Home">🏠 Home</button>
       <button class="header-btn" onclick="goBack()" title="Back">⬅ Back</button>
+      <button class="header-btn" onclick="openMotorList()">⚙️ Motor List</button>
+      <button class="header-btn" onclick="openMotorPM()">🧾 Motor PM Status</button>
     </div>
 
     <div class="header-center">
@@ -227,6 +229,12 @@ function goHome() {
 }
 function goBack() {
   history.back();
+}
+function openMotorList(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html";
+}
+function openMotorPM(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motorpm.html";
 }
 
 /* DATE */
