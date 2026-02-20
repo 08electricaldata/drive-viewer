@@ -79,6 +79,9 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
   <div class="header-bar">
     <button class="header-btn" onclick="goHome()">🏠 Home</button>
     <button class="header-btn" onclick="history.back()">⬅ Back</button>
+    <button class="header-btn" onclick="openTrafoList()">⚡ Transformer List</button>
+    <button class="header-btn" onclick="openOilStatus()">🛢️ Oil Status</button>
+
     <div class="header-center">
       <h1>Transformer Maintenance Status</h1>
       <p>Designed & maintained by Rakesh Chandra Sethy</p>
@@ -118,6 +121,14 @@ const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformer_pm.json";
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
+
+/* ✅ NEW NAV FUNCTIONS */
+function openTrafoList(){
+  location.href="https://08electricaldata.github.io/drive-viewer/trafolist.html";
+}
+function openOilStatus(){
+  location.href="https://08electricaldata.github.io/drive-viewer/transformer-oil-summary.html";
+}
 
 /* DATE HELPERS */
 function parseDate(v){
