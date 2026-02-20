@@ -2,56 +2,71 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>HT Panel IEC SLD</title>
+<title>HT Board Professional SLD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
-  font-family:Arial;
+  font-family:Arial, sans-serif;
   margin:0;
   background:#f2f6ff;
 }
 
+/* HEADER */
 .header-bar{
   position:sticky;
   top:0;
+  z-index:1000;
   background:#003f88;
   color:white;
-  padding:12px;
   display:flex;
-  gap:10px;
   align-items:center;
+  gap:10px;
+  padding:12px;
 }
 
 .header-bar button{
   background:white;
   color:#003f88;
   border:none;
-  padding:6px 12px;
   border-radius:6px;
+  padding:8px 12px;
+  font-size:16px;
   cursor:pointer;
 }
 
 .header-title{
   flex:1;
   text-align:center;
-  font-weight:bold;
+  font-size:22px;
+  font-weight:700;
 }
 
-.container{ padding:15px; }
+/* CARD */
+.container{ padding:12px; }
 
-#wrap{
-  height:560px;
+.card{
   background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  padding:12px;
+}
+
+/* SVG */
+#wrap{
+  overflow:auto;
   border:1px solid #ccc;
+  background:white;
+  height:65vh;
 }
 
-.bus{
-  stroke:#000;
-  stroke-width:6;
+#sldCanvas{
+  width:100%;
+  height:100%;
 }
 
-.power{
+/* LINES */
+.power-line{
   stroke:#00cc44;
   stroke-width:4;
   stroke-dasharray:10 6;
@@ -59,12 +74,40 @@ body{
 }
 
 @keyframes flow{
-  to{ stroke-dashoffset:-30; }
+  from{stroke-dashoffset:0;}
+  to{stroke-dashoffset:-32;}
 }
 
+.bus{
+  stroke:#000;
+  stroke-width:4;
+}
+
+/* TEXT */
 .label{
-  font-size:11px;
+  font-size:14px;
+  font-weight:600;
   text-anchor:middle;
+}
+
+.cbtext{
+  font-size:13px;
+  font-weight:bold;
+  text-anchor:middle;
+}
+
+.info{
+  font-weight:bold;
+  color:#003f88;
+  margin-bottom:8px;
+  font-size:16px;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+  .label{font-size:15px;}
+  .cbtext{font-size:14px;}
+  .header-title{font-size:18px;}
 }
 </style>
 </head>
@@ -72,27 +115,38 @@ body{
 <body>
 
 <div class="header-bar">
-  <button onclick="history.back()">⬅ Back</button>
-  <button onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
-  <div class="header-title" id="title">HT PANEL SLD</div>
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goBack()">⬅ Back</button>
+  <div class="header-title" id="title">HT BOARD SLD</div>
 </div>
 
 <div class="container">
-  <div id="wrap">
-    <svg id="sld" viewBox="0 0 1600 700"></svg>
+  <div class="card">
+    <div class="info" id="boardInfo">Loading...</div>
+    <div id="wrap">
+      <svg id="sldCanvas" viewBox="0 0 1400 600"></svg>
+    </div>
   </div>
 </div>
 
 <script>
-
-// ===== CONFIG =====
+// CONFIG
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
 
-const svg=document.getElementById("sld");
+// NAV
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
 
-// ===== helpers =====
-function line(x1,y1,x2,y2,cls=""){
+function getParam(name){
+  return new URL(window.location.href).searchParams.get(name);
+}
+
+const svg=document.getElementById("sldCanvas");
+
+function clearSVG(){ svg.innerHTML=""; }
+
+function createLine(x1,y1,x2,y2,cls="bus"){
   const l=document.createElementNS("http://www.w3.org/2000/svg","line");
   l.setAttribute("x1",x1);
   l.setAttribute("y1",y1);
@@ -102,29 +156,18 @@ function line(x1,y1,x2,y2,cls=""){
   svg.appendChild(l);
 }
 
-function text(x,y,t){
-  const el=document.createElementNS("http://www.w3.org/2000/svg","text");
-  el.setAttribute("x",x);
-  el.setAttribute("y",y);
-  el.setAttribute("class","label");
-  el.textContent=t;
-  svg.appendChild(el);
+function createText(x,y,str,anchor="middle",cls="label"){
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",x);
+  t.setAttribute("y",y);
+  t.setAttribute("class",cls);
+  t.setAttribute("text-anchor",anchor);
+  t.textContent=str;
+  svg.appendChild(t);
 }
 
-function breaker(x,y,label){
-
-  // vertical contacts
-  line(x,y-20,x,y-8,"");
-  line(x,y+8,x,y+20,"");
-
-  // blade
-  line(x-10,y,x+10,y,"");
-
-  text(x,y+34,label||"");
-}
-
-function transformer(x,y,name){
-
+/* TRANSFORMER */
+function createTransformer(x,y,name){
   const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
   c1.setAttribute("cx",x-12);
   c1.setAttribute("cy",y);
@@ -142,85 +185,126 @@ function transformer(x,y,name){
   svg.appendChild(c1);
   svg.appendChild(c2);
 
-  text(x,y+26,name||"TR");
+  createText(x,y-18,name);
 }
 
-// ===== load =====
-function getParam(n){
-  return new URL(location.href).searchParams.get(n);
+/* BREAKER */
+function createBreaker(x,y,label,side=null,isCoupler=false){
+
+  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+  r.setAttribute("x",x-18);
+  r.setAttribute("y",y-12);
+  r.setAttribute("width","36");
+  r.setAttribute("height","24");
+  r.setAttribute("fill","#fff");
+  r.setAttribute("stroke","#000");
+  r.setAttribute("stroke-width","2");
+  svg.appendChild(r);
+
+  // CB text
+  createText(x,y+4,"CB","middle","cbtext");
+
+  // BUS COUPLER label
+  if(isCoupler){
+    createText(x,y-20,label);
+  }
+  // INCOMER labels (more left/right)
+  else if(side==="right"){
+    createText(x+55,y+4,label,"start");
+  }
+  else if(side==="left"){
+    createText(x-55,y+4,label,"end");
+  }
 }
 
-async function load(){
+/* ARROW */
+function drawArrowDown(x,y){
+  createLine(x,y,x,y+22,"bus");
 
-  const id=getParam("id");
-  if(!id) return;
+  const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+  p.setAttribute("points",`${x-6},${y+22} ${x+6},${y+22} ${x},${y+32}`);
+  p.setAttribute("fill","#000");
+  svg.appendChild(p);
+}
 
-  title.innerText=id+" — Panel SLD";
+// LOAD
+async function loadSLD(){
+
+  const boardId=getParam("id");
+  if(!boardId){
+    boardInfo.innerText="❌ Board id missing";
+    return;
+  }
+
+  title.innerText=boardId+" — Professional SLD";
 
   const res=await fetch(JSON_URL);
   const data=await res.json();
-  const board=data.boards[id];
+  const board=data.boards?.[boardId];
 
-  if(!board) return;
-
-  draw(board);
-}
-
-// ===== main draw =====
-function draw(board){
-
-  svg.innerHTML="";
-
-  const BUS_Y=300;
-  const W=1600;
-
-  // ===== MAIN BUS =====
-  line(120,BUS_Y,W-120,BUS_Y,"bus");
-
-  // ===== BUS COUPLER (CENTER) =====
-  if(board.busCouplers?.length){
-    const x=W/2;
-    breaker(x,BUS_Y,board.busCouplers[0].breakerId);
+  if(!board){
+    boardInfo.innerText="❌ Board not found";
+    return;
   }
 
-  // ===== INCOMERS (TOP) =====
+  boardInfo.innerText=`Incomers: ${board.topology.totalIncomers}`;
+
+  drawSLD(board);
+}
+
+// DRAW
+function drawSLD(board){
+
+  clearSVG();
+
+  const W=1400;
+  const BUS_Y=260;
+
+  // BUS
+  createLine(100,BUS_Y,W-100,BUS_Y,"bus");
+
+  // BUS COUPLER
+  if(board.busCouplers?.length){
+    const x=W/2;
+    createBreaker(x,BUS_Y,"BUS COUPLER",null,true);
+  }
+
+  // INCOMERS
   const incomers=[
     ...board.incomers,
     ...board.dgIncomers,
     ...board.emergencyIncomers
   ];
 
-  const incSpacing=W/(incomers.length+1);
+  const spacing=W/(incomers.length+1);
 
   incomers.forEach((inc,i)=>{
 
-    const x=incSpacing*(i+1);
+    const x=spacing*(i+1);
 
-    // vertical drop
-    line(x,160,x,BUS_Y-20,"power");
+    createTransformer(x,110,inc.source);
+    createLine(x,130,x,BUS_Y-30,"power-line");
 
-    // breaker
-    breaker(x,BUS_Y-40,inc.breakerId);
-
-    // transformer
-    transformer(x,130,inc.source);
+    const side = (i===0) ? "left" : "right";
+    createBreaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // ===== OUTGOINGS (BOTTOM) =====
+  // OUTGOINGS (clean — only bottom label)
   const outSpacing=W/(board.outgoings.length+1);
 
   board.outgoings.forEach((o,i)=>{
 
     const x=outSpacing*(i+1);
 
-    // drop down
-    line(x,BUS_Y+20,x,520,"");
-
-    breaker(x,BUS_Y+40,o.breakerId);
+    createLine(x,BUS_Y+5,x,BUS_Y+45,"bus");
+    createBreaker(x,BUS_Y+65,null); // ❌ no side label
+    drawArrowDown(x,BUS_Y+80);
+    createText(x,BUS_Y+120,o.breakerId); // ✅ only bottom
   });
 }
 
-load();
+// START
+loadSLD();
 </script>
 
 </body>
