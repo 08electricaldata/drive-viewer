@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HT Board Professional SLD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family:Arial, sans-serif;
+  margin:0;
+  background:#f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header-bar{
+  position:sticky;
+  top:0;
+  z-index:1000;
+  background:#003f88;
+  color:white;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+}
+
+.header-bar button{
+  background:white;
+  color:#003f88;
+  border:none;
+  border-radius:6px;
+  padding:8px 12px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.header-title{
+  flex:1;
+  text-align:center;
+  font-size:22px;
+  font-weight:700;
+}
+
+/* ===== CARD ===== */
+.container{ padding:15px; }
+
+.card{
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  padding:15px;
+}
+
+/* ===== SVG ===== */
+#wrap{
+  overflow:hidden;
+  border:1px solid #ccc;
+  background:white;
+  height:540px;
+}
+
+#sldCanvas{
+  width:100%;
+  height:100%;
+}
+
+/* ===== POWER FLOW ===== */
+.power-line{
+  stroke:#00cc44;
+  stroke-width:4;
+  stroke-dasharray:10 6;
+  animation:flow 1s linear infinite;
+}
+
+@keyframes flow{
+  from{stroke-dashoffset:0;}
+  to{stroke-dashoffset:-32;}
+}
+
+/* ===== NORMAL BUS ===== */
+.bus{
+  stroke:#000;
+  stroke-width:4;
+}
+
+/* ===== BREAKER ===== */
+.breaker-box{
+  fill:#fff;
+  stroke:#000;
+  stroke-width:2;
+}
+
+.breaker-on{
+  fill:#c8f7c5;
+}
+
+.breaker-off{
+  fill:#ffd6d6;
+}
+
+.label{
+  font-size:11px;
+  text-anchor:middle;
+}
+
+.info{
+  font-weight:bold;
+  color:#003f88;
+  margin-bottom:8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header-bar">
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goBack()">⬅ Back</button>
+  <div class="header-title" id="title">HT BOARD SLD</div>
+</div>
+
+<div class="container">
+  <div class="card">
+
+    <div class="info" id="boardInfo">Loading...</div>
+
+    <div id="wrap">
+      <svg id="sldCanvas"></svg>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+// ================= CONFIG =================
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+
+// ================= NAV =================
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
+
+// ================= URL PARAM =================
+function getParam(name){
+  const url=new URL(window.location.href);
+  return url.searchParams.get(name);
+}
+
+// ================= SVG CORE =================
+const svg=document.getElementById("sldCanvas");
+
+let viewBox={x:0,y:0,w:1400,h:600};
+svg.setAttribute("viewBox","0 0 1400 600");
+
+function clearSVG(){ svg.innerHTML=""; }
+
+function createLine(x1,y1,x2,y2,cls="bus"){
+  const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+  l.setAttribute("x1",x1);
+  l.setAttribute("y1",y1);
+  l.setAttribute("x2",x2);
+  l.setAttribute("y2",y2);
+  l.setAttribute("class",cls);
+  svg.appendChild(l);
+  return l;
+}
+
+function createText(x,y,str){
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",x);
+  t.setAttribute("y",y);
+  t.setAttribute("class","label");
+  t.textContent=str;
+  svg.appendChild(t);
+}
+
+function createBreaker(x,y,label,status="ON"){
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+
+  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+  r.setAttribute("x",x-18);
+  r.setAttribute("y",y-12);
+  r.setAttribute("width","36");
+  r.setAttribute("height","24");
+  r.setAttribute("class","breaker-box "+(status==="ON"?"breaker-on":"breaker-off"));
+
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",x);
+  t.setAttribute("y",y+4);
+  t.setAttribute("class","label");
+  t.textContent="CB";
+
+  const lbl=document.createElementNS("http://www.w3.org/2000/svg","text");
+  lbl.setAttribute("x",x);
+  lbl.setAttribute("y",y+28);
+  lbl.setAttribute("class","label");
+  lbl.textContent=label||"";
+
+  g.appendChild(r);
+  g.appendChild(t);
+  g.appendChild(lbl);
+  svg.appendChild(g);
+}
+
+// ================= LOAD =================
+async function loadSLD(){
+
+  const boardId=getParam("id");
+
+  if(!boardId){
+    document.getElementById("boardInfo").innerText="❌ Board id missing";
+    return;
+  }
+
+  document.getElementById("title").innerText=boardId+" — Professional SLD";
+
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
+
+  const board=data.boards?.[boardId];
+
+  if(!board){
+    document.getElementById("boardInfo").innerText="❌ Board not found";
+    return;
+  }
+
+  document.getElementById("boardInfo").innerText =
+    `Incomers: ${board.topology.totalIncomers} | Bus: ${board.topology.busSections.join(", ")}`;
+
+  drawSLD(board);
+}
+
+// ================= DRAW ENGINE =================
+function drawSLD(board){
+
+  clearSVG();
+
+  const W=1400;
+
+  // ===== BUS A =====
+  createLine(100,260,W-100,260,"bus");
+
+  // ===== BUS B =====
+  if(board.topology.busSections.includes("B")){
+    createLine(100,330,W-100,330,"bus");
+  }
+
+  // ===== INCOMERS =====
+  const incomers=[
+    ...board.incomers,
+    ...board.dgIncomers,
+    ...board.emergencyIncomers
+  ];
+
+  const spacing=W/(incomers.length+1);
+
+  incomers.forEach((inc,i)=>{
+
+    const x=spacing*(i+1);
+    const busY=(inc.bus==="B")?330:260;
+
+    createLine(x,120,x,busY-25,"power-line");
+    createBreaker(x,busY-45,inc.breakerId,"ON");
+
+  });
+
+  // ===== BUS COUPLER =====
+  if(board.busCouplers?.length){
+    const x=W/2;
+    createLine(x,260,x,330,"power-line");
+    createBreaker(x,295,board.busCouplers[0].breakerId,"ON");
+  }
+
+  // ===== OUTGOINGS =====
+  const outSpacing=W/(board.outgoings.length+1);
+
+  board.outgoings.forEach((o,i)=>{
+
+    const x=outSpacing*(i+1);
+    const busY=(o.bus==="B")?330:260;
+
+    createLine(x,busY+25,x,500,"bus");
+    createBreaker(x,busY+45,o.breakerId,"ON");
+
+  });
+}
+
+// ================= ZOOM + PAN =================
+let scale=1;
+svg.addEventListener("wheel",(e)=>{
+  e.preventDefault();
+  scale += e.deltaY * -0.001;
+  scale=Math.min(Math.max(.6,scale),2);
+  svg.style.transform=`scale(${scale})`;
+});
+
+// ================= START =================
+loadSLD();
+
+</script>
+
+</body>
+</html>
