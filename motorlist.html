@@ -123,6 +123,8 @@ tr:hover {
 <div class="header-bar">
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
+  <button onclick="openMotorOH()">🛠️ Motor O/H Data</button>
+  <button onclick="openMotorPM()">🧾 Motor PM Status</button>
   <div class="header-title">MOTOR MASTER LIST</div>
 </div>
 
@@ -243,6 +245,14 @@ function goHome() {
 }
 function goBack() {
   history.back();
+}
+
+/* ✅ NEW BUTTON FUNCTIONS */
+function openMotorOH(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motoroh.html";
+}
+function openMotorPM(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motorpm.html";
 }
 
 loadMotors();
