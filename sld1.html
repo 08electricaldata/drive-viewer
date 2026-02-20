@@ -5,209 +5,96 @@
 <title>HT Board Professional SLD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script>
-
-// ================= CONFIG =================
-const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
-
-// ================= NAV =================
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
-function goBack(){ history.back(); }
-
-// ================= URL PARAM =================
-function getParam(name){
-  const url=new URL(window.location.href);
-  return url.searchParams.get(name);
+<style>
+body{
+  font-family:Arial, sans-serif;
+  margin:0;
+  background:#f2f6ff;
 }
 
-// ================= SVG CORE =================
-const svg=document.getElementById("sldCanvas");
-svg.setAttribute("viewBox","0 0 1400 600");
-
-function clearSVG(){ svg.innerHTML=""; }
-
-function createLine(x1,y1,x2,y2,cls="bus"){
-  const l=document.createElementNS("http://www.w3.org/2000/svg","line");
-  l.setAttribute("x1",x1);
-  l.setAttribute("y1",y1);
-  l.setAttribute("x2",x2);
-  l.setAttribute("y2",y2);
-  l.setAttribute("class",cls);
-  svg.appendChild(l);
-  return l;
+/* ===== HEADER ===== */
+.header-bar{
+  position:sticky;
+  top:0;
+  z-index:1000;
+  background:#003f88;
+  color:white;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px;
 }
 
-function createText(x,y,str,anchor="middle"){
-  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-  t.setAttribute("x",x);
-  t.setAttribute("y",y);
-  t.setAttribute("class","label");
-  t.setAttribute("text-anchor",anchor);
-  t.textContent=str;
-  svg.appendChild(t);
+.header-bar button{
+  background:white;
+  color:#003f88;
+  border:none;
+  border-radius:6px;
+  padding:8px 12px;
+  font-size:16px;
+  cursor:pointer;
 }
 
-/* ===== IEC TRANSFORMER ===== */
-function createTransformer(x,y,name){
-
-  const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c1.setAttribute("cx",x-12);
-  c1.setAttribute("cy",y);
-  c1.setAttribute("r",10);
-  c1.setAttribute("stroke","#000");
-  c1.setAttribute("fill","none");
-
-  const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c2.setAttribute("cx",x+12);
-  c2.setAttribute("cy",y);
-  c2.setAttribute("r",10);
-  c2.setAttribute("stroke","#000");
-  c2.setAttribute("fill","none");
-
-  svg.appendChild(c1);
-  svg.appendChild(c2);
-
-  createText(x,y-18,name);
+.header-title{
+  flex:1;
+  text-align:center;
+  font-size:22px;
+  font-weight:700;
 }
 
-/* ===== BREAKER ===== */
-function createBreaker(x,y,label,side="right"){
+/* ===== CARD ===== */
+.container{ padding:15px; }
 
-  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-
-  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
-  r.setAttribute("x",x-18);
-  r.setAttribute("y",y-12);
-  r.setAttribute("width","36");
-  r.setAttribute("height","24");
-  r.setAttribute("class","breaker-box breaker-on");
-
-  g.appendChild(r);
-  svg.appendChild(g);
-
-  // label to side (LEFT or RIGHT)
-  if(side==="right"){
-    createText(x+28,y+4,label,"start");
-  }else{
-    createText(x-28,y+4,label,"end");
-  }
+.card{
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  padding:15px;
 }
 
-/* ===== DOWN ARROW ===== */
-function drawArrowDown(x,y){
-
-  createLine(x,y,x,y+22,"bus");
-
-  const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
-  p.setAttribute("points",
-    `${x-6},${y+22} ${x+6},${y+22} ${x},${y+32}`);
-  p.setAttribute("fill","#000");
-  svg.appendChild(p);
+/* ===== SVG ===== */
+#wrap{
+  overflow:hidden;
+  border:1px solid #ccc;
+  background:white;
+  height:540px;
 }
 
-// ================= LOAD =================
-async function loadSLD(){
-
-  const boardId=getParam("id");
-
-  if(!boardId){
-    boardInfo.innerText="❌ Board id missing";
-    return;
-  }
-
-  title.innerText=boardId+" — Professional SLD";
-
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
-  const board=data.boards?.[boardId];
-
-  if(!board){
-    boardInfo.innerText="❌ Board not found";
-    return;
-  }
-
-  boardInfo.innerText =
-    `Incomers: ${board.topology.totalIncomers}`;
-
-  drawSLD(board);
+#sldCanvas{
+  width:100%;
+  height:100%;
 }
 
-// ================= DRAW ENGINE =================
-function drawSLD(board){
-
-  clearSVG();
-
-  const W=1400;
-  const BUS_Y=260;
-
-  // ===== MAIN BUS =====
-  createLine(100,BUS_Y,W-100,BUS_Y,"bus");
-
-  // ===== BUS COUPLER (CENTER EXACT) =====
-  if(board.busCouplers?.length){
-    const x=W/2;
-    createBreaker(x,BUS_Y,board.busCouplers[0].breakerId);
-  }
-
-  // ===== INCOMERS =====
-  const incomers=[
-    ...board.incomers,
-    ...board.dgIncomers,
-    ...board.emergencyIncomers
-  ];
-
-  const spacing=W/(incomers.length+1);
-
-  incomers.forEach((inc,i)=>{
-
-    const x=spacing*(i+1);
-
-    // transformer at top
-    createTransformer(x,110,inc.source);
-
-    // vertical drop
-    createLine(x,130,x,BUS_Y-30,"power-line");
-
-    // breaker just above bus
-    createBreaker(x,BUS_Y-40,inc.breakerId,
-      i===0 ? "right" : "left");
-  });
-
-  // ===== OUTGOINGS =====
-  const outSpacing=W/(board.outgoings.length+1);
-
-  board.outgoings.forEach((o,i)=>{
-
-    const x=outSpacing*(i+1);
-
-    // vertical drop from bus
-    createLine(x,BUS_Y+5,x,BUS_Y+45,"bus");
-
-    // breaker in middle
-    createBreaker(x,BUS_Y+65,o.breakerId);
-
-    // arrow at bottom
-    drawArrowDown(x,BUS_Y+80);
-
-    // feeder name below
-    createText(x,BUS_Y+120,o.breakerId);
-  });
+/* ===== POWER FLOW ===== */
+.power-line{
+  stroke:#00cc44;
+  stroke-width:4;
+  stroke-dasharray:10 6;
+  animation:flow 1s linear infinite;
 }
 
-// ================= ZOOM =================
-let scale=1;
-svg.addEventListener("wheel",(e)=>{
-  e.preventDefault();
-  scale += e.deltaY * -0.001;
-  scale=Math.min(Math.max(.6,scale),2);
-  svg.style.transform=`scale(${scale})`;
-});
+@keyframes flow{
+  from{stroke-dashoffset:0;}
+  to{stroke-dashoffset:-32;}
+}
 
-// ================= START =================
-loadSLD();
+/* ===== BUS ===== */
+.bus{
+  stroke:#000;
+  stroke-width:4;
+}
 
-</script>
+.label{
+  font-size:11px;
+  text-anchor:middle;
+}
+
+.info{
+  font-weight:bold;
+  color:#003f88;
+  margin-bottom:8px;
+}
+</style>
 </head>
 
 <body>
@@ -242,14 +129,11 @@ function goBack(){ history.back(); }
 
 // ================= URL PARAM =================
 function getParam(name){
-  const url=new URL(window.location.href);
-  return url.searchParams.get(name);
+  return new URL(window.location.href).searchParams.get(name);
 }
 
 // ================= SVG CORE =================
 const svg=document.getElementById("sldCanvas");
-
-let viewBox={x:0,y:0,w:1400,h:600};
 svg.setAttribute("viewBox","0 0 1400 600");
 
 function clearSVG(){ svg.innerHTML=""; }
@@ -262,87 +146,109 @@ function createLine(x1,y1,x2,y2,cls="bus"){
   l.setAttribute("y2",y2);
   l.setAttribute("class",cls);
   svg.appendChild(l);
-  return l;
 }
 
-function createText(x,y,str){
+function createText(x,y,str,anchor="middle"){
   const t=document.createElementNS("http://www.w3.org/2000/svg","text");
   t.setAttribute("x",x);
   t.setAttribute("y",y);
   t.setAttribute("class","label");
+  t.setAttribute("text-anchor",anchor);
   t.textContent=str;
   svg.appendChild(t);
 }
 
-function createBreaker(x,y,label,status="ON"){
-  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+/* ===== TRANSFORMER ===== */
+function createTransformer(x,y,name){
+  const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c1.setAttribute("cx",x-12);
+  c1.setAttribute("cy",y);
+  c1.setAttribute("r",10);
+  c1.setAttribute("stroke","#000");
+  c1.setAttribute("fill","none");
 
+  const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c2.setAttribute("cx",x+12);
+  c2.setAttribute("cy",y);
+  c2.setAttribute("r",10);
+  c2.setAttribute("stroke","#000");
+  c2.setAttribute("fill","none");
+
+  svg.appendChild(c1);
+  svg.appendChild(c2);
+
+  createText(x,y-18,name);
+}
+
+/* ===== BREAKER ===== */
+function createBreaker(x,y,label,side="right"){
   const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
   r.setAttribute("x",x-18);
   r.setAttribute("y",y-12);
   r.setAttribute("width","36");
   r.setAttribute("height","24");
-  r.setAttribute("class","breaker-box "+(status==="ON"?"breaker-on":"breaker-off"));
+  r.setAttribute("fill","#fff");
+  r.setAttribute("stroke","#000");
+  r.setAttribute("stroke-width","2");
+  svg.appendChild(r);
 
-  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-  t.setAttribute("x",x);
-  t.setAttribute("y",y+4);
-  t.setAttribute("class","label");
-  t.textContent="CB";
+  if(side==="right"){
+    createText(x+28,y+4,label,"start");
+  }else{
+    createText(x-28,y+4,label,"end");
+  }
+}
 
-  const lbl=document.createElementNS("http://www.w3.org/2000/svg","text");
-  lbl.setAttribute("x",x);
-  lbl.setAttribute("y",y+28);
-  lbl.setAttribute("class","label");
-  lbl.textContent=label||"";
+/* ===== DOWN ARROW ===== */
+function drawArrowDown(x,y){
+  createLine(x,y,x,y+22,"bus");
 
-  g.appendChild(r);
-  g.appendChild(t);
-  g.appendChild(lbl);
-  svg.appendChild(g);
+  const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+  p.setAttribute("points",`${x-6},${y+22} ${x+6},${y+22} ${x},${y+32}`);
+  p.setAttribute("fill","#000");
+  svg.appendChild(p);
 }
 
 // ================= LOAD =================
 async function loadSLD(){
 
   const boardId=getParam("id");
-
   if(!boardId){
-    document.getElementById("boardInfo").innerText="❌ Board id missing";
+    boardInfo.innerText="❌ Board id missing";
     return;
   }
 
-  document.getElementById("title").innerText=boardId+" — Professional SLD";
+  title.innerText=boardId+" — Professional SLD";
 
   const res=await fetch(JSON_URL);
   const data=await res.json();
-
   const board=data.boards?.[boardId];
 
   if(!board){
-    document.getElementById("boardInfo").innerText="❌ Board not found";
+    boardInfo.innerText="❌ Board not found";
     return;
   }
 
-  document.getElementById("boardInfo").innerText =
-    `Incomers: ${board.topology.totalIncomers} | Bus: ${board.topology.busSections.join(", ")}`;
+  boardInfo.innerText=`Incomers: ${board.topology.totalIncomers}`;
 
   drawSLD(board);
 }
 
-// ================= DRAW ENGINE =================
+// ================= DRAW =================
 function drawSLD(board){
 
   clearSVG();
 
   const W=1400;
+  const BUS_Y=260;
 
-  // ===== BUS A =====
-  createLine(100,260,W-100,260,"bus");
+  // ===== MAIN BUS =====
+  createLine(100,BUS_Y,W-100,BUS_Y,"bus");
 
-  // ===== BUS B =====
-  if(board.topology.busSections.includes("B")){
-    createLine(100,330,W-100,330,"bus");
+  // ===== BUS COUPLER CENTER =====
+  if(board.busCouplers?.length){
+    const x=W/2;
+    createBreaker(x,BUS_Y,board.busCouplers[0].breakerId);
   }
 
   // ===== INCOMERS =====
@@ -357,19 +263,13 @@ function drawSLD(board){
   incomers.forEach((inc,i)=>{
 
     const x=spacing*(i+1);
-    const busY=(inc.bus==="B")?330:260;
 
-    createLine(x,120,x,busY-25,"power-line");
-    createBreaker(x,busY-45,inc.breakerId,"ON");
+    createTransformer(x,110,inc.source);
+    createLine(x,130,x,BUS_Y-30,"power-line");
 
+    createBreaker(x,BUS_Y-40,inc.breakerId,
+      i===0 ? "right" : "left");
   });
-
-  // ===== BUS COUPLER =====
-  if(board.busCouplers?.length){
-    const x=W/2;
-    createLine(x,260,x,330,"power-line");
-    createBreaker(x,295,board.busCouplers[0].breakerId,"ON");
-  }
 
   // ===== OUTGOINGS =====
   const outSpacing=W/(board.outgoings.length+1);
@@ -377,15 +277,15 @@ function drawSLD(board){
   board.outgoings.forEach((o,i)=>{
 
     const x=outSpacing*(i+1);
-    const busY=(o.bus==="B")?330:260;
 
-    createLine(x,busY+25,x,500,"bus");
-    createBreaker(x,busY+45,o.breakerId,"ON");
-
+    createLine(x,BUS_Y+5,x,BUS_Y+45,"bus");
+    createBreaker(x,BUS_Y+65,o.breakerId);
+    drawArrowDown(x,BUS_Y+80);
+    createText(x,BUS_Y+120,o.breakerId);
   });
 }
 
-// ================= ZOOM + PAN =================
+// ================= ZOOM =================
 let scale=1;
 svg.addEventListener("wheel",(e)=>{
   e.preventDefault();
