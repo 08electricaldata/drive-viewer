@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>HT Board SLD Viewer</title>
+<title>IEC SLD Viewer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -42,93 +42,111 @@ body{
   font-weight:700;
 }
 
-/* ===== CONTENT ===== */
-.container{
-  padding:15px;
-}
+/* ===== CANVAS ===== */
+.container{ padding:15px; }
 
 .card{
   background:white;
   border-radius:10px;
   box-shadow:0 2px 6px rgba(0,0,0,0.15);
-  padding:20px;
+  padding:15px;
 }
 
-/* ===== SLD AREA ===== */
-#sldCanvas{
-  width:100%;
-  height:520px;
-  background:#ffffff;
+#wrap{
+  height:560px;
+  overflow:hidden;
   border:1px solid #ccc;
+  background:white;
 }
 
-/* ===== STATUS ===== */
+#sld{
+  width:100%;
+  height:100%;
+}
+
+/* ===== IEC STYLES ===== */
+.busbar{
+  stroke:#000;
+  stroke-width:6;
+}
+
+.power-flow{
+  stroke:#00cc44;
+  stroke-width:4;
+  stroke-dasharray:10 6;
+  animation:flow 1s linear infinite;
+}
+
+@keyframes flow{
+  from{stroke-dashoffset:0;}
+  to{stroke-dashoffset:-30;}
+}
+
+.breaker{
+  fill:white;
+  stroke:black;
+  stroke-width:2;
+}
+
+.breaker.on{ fill:#c8f7c5; }
+.breaker.off{ fill:#ffd6d6; }
+
+.label{
+  font-size:11px;
+  text-anchor:middle;
+}
+
 .info{
-  margin-bottom:10px;
   font-weight:bold;
   color:#003f88;
-}
-
-@media print{
-  .header-bar{display:none;}
+  margin-bottom:8px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== HEADER ===== -->
 <div class="header-bar">
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
-  <div class="header-title" id="title">HT BOARD SLD</div>
+  <div class="header-title" id="title">IEC SLD</div>
 </div>
 
 <div class="container">
   <div class="card">
-
-    <div class="info" id="boardInfo">Loading board...</div>
-
-    <svg id="sldCanvas"></svg>
-
+    <div class="info" id="info">Loading...</div>
+    <div id="wrap">
+      <svg id="sld" viewBox="0 0 1600 700"></svg>
+    </div>
   </div>
 </div>
 
 <script>
-
-// 🔥 JSON SOURCE
+// ================= CONFIG =================
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
 
 // ================= NAV =================
-function goHome(){
-  location.href="https://08electricaldata.github.io/";
-}
-function goBack(){
-  history.back();
-}
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
 
-// ================= GET URL PARAM =================
-function getParam(name){
-  const url=new URL(window.location.href);
-  return url.searchParams.get(name);
+// ================= URL =================
+function getParam(n){
+  return new URL(window.location.href).searchParams.get(n);
 }
 
-// ================= SVG HELPERS =================
-const svg=document.getElementById("sldCanvas");
+// ================= SVG CORE =================
+const svg=document.getElementById("sld");
 
-function clearSVG(){
-  svg.innerHTML="";
-}
+function clearSVG(){ svg.innerHTML=""; }
 
-function line(x1,y1,x2,y2,cls="black"){
+function line(x1,y1,x2,y2,cls=""){
   const l=document.createElementNS("http://www.w3.org/2000/svg","line");
   l.setAttribute("x1",x1);
   l.setAttribute("y1",y1);
   l.setAttribute("x2",x2);
   l.setAttribute("y2",y2);
-  l.setAttribute("stroke",cls);
-  l.setAttribute("stroke-width","3");
+  l.setAttribute("class",cls);
   svg.appendChild(l);
 }
 
@@ -136,40 +154,84 @@ function text(x,y,str){
   const t=document.createElementNS("http://www.w3.org/2000/svg","text");
   t.setAttribute("x",x);
   t.setAttribute("y",y);
-  t.setAttribute("font-size","12");
-  t.setAttribute("text-anchor","middle");
+  t.setAttribute("class","label");
   t.textContent=str;
   svg.appendChild(t);
 }
 
-function breaker(x,y,label){
+/* ===== IEC BREAKER SYMBOL ===== */
+function drawBreaker(x,y,label,status="ON"){
+
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
 
-  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
-  r.setAttribute("x",x-18);
-  r.setAttribute("y",y-12);
-  r.setAttribute("width","36");
-  r.setAttribute("height","24");
-  r.setAttribute("fill","#fff");
-  r.setAttribute("stroke","#000");
-  r.setAttribute("stroke-width","2");
+  // upper contact
+  const l1=document.createElementNS("http://www.w3.org/2000/svg","line");
+  l1.setAttribute("x1",x);
+  l1.setAttribute("y1",y-22);
+  l1.setAttribute("x2",x);
+  l1.setAttribute("y2",y-10);
+  l1.setAttribute("stroke","#000");
+  l1.setAttribute("stroke-width","2");
 
-  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-  t.setAttribute("x",x);
-  t.setAttribute("y",y+4);
-  t.setAttribute("font-size","10");
-  t.setAttribute("text-anchor","middle");
-  t.textContent="CB";
+  // lower contact
+  const l2=document.createElementNS("http://www.w3.org/2000/svg","line");
+  l2.setAttribute("x1",x);
+  l2.setAttribute("y1",y+10);
+  l2.setAttribute("x2",x);
+  l2.setAttribute("y2",y+22);
+  l2.setAttribute("stroke","#000");
+  l2.setAttribute("stroke-width","2");
+
+  // moving contact
+  const blade=document.createElementNS("http://www.w3.org/2000/svg","line");
+  blade.setAttribute("x1",x-10);
+  blade.setAttribute("y1",y);
+  blade.setAttribute("x2",x+10);
+  blade.setAttribute("y2",y);
+  blade.setAttribute("stroke","#000");
+  blade.setAttribute("stroke-width","3");
+
+  // label
+  const lbl=document.createElementNS("http://www.w3.org/2000/svg","text");
+  lbl.setAttribute("x",x);
+  lbl.setAttribute("y",y+36);
+  lbl.setAttribute("class","label");
+  lbl.textContent=label||"";
+
+  g.appendChild(l1);
+  g.appendChild(l2);
+  g.appendChild(blade);
+  g.appendChild(lbl);
+  svg.appendChild(g);
+}
+
+/* ===== IEC TRANSFORMER ===== */
+function drawTransformer(x,y,name){
+
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+
+  const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c1.setAttribute("cx",x-12);
+  c1.setAttribute("cy",y);
+  c1.setAttribute("r",10);
+  c1.setAttribute("stroke","#000");
+  c1.setAttribute("fill","none");
+
+  const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c2.setAttribute("cx",x+12);
+  c2.setAttribute("cy",y);
+  c2.setAttribute("r",10);
+  c2.setAttribute("stroke","#000");
+  c2.setAttribute("fill","none");
 
   const lbl=document.createElementNS("http://www.w3.org/2000/svg","text");
   lbl.setAttribute("x",x);
   lbl.setAttribute("y",y+28);
-  lbl.setAttribute("font-size","10");
-  lbl.setAttribute("text-anchor","middle");
-  lbl.textContent=label || "";
+  lbl.setAttribute("class","label");
+  lbl.textContent=name||"TR";
 
-  g.appendChild(r);
-  g.appendChild(t);
+  g.appendChild(c1);
+  g.appendChild(c2);
   g.appendChild(lbl);
   svg.appendChild(g);
 }
@@ -177,45 +239,43 @@ function breaker(x,y,label){
 // ================= LOAD =================
 async function loadSLD(){
 
-  const boardId=getParam("id");
+  const id=getParam("id");
 
-  if(!boardId){
-    document.getElementById("boardInfo").innerText="❌ Board id missing in URL";
+  if(!id){
+    info.innerText="❌ Board id missing";
     return;
   }
 
-  document.getElementById("title").innerText=boardId+" — SLD";
+  title.innerText=id+" — IEC SLD";
 
   const res=await fetch(JSON_URL);
   const data=await res.json();
-
-  const board=data.boards?.[boardId];
+  const board=data.boards?.[id];
 
   if(!board){
-    document.getElementById("boardInfo").innerText="❌ Board not found in JSON";
+    info.innerText="❌ Board not found";
     return;
   }
 
-  document.getElementById("boardInfo").innerText=
-    "Incomers: "+board.topology.totalIncomers+
-    " | Bus Sections: "+board.topology.busSections.join(", ");
+  info.innerText=
+    `Incomers: ${board.topology.totalIncomers} | Bus: ${board.topology.busSections.join(", ")}`;
 
-  drawSLD(board);
+  draw(board);
 }
 
 // ================= DRAW ENGINE =================
-function drawSLD(board){
+function draw(board){
 
   clearSVG();
 
-  const width=svg.clientWidth || 1200;
+  const W=1600;
 
   // ===== BUS A =====
-  line(80,260,width-80,260);
+  line(120,300,W-120,300,"busbar");
 
-  // ===== BUS B (if exists) =====
+  // ===== BUS B =====
   if(board.topology.busSections.includes("B")){
-    line(80,320,width-80,320);
+    line(120,380,W-120,380,"busbar");
   }
 
   // ===== INCOMERS =====
@@ -225,42 +285,47 @@ function drawSLD(board){
     ...board.emergencyIncomers
   ];
 
-  const spacing=width/(incomers.length+1);
+  const sp=W/(incomers.length+1);
 
   incomers.forEach((inc,i)=>{
+    const x=sp*(i+1);
+    const busY=(inc.bus==="B")?380:300;
 
-    const x=spacing*(i+1);
-    const busY=(inc.bus==="B")?320:260;
-
-    line(x,120,x,busY-20);
-    breaker(x,busY-40,inc.breakerId);
+    line(x,140,x,busY-24,"power-flow");
+    drawBreaker(x,busY-40,inc.breakerId,"ON");
+    drawTransformer(x,110,inc.source||"SRC");
   });
 
   // ===== BUS COUPLER =====
   if(board.busCouplers?.length){
-
-    const x=width/2;
-
-    line(x,260,x,320);
-    breaker(x,290,board.busCouplers[0].breakerId);
+    const x=W/2;
+    line(x,300,x,380,"power-flow");
+    drawBreaker(x,340,board.busCouplers[0].breakerId,"ON");
   }
 
   // ===== OUTGOINGS =====
-  const outSpacing=width/(board.outgoings.length+1);
+  const osp=W/(board.outgoings.length+1);
 
   board.outgoings.forEach((o,i)=>{
+    const x=osp*(i+1);
+    const busY=(o.bus==="B")?380:300;
 
-    const x=outSpacing*(i+1);
-    const busY=(o.bus==="B")?320:260;
-
-    line(x,busY+20,x,460);
-    breaker(x,busY+40,o.breakerId);
+    line(x,busY+24,x,560,"");
+    drawBreaker(x,busY+40,o.breakerId,"ON");
   });
 }
 
+// ================= ZOOM =================
+let scale=1;
+sld.addEventListener("wheel",(e)=>{
+  e.preventDefault();
+  scale+=e.deltaY*-0.001;
+  scale=Math.min(Math.max(.6,scale),2);
+  sld.style.transform=`scale(${scale})`;
+});
+
 // ================= START =================
 loadSLD();
-
 </script>
 
 </body>
