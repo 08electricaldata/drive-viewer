@@ -57,7 +57,7 @@ body{
   overflow:auto;
   border:1px solid #ccc;
   background:white;
-  height:65vh;
+  height:68vh;
 }
 
 #sldCanvas{
@@ -85,14 +85,21 @@ body{
 
 /* TEXT */
 .label{
-  font-size:14px;
+  font-size:16px;
   font-weight:600;
   text-anchor:middle;
 }
 
 .cbtext{
-  font-size:13px;
+  font-size:15px;
   font-weight:bold;
+  text-anchor:middle;
+}
+
+.board-title{
+  font-size:22px;
+  font-weight:900;
+  fill:#003f88;
   text-anchor:middle;
 }
 
@@ -103,11 +110,11 @@ body{
   font-size:16px;
 }
 
-/* MOBILE */
+/* MOBILE BOOST */
 @media(max-width:768px){
-  .label{font-size:15px;}
-  .cbtext{font-size:14px;}
-  .header-title{font-size:18px;}
+  .label{font-size:17px;}
+  .cbtext{font-size:16px;}
+  .board-title{font-size:20px;}
 }
 </style>
 </head>
@@ -124,7 +131,7 @@ body{
   <div class="card">
     <div class="info" id="boardInfo">Loading...</div>
     <div id="wrap">
-      <svg id="sldCanvas" viewBox="0 0 1400 600"></svg>
+      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
     </div>
   </div>
 </div>
@@ -166,6 +173,16 @@ function createText(x,y,str,anchor="middle",cls="label"){
   svg.appendChild(t);
 }
 
+/* BOARD TITLE */
+function drawBoardTitle(name){
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",700);
+  t.setAttribute("y",40);
+  t.setAttribute("class","board-title");
+  t.textContent=name;
+  svg.appendChild(t);
+}
+
 /* TRANSFORMER */
 function createTransformer(x,y,name){
   const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
@@ -201,28 +218,25 @@ function createBreaker(x,y,label,side=null,isCoupler=false){
   r.setAttribute("stroke-width","2");
   svg.appendChild(r);
 
-  // CB text
-  createText(x,y+4,"CB","middle","cbtext");
+  createText(x,y+5,"CB","middle","cbtext");
 
-  // BUS COUPLER label
   if(isCoupler){
-    createText(x,y-20,label);
+    createText(x,y-22,label);
   }
-  // INCOMER labels (more left/right)
   else if(side==="right"){
-    createText(x+55,y+4,label,"start");
+    createText(x+85,y+5,label,"start"); // 🔥 pushed more right
   }
   else if(side==="left"){
-    createText(x-55,y+4,label,"end");
+    createText(x-85,y+5,label,"end");   // 🔥 pushed more left
   }
 }
 
 /* ARROW */
 function drawArrowDown(x,y){
-  createLine(x,y,x,y+22,"bus");
+  createLine(x,y,x,y+24,"bus");
 
   const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
-  p.setAttribute("points",`${x-6},${y+22} ${x+6},${y+22} ${x},${y+32}`);
+  p.setAttribute("points",`${x-6},${y+24} ${x+6},${y+24} ${x},${y+36}`);
   p.setAttribute("fill","#000");
   svg.appendChild(p);
 }
@@ -249,16 +263,19 @@ async function loadSLD(){
 
   boardInfo.innerText=`Incomers: ${board.topology.totalIncomers}`;
 
-  drawSLD(board);
+  drawSLD(board, boardId);
 }
 
 // DRAW
-function drawSLD(board){
+function drawSLD(board, boardId){
 
   clearSVG();
 
   const W=1400;
-  const BUS_Y=260;
+  const BUS_Y=270;
+
+  // BOARD NAME (bold above bus)
+  drawBoardTitle(boardId);
 
   // BUS
   createLine(100,BUS_Y,W-100,BUS_Y,"bus");
@@ -282,24 +299,26 @@ function drawSLD(board){
 
     const x=spacing*(i+1);
 
-    createTransformer(x,110,inc.source);
-    createLine(x,130,x,BUS_Y-30,"power-line");
+    createTransformer(x,120,inc.source);
+    createLine(x,140,x,BUS_Y-30,"power-line");
 
-    const side = (i===0) ? "left" : "right";
+    const side=(i===0)?"left":"right";
     createBreaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // OUTGOINGS (clean — only bottom label)
+  // OUTGOINGS
   const outSpacing=W/(board.outgoings.length+1);
 
   board.outgoings.forEach((o,i)=>{
 
     const x=outSpacing*(i+1);
 
-    createLine(x,BUS_Y+5,x,BUS_Y+45,"bus");
-    createBreaker(x,BUS_Y+65,null); // ❌ no side label
-    drawArrowDown(x,BUS_Y+80);
-    createText(x,BUS_Y+120,o.breakerId); // ✅ only bottom
+    createLine(x,BUS_Y+6,x,BUS_Y+46,"bus");
+    createBreaker(x,BUS_Y+66,null);
+    drawArrowDown(x,BUS_Y+82);
+
+    // 🔥 moved further down
+    createText(x,BUS_Y+140,o.breakerId);
   });
 }
 
