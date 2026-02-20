@@ -6,108 +6,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-  font-family:Arial, sans-serif;
-  margin:0;
-  background:#f2f6ff;
-}
+body{font-family:Arial;margin:0;background:#f2f6ff}
 
-/* ===== HEADER ===== */
+/* HEADER */
 .header-bar{
-  position:sticky;
-  top:0;
-  z-index:1000;
-  background:#003f88;
-  color:white;
-  display:flex;
-  align-items:center;
-  gap:10px;
+  position:sticky;top:0;z-index:1000;
+  background:#003f88;color:#fff;
+  display:flex;align-items:center;gap:10px;
   padding:12px;
 }
-
 .header-bar button{
-  background:white;
-  color:#003f88;
-  border:none;
-  border-radius:6px;
-  padding:8px 12px;
-  font-size:16px;
-  cursor:pointer;
+  background:#fff;color:#003f88;border:none;
+  border-radius:6px;padding:8px 12px;
+  font-size:16px;cursor:pointer;
 }
+.header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
 
-.header-title{
-  flex:1;
-  text-align:center;
-  font-size:22px;
-  font-weight:700;
-}
-
-/* ===== CARD ===== */
-.container{ padding:12px; }
-
+.container{padding:12px}
 .card{
-  background:white;
-  border-radius:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
   padding:12px;
 }
 
-/* ===== SVG ===== */
 #wrap{
-  overflow:auto;
-  border:1px solid #ccc;
-  background:white;
-  height:65vh;
+  overflow:auto;border:1px solid #ccc;
+  background:#fff;height:68vh;
 }
+#sldCanvas{width:100%;height:100%}
 
-#sldCanvas{
-  width:100%;
-  height:100%;
-}
-
-/* ===== LINES ===== */
+/* GRAPHICS */
+.bus{stroke:#000;stroke-width:4}
 .power-line{
-  stroke:#00cc44;
-  stroke-width:4;
+  stroke:#00cc44;stroke-width:4;
   stroke-dasharray:10 6;
   animation:flow 1s linear infinite;
 }
+@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
 
-@keyframes flow{
-  from{stroke-dashoffset:0;}
-  to{stroke-dashoffset:-32;}
+.label{font-size:16px;font-weight:600;text-anchor:middle}
+.cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
+.board-title{
+  font-size:22px;font-weight:900;
+  fill:#003f88;text-anchor:middle;
 }
+.info{font-weight:bold;color:#003f88;margin-bottom:8px}
 
-.bus{
-  stroke:#000;
-  stroke-width:4;
-}
-
-/* ===== TEXT ===== */
-.label{
-  font-size:13px;
-  font-weight:600;
-  text-anchor:middle;
-}
-
-.cbtext{
-  font-size:12px;
-  font-weight:bold;
-  text-anchor:middle;
-}
-
-.info{
-  font-weight:bold;
-  color:#003f88;
-  margin-bottom:8px;
-  font-size:16px;
-}
-
-/* MOBILE BOOST */
 @media(max-width:768px){
-  .label{font-size:15px;}
-  .cbtext{font-size:14px;}
-  .header-title{font-size:18px;}
+  .label{font-size:17px}
+  .cbtext{font-size:16px}
 }
 </style>
 </head>
@@ -124,7 +71,7 @@ body{
   <div class="card">
     <div class="info" id="boardInfo">Loading...</div>
     <div id="wrap">
-      <svg id="sldCanvas" viewBox="0 0 1400 600"></svg>
+      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
     </div>
   </div>
 </div>
@@ -134,107 +81,91 @@ body{
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
 
-// ================= NAV =================
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
-function goBack(){ history.back(); }
-
-function getParam(name){
-  return new URL(window.location.href).searchParams.get(name);
-}
+// NAV
+function goHome(){location.href="https://08electricaldata.github.io/"}
+function goBack(){history.back()}
+function getParam(n){return new URL(location.href).searchParams.get(n)}
 
 const svg=document.getElementById("sldCanvas");
+function clearSVG(){svg.innerHTML=""}
 
-function clearSVG(){ svg.innerHTML=""; }
-
-function createLine(x1,y1,x2,y2,cls="bus"){
-  const l=document.createElementNS("http://www.w3.org/2000/svg","line");
-  l.setAttribute("x1",x1);
-  l.setAttribute("y1",y1);
-  l.setAttribute("x2",x2);
-  l.setAttribute("y2",y2);
-  l.setAttribute("class",cls);
-  svg.appendChild(l);
+// ---------- primitives ----------
+function line(x1,y1,x2,y2,cls="bus"){
+  const e=document.createElementNS("http://www.w3.org/2000/svg","line");
+  e.setAttribute("x1",x1);e.setAttribute("y1",y1);
+  e.setAttribute("x2",x2);e.setAttribute("y2",y2);
+  e.setAttribute("class",cls);svg.appendChild(e);
 }
-
-function createText(x,y,str,anchor="middle",cls="label"){
+function text(x,y,str,anchor="middle",cls="label"){
   const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-  t.setAttribute("x",x);
-  t.setAttribute("y",y);
-  t.setAttribute("class",cls);
+  t.setAttribute("x",x);t.setAttribute("y",y);
   t.setAttribute("text-anchor",anchor);
-  t.textContent=str;
+  t.setAttribute("class",cls);t.textContent=str;
   svg.appendChild(t);
 }
 
-/* ===== TRANSFORMER ===== */
-function createTransformer(x,y,name){
+// ---------- board title ----------
+function drawBoardTitle(name){
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",700);
+  t.setAttribute("y",40);
+  t.setAttribute("class","board-title");
+  t.textContent=name;
+  svg.appendChild(t);
+}
+
+// ---------- transformer ----------
+function transformer(x,y,name){
   const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c1.setAttribute("cx",x-12);
-  c1.setAttribute("cy",y);
-  c1.setAttribute("r",10);
-  c1.setAttribute("stroke","#000");
+  c1.setAttribute("cx",x-12);c1.setAttribute("cy",y);
+  c1.setAttribute("r",10);c1.setAttribute("stroke","#000");
   c1.setAttribute("fill","none");
 
   const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c2.setAttribute("cx",x+12);
-  c2.setAttribute("cy",y);
-  c2.setAttribute("r",10);
-  c2.setAttribute("stroke","#000");
+  c2.setAttribute("cx",x+12);c2.setAttribute("cy",y);
+  c2.setAttribute("r",10);c2.setAttribute("stroke","#000");
   c2.setAttribute("fill","none");
 
-  svg.appendChild(c1);
-  svg.appendChild(c2);
-
-  createText(x,y-18,name);
+  svg.appendChild(c1);svg.appendChild(c2);
+  text(x,y-18,name);
 }
 
-/* ===== BREAKER ===== */
-function createBreaker(x,y,label,side="right",isCoupler=false){
-
+// ---------- breaker ----------
+function breaker(x,y,label,side=null,isCoupler=false){
   const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
   r.setAttribute("x",x-18);
   r.setAttribute("y",y-12);
-  r.setAttribute("width","36");
-  r.setAttribute("height","24");
+  r.setAttribute("width",36);
+  r.setAttribute("height",24);
   r.setAttribute("fill","#fff");
   r.setAttribute("stroke","#000");
   r.setAttribute("stroke-width","2");
   svg.appendChild(r);
 
-  // CB text inside
-  createText(x,y+4,"CB","middle","cbtext");
+  text(x,y+5,"CB","middle","cbtext");
 
-  // BUS COUPLER label above
   if(isCoupler){
-    createText(x,y-18,label);
-  }else{
-    // side label for normal breakers
-    if(side==="right"){
-      createText(x+32,y+4,label,"start");
-    }else{
-      createText(x-32,y+4,label,"end");
-    }
+    text(x,y-22,label);
+  }else if(side==="left"){
+    text(x-85,y+5,label,"end");
+  }else if(side==="right"){
+    text(x+85,y+5,label,"start");
   }
 }
 
-/* ===== DOWN ARROW ===== */
-function drawArrowDown(x,y){
-  createLine(x,y,x,y+22,"bus");
-
+// ---------- arrow ----------
+function arrowDown(x,y){
+  line(x,y,x,y+24,"bus");
   const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
-  p.setAttribute("points",`${x-6},${y+22} ${x+6},${y+22} ${x},${y+32}`);
+  p.setAttribute("points",`${x-6},${y+24} ${x+6},${y+24} ${x},${y+36}`);
   p.setAttribute("fill","#000");
   svg.appendChild(p);
 }
 
 // ================= LOAD =================
 async function loadSLD(){
-
   const boardId=getParam("id");
-  if(!boardId){
-    boardInfo.innerText="❌ Board id missing";
-    return;
-  }
+  if(!boardId){boardInfo.innerText="❌ Board id missing";return;}
 
   title.innerText=boardId+" — Professional SLD";
 
@@ -242,34 +173,35 @@ async function loadSLD(){
   const data=await res.json();
   const board=data.boards?.[boardId];
 
-  if(!board){
-    boardInfo.innerText="❌ Board not found";
-    return;
-  }
+  if(!board){boardInfo.innerText="❌ Board not found";return;}
 
   boardInfo.innerText=`Incomers: ${board.topology.totalIncomers}`;
-
-  drawSLD(board);
+  draw(board,boardId);
 }
 
 // ================= DRAW =================
-function drawSLD(board){
-
+function draw(board,boardId){
   clearSVG();
 
   const W=1400;
-  const BUS_Y=260;
+  const BUS_Y=280;
+  const GAP=120;
+  const mid=W/2;
 
-  // BUS
-  createLine(100,BUS_Y,W-100,BUS_Y,"bus");
+  drawBoardTitle(boardId);
 
-  // BUS COUPLER CENTER
+  // ===== BUS A =====
+  line(100,BUS_Y,mid-GAP/2,BUS_Y,"bus");
+
+  // ===== BUS B =====
+  line(mid+GAP/2,BUS_Y,W-100,BUS_Y,"bus");
+
+  // ===== BUS COUPLER =====
   if(board.busCouplers?.length){
-    const x=W/2;
-    createBreaker(x,BUS_Y,"BUS COUPLER","right",true);
+    breaker(mid,BUS_Y,"BUS COUPLER",null,true);
   }
 
-  // INCOMERS
+  // ===== INCOMERS =====
   const incomers=[
     ...board.incomers,
     ...board.dgIncomers,
@@ -279,35 +211,29 @@ function drawSLD(board){
   const spacing=W/(incomers.length+1);
 
   incomers.forEach((inc,i)=>{
-
     const x=spacing*(i+1);
 
-    createTransformer(x,110,inc.source);
-    createLine(x,130,x,BUS_Y-30,"power-line");
+    transformer(x,120,inc.source);
+    line(x,140,x,BUS_Y-30,"power-line");
 
-    // FIRST LEFT, SECOND RIGHT
-    const side = (i===0) ? "left" : "right";
-
-    createBreaker(x,BUS_Y-40,inc.breakerId,side,false);
+    const side=(i===0)?"left":"right";
+    breaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // OUTGOINGS
+  // ===== OUTGOINGS =====
   const outSpacing=W/(board.outgoings.length+1);
 
   board.outgoings.forEach((o,i)=>{
-
     const x=outSpacing*(i+1);
 
-    createLine(x,BUS_Y+5,x,BUS_Y+45,"bus");
-    createBreaker(x,BUS_Y+65,o.breakerId);
-    drawArrowDown(x,BUS_Y+80);
-    createText(x,BUS_Y+120,o.breakerId);
+    line(x,BUS_Y+6,x,BUS_Y+46,"bus");
+    breaker(x,BUS_Y+66,null);
+    arrowDown(x,BUS_Y+82);
+    text(x,BUS_Y+150,o.breakerId);
   });
 }
 
-// START
 loadSLD();
 </script>
-
 </body>
 </html>
