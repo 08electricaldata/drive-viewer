@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IEC SLD – Board Layout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f2f6ff;
+}
+
+.header{
+  background:#003f88;
+  color:white;
+  padding:12px;
+  text-align:center;
+  font-weight:bold;
+}
+
+#wrap{
+  height:600px;
+  background:white;
+  margin:20px;
+  border:1px solid #ccc;
+}
+
+svg{
+  width:100%;
+  height:100%;
+}
+
+/* Styles */
+.bus{ stroke:black; stroke-width:6; }
+.line{ stroke:black; stroke-width:3; }
+.label{ font-size:12px; text-anchor:middle; }
+
+.power{ stroke:#00cc44; stroke-width:4;
+  stroke-dasharray:10 6;
+  animation:flow 1s linear infinite;
+}
+
+@keyframes flow{
+  from{stroke-dashoffset:0;}
+  to{stroke-dashoffset:-32;}
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">US-08E-244-HT-BOARD – IEC SLD</div>
+
+<div id="wrap">
+<svg viewBox="0 0 1600 700" id="sld"></svg>
+</div>
+
+<script>
+const svg=document.getElementById("sld");
+
+function line(x1,y1,x2,y2,cls="line"){
+  const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+  l.setAttribute("x1",x1);
+  l.setAttribute("y1",y1);
+  l.setAttribute("x2",x2);
+  l.setAttribute("y2",y2);
+  l.setAttribute("class",cls);
+  svg.appendChild(l);
+}
+
+function text(x,y,t){
+  const el=document.createElementNS("http://www.w3.org/2000/svg","text");
+  el.setAttribute("x",x);
+  el.setAttribute("y",y);
+  el.setAttribute("class","label");
+  el.textContent=t;
+  svg.appendChild(el);
+}
+
+function breaker(x,y,label){
+  // top & bottom contacts
+  line(x,y-22,x,y-8);
+  line(x,y+8,x,y+22);
+
+  // blade
+  line(x-10,y,x+10,y);
+
+  text(x,y+35,label);
+}
+
+function transformer(x,y,name){
+  const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c1.setAttribute("cx",x-12);
+  c1.setAttribute("cy",y);
+  c1.setAttribute("r",12);
+  c1.setAttribute("stroke","black");
+  c1.setAttribute("fill","none");
+
+  const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c2.setAttribute("cx",x+12);
+  c2.setAttribute("cy",y);
+  c2.setAttribute("r",12);
+  c2.setAttribute("stroke","black");
+  c2.setAttribute("fill","none");
+
+  svg.appendChild(c1);
+  svg.appendChild(c2);
+
+  text(x,y-25,name);
+}
+
+/* ================= DRAW ================= */
+
+const BUS_A_Y=300;
+const BUS_B_Y=300;
+
+const LEFT_START=150;
+const RIGHT_START=1450;
+
+/* LEFT INCOMER */
+
+transformer(400,120,"TR-2244");
+line(400,135,400,250,"power");
+breaker(400,270,"US-08E-2244-HT-244");
+
+/* RIGHT INCOMER */
+
+transformer(1200,120,"TR-2245");
+line(1200,135,1200,250,"power");
+breaker(1200,270,"US-08E-2245-HT-244");
+
+/* BUS A LEFT */
+line(150,300,800,300,"bus");
+
+/* BUS B RIGHT */
+line(800,300,1450,300,"bus");
+
+/* BUS COUPLER CENTER */
+line(800,300,800,350,"power");
+breaker(800,330,"BUS COUPLER");
+
+/* LEFT OUTGOINGS */
+const leftOut=["P-841","SPARE","HT-001"];
+leftOut.forEach((name,i)=>{
+  const x=250+(i*200);
+  line(x,300,x,420);
+  breaker(x,390,name);
+});
+
+/* RIGHT OUTGOINGS */
+const rightOut=["P-842","HT-002","SPARE"];
+rightOut.forEach((name,i)=>{
+  const x=950+(i*200);
+  line(x,300,x,420);
+  breaker(x,390,name);
+});
+
+</script>
+
+</body>
+</html>
