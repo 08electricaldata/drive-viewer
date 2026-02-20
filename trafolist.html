@@ -80,6 +80,7 @@ th, td {
   border: 1px solid #ccc;
   padding: 6px 8px;
 }
+
 /* Reduce first column width */
 #xfmrTable th:first-child,
 #xfmrTable td:first-child {
@@ -88,7 +89,6 @@ th, td {
   text-align: center;
   white-space: nowrap;
 }
-
 
 /* STICKY HEADERS */
 thead tr:nth-child(1) th {
@@ -134,6 +134,8 @@ tr:hover {
 <div class="header-bar">
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
+  <button onclick="openPM()">⚡ PM Status</button>
+  <button onclick="openOil()">🛢️ Oil Status</button>
   <div class="header-title">TRANSFORMER MASTER LIST</div>
 </div>
 
@@ -197,33 +199,30 @@ headingRow.forEach(h => {
   filterRow.appendChild(fh);
 });
 
+/* ===== DATA ROWS ===== */
+rows.slice(1).forEach(r => {
+  if (!r[1]) return;
 
+  const tr = document.createElement("tr");
+  if (!r[0]) tr.classList.add("section-row");
 
-  /* ===== DATA ROWS (SKIP FIRST ROW) ===== */
-  rows.slice(1).forEach(r => {   // ✅ skip duplicate header row
-    if (!r[1]) return;           // Column B validation
-
-    const tr = document.createElement("tr");
-
-    if (!r[0]) tr.classList.add("section-row");
-
-    r.forEach(v => {
-      const td = document.createElement("td");
-      td.textContent = v ?? "";
-      tr.appendChild(td);
-    });
-
-    tr.onclick = () => {
-      const transformerNo = r[2];
-      if (!transformerNo) return;
-
-      window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-        encodeURIComponent("Transformer-" + transformerNo);
-    };
-
-    tbody.appendChild(tr);
+  r.forEach(v => {
+    const td = document.createElement("td");
+    td.textContent = v ?? "";
+    tr.appendChild(td);
   });
+
+  tr.onclick = () => {
+    const transformerNo = r[2];
+    if (!transformerNo) return;
+
+    window.location.href =
+      "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+      encodeURIComponent("Transformer-" + transformerNo);
+  };
+
+  tbody.appendChild(tr);
+});
 
   setupFilters();
 }
@@ -265,10 +264,15 @@ function goHome() {
 function goBack() {
   history.back();
 }
+function openPM(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/trafopm.html";
+}
+function openOil(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/transformer-oil-summary.html";
+}
 
 loadTransformers();
 </script>
 
-  
 </body>
 </html>
