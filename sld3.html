@@ -44,17 +44,17 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 }
 @keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
 
-.label{font-size:16px;font-weight:600;text-anchor:middle}
-.cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
+.label{font-size:18px;font-weight:600;text-anchor:middle}
+.cbtext{font-size:16px;font-weight:bold;text-anchor:middle}
 .board-title{
-  font-size:22px;font-weight:900;
+  font-size:24px;font-weight:900;
   fill:#003f88;text-anchor:middle;
 }
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
 
 @media(max-width:768px){
-  .label{font-size:17px}
-  .cbtext{font-size:16px}
+  .label{font-size:19px}
+  .cbtext{font-size:17px}
 }
 </style>
 </head>
@@ -145,11 +145,11 @@ function breaker(x,y,label,side=null,isCoupler=false){
   text(x,y+5,"CB","middle","cbtext");
 
   if(isCoupler){
-    text(x,y-22,label);
+    text(x,y-24,label);
   }else if(side==="left"){
-    text(x-85,y+5,label,"end");
+    text(x-120,y+5,label,"end");   // 🔥 shifted more left
   }else if(side==="right"){
-    text(x+85,y+5,label,"start");
+    text(x+120,y+5,label,"start"); // 🔥 shifted more right
   }
 }
 
@@ -220,16 +220,33 @@ function draw(board,boardId){
     breaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // ===== OUTGOINGS =====
-  const outSpacing=W/(board.outgoings.length+1);
+  // ===== OUTGOINGS — POSITION BASED (FIXED) =====
+  let maxPos=0;
+  [
+    ...board.incomers,
+    ...board.outgoings,
+    ...(board.busCouplers||[])
+  ].forEach(r=>{
+    if(r.position>maxPos) maxPos=r.position;
+  });
 
-  board.outgoings.forEach((o,i)=>{
-    const x=outSpacing*(i+1);
+  const leftMargin=120;
+  const rightMargin=W-120;
+  const usableWidth=rightMargin-leftMargin;
+
+  function posToX(pos){
+    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
+  }
+
+  board.outgoings.forEach(o=>{
+    const x=posToX(o.position);
 
     line(x,BUS_Y+6,x,BUS_Y+46,"bus");
     breaker(x,BUS_Y+66,null);
     arrowDown(x,BUS_Y+82);
-    text(x,BUS_Y+150,o.breakerId);
+
+    // 🔥 label lowered properly
+    text(x,BUS_Y+170,o.breakerId);
   });
 }
 
