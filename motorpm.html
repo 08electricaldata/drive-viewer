@@ -100,7 +100,7 @@ table {
   border-collapse: collapse;
   background: white;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  table-layout: fixed; /* ⭐ uniform look */
+  table-layout: fixed;
 }
 th, td {
   border: 1px solid #ccc;
@@ -112,12 +112,12 @@ th {
   color: white;
   position: sticky;
   top: 0;
-  white-space: normal; /* ⭐ allow wrap */
+  white-space: normal;
   word-break: break-word;
   line-height: 1.2;
 }
 
-/* ⭐ uniform width for date columns */
+/* uniform width for date columns */
 th:nth-child(n+6),
 td:nth-child(n+6){
   width: 110px;
@@ -158,6 +158,8 @@ tbody tr:hover { background: #eef5ff; }
     <div class="header-left">
       <button class="header-btn" onclick="goHome()">🏠 Home</button>
       <button class="header-btn" onclick="goBack()">⬅ Back</button>
+      <button class="header-btn" onclick="openMotorList()">⚙️ Motor List</button>
+      <button class="header-btn" onclick="openMotorOH()">🛠️ Motor O/H Data</button>
     </div>
 
     <div class="header-center">
@@ -220,6 +222,12 @@ const JSON_URL =
 /* NAV */
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ history.back(); }
+function openMotorList(){
+  location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html";
+}
+function openMotorOH(){
+  location.href="https://08electricaldata.github.io/drive-viewer/motoroh.html";
+}
 
 /* DATE */
 function parseISO(v){
