@@ -28,11 +28,6 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   padding:12px;
 }
 
-#wrap{
-  overflow:auto;border:1px solid #ccc;
-  background:#fff;height:65vh;
-}
-
 #columnTable{
   width:100%;
   border-collapse:collapse;
@@ -46,12 +41,13 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-size:14px;
 }
 
-.bus{stroke:#000;stroke-width:4}
-.label{font-size:16px;font-weight:600;text-anchor:middle}
-.board-title{
-  font-size:24px;font-weight:900;
-  fill:#003f88;text-anchor:middle;
+#wrap{
+  overflow:auto;
+  border:1px solid #ccc;
+  background:#fff;
+  height:65vh;
 }
+.bus{stroke:#000;stroke-width:4}
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
 </style>
 </head>
@@ -69,7 +65,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
     <div id="boardInfo" class="info">Loading...</div>
 
-    <!-- 🔥 3 ROW TABLE -->
+    <!-- 🔥 FIXED TABLE -->
     <table id="columnTable"></table>
 
     <div id="wrap">
@@ -88,51 +84,58 @@ function goHome(){location.href="https://08electricaldata.github.io/"}
 function goBack(){history.back()}
 function getParam(n){return new URL(location.href).searchParams.get(n)}
 
-const svg=document.getElementById("sldCanvas");
+const columnTable=document.getElementById("columnTable");
 const boardInfoEl=document.getElementById("boardInfo");
 const titleEl=document.getElementById("title");
-const columnTable=document.getElementById("columnTable");
 
-function clearSVG(){svg.innerHTML=""}
-
-/* ================= TABLE BUILDER ================= */
+/* ================= TABLE BUILDER (FIXED) ================= */
 
 function buildColumnTable(board){
 
   columnTable.innerHTML="";
 
-  let allDevices=[
+  // Combine ALL devices
+  const allDevices=[
     ...(board.incomers||[]),
     ...(board.outgoings||[]),
-    ...(board.busCouplers||[])
+    ...(board.busCouplers||[]),
+    ...(board.dgIncomers||[]),
+    ...(board.emergencyIncomers||[])
   ];
 
   if(!allDevices.length) return;
 
-  // find max position (Column B logic)
-  let maxPos=Math.max(...allDevices.map(d=>d.position||0));
+  // 🔥 FIX: Correct max position detection
+  let maxPos = 0;
+  allDevices.forEach(d=>{
+    if(d.position && d.position > maxPos){
+      maxPos = d.position;
+    }
+  });
 
-  const row1=document.createElement("tr"); // Column C
-  const row2=document.createElement("tr"); // Column D
-  const row3=document.createElement("tr"); // Column E
+  if(maxPos === 0) return;
+
+  const row1=document.createElement("tr"); // COLUMN F
+  const row2=document.createElement("tr"); // COLUMN D
+  const row3=document.createElement("tr"); // COLUMN E
 
   for(let i=1;i<=maxPos;i++){
 
-    const device=allDevices.find(d=>d.position==i);
+    const device = allDevices.find(d => d.position === i);
 
     const td1=document.createElement("td");
     const td2=document.createElement("td");
     const td3=document.createElement("td");
 
     if(device){
-      // Row 1 → Column C equivalent
-      td1.innerText=device.source || "";
+      // ✅ FIRST ROW → COLUMN F VALUE
+      td1.innerText = device.source || "";
 
-      // Row 2 → Column D equivalent
-      td2.innerText=device.breakerId || "";
+      // ✅ SECOND ROW → COLUMN D VALUE
+      td2.innerText = device.breakerId || "";
 
-      // Row 3 → Column E equivalent
-      td3.innerText=device.breakerType || "";
+      // ✅ THIRD ROW → COLUMN E VALUE
+      td3.innerText = device.breakerType || "";
     }
 
     row1.appendChild(td1);
@@ -145,17 +148,7 @@ function buildColumnTable(board){
   columnTable.appendChild(row3);
 }
 
-/* ================= SIMPLE SLD (UNCHANGED) ================= */
-
-function line(x1,y1,x2,y2){
-  const e=document.createElementNS("http://www.w3.org/2000/svg","line");
-  e.setAttribute("x1",x1);
-  e.setAttribute("y1",y1);
-  e.setAttribute("x2",x2);
-  e.setAttribute("y2",y2);
-  e.setAttribute("class","bus");
-  svg.appendChild(e);
-}
+/* ================= LOAD ================= */
 
 async function loadSLD(){
   try{
@@ -178,11 +171,8 @@ async function loadSLD(){
 
     boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
 
-    // 🔥 BUILD 3 ROW TABLE
+    // 🔥 BUILD FIXED TABLE
     buildColumnTable(board);
-
-    clearSVG();
-    line(100,280,1300,280);
 
   }catch(e){
     console.error(e);
