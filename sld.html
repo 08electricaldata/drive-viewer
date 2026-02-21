@@ -1,3 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HT Board Professional SLD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f6ff}
+
+/* HEADER */
+.header-bar{
+  position:sticky;top:0;z-index:1000;
+  background:#003f88;color:#fff;
+  display:flex;align-items:center;gap:10px;
+  padding:12px;
+}
+.header-bar button{
+  background:#fff;color:#003f88;border:none;
+  border-radius:6px;padding:8px 12px;
+  font-size:16px;cursor:pointer;
+}
+.header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
+
+.container{padding:12px}
+.card{
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  padding:12px;
+}
+
+#wrap{
+  overflow:auto;border:1px solid #ccc;
+  background:#fff;height:70vh;
+}
+#sldCanvas{width:100%;height:100%}
+
+/* GRAPHICS */
+.bus{stroke:#000;stroke-width:4}
+.power-line{
+  stroke:#00cc44;stroke-width:4;
+  stroke-dasharray:10 6;
+  animation:flow 1s linear infinite;
+}
+@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
+
+.label{font-size:16px;font-weight:600;text-anchor:middle}
+.cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
+.board-title{
+  font-size:24px;font-weight:900;
+  fill:#003f88;text-anchor:middle;
+}
+.info{font-weight:bold;color:#003f88;margin-bottom:8px}
+
+@media(max-width:768px){
+  .label{font-size:17px}
+  .cbtext{font-size:16px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header-bar">
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goBack()">⬅ Back</button>
+  <div class="header-title" id="title">HT BOARD SLD</div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="info" id="boardInfo">Loading...</div>
+    <div id="wrap">
+      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
+    </div>
+  </div>
+</div>
+
 <script>
 // ================= CONFIG =================
 const JSON_URL =
@@ -9,6 +87,9 @@ function goBack(){history.back()}
 function getParam(n){return new URL(location.href).searchParams.get(n)}
 
 const svg=document.getElementById("sldCanvas");
+const boardInfoEl=document.getElementById("boardInfo");
+const titleEl=document.getElementById("title");
+
 function clearSVG(){svg.innerHTML=""}
 
 // ---------- primitives ----------
@@ -74,7 +155,8 @@ function transformer(x,y,name,transformerNo){
 
   group.addEventListener("click",()=>{
     if(transformerNo){
-      location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+transformerNo;
+      location.href=
+      "https://08electricaldata.github.io/drive-viewer/history.html?id="+transformerNo;
     }
   });
 
@@ -95,9 +177,12 @@ function breaker(x,y,label,side=null,isCoupler=false){
 
   text(x,y+5,"CB","middle","cbtext");
 
-  const clickUrl="https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-"+label;
+  if(!label) return;
 
-  if(isCoupler && label){
+  const clickUrl =
+  "https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-"+label;
+
+  if(isCoupler){
     text(x,y-24,label,"middle","label",clickUrl);
   }else if(side==="left"){
     text(x-150,y+5,label,"end","label",clickUrl);
@@ -119,21 +204,30 @@ function arrowDown(x,y){
 async function loadSLD(){
   try{
     const boardId=getParam("id");
-    if(!boardId){boardInfo.innerText="❌ Board id missing";return;}
+    if(!boardId){
+      boardInfoEl.innerText="❌ Board id missing";
+      return;
+    }
 
-    title.innerText=boardId+" — Professional SLD";
+    titleEl.innerText=boardId+" — Professional SLD";
 
     const res=await fetch(JSON_URL);
     const data=await res.json();
     const board=data.boards?.[boardId];
 
-    if(!board){boardInfo.innerText="❌ Board not found";return;}
+    if(!board){
+      boardInfoEl.innerText="❌ Board not found";
+      return;
+    }
 
-    boardInfo.innerText=`Incomers: ${board.topology.totalIncomers}`;
+    boardInfoEl.innerText=
+      "Incomers: "+board.topology.totalIncomers;
+
     draw(board,boardId);
+
   }catch(e){
     console.error(e);
-    boardInfo.innerText="❌ Drawing error";
+    boardInfoEl.innerText="❌ Drawing error";
   }
 }
 
@@ -148,7 +242,6 @@ function draw(board,boardId){
 
   drawBoardTitle(boardId);
 
-  // BUS
   line(100,BUS_Y,mid-GAP/2,BUS_Y,"bus");
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y,"bus");
 
@@ -183,9 +276,10 @@ function draw(board,boardId){
     breaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // OUTGOINGS (unchanged)
+  // OUTGOINGS
   let maxPos=0;
-  [...(board.incomers||[]),...(board.outgoings||[]),...(board.busCouplers||[])]
+  [...(board.incomers||[]),...(board.outgoings||[]),
+   ...(board.busCouplers||[])]
     .forEach(r=>{ if(r.position>maxPos) maxPos=r.position; });
 
   const leftMargin=120;
@@ -194,7 +288,8 @@ function draw(board,boardId){
 
   function posToX(pos){
     if(!maxPos) return mid;
-    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
+    return leftMargin+
+      (usableWidth*(pos-1)/(maxPos-1));
   }
 
   (board.outgoings||[]).forEach(o=>{
@@ -210,3 +305,6 @@ function draw(board,boardId){
 
 loadSLD();
 </script>
+
+</body>
+</html>
