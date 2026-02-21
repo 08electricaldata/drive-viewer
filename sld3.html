@@ -28,6 +28,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   padding:12px;
 }
 
+/* ===== TABLE ===== */
 #columnTable{
   width:100%;
   border-collapse:collapse;
@@ -42,17 +43,18 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-weight:600;
 }
 
+/* Color Coding */
 .incomer{background:#d9f2d9}
 .outgoing{background:#d9e8ff}
 .coupler{background:#fff3b0}
 
+/* ===== SLD ===== */
 #wrap{
   overflow:auto;
   border:1px solid #ccc;
   background:#fff;
   height:65vh;
 }
-
 .bus{stroke:#000;stroke-width:4}
 .board-title{
   font-size:24px;
@@ -60,7 +62,6 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   fill:#003f88;
   text-anchor:middle;
 }
-.label{font-size:15px;font-weight:600;text-anchor:middle}
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
 </style>
 </head>
@@ -103,24 +104,60 @@ const svg=document.getElementById("sldCanvas");
 
 function clearSVG(){svg.innerHTML=""}
 
-/* ================= SAFE TABLE ================= */
+/* ================= TABLE ================= */
 
 function buildColumnTable(board){
 
   columnTable.innerHTML="";
 
-  const allDevices=[
-    ...(board.incomers||[]),
-    ...(board.outgoings||[]),
-    ...(board.busCouplers||[])
-  ];
+  const allDevices=[];
+
+  // Incomers
+  (board.incomers||[]).forEach(d=>{
+    d._type="INCOMER";
+    allDevices.push(d);
+  });
+
+  // Outgoings
+  (board.outgoings||[]).forEach(d=>{
+    d._type="OUTGOING";
+    allDevices.push(d);
+  });
+
+  // Bus Coupler
+  (board.busCouplers||[]).forEach(d=>{
+    d._type="BUS_COUPLER";
+    allDevices.push(d);
+  });
+
+  // Bus PT
+  (board.busPT||[]).forEach(d=>{
+    d._type="BUS_PT";
+    allDevices.push(d);
+  });
+
+  // Line PT
+  (board.linePT||[]).forEach(d=>{
+    d._type="LINE_PT";
+    allDevices.push(d);
+  });
+
+  // Future safety
+  (board.dgIncomers||[]).forEach(d=>{
+    d._type="INCOMER";
+    allDevices.push(d);
+  });
+
+  (board.emergencyIncomers||[]).forEach(d=>{
+    d._type="INCOMER";
+    allDevices.push(d);
+  });
 
   if(!allDevices.length) return;
 
   let maxPos=0;
   allDevices.forEach(d=>{
-    if(d.position && d.position>maxPos)
-      maxPos=d.position;
+    if(d.position>maxPos) maxPos=d.position;
   });
 
   // Column numbers
@@ -146,8 +183,7 @@ function buildColumnTable(board){
 
     if(device){
 
-      // SAFE feederType detection
-      const type=device.feederType || device.type || "";
+      const type=device._type;
 
       td1.innerText=type;
       td2.innerText=device.breakerId || "";
@@ -177,7 +213,7 @@ function buildColumnTable(board){
   columnTable.appendChild(row3);
 }
 
-/* ================= SIMPLE SAFE SLD ================= */
+/* ================= SIMPLE SLD ================= */
 
 function draw(board,boardId){
 
