@@ -51,11 +51,6 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   fill:#003f88;text-anchor:middle;
 }
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
-
-@media(max-width:768px){
-  .label{font-size:17px}
-  .cbtext{font-size:16px}
-}
 </style>
 </head>
 
@@ -77,11 +72,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 </div>
 
 <script>
-// ================= CONFIG =================
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
 
-// NAV
 function goHome(){location.href="https://08electricaldata.github.io/"}
 function goBack(){history.back()}
 function getParam(n){return new URL(location.href).searchParams.get(n)}
@@ -92,7 +85,6 @@ const titleEl=document.getElementById("title");
 
 function clearSVG(){svg.innerHTML=""}
 
-// ---------- primitives ----------
 function line(x1,y1,x2,y2,cls="bus"){
   const e=document.createElementNS("http://www.w3.org/2000/svg","line");
   e.setAttribute("x1",x1);
@@ -119,12 +111,10 @@ function text(x,y,str,anchor="middle",cls="label",clickUrl=null){
   svg.appendChild(t);
 }
 
-// ---------- board title ----------
 function drawBoardTitle(name){
   text(700,40,name,"middle","board-title");
 }
 
-// ---------- transformer ----------
 function transformer(x,y,name,transformerNo){
   const group=document.createElementNS("http://www.w3.org/2000/svg","g");
   group.style.cursor="pointer";
@@ -154,16 +144,13 @@ function transformer(x,y,name,transformerNo){
   group.appendChild(label);
 
   group.addEventListener("click",()=>{
-    if(transformerNo){
-      location.href=
-      "https://08electricaldata.github.io/drive-viewer/history.html?id="+transformerNo;
-    }
+    location.href=
+    "https://08electricaldata.github.io/drive-viewer/history.html?id="+transformerNo;
   });
 
   svg.appendChild(group);
 }
 
-// ---------- breaker ----------
 function breaker(x,y,label,side=null,isCoupler=false){
   const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
   r.setAttribute("x",x-18);
@@ -191,7 +178,6 @@ function breaker(x,y,label,side=null,isCoupler=false){
   }
 }
 
-// ---------- arrow ----------
 function arrowDown(x,y){
   line(x,y,x,y+24,"bus");
   const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
@@ -200,14 +186,10 @@ function arrowDown(x,y){
   svg.appendChild(p);
 }
 
-// ================= LOAD =================
 async function loadSLD(){
   try{
     const boardId=getParam("id");
-    if(!boardId){
-      boardInfoEl.innerText="❌ Board id missing";
-      return;
-    }
+    if(!boardId){ boardInfoEl.innerText="❌ Board id missing"; return;}
 
     titleEl.innerText=boardId+" — Professional SLD";
 
@@ -215,14 +197,10 @@ async function loadSLD(){
     const data=await res.json();
     const board=data.boards?.[boardId];
 
-    if(!board){
-      boardInfoEl.innerText="❌ Board not found";
-      return;
-    }
+    if(!board){ boardInfoEl.innerText="❌ Board not found"; return;}
 
     boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
-
-    draw(board,boardId);
+    draw(board);
 
   }catch(e){
     console.error(e);
@@ -230,16 +208,13 @@ async function loadSLD(){
   }
 }
 
-// ================= DRAW =================
-function draw(board,boardId){
+function draw(board){
   clearSVG();
 
   const W=1400;
   const BUS_Y=280;
   const GAP=120;
   const mid=W/2;
-
-  drawBoardTitle(boardId);
 
   line(100,BUS_Y,mid-GAP/2,BUS_Y,"bus");
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y,"bus");
@@ -249,44 +224,31 @@ function draw(board,boardId){
     breaker(mid,BUS_Y,bc.breakerId,null,true);
   }
 
-  const incomers=[
-    ...board.incomers,
-    ...(board.dgIncomers||[]),
-    ...(board.emergencyIncomers||[])
-  ];
+  const incomers=[...board.incomers];
 
   const spacing=W/(incomers.length+1);
 
   incomers.forEach((inc,i)=>{
     const x=spacing*(i+1);
 
-    transformer(
-      x,
-      120,
-      inc.source,
-      "Transformer-"+inc.transformer
-    );
-
+    transformer(x,120,inc.source,"Transformer-"+inc.transformer);
     line(x,140,x,BUS_Y-30,"power-line");
 
     const side=(i===0)?"left":"right";
     breaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // 🔥 OUTGOINGS WITH ALTERNATING CAPTION
   let maxPos=0;
-  [...(board.incomers||[]),...(board.outgoings||[]),
-   ...(board.busCouplers||[])]
-    .forEach(r=>{ if(r.position>maxPos) maxPos=r.position; });
+  [...(board.outgoings||[])].forEach(r=>{
+    if(r.position>maxPos) maxPos=r.position;
+  });
 
   const leftMargin=120;
   const rightMargin=W-120;
   const usableWidth=rightMargin-leftMargin;
 
   function posToX(pos){
-    if(!maxPos) return mid;
-    return leftMargin+
-      (usableWidth*(pos-1)/(maxPos-1));
+    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
   }
 
   (board.outgoings||[]).forEach((o,index)=>{
@@ -296,11 +258,13 @@ function draw(board,boardId){
     breaker(x,BUS_Y+66,null);
     arrowDown(x,BUS_Y+82);
 
-    // Alternate caption
+    const clickUrl=
+    "https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
+
     if(index % 2 === 0){
-      text(x,BUS_Y+150,o.breakerId);
+      text(x,BUS_Y+150,o.breakerId,"middle","label",clickUrl);
     }else{
-      text(x,BUS_Y+195,o.breakerId);
+      text(x,BUS_Y+195,o.breakerId,"middle","label",clickUrl);
     }
   });
 }
