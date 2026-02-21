@@ -17,13 +17,11 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-weight:700;
 }
 
-/* Scrollable Panel Area */
 #boardWrapper{
   overflow:auto;
   padding:20px;
 }
 
-/* Dynamic Width Container */
 #boardContainer{
   display:flex;
   align-items:flex-start;
@@ -31,7 +29,35 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   min-height:500px;
 }
 
-/* Section Style */
+/* ================= BUSBAR ================= */
+
+.busbar{
+  position:absolute;
+  top:65px;
+  height:8px;
+  background:#999;
+  z-index:0;
+}
+
+.bus-live{
+  background:#00cc44;
+  animation:flow 1s linear infinite;
+  background-image: repeating-linear-gradient(
+    90deg,
+    #00cc44,
+    #00cc44 15px,
+    #33ff77 15px,
+    #33ff77 30px
+  );
+}
+
+@keyframes flow{
+  from{background-position:0 0;}
+  to{background-position:40px 0;}
+}
+
+/* ================= SECTIONS ================= */
+
 .section{
   background:white;
   border-radius:6px;
@@ -51,25 +77,31 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-size:13px;
 }
 
-/* Busbar */
-.busbar{
-  position:absolute;
-  top:70px;
-  height:6px;
-  background:#000;
-  z-index:0;
-}
+/* ================= CELLS ================= */
 
-/* Device Cell */
 .cell{
-  border:1px solid #333;
+  border:2px solid #333;
   padding:6px;
   margin:5px;
   font-size:11px;
   border-radius:4px;
   cursor:pointer;
-  z-index:2;
-  position:relative;
+  min-height:60px;        /* 🔹 Uniform height */
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+}
+
+/* STATUS COLORS */
+.status-on{
+  border-color:#00aa00;
+  background:#eaffea;
+}
+
+.status-off{
+  border-color:#cc0000;
+  background:#ffeaea;
 }
 
 .incomer{background:#d9f2d9}
@@ -77,13 +109,13 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 .coupler{background:#fff3b0}
 .spare{background:#eee}
 
-/* Bus Coupler Visual Bridge */
+/* BUS COUPLER BRIDGE */
 .coupler-bridge{
   position:absolute;
   width:6px;
   background:red;
-  top:70px;
-  height:60px;
+  top:65px;
+  height:70px;
   z-index:1;
 }
 </style>
@@ -126,16 +158,24 @@ async function load(){
   const sections=Object.keys(board.sections)
     .sort((a,b)=>Number(a)-Number(b));
 
-  /* ================= DYNAMIC WIDTH ================= */
   const sectionWidth=150;
-  container.style.width = (sections.length*sectionWidth)+"px";
+  container.style.width=(sections.length*sectionWidth)+"px";
 
-  /* ================= MAIN BUS BAR ================= */
+  /* ================= BUSBAR ================= */
   const bus=document.createElement("div");
   bus.className="busbar";
   bus.style.left="0px";
   bus.style.width=(sections.length*sectionWidth-10)+"px";
   container.appendChild(bus);
+
+  let busLive=false;
+
+  /* ================= FIND MAX HEIGHT ================= */
+  let maxDevices=0;
+  sections.forEach(sec=>{
+    const count=board.sections[sec].length;
+    if(count>maxDevices) maxDevices=count;
+  });
 
   sections.forEach((sec,index)=>{
 
@@ -155,6 +195,15 @@ async function load(){
       const cell=document.createElement("div");
       cell.className="cell";
 
+      /* STATUS COLOR */
+      if(d.status && d.status.toUpperCase()==="ON"){
+        cell.classList.add("status-on");
+        if(d.feederType==="INCOMER")
+          busLive=true;
+      }else{
+        cell.classList.add("status-off");
+      }
+
       if(d.feederType==="INCOMER")
         cell.classList.add("incomer");
 
@@ -164,7 +213,6 @@ async function load(){
       else if(d.feederType==="BUS_COUPLER"){
         cell.classList.add("coupler");
 
-        /* 🔹 BUS COUPLER BRIDGE VISUAL */
         const bridge=document.createElement("div");
         bridge.className="coupler-bridge";
         bridge.style.left=(index*sectionWidth + 72)+"px";
@@ -190,9 +238,22 @@ async function load(){
       secDiv.appendChild(cell);
     });
 
+    /* 🔹 ADD EMPTY CELLS FOR UNIFORM HEIGHT */
+    const missing = maxDevices - devices.length;
+    for(let i=0;i<missing;i++){
+      const empty=document.createElement("div");
+      empty.className="cell spare";
+      empty.innerHTML="&nbsp;";
+      secDiv.appendChild(empty);
+    }
+
     container.appendChild(secDiv);
   });
 
+  /* 🔹 BUS LIVE ANIMATION */
+  if(busLive){
+    bus.classList.add("bus-live");
+  }
 }
 
 load();
