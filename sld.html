@@ -220,8 +220,7 @@ async function loadSLD(){
       return;
     }
 
-    boardInfoEl.innerText=
-      "Incomers: "+board.topology.totalIncomers;
+    boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
 
     draw(board,boardId);
 
@@ -245,13 +244,11 @@ function draw(board,boardId){
   line(100,BUS_Y,mid-GAP/2,BUS_Y,"bus");
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y,"bus");
 
-  // BUS COUPLER
   if(board.busCouplers?.length){
     const bc=board.busCouplers[0];
     breaker(mid,BUS_Y,bc.breakerId,null,true);
   }
 
-  // INCOMERS
   const incomers=[
     ...board.incomers,
     ...(board.dgIncomers||[]),
@@ -276,7 +273,7 @@ function draw(board,boardId){
     breaker(x,BUS_Y-40,inc.breakerId,side,false);
   });
 
-  // OUTGOINGS
+  // 🔥 OUTGOINGS WITH ALTERNATING CAPTION
   let maxPos=0;
   [...(board.incomers||[]),...(board.outgoings||[]),
    ...(board.busCouplers||[])]
@@ -292,14 +289,19 @@ function draw(board,boardId){
       (usableWidth*(pos-1)/(maxPos-1));
   }
 
-  (board.outgoings||[]).forEach(o=>{
+  (board.outgoings||[]).forEach((o,index)=>{
     const x=posToX(o.position);
 
     line(x,BUS_Y+6,x,BUS_Y+46,"bus");
     breaker(x,BUS_Y+66,null);
     arrowDown(x,BUS_Y+82);
 
-    text(x,BUS_Y+170,o.breakerId);
+    // Alternate caption
+    if(index % 2 === 0){
+      text(x,BUS_Y+150,o.breakerId);
+    }else{
+      text(x,BUS_Y+195,o.breakerId);
+    }
   });
 }
 
