@@ -8,15 +8,26 @@
 <style>
 body{font-family:Arial;margin:0;background:#f2f6ff}
 
+/* HEADER */
 .header{
   background:#003f88;
   color:white;
-  padding:12px;
+  padding:10px;
   text-align:center;
+}
+
+.header-title{
   font-size:20px;
   font-weight:700;
 }
 
+.subtitle{
+  font-size:13px;
+  margin-top:3px;
+  font-weight:500;
+}
+
+/* BOARD AREA */
 #boardWrapper{
   overflow:auto;
   padding:20px;
@@ -29,35 +40,16 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   min-height:500px;
 }
 
-/* ================= BUSBAR ================= */
-
+/* BUSBAR (STATIC BLACK) */
 .busbar{
   position:absolute;
   top:65px;
   height:8px;
-  background:#999;
+  background:#000;
   z-index:0;
 }
 
-.bus-live{
-  background:#00cc44;
-  animation:flow 1s linear infinite;
-  background-image: repeating-linear-gradient(
-    90deg,
-    #00cc44,
-    #00cc44 15px,
-    #33ff77 15px,
-    #33ff77 30px
-  );
-}
-
-@keyframes flow{
-  from{background-position:0 0;}
-  to{background-position:40px 0;}
-}
-
-/* ================= SECTIONS ================= */
-
+/* SECTIONS */
 .section{
   background:white;
   border-radius:6px;
@@ -77,8 +69,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-size:13px;
 }
 
-/* ================= CELLS ================= */
-
+/* CELLS */
 .cell{
   border:2px solid #333;
   padding:6px;
@@ -86,7 +77,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-size:11px;
   border-radius:4px;
   cursor:pointer;
-  min-height:60px;        /* 🔹 Uniform height */
+  min-height:60px;
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -123,7 +114,10 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 <body>
 
-<div class="header" id="title">LT MCC PANEL</div>
+<div class="header">
+  <div class="header-title" id="title">Industrial LT MCC Layout</div>
+  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+</div>
 
 <div id="boardWrapper">
   <div id="boardContainer"></div>
@@ -144,7 +138,7 @@ async function load(){
   if(!boardId) return;
 
   document.getElementById("title").innerText =
-  boardId+" - Industrial LT MCC Layout";
+  "Industrial LT MCC Layout - " + boardId;
 
   const res=await fetch(JSON_URL);
   const data=await res.json();
@@ -161,16 +155,13 @@ async function load(){
   const sectionWidth=150;
   container.style.width=(sections.length*sectionWidth)+"px";
 
-  /* ================= BUSBAR ================= */
+  /* STATIC BUSBAR */
   const bus=document.createElement("div");
   bus.className="busbar";
   bus.style.left="0px";
   bus.style.width=(sections.length*sectionWidth-10)+"px";
   container.appendChild(bus);
 
-  let busLive=false;
-
-  /* ================= FIND MAX HEIGHT ================= */
   let maxDevices=0;
   sections.forEach(sec=>{
     const count=board.sections[sec].length;
@@ -195,11 +186,8 @@ async function load(){
       const cell=document.createElement("div");
       cell.className="cell";
 
-      /* STATUS COLOR */
       if(d.status && d.status.toUpperCase()==="ON"){
         cell.classList.add("status-on");
-        if(d.feederType==="INCOMER")
-          busLive=true;
       }else{
         cell.classList.add("status-off");
       }
@@ -238,7 +226,7 @@ async function load(){
       secDiv.appendChild(cell);
     });
 
-    /* 🔹 ADD EMPTY CELLS FOR UNIFORM HEIGHT */
+    /* Equal Height Columns */
     const missing = maxDevices - devices.length;
     for(let i=0;i<missing;i++){
       const empty=document.createElement("div");
@@ -249,11 +237,6 @@ async function load(){
 
     container.appendChild(secDiv);
   });
-
-  /* 🔹 BUS LIVE ANIMATION */
-  if(busLive){
-    bus.classList.add("bus-live");
-  }
 }
 
 load();
