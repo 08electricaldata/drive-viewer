@@ -28,40 +28,39 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   padding:12px;
 }
 
-/* TABLE */
 #columnTable{
   width:100%;
   border-collapse:collapse;
   margin-bottom:15px;
   table-layout:fixed;
 }
-#columnTable th,
-#columnTable td{
+#columnTable th,#columnTable td{
   border:1px solid #000;
   padding:6px;
   text-align:center;
-  font-weight:600;
   font-size:13px;
+  font-weight:600;
 }
 
-/* Color Coding */
 .incomer{background:#d9f2d9}
 .outgoing{background:#d9e8ff}
 .coupler{background:#fff3b0}
 
-/* SLD */
 #wrap{
   overflow:auto;
   border:1px solid #ccc;
   background:#fff;
   height:65vh;
 }
+
 .bus{stroke:#000;stroke-width:4}
-.label{font-size:15px;font-weight:600;text-anchor:middle}
 .board-title{
-  font-size:24px;font-weight:900;
-  fill:#003f88;text-anchor:middle;
+  font-size:24px;
+  font-weight:900;
+  fill:#003f88;
+  text-anchor:middle;
 }
+.label{font-size:15px;font-weight:600;text-anchor:middle}
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
 </style>
 </head>
@@ -79,12 +78,10 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
     <div id="boardInfo" class="info">Loading...</div>
 
-    <!-- TABLE -->
     <table id="columnTable"></table>
 
-    <!-- SLD -->
     <div id="wrap">
-      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
+      <svg id="sldCanvas" viewBox="0 0 1400 600"></svg>
     </div>
 
   </div>
@@ -104,7 +101,9 @@ const boardInfoEl=document.getElementById("boardInfo");
 const titleEl=document.getElementById("title");
 const svg=document.getElementById("sldCanvas");
 
-/* ================= TABLE ================= */
+function clearSVG(){svg.innerHTML=""}
+
+/* ================= SAFE TABLE ================= */
 
 function buildColumnTable(board){
 
@@ -113,19 +112,18 @@ function buildColumnTable(board){
   const allDevices=[
     ...(board.incomers||[]),
     ...(board.outgoings||[]),
-    ...(board.busCouplers||[]),
-    ...(board.dgIncomers||[]),
-    ...(board.emergencyIncomers||[])
+    ...(board.busCouplers||[])
   ];
 
   if(!allDevices.length) return;
 
   let maxPos=0;
   allDevices.forEach(d=>{
-    if(d.position>maxPos) maxPos=d.position;
+    if(d.position && d.position>maxPos)
+      maxPos=d.position;
   });
 
-  // 🔹 HEADER ROW (Column Numbers)
+  // Column numbers
   const headerRow=document.createElement("tr");
   for(let i=1;i<=maxPos;i++){
     const th=document.createElement("th");
@@ -134,9 +132,9 @@ function buildColumnTable(board){
   }
   columnTable.appendChild(headerRow);
 
-  const row1=document.createElement("tr"); // FEEDER_TYPE
-  const row2=document.createElement("tr"); // breakerId
-  const row3=document.createElement("tr"); // breakerType
+  const row1=document.createElement("tr");
+  const row2=document.createElement("tr");
+  const row3=document.createElement("tr");
 
   for(let i=1;i<=maxPos;i++){
 
@@ -148,23 +146,25 @@ function buildColumnTable(board){
 
     if(device){
 
-      // Row Mapping
-      td1.innerText=device.feederType || "";
+      // SAFE feederType detection
+      const type=device.feederType || device.type || "";
+
+      td1.innerText=type;
       td2.innerText=device.breakerId || "";
       td3.innerText=device.breakerType || "";
 
-      // Color Logic
       let cls="";
-      if(["INCOMER","LINE_PT","BUS_PT"].includes(device.feederType))
+
+      if(["INCOMER","LINE_PT","BUS_PT"].includes(type))
         cls="incomer";
-      else if(device.feederType==="OUTGOING")
+      else if(type==="OUTGOING")
         cls="outgoing";
-      else if(device.feederType==="BUS_COUPLER")
+      else if(type==="BUS_COUPLER")
         cls="coupler";
 
-      td1.classList.add(cls);
-      td2.classList.add(cls);
-      td3.classList.add(cls);
+      td1.className=cls;
+      td2.className=cls;
+      td3.className=cls;
     }
 
     row1.appendChild(td1);
@@ -177,30 +177,41 @@ function buildColumnTable(board){
   columnTable.appendChild(row3);
 }
 
-/* ================= SIMPLE SLD ================= */
+/* ================= SIMPLE SAFE SLD ================= */
 
-function clearSVG(){svg.innerHTML=""}
+function draw(board,boardId){
 
-function line(x1,y1,x2,y2){
-  const e=document.createElementNS("http://www.w3.org/2000/svg","line");
-  e.setAttribute("x1",x1);
-  e.setAttribute("y1",y1);
-  e.setAttribute("x2",x2);
-  e.setAttribute("y2",y2);
-  e.setAttribute("class","bus");
-  svg.appendChild(e);
-}
-
-function draw(board){
   clearSVG();
-  line(100,280,1300,280);
+
+  const W=1400;
+  const BUS_Y=300;
+
+  // Board Title
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",700);
+  t.setAttribute("y",40);
+  t.setAttribute("class","board-title");
+  t.textContent=boardId;
+  svg.appendChild(t);
+
+  // Busbar
+  const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+  line.setAttribute("x1",100);
+  line.setAttribute("y1",BUS_Y);
+  line.setAttribute("x2",1300);
+  line.setAttribute("y2",BUS_Y);
+  line.setAttribute("class","bus");
+  svg.appendChild(line);
 }
 
 /* ================= LOAD ================= */
 
 async function loadSLD(){
+
   try{
+
     const boardId=getParam("id");
+
     if(!boardId){
       boardInfoEl.innerText="❌ Board id missing";
       return;
@@ -220,7 +231,7 @@ async function loadSLD(){
     boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
 
     buildColumnTable(board);
-    draw(board);
+    draw(board,boardId);
 
   }catch(e){
     console.error(e);
