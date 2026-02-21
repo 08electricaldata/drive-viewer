@@ -110,7 +110,6 @@ function text(x,y,str,anchor="middle",cls="label"){
   svg.appendChild(t);
 }
 
-// ⭐ SAFE WRAP (NO WHITE SCREEN EVER)
 function wrappedText(x,y,str,maxChars=14){
   str=String(str||"");
   const words=str.split(" ");
@@ -185,7 +184,8 @@ function breaker(x,y,label,side=null,isCoupler=false){
 
   text(x,y+5,"CB","middle","cbtext");
 
-  if(isCoupler){
+  // ⭐ FIX: bus coupler caption from JSON
+  if(isCoupler && label){
     text(x,y-24,label);
   }else if(side==="left"){
     text(x-150,y+5,label,"end");
@@ -240,9 +240,10 @@ function draw(board,boardId){
   line(100,BUS_Y,mid-GAP/2,BUS_Y,"bus");
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y,"bus");
 
-  // COUPLER
+  // ⭐ BUS COUPLER — NOW FROM JSON
   if(board.busCouplers?.length){
-    breaker(mid,BUS_Y,"BUS COUPLER",null,true);
+    const bc = board.busCouplers[0];
+    breaker(mid,BUS_Y,bc.breakerId,null,true);
   }
 
   // INCOMERS
@@ -282,7 +283,6 @@ function draw(board,boardId){
     line(x,BUS_Y+6,x,BUS_Y+46,"bus");
     breaker(x,BUS_Y+66,null);
     arrowDown(x,BUS_Y+82);
-
     wrappedText(x,BUS_Y+170,o.breakerId,16);
   });
 }
