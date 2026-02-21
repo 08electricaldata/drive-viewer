@@ -8,7 +8,6 @@
 <style>
 body{font-family:Arial;margin:0;background:#f2f6ff}
 
-/* HEADER */
 .header-bar{
   position:sticky;top:0;z-index:1000;
   background:#003f88;color:#fff;
@@ -31,7 +30,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 #wrap{
   overflow:auto;border:1px solid #ccc;
-  background:#fff;height:70vh;
+  background:#fff;height:65vh;
 }
 
 #columnTable{
@@ -48,15 +47,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 }
 
 .bus{stroke:#000;stroke-width:4}
-.power-line{
-  stroke:#00cc44;stroke-width:4;
-  stroke-dasharray:10 6;
-  animation:flow 1s linear infinite;
-}
-@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
-
 .label{font-size:16px;font-weight:600;text-anchor:middle}
-.cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
 .board-title{
   font-size:24px;font-weight:900;
   fill:#003f88;text-anchor:middle;
@@ -78,7 +69,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
     <div id="boardInfo" class="info">Loading...</div>
 
-    <!-- 🔥 NEW TABLE -->
+    <!-- 🔥 3 ROW TABLE -->
     <table id="columnTable"></table>
 
     <div id="wrap">
@@ -104,7 +95,8 @@ const columnTable=document.getElementById("columnTable");
 
 function clearSVG(){svg.innerHTML=""}
 
-// ---------- TABLE CREATOR ----------
+/* ================= TABLE BUILDER ================= */
+
 function buildColumnTable(board){
 
   columnTable.innerHTML="";
@@ -117,11 +109,12 @@ function buildColumnTable(board){
 
   if(!allDevices.length) return;
 
-  // find max position from column B
+  // find max position (Column B logic)
   let maxPos=Math.max(...allDevices.map(d=>d.position||0));
 
-  const row1=document.createElement("tr");
-  const row2=document.createElement("tr");
+  const row1=document.createElement("tr"); // Column C
+  const row2=document.createElement("tr"); // Column D
+  const row3=document.createElement("tr"); // Column E
 
   for(let i=1;i<=maxPos;i++){
 
@@ -129,41 +122,41 @@ function buildColumnTable(board){
 
     const td1=document.createElement("td");
     const td2=document.createElement("td");
+    const td3=document.createElement("td");
 
     if(device){
-      td1.innerText=device.source || device.breakerId || "";
+      // Row 1 → Column C equivalent
+      td1.innerText=device.source || "";
+
+      // Row 2 → Column D equivalent
       td2.innerText=device.breakerId || "";
+
+      // Row 3 → Column E equivalent
+      td3.innerText=device.breakerType || "";
     }
 
     row1.appendChild(td1);
     row2.appendChild(td2);
+    row3.appendChild(td3);
   }
 
   columnTable.appendChild(row1);
   columnTable.appendChild(row2);
+  columnTable.appendChild(row3);
 }
 
-// ---------- SLD PRIMITIVES ----------
-function line(x1,y1,x2,y2,cls="bus"){
+/* ================= SIMPLE SLD (UNCHANGED) ================= */
+
+function line(x1,y1,x2,y2){
   const e=document.createElementNS("http://www.w3.org/2000/svg","line");
   e.setAttribute("x1",x1);
   e.setAttribute("y1",y1);
   e.setAttribute("x2",x2);
   e.setAttribute("y2",y2);
-  e.setAttribute("class",cls);
+  e.setAttribute("class","bus");
   svg.appendChild(e);
 }
 
-function text(x,y,str){
-  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-  t.setAttribute("x",x);
-  t.setAttribute("y",y);
-  t.setAttribute("class","label");
-  t.textContent=str;
-  svg.appendChild(t);
-}
-
-// ---------- LOAD ----------
 async function loadSLD(){
   try{
     const boardId=getParam("id");
@@ -185,25 +178,16 @@ async function loadSLD(){
 
     boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
 
-    // 🔥 BUILD TABLE
+    // 🔥 BUILD 3 ROW TABLE
     buildColumnTable(board);
 
-    draw(board);
+    clearSVG();
+    line(100,280,1300,280);
 
   }catch(e){
     console.error(e);
     boardInfoEl.innerText="❌ Drawing error";
   }
-}
-
-// ---------- DRAW (UNCHANGED SIMPLE VERSION) ----------
-function draw(board){
-  clearSVG();
-
-  const W=1400;
-  const BUS_Y=280;
-
-  line(100,BUS_Y,W-100,BUS_Y,"bus");
 }
 
 loadSLD();
