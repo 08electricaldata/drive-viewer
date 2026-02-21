@@ -40,15 +40,6 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   min-height:500px;
 }
 
-/* BUSBAR (STATIC BLACK) */
-.busbar{
-  position:absolute;
-  top:65px;
-  height:8px;
-  background:#000;
-  z-index:0;
-}
-
 /* SECTIONS */
 .section{
   background:white;
@@ -100,13 +91,13 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 .coupler{background:#fff3b0}
 .spare{background:#eee}
 
-/* BUS COUPLER BRIDGE */
+/* BUS COUPLER BRIDGE (kept if needed visually) */
 .coupler-bridge{
   position:absolute;
   width:6px;
   background:red;
-  top:65px;
-  height:70px;
+  top:50px;
+  height:60px;
   z-index:1;
 }
 </style>
@@ -116,7 +107,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 <div class="header">
   <div class="header-title" id="title">Industrial LT MCC Layout</div>
-  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+  <div class="subtitle">
+    Designed and Maintained by Rakesh Chandra Sethy
+  </div>
 </div>
 
 <div id="boardWrapper">
@@ -155,13 +148,7 @@ async function load(){
   const sectionWidth=150;
   container.style.width=(sections.length*sectionWidth)+"px";
 
-  /* STATIC BUSBAR */
-  const bus=document.createElement("div");
-  bus.className="busbar";
-  bus.style.left="0px";
-  bus.style.width=(sections.length*sectionWidth-10)+"px";
-  container.appendChild(bus);
-
+  /* Find max height for equal columns */
   let maxDevices=0;
   sections.forEach(sec=>{
     const count=board.sections[sec].length;
