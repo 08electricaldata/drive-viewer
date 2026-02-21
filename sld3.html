@@ -1,358 +1,202 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>HT Board Professional SLD</title>
+<title>Industrial LT MCC Layout</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  .subtitle{
-  font-size:14px;
-  font-weight:600;
-  color:#cce0ff;
-  text-align:center;
-  margin-top:2px;
-}
 body{font-family:Arial;margin:0;background:#f2f6ff}
 
-/* HEADER */
-.header-bar{
-  position:sticky;top:0;z-index:1000;
-  background:#003f88;color:#fff;
-  display:flex;align-items:center;gap:10px;
+.header{
+  background:#003f88;
+  color:white;
   padding:12px;
-}
-.header-bar button{
-  background:#fff;color:#003f88;border:none;
-  border-radius:6px;padding:8px 12px;
-  font-size:16px;cursor:pointer;
-}
-.header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
-
-.container{padding:12px}
-.card{
-  background:#fff;border-radius:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-  padding:12px;
-}
-
-/* ===== TABLE ===== */
-#columnTable{
-  width:100%;
-  border-collapse:collapse;
-  margin-bottom:15px;
-  table-layout:fixed;
-}
-#columnTable th,#columnTable td{
-  border:1px solid #000;
-  padding:6px;
   text-align:center;
+  font-size:20px;
+  font-weight:700;
+}
+
+/* Scrollable Panel Area */
+#boardWrapper{
+  overflow:auto;
+  padding:20px;
+}
+
+/* Dynamic Width Container */
+#boardContainer{
+  display:flex;
+  align-items:flex-start;
+  position:relative;
+  min-height:500px;
+}
+
+/* Section Style */
+.section{
+  background:white;
+  border-radius:6px;
+  box-shadow:0 3px 8px rgba(0,0,0,.2);
+  margin-right:8px;
+  display:flex;
+  flex-direction:column;
+  width:140px;
+}
+
+.section-title{
+  background:#003f88;
+  color:white;
+  text-align:center;
+  font-weight:bold;
+  padding:6px;
   font-size:13px;
-  font-weight:600;
+}
+
+/* Busbar */
+.busbar{
+  position:absolute;
+  top:70px;
+  height:6px;
+  background:#000;
+  z-index:0;
+}
+
+/* Device Cell */
+.cell{
+  border:1px solid #333;
+  padding:6px;
+  margin:5px;
+  font-size:11px;
+  border-radius:4px;
+  cursor:pointer;
+  z-index:2;
+  position:relative;
 }
 
 .incomer{background:#d9f2d9}
 .outgoing{background:#d9e8ff}
 .coupler{background:#fff3b0}
+.spare{background:#eee}
 
-/* ===== SLD ===== */
-#wrap{
-  overflow:auto;
-  border:1px solid #ccc;
-  background:#fff;
-  height:70vh;
+/* Bus Coupler Visual Bridge */
+.coupler-bridge{
+  position:absolute;
+  width:6px;
+  background:red;
+  top:70px;
+  height:60px;
+  z-index:1;
 }
-.bus{stroke:#000;stroke-width:4}
-.power-line{
-  stroke:#00cc44;stroke-width:4;
-  stroke-dasharray:10 6;
-  animation:flow 1s linear infinite;
-}
-@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
-
-.label{font-size:16px;font-weight:600;text-anchor:middle}
-.cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
-.board-title{
-  font-size:24px;font-weight:900;
-  fill:#003f88;text-anchor:middle;
-}
-.info{font-weight:bold;color:#003f88;margin-bottom:8px}
 </style>
 </head>
 
 <body>
 
-<div class="header-bar">
-  <button onclick="goHome()">🏠 Home</button>
-  <button onclick="goBack()">⬅ Back</button>
-  <div style="flex:1;text-align:center;">
-  <div class="header-title" id="title">HT BOARD SLD</div>
-  <div class="subtitle">Professional SLD - Designed and Maintained by Rakesh Chandra Sethy</div>
-</div>
-</div>
+<div class="header" id="title">LT MCC PANEL</div>
 
-<div class="container">
-  <div class="card">
-
-    <div class="info" id="boardInfo">Loading...</div>
-
-    <!-- TABLE -->
-    <table id="columnTable"></table>
-
-    <!-- SLD -->
-    <div id="wrap">
-      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
-    </div>
-
-  </div>
+<div id="boardWrapper">
+  <div id="boardContainer"></div>
 </div>
 
 <script>
 
 const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
 
-function goHome(){location.href="https://08electricaldata.github.io/"}
-function goBack(){history.back()}
-function getParam(n){return new URL(location.href).searchParams.get(n)}
-
-const columnTable=document.getElementById("columnTable");
-const boardInfoEl=document.getElementById("boardInfo");
-const titleEl=document.getElementById("title");
-const svg=document.getElementById("sldCanvas");
-
-function clearSVG(){svg.innerHTML=""}
-
-/* ================= TABLE ================= */
-
-function buildColumnTable(board){
-
-  columnTable.innerHTML="";
-  const allDevices=[];
-
-  (board.incomers||[]).forEach(d=>{d._type="INCOMER";allDevices.push(d);});
-  (board.outgoings||[]).forEach(d=>{d._type="OUTGOING";allDevices.push(d);});
-  (board.busCouplers||[]).forEach(d=>{d._type="BUS_COUPLER";allDevices.push(d);});
-  (board.busPT||[]).forEach(d=>{d._type="BUS_PT";allDevices.push(d);});
-  (board.linePT||[]).forEach(d=>{d._type="LINE_PT";allDevices.push(d);});
-  (board.dgIncomers||[]).forEach(d=>{d._type="INCOMER";allDevices.push(d);});
-  (board.emergencyIncomers||[]).forEach(d=>{d._type="INCOMER";allDevices.push(d);});
-
-  if(!allDevices.length) return;
-
-  let maxPos=0;
-  allDevices.forEach(d=>{if(d.position>maxPos) maxPos=d.position;});
-
-  const headerRow=document.createElement("tr");
-  for(let i=1;i<=maxPos;i++){
-    const th=document.createElement("th");
-    th.innerText=i;
-    headerRow.appendChild(th);
-  }
-  columnTable.appendChild(headerRow);
-
-  const row1=document.createElement("tr");
-  const row2=document.createElement("tr");
-  const row3=document.createElement("tr");
-
-  for(let i=1;i<=maxPos;i++){
-    const device=allDevices.find(d=>d.position===i);
-    const td1=document.createElement("td");
-    const td2=document.createElement("td");
-    const td3=document.createElement("td");
-
-    if(device){
-      const type=device._type;
-      td1.innerText=type;
-      td2.innerText=device.breakerId||"";
-      td3.innerText=device.breakerType||"";
-
-      let cls="";
-      if(["INCOMER","LINE_PT","BUS_PT"].includes(type)) cls="incomer";
-      else if(type==="OUTGOING") cls="outgoing";
-      else if(type==="BUS_COUPLER") cls="coupler";
-
-      td1.className=cls;
-      td2.className=cls;
-      td3.className=cls;
-    }
-
-    row1.appendChild(td1);
-    row2.appendChild(td2);
-    row3.appendChild(td3);
-  }
-
-  columnTable.appendChild(row1);
-  columnTable.appendChild(row2);
-  columnTable.appendChild(row3);
+function getParam(n){
+  return new URL(location.href).searchParams.get(n);
 }
 
-/* ================= SLD ================= */
+async function load(){
 
-function line(x1,y1,x2,y2,cls="bus"){
-  const e=document.createElementNS("http://www.w3.org/2000/svg","line");
-  e.setAttribute("x1",x1);
-  e.setAttribute("y1",y1);
-  e.setAttribute("x2",x2);
-  e.setAttribute("y2",y2);
-  e.setAttribute("class",cls);
-  svg.appendChild(e);
-}
+  const boardId=getParam("id");
+  if(!boardId) return;
 
-function text(x,y,str,anchor="middle",cls="label",clickUrl=null){
-  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-  t.setAttribute("x",x);
-  t.setAttribute("y",y);
-  t.setAttribute("text-anchor",anchor);
-  t.setAttribute("class",cls);
-  t.textContent=str;
-  if(clickUrl){
-    t.style.cursor="pointer";
-    t.addEventListener("click",()=>location.href=clickUrl);
-  }
-  svg.appendChild(t);
-}
+  document.getElementById("title").innerText =
+  boardId+" - Industrial LT MCC Layout";
 
-function transformer(x,y,name,transformerNo){
-  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-  g.style.cursor="pointer";
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
 
-  const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c1.setAttribute("cx",x-12);c1.setAttribute("cy",y);
-  c1.setAttribute("r",10);c1.setAttribute("stroke","#000");c1.setAttribute("fill","none");
+  const board=data.boards[boardId];
+  if(!board) return;
 
-  const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c2.setAttribute("cx",x+12);c2.setAttribute("cy",y);
-  c2.setAttribute("r",10);c2.setAttribute("stroke","#000");c2.setAttribute("fill","none");
+  const container=document.getElementById("boardContainer");
+  container.innerHTML="";
 
-  const lbl=document.createElementNS("http://www.w3.org/2000/svg","text");
-  lbl.setAttribute("x",x);lbl.setAttribute("y",y-18);
-  lbl.setAttribute("class","label");
-  lbl.textContent=name;
+  const sections=Object.keys(board.sections)
+    .sort((a,b)=>Number(a)-Number(b));
 
-  g.appendChild(c1);g.appendChild(c2);g.appendChild(lbl);
+  /* ================= DYNAMIC WIDTH ================= */
+  const sectionWidth=150;
+  container.style.width = (sections.length*sectionWidth)+"px";
 
-  g.addEventListener("click",()=>{
-    location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+transformerNo;
+  /* ================= MAIN BUS BAR ================= */
+  const bus=document.createElement("div");
+  bus.className="busbar";
+  bus.style.left="0px";
+  bus.style.width=(sections.length*sectionWidth-10)+"px";
+  container.appendChild(bus);
+
+  sections.forEach((sec,index)=>{
+
+    const secDiv=document.createElement("div");
+    secDiv.className="section";
+
+    const title=document.createElement("div");
+    title.className="section-title";
+    title.innerText="SECTION "+sec;
+    secDiv.appendChild(title);
+
+    const devices=board.sections[sec]
+      .sort((a,b)=>a.level.localeCompare(b.level));
+
+    devices.forEach(d=>{
+
+      const cell=document.createElement("div");
+      cell.className="cell";
+
+      if(d.feederType==="INCOMER")
+        cell.classList.add("incomer");
+
+      else if(d.feederType==="OUTGOING")
+        cell.classList.add("outgoing");
+
+      else if(d.feederType==="BUS_COUPLER"){
+        cell.classList.add("coupler");
+
+        /* 🔹 BUS COUPLER BRIDGE VISUAL */
+        const bridge=document.createElement("div");
+        bridge.className="coupler-bridge";
+        bridge.style.left=(index*sectionWidth + 72)+"px";
+        container.appendChild(bridge);
+      }
+
+      else
+        cell.classList.add("spare");
+
+      cell.innerHTML=
+      "<b>"+d.position+"</b><br>"+
+      (d.driveid || "")+"<br>"+
+      (d.DriveType || "");
+
+      if(d.driveid){
+        cell.onclick=function(){
+          location.href=
+          "https://08electricaldata.github.io/drive-viewer/index.html?id="+
+          d.driveid;
+        };
+      }
+
+      secDiv.appendChild(cell);
+    });
+
+    container.appendChild(secDiv);
   });
 
-  svg.appendChild(g);
 }
 
-function breaker(x,y,label,side=null,isCoupler=false){
-  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
-  r.setAttribute("x",x-18);
-  r.setAttribute("y",y-12);
-  r.setAttribute("width",36);
-  r.setAttribute("height",24);
-  r.setAttribute("fill","#fff");
-  r.setAttribute("stroke","#000");
-  r.setAttribute("stroke-width","2");
-  svg.appendChild(r);
-
-  text(x,y+5,"CB","middle","cbtext");
-
-  if(!label) return;
-
-  const clickUrl="https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-"+label;
-
-  if(isCoupler)
-    text(x,y-24,label,"middle","label",clickUrl);
-  else if(side==="left")
-    text(x-150,y+5,label,"end","label",clickUrl);
-  else if(side==="right")
-    text(x+150,y+5,label,"start","label",clickUrl);
-}
-
-function arrowDown(x,y){
-  line(x,y,x,y+24,"bus");
-  const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
-  p.setAttribute("points",`${x-6},${y+24} ${x+6},${y+24} ${x},${y+36}`);
-  p.setAttribute("fill","#000");
-  svg.appendChild(p);
-}
-
-function draw(board){
-
-  clearSVG();
-
-  const W=1400;
-  const BUS_Y=280;
-  const GAP=120;
-  const mid=W/2;
-
-  text(700,40,getParam("id"),"middle","board-title");
-
-  line(100,BUS_Y,mid-GAP/2,BUS_Y);
-  line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
-
-  if(board.busCouplers?.length){
-    const bc=board.busCouplers[0];
-    breaker(mid,BUS_Y,bc.breakerId,null,true);
-  }
-
-  const incomers=[...(board.incomers||[])];
-  const spacing=W/(incomers.length+1);
-
-  incomers.forEach((inc,i)=>{
-    const x=spacing*(i+1);
-    transformer(x,120,inc.source,inc.transformer);
-    line(x,140,x,BUS_Y-30,"power-line");
-    breaker(x,BUS_Y-40,inc.breakerId,i===0?"left":"right");
-  });
-
-  let maxPos=0;
-  [...(board.outgoings||[])].forEach(r=>{if(r.position>maxPos) maxPos=r.position;});
-  const leftMargin=120;
-  const rightMargin=W-120;
-  const usableWidth=rightMargin-leftMargin;
-
-  function posToX(pos){
-    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
-  }
-
-  (board.outgoings||[]).forEach((o,index)=>{
-    const x=posToX(o.position);
-    line(x,BUS_Y+6,x,BUS_Y+46);
-    breaker(x,BUS_Y+66,null);
-    arrowDown(x,BUS_Y+82);
-
-    const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
-
-    if(index%2===0)
-      text(x,BUS_Y+150,o.breakerId,"middle","label",clickUrl);
-    else
-      text(x,BUS_Y+195,o.breakerId,"middle","label",clickUrl);
-  });
-}
-
-/* ================= LOAD ================= */
-
-async function loadSLD(){
-  try{
-    const boardId=getParam("id");
-    if(!boardId){boardInfoEl.innerText="❌ Board id missing";return;}
-    titleEl.innerText=boardId+" — Professional SLD";
-
-    const res=await fetch(JSON_URL);
-    const data=await res.json();
-    const board=data.boards?.[boardId];
-    if(!board){boardInfoEl.innerText="❌ Board not found";return;}
-
-    boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
-
-    buildColumnTable(board);
-    draw(board);
-
-  }catch(e){
-    console.error(e);
-    boardInfoEl.innerText="❌ Drawing error";
-  }
-}
-
-loadSLD();
+load();
 
 </script>
-
 </body>
 </html>
