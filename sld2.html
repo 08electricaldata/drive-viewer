@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HT Board Professional SLD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f6ff}
+
+.header-bar{
+  position:sticky;top:0;z-index:1000;
+  background:#003f88;color:#fff;
+  display:flex;align-items:center;gap:10px;
+  padding:12px;
+}
+.header-bar button{
+  background:#fff;color:#003f88;border:none;
+  border-radius:6px;padding:8px 12px;
+  font-size:16px;cursor:pointer;
+}
+.header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
+
+.container{padding:12px}
+.card{
+  background:#fff;border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  padding:12px;
+}
+
+/* ===== TABLE ===== */
+#columnTable{
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:15px;
+  table-layout:fixed;
+}
+#columnTable th,#columnTable td{
+  border:1px solid #000;
+  padding:6px;
+  text-align:center;
+  font-size:13px;
+  font-weight:600;
+}
+
+/* Color Coding */
+.incomer{background:#d9f2d9}
+.outgoing{background:#d9e8ff}
+.coupler{background:#fff3b0}
+
+/* ===== SLD ===== */
+#wrap{
+  overflow:auto;
+  border:1px solid #ccc;
+  background:#fff;
+  height:65vh;
+}
+.bus{stroke:#000;stroke-width:4}
+.board-title{
+  font-size:24px;
+  font-weight:900;
+  fill:#003f88;
+  text-anchor:middle;
+}
+.info{font-weight:bold;color:#003f88;margin-bottom:8px}
+</style>
+</head>
+
+<body>
+
+<div class="header-bar">
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goBack()">⬅ Back</button>
+  <div class="header-title" id="title">HT BOARD SLD</div>
+</div>
+
+<div class="container">
+  <div class="card">
+
+    <div id="boardInfo" class="info">Loading...</div>
+
+    <table id="columnTable"></table>
+
+    <div id="wrap">
+      <svg id="sldCanvas" viewBox="0 0 1400 600"></svg>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+
+function goHome(){location.href="https://08electricaldata.github.io/"}
+function goBack(){history.back()}
+function getParam(n){return new URL(location.href).searchParams.get(n)}
+
+const columnTable=document.getElementById("columnTable");
+const boardInfoEl=document.getElementById("boardInfo");
+const titleEl=document.getElementById("title");
+const svg=document.getElementById("sldCanvas");
+
+function clearSVG(){svg.innerHTML=""}
+
+/* ================= TABLE ================= */
+
+function buildColumnTable(board){
+
+  columnTable.innerHTML="";
+
+  const allDevices=[];
+
+  // Incomers
+  (board.incomers||[]).forEach(d=>{
+    d._type="INCOMER";
+    allDevices.push(d);
+  });
+
+  // Outgoings
+  (board.outgoings||[]).forEach(d=>{
+    d._type="OUTGOING";
+    allDevices.push(d);
+  });
+
+  // Bus Coupler
+  (board.busCouplers||[]).forEach(d=>{
+    d._type="BUS_COUPLER";
+    allDevices.push(d);
+  });
+
+  // Bus PT
+  (board.busPT||[]).forEach(d=>{
+    d._type="BUS_PT";
+    allDevices.push(d);
+  });
+
+  // Line PT
+  (board.linePT||[]).forEach(d=>{
+    d._type="LINE_PT";
+    allDevices.push(d);
+  });
+
+  // Future safety
+  (board.dgIncomers||[]).forEach(d=>{
+    d._type="INCOMER";
+    allDevices.push(d);
+  });
+
+  (board.emergencyIncomers||[]).forEach(d=>{
+    d._type="INCOMER";
+    allDevices.push(d);
+  });
+
+  if(!allDevices.length) return;
+
+  let maxPos=0;
+  allDevices.forEach(d=>{
+    if(d.position>maxPos) maxPos=d.position;
+  });
+
+  // Column numbers
+  const headerRow=document.createElement("tr");
+  for(let i=1;i<=maxPos;i++){
+    const th=document.createElement("th");
+    th.innerText=i;
+    headerRow.appendChild(th);
+  }
+  columnTable.appendChild(headerRow);
+
+  const row1=document.createElement("tr");
+  const row2=document.createElement("tr");
+  const row3=document.createElement("tr");
+
+  for(let i=1;i<=maxPos;i++){
+
+    const device=allDevices.find(d=>d.position===i);
+
+    const td1=document.createElement("td");
+    const td2=document.createElement("td");
+    const td3=document.createElement("td");
+
+    if(device){
+
+      const type=device._type;
+
+      td1.innerText=type;
+      td2.innerText=device.breakerId || "";
+      td3.innerText=device.breakerType || "";
+
+      let cls="";
+
+      if(["INCOMER","LINE_PT","BUS_PT"].includes(type))
+        cls="incomer";
+      else if(type==="OUTGOING")
+        cls="outgoing";
+      else if(type==="BUS_COUPLER")
+        cls="coupler";
+
+      td1.className=cls;
+      td2.className=cls;
+      td3.className=cls;
+    }
+
+    row1.appendChild(td1);
+    row2.appendChild(td2);
+    row3.appendChild(td3);
+  }
+
+  columnTable.appendChild(row1);
+  columnTable.appendChild(row2);
+  columnTable.appendChild(row3);
+}
+
+/* ================= SIMPLE SLD ================= */
+
+function draw(board,boardId){
+
+  clearSVG();
+
+  const W=1400;
+  const BUS_Y=300;
+
+  // Board Title
+  const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",700);
+  t.setAttribute("y",40);
+  t.setAttribute("class","board-title");
+  t.textContent=boardId;
+  svg.appendChild(t);
+
+  // Busbar
+  const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+  line.setAttribute("x1",100);
+  line.setAttribute("y1",BUS_Y);
+  line.setAttribute("x2",1300);
+  line.setAttribute("y2",BUS_Y);
+  line.setAttribute("class","bus");
+  svg.appendChild(line);
+}
+
+/* ================= LOAD ================= */
+
+async function loadSLD(){
+
+  try{
+
+    const boardId=getParam("id");
+
+    if(!boardId){
+      boardInfoEl.innerText="❌ Board id missing";
+      return;
+    }
+
+    titleEl.innerText=boardId+" — Professional SLD";
+
+    const res=await fetch(JSON_URL);
+    const data=await res.json();
+    const board=data.boards?.[boardId];
+
+    if(!board){
+      boardInfoEl.innerText="❌ Board not found";
+      return;
+    }
+
+    boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
+
+    buildColumnTable(board);
+    draw(board,boardId);
+
+  }catch(e){
+    console.error(e);
+    boardInfoEl.innerText="❌ Drawing error";
+  }
+}
+
+loadSLD();
+
+</script>
+</body>
+</html>
