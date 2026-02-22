@@ -48,7 +48,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   margin-right:8px;
   display:flex;
   flex-direction:column;
-  width:140px;
+  width:150px;
 }
 
 .section-title{
@@ -60,7 +60,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-size:13px;
 }
 
-/* CELLS */
+/* BASE CELL */
 .cell{
   border:2px solid #333;
   padding:6px;
@@ -75,23 +75,59 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   text-align:center;
 }
 
+/* BIGGER INCOMER BOX */
+.incomer-box{
+  min-height:95px;
+  font-size:13px;
+  font-weight:bold;
+}
+
+/* BREAKER FONT ENHANCEMENT */
+.breaker-font{
+  font-size:13px;
+  font-weight:bold;
+}
+
 /* STATUS COLORS */
 .status-on{
   border-color:#00aa00;
-  background:#eaffea;
 }
 
 .status-off{
   border-color:#cc0000;
-  background:#ffeaea;
 }
 
-.incomer{background:#d9f2d9}
-.outgoing{background:#d9e8ff}
-.coupler{background:#fff3b0}
-.spare{background:#eee}
+/* DEVICE BASE COLORS */
 
-/* BUS COUPLER BRIDGE (kept if needed visually) */
+.incomer{
+  background:#ffcccc;      /* Red */
+}
+
+.coupler{
+  background:#fff3b0;      /* Yellow */
+}
+
+.outgoing-breaker{
+  background:#ffd699;      /* Orange */
+}
+
+.outgoing-dol{
+  background:#d9e8ff;      /* Blue */
+}
+
+.outgoing-mccb{
+  background:#e6ccff;      /* Purple */
+}
+
+.outgoing-sfu{
+  background:#ccf2ff;      /* Cyan */
+}
+
+.spare{
+  background:#eee;
+}
+
+/* BUS COUPLER BRIDGE */
 .coupler-bridge{
   position:absolute;
   width:6px;
@@ -145,7 +181,7 @@ async function load(){
   const sections=Object.keys(board.sections)
     .sort((a,b)=>Number(a)-Number(b));
 
-  const sectionWidth=150;
+  const sectionWidth=160;
   container.style.width=(sections.length*sectionWidth)+"px";
 
   /* Find max height for equal columns */
@@ -173,34 +209,64 @@ async function load(){
       const cell=document.createElement("div");
       cell.className="cell";
 
+      /* STATUS BORDER */
       if(d.status && d.status.toUpperCase()==="ON"){
         cell.classList.add("status-on");
       }else{
         cell.classList.add("status-off");
       }
 
-      if(d.feederType==="INCOMER")
-        cell.classList.add("incomer");
+      /* DEVICE TYPE COLOR + SIZE LOGIC */
 
-      else if(d.feederType==="OUTGOING")
-        cell.classList.add("outgoing");
+      if(d.feederType === "INCOMER"){
 
-      else if(d.feederType==="BUS_COUPLER"){
-        cell.classList.add("coupler");
+        cell.classList.add("incomer","incomer-box","breaker-font");
+
+      }
+      else if(d.feederType === "BUS_COUPLER"){
+
+        cell.classList.add("coupler","breaker-font");
 
         const bridge=document.createElement("div");
         bridge.className="coupler-bridge";
-        bridge.style.left=(index*sectionWidth + 72)+"px";
+        bridge.style.left=(index*sectionWidth + 78)+"px";
         container.appendChild(bridge);
-      }
 
-      else
+      }
+      else if(d.feederType === "OUTGOING"){
+
+        if(d.breakerType){
+          cell.classList.add("outgoing-breaker","breaker-font");
+        }
+        else{
+          if(d.DriveType === "DOL"){
+            cell.classList.add("outgoing-dol");
+          }
+          else if(d.DriveType === "MCCB"){
+            cell.classList.add("outgoing-mccb");
+          }
+          else if(d.DriveType === "SFU"){
+            cell.classList.add("outgoing-sfu");
+          }
+          else{
+            cell.classList.add("outgoing-dol");
+          }
+        }
+      }
+      else{
         cell.classList.add("spare");
+      }
 
       cell.innerHTML=
       "<b>"+d.position+"</b><br>"+
       (d.driveid || "")+"<br>"+
-      (d.DriveType || "");
+      (
+        (d.feederType==="INCOMER" ||
+         d.feederType==="BUS_COUPLER" ||
+         d.breakerType)
+        ? (d.breakerType || "")
+        : (d.DriveType || "")
+      );
 
       if(d.driveid){
         cell.onclick=function(){
