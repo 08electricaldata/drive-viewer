@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Monthly Job Counts</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+  font-family:Arial,sans-serif;
+  margin:0;
+  background:linear-gradient(135deg,#e6f0ff,#f4f9ff);
+}
+
+/* HEADER */
+.header{
+  background:linear-gradient(135deg,#002b5c,#0052cc);
+  color:white;
+  padding:20px;
+  text-align:center;
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+}
+.header h1{margin:0;font-size:26px}
+
+/* KPI SECTION */
+.kpi-wrapper{
+  display:flex;
+  justify-content:center;
+  gap:15px;
+  flex-wrap:wrap;
+  margin:20px 0;
+}
+.kpi{
+  width:150px;
+  padding:12px;
+  border-radius:14px;
+  text-align:center;
+  background:rgba(0,82,204,.15);
+  box-shadow:0 4px 15px rgba(0,0,0,.2);
+}
+.kpi h3{margin:0;font-size:13px;color:#003f88}
+.kpi .num{font-size:22px;font-weight:bold;margin-top:5px}
+.kpi small{font-size:11px;color:#555}
+
+/* TABLE */
+.table-container{
+  max-width:1200px;
+  margin:0 auto 40px auto;
+  padding:0 15px;
+  overflow-x:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+}
+
+th{
+  background:#003f88;
+  color:white;
+  padding:8px;
+  font-size:13px;
+}
+
+td{
+  padding:6px;
+  text-align:center;
+  border-bottom:1px solid #ddd;
+  font-size:13px;
+}
+
+td:first-child{
+  text-align:left;
+  font-weight:bold;
+}
+
+tr:hover{
+  background:#f2f6ff;
+  cursor:pointer;
+}
+
+.total-col{
+  background:#e6f0ff;
+  font-weight:bold;
+}
+
+/* MODAL */
+#trendModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(6px);
+  z-index:9999;
+  align-items:center;
+  justify-content:center;
+}
+
+.modal-box{
+  background:white;
+  width:90%;
+  max-width:750px;
+  border-radius:18px;
+  padding:25px;
+  position:relative;
+}
+
+.close-btn{
+  position:absolute;
+  top:10px;
+  right:15px;
+  background:red;
+  color:white;
+  border:none;
+  border-radius:50%;
+  width:30px;
+  height:30px;
+  cursor:pointer;
+}
+
+.growth-text{
+  text-align:center;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>Monthly Job Counts</h1>
+</div>
+
+<div class="kpi-wrapper" id="kpiSection"></div>
+
+<div class="table-container">
+  <table id="jobTable"></table>
+</div>
+
+<!-- MODAL -->
+<div id="trendModal">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeTrend()">✕</button>
+    <h3 id="trendTitle" style="text-align:center;color:#003f88"></h3>
+    <div id="growthInfo" class="growth-text"></div>
+    <canvas id="trendChart" height="120"></canvas>
+  </div>
+</div>
+
+<script>
+
+const DASHBOARD_JSON =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/summary.json";
+
+const MONTHLY_JOB_JSON =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthly_job_count.json";
+
+let monthlyData;
+let chartInstance;
+
+/* LOAD KPI */
+async function loadKPI(){
+  const res = await fetch(DASHBOARD_JSON);
+  const data = await res.json();
+  const container = document.getElementById("kpiSection");
+
+  data.metrics.forEach(m=>{
+    const box=document.createElement("div");
+    box.className="kpi";
+    box.innerHTML=
+      "<h3>"+m.key.replace(/_/g," ")+"</h3>"+
+      "<div class='num'>"+m.due+"</div>"+
+      "<small>Installed: "+m.installed+"</small>";
+    container.appendChild(box);
+  });
+}
+
+/* LOAD TABLE */
+async function loadTable(){
+  const res=await fetch(MONTHLY_JOB_JSON);
+  monthlyData=await res.json();
+
+  const headers=monthlyData.headers;
+  const rows=monthlyData.rows;
+
+  let html="<tr>";
+  html+="<th>Job Type</th>";
+
+  for(let i=1;i<headers.length;i++){
+    const label=new Date(headers[i])
+      .toLocaleString('default',{month:'short'});
+    html+="<th>"+label+"</th>";
+  }
+
+  html+="<th>Total</th>";
+  html+="</tr>";
+
+  rows.forEach((r,index)=>{
+
+    let total=0;
+    html+="<tr onclick='openTrend("+index+")'>";
+    html+="<td>"+r[0]+"</td>";
+
+    for(let i=1;i<r.length;i++){
+      total+=Number(r[i]||0);
+      html+="<td>"+(r[i]||0)+"</td>";
+    }
+
+    html+="<td class='total-col'>"+total+"</td>";
+    html+="</tr>";
+  });
+
+  document.getElementById("jobTable").innerHTML=html;
+}
+
+/* TREND MODAL */
+function openTrend(index){
+
+  const headers=monthlyData.headers.slice(1);
+  const row=monthlyData.rows[index];
+
+  const labels=headers.map(h=>
+    new Date(h).toLocaleString('default',{month:'short'})
+  );
+
+  const values=row.slice(1);
+
+  const prev=values[values.length-2]||0;
+  const curr=values[values.length-1]||0;
+
+  let growth="No Change";
+  if(prev>0){
+    growth="Growth: "+(((curr-prev)/prev)*100).toFixed(1)+"%";
+  }
+
+  document.getElementById("trendTitle").innerText=row[0]+" Trend";
+  document.getElementById("growthInfo").innerText=growth;
+  document.getElementById("trendModal").style.display="flex";
+
+  const ctx=document.getElementById("trendChart");
+
+  if(chartInstance){chartInstance.destroy();}
+
+  chartInstance=new Chart(ctx,{
+    data:{
+      labels:labels,
+      datasets:[
+        {
+          type:'bar',
+          data:values,
+          backgroundColor:'rgba(0,82,204,0.4)'
+        },
+        {
+          type:'line',
+          data:values,
+          borderColor:'#003f88',
+          tension:0.4
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true}}
+    }
+  });
+}
+
+function closeTrend(){
+  document.getElementById("trendModal").style.display="none";
+}
+
+loadKPI();
+loadTable();
+
+</script>
+
+</body>
+</html>
