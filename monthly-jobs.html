@@ -81,7 +81,7 @@ body{
       -6px -6px 15px rgba(255,255,255,.8);
   transition:.4s;
   animation:float 4s ease-in-out infinite;
-  cursor:pointer;   /* 🔥 Added */
+  cursor:pointer;
 }
 
 .kpi:hover{
@@ -234,6 +234,15 @@ const MONTHLY_JOB_JSON =
 let monthlyData;
 let chartInstance;
 
+/* 🔥 KPI PAGE MAPPING */
+const KPI_PAGE_MAP = {
+  "overdue_motors_oh": "motoroh.html",
+  "overdue_motors_pm": "motorpm.html",
+  "overdue_modules_pm": "motorpm.html",
+  "overdue_transformers_pm": "trafopm.html",
+  "overdue_breaker_pm": "breakerpm.html"
+};
+
 /* KPI */
 async function loadKPI(){
   const res = await fetch(DASHBOARD_JSON);
@@ -249,11 +258,15 @@ async function loadKPI(){
       "<div class='num'>"+m.due+"</div>"+
       "<small>Installed: "+m.installed+"</small>";
 
-    /* 🔥 CLICK ENABLED */
     box.onclick=function(){
+
       const key = m.key.toLowerCase();
-      window.location.href =
-      "https://08electricaldata.github.io/drive-viewer/" + key + ".html";
+      const page = KPI_PAGE_MAP[key];
+
+      if(page){
+        window.location.href =
+        "https://08electricaldata.github.io/drive-viewer/" + page;
+      }
     };
 
     container.appendChild(box);
@@ -279,7 +292,6 @@ async function loadTable(){
   html+="<th>Total</th></tr>";
 
   rows.forEach((r,index)=>{
-
     let total=0;
     for(let i=1;i<r.length;i++){
       total+=Number(r[i]||0);
