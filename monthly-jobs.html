@@ -81,6 +81,7 @@ body{
       -6px -6px 15px rgba(255,255,255,.8);
   transition:.4s;
   animation:float 4s ease-in-out infinite;
+  cursor:pointer;   /* 🔥 Added */
 }
 
 .kpi:hover{
@@ -242,10 +243,19 @@ async function loadKPI(){
   data.metrics.forEach(m=>{
     const box=document.createElement("div");
     box.className="kpi";
+
     box.innerHTML=
       "<h3>"+m.key.replace(/_/g," ")+"</h3>"+
       "<div class='num'>"+m.due+"</div>"+
       "<small>Installed: "+m.installed+"</small>";
+
+    /* 🔥 CLICK ENABLED */
+    box.onclick=function(){
+      const key = m.key.toLowerCase();
+      window.location.href =
+      "https://08electricaldata.github.io/drive-viewer/" + key + ".html";
+    };
+
     container.appendChild(box);
   });
 }
@@ -275,7 +285,7 @@ async function loadTable(){
       total+=Number(r[i]||0);
     }
 
-    if(total===0) return;  // 🔴 Remove zero-total jobs
+    if(total===0) return;
 
     html+="<tr onclick='openTrend("+index+")'>";
     html+="<td>"+r[0]+"</td>";
