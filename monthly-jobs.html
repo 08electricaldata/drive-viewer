@@ -9,46 +9,108 @@
 
 <style>
 
+/* ===== GLOBAL ===== */
 body{
   font-family:Arial,sans-serif;
   margin:0;
   background:linear-gradient(135deg,#e6f0ff,#f4f9ff);
 }
 
-/* HEADER */
+/* ===== HEADER ===== */
 .header{
   background:linear-gradient(135deg,#002b5c,#0052cc);
   color:white;
-  padding:20px;
+  padding:25px;
   text-align:center;
-  box-shadow:0 4px 20px rgba(0,0,0,.25);
+  box-shadow:0 6px 25px rgba(0,0,0,.3);
 }
-.header h1{margin:0;font-size:26px}
 
-/* KPI SECTION */
-.kpi-wrapper{
+.header h1{
+  margin:0;
+  font-size:28px;
+}
+
+.header p{
+  margin:6px 0 0;
+  font-size:14px;
+  opacity:.9;
+}
+
+/* ===== NAV BUTTONS ===== */
+.nav-buttons{
+  margin-top:15px;
   display:flex;
   justify-content:center;
   gap:15px;
-  flex-wrap:wrap;
-  margin:20px 0;
 }
-.kpi{
-  width:150px;
-  padding:12px;
-  border-radius:14px;
-  text-align:center;
-  background:rgba(0,82,204,.15);
-  box-shadow:0 4px 15px rgba(0,0,0,.2);
-}
-.kpi h3{margin:0;font-size:13px;color:#003f88}
-.kpi .num{font-size:22px;font-weight:bold;margin-top:5px}
-.kpi small{font-size:11px;color:#555}
 
-/* TABLE */
+.nav-buttons button{
+  padding:8px 18px;
+  font-size:14px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  background:white;
+  color:#003f88;
+  font-weight:bold;
+  transition:.3s;
+}
+
+.nav-buttons button:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 15px rgba(0,0,0,.3);
+}
+
+/* ===== KPI ===== */
+.kpi-wrapper{
+  display:flex;
+  justify-content:center;
+  gap:20px;
+  flex-wrap:wrap;
+  margin:25px 0;
+}
+
+.kpi{
+  width:160px;
+  padding:15px;
+  border-radius:18px;
+  text-align:center;
+  background:linear-gradient(145deg,#ffffff,#dce9ff);
+  box-shadow:
+      6px 6px 15px rgba(0,0,0,.2),
+      -6px -6px 15px rgba(255,255,255,.8);
+  transition:.4s;
+  animation:float 4s ease-in-out infinite;
+}
+
+.kpi:hover{
+  transform:translateY(-10px) rotateX(5deg) rotateY(5deg);
+  box-shadow:0 15px 35px rgba(0,0,0,.4);
+}
+
+.kpi h3{
+  margin:0;
+  font-size:13px;
+  color:#003f88;
+}
+
+.kpi .num{
+  font-size:24px;
+  font-weight:bold;
+  margin-top:5px;
+  color:#000;
+}
+
+@keyframes float{
+  0%{transform:translateY(0)}
+  50%{transform:translateY(-5px)}
+  100%{transform:translateY(0)}
+}
+
+/* ===== TABLE ===== */
 .table-container{
   max-width:1200px;
-  margin:0 auto 40px auto;
+  margin:0 auto 50px auto;
   padding:0 15px;
   overflow-x:auto;
 }
@@ -57,7 +119,7 @@ table{
   width:100%;
   border-collapse:collapse;
   background:white;
-  box-shadow:0 4px 20px rgba(0,0,0,.15);
+  box-shadow:0 6px 25px rgba(0,0,0,.2);
 }
 
 th{
@@ -89,7 +151,7 @@ tr:hover{
   font-weight:bold;
 }
 
-/* MODAL */
+/* ===== MODAL ===== */
 #trendModal{
   display:none;
   position:fixed;
@@ -136,6 +198,12 @@ tr:hover{
 
 <div class="header">
   <h1>Monthly Job Counts</h1>
+  <p>Designed and maintained by Rakesh Chandra Sethy</p>
+
+  <div class="nav-buttons">
+    <button onclick="history.back()">🔙 Back</button>
+    <button onclick="location.href='index.html'">🏠 Home</button>
+  </div>
 </div>
 
 <div class="kpi-wrapper" id="kpiSection"></div>
@@ -165,7 +233,7 @@ const MONTHLY_JOB_JSON =
 let monthlyData;
 let chartInstance;
 
-/* LOAD KPI */
+/* KPI */
 async function loadKPI(){
   const res = await fetch(DASHBOARD_JSON);
   const data = await res.json();
@@ -182,7 +250,7 @@ async function loadKPI(){
   });
 }
 
-/* LOAD TABLE */
+/* TABLE */
 async function loadTable(){
   const res=await fetch(MONTHLY_JOB_JSON);
   monthlyData=await res.json();
@@ -190,8 +258,7 @@ async function loadTable(){
   const headers=monthlyData.headers;
   const rows=monthlyData.rows;
 
-  let html="<tr>";
-  html+="<th>Job Type</th>";
+  let html="<tr><th>Job Type</th>";
 
   for(let i=1;i<headers.length;i++){
     const label=new Date(headers[i])
@@ -199,17 +266,21 @@ async function loadTable(){
     html+="<th>"+label+"</th>";
   }
 
-  html+="<th>Total</th>";
-  html+="</tr>";
+  html+="<th>Total</th></tr>";
 
   rows.forEach((r,index)=>{
 
     let total=0;
+    for(let i=1;i<r.length;i++){
+      total+=Number(r[i]||0);
+    }
+
+    if(total===0) return;  // 🔴 Remove zero-total jobs
+
     html+="<tr onclick='openTrend("+index+")'>";
     html+="<td>"+r[0]+"</td>";
 
     for(let i=1;i<r.length;i++){
-      total+=Number(r[i]||0);
       html+="<td>"+(r[i]||0)+"</td>";
     }
 
@@ -220,7 +291,7 @@ async function loadTable(){
   document.getElementById("jobTable").innerHTML=html;
 }
 
-/* TREND MODAL */
+/* TREND */
 function openTrend(index){
 
   const headers=monthlyData.headers.slice(1);
@@ -252,17 +323,8 @@ function openTrend(index){
     data:{
       labels:labels,
       datasets:[
-        {
-          type:'bar',
-          data:values,
-          backgroundColor:'rgba(0,82,204,0.4)'
-        },
-        {
-          type:'line',
-          data:values,
-          borderColor:'#003f88',
-          tension:0.4
-        }
+        {type:'bar',data:values,backgroundColor:'rgba(0,82,204,0.4)'},
+        {type:'line',data:values,borderColor:'#003f88',tension:0.4}
       ]
     },
     options:{
