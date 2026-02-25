@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Board Master List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  padding:20px;
+  background:#f4f6f9;
+}
+
+h2{
+  text-align:center;
+  margin-bottom:20px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+th, td{
+  border:1px solid #ddd;
+  padding:8px;
+  text-align:left;
+  font-size:13px;
+}
+
+th{
+  background:#1f4e79;
+  color:white;
+  position:sticky;
+  top:0;
+}
+
+tr:hover{
+  background:#f1f7ff;
+}
+
+.clickable{
+  color:#0066cc;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.clickable:hover{
+  text-decoration:underline;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Board Master List</h2>
+
+<table id="boardTable">
+<thead>
+<tr>
+  <th>Sl. No</th>
+  <th>Substation</th>
+  <th>Voltage Level</th>
+  <th>Board Type</th>
+  <th>Board No</th>
+  <th>Board UID</th>
+  <th>Primary Source IC1</th>
+  <th>Secondary Source IC2</th>
+  <th>Tertiary Source IC3</th>
+  <th>Emergency Source</th>
+  <th>Remarks</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<script>
+
+// ================= JSON URLs =================
+const BOARD_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/board.json";
+const SLD_JSON   = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+const LT_JSON    = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
+// =============================================
+
+
+// Load Board Master
+fetch(BOARD_JSON)
+.then(res => res.json())
+.then(json => {
+    buildTable(json.data);
+});
+
+
+function buildTable(data){
+
+    const tbody = document.querySelector("#boardTable tbody");
+
+    data.forEach(row => {
+
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${row["Sl. No"]}</td>
+          <td>${row["Substation"]}</td>
+          <td>${row["Voltage Level"]}</td>
+          <td>${row["Board Type"]}</td>
+          <td>${row["Board No"]}</td>
+          <td class="clickable uid">${row["Board UID"]}</td>
+          <td class="clickable source">${row["Primary Source IC1  (Trf/Board No.)"]}</td>
+          <td class="clickable source">${row["Secondary Source IC2 (Trf/Board No.)"]}</td>
+          <td class="clickable source">${row["Tertiary Source IC3 (If Any)"]}</td>
+          <td class="clickable source">${row["Emergency Source (If Any)"]}</td>
+          <td>${row["Remarks"]}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+
+    addClickEvents();
+}
+
+
+
+// ================= CLICK EVENTS =================
+
+function addClickEvents(){
+
+    // COLUMN F → Board UID
+    document.querySelectorAll(".uid").forEach(cell=>{
+        cell.addEventListener("click", function(){
+
+            const boardId = this.innerText.trim();
+            searchAndRedirect(boardId);
+
+        });
+    });
+
+    // COLUMN G,H,I,J → Breaker
+    document.querySelectorAll(".source").forEach(cell=>{
+        cell.addEventListener("click", function(){
+
+            const breaker = this.innerText.trim();
+            if(!breaker || breaker === "Nil") return;
+
+            window.location.href =
+              "https://08electricaldata.github.io/drive-viewer/index.html?id=BREAKER-" +
+              encodeURIComponent(breaker);
+
+        });
+    });
+}
+
+
+
+// ================= SEARCH BOTH JSON FILES =================
+
+async function searchAndRedirect(boardId){
+
+    try{
+
+        const [sldRes, ltRes] = await Promise.all([
+            fetch(SLD_JSON),
+            fetch(LT_JSON)
+        ]);
+
+        const sldJson = await sldRes.json();
+        const ltJson  = await ltRes.json();
+
+        // Check in boards_sld.json
+        if(sldJson.boards && sldJson.boards[boardId]){
+            window.location.href =
+              "https://08electricaldata.github.io/drive-viewer/sld.html?id=" +
+              encodeURIComponent(boardId);
+            return;
+        }
+
+        // Check in lt_sld.json
+        if(ltJson.boards && ltJson.boards[boardId]){
+            window.location.href =
+              "https://08electricaldata.github.io/drive-viewer/sld3.html?id=" +
+              encodeURIComponent(boardId);
+            return;
+        }
+
+        alert("Board not found in SLD or LT JSON");
+
+    }catch(err){
+        console.error(err);
+        alert("Error loading JSON files");
+    }
+}
+
+</script>
+
+</body>
+</html>
