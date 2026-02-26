@@ -278,14 +278,23 @@ function applyButtonState(id){
   }
 }
 
+
+
+ function formatDDMMYYYY(v){
+  if(!v) return "NO RECORDS";
+
+  const d = new Date(v);
+  if(isNaN(d)) return v; // if already formatted text
+
+  const day = String(d.getDate()).padStart(2,"0");
+  const month = String(d.getMonth()+1).padStart(2,"0");
+  const year = d.getFullYear();
+
+  return `${day}-${month}-${year}`;
+} 
 /* ===== MOTOR ===== */
 async function showMotor(c,id){
-  const p = await lastDates(id,{
-    rep:"MOTOR REPLACEMENT",
-    pm:"MOTOR PM",
-    mod:"MODULE PM",
-    vfd:"VFD PM"
-  });
+
 
   content.innerHTML = `
   <div class="card">
@@ -304,10 +313,10 @@ async function showMotor(c,id){
       <p><span class="label">Ind Lamp:</span> ${c[22]}</p>
       <p><span class="label">No of Spare Motors:</span> ${c[23]}</p>
 
-      <p><span class="label">Last Motor Replacement:</span> ${p.rep}</p>
-      <p><span class="label">Last Motor PM:</span> ${p.pm}</p>
-      <p><span class="label">Last Module PM:</span> ${p.mod}</p>
-      <p><span class="label">Last VFD PM:</span> ${p.vfd}</p>
+     <p><span class="label">Last Motor Replacement:</span> ${formatDDMMYYYY(c[37])}</p>
+<p><span class="label">Last Motor PM:</span> ${formatDDMMYYYY(c[38])}</p>
+<p><span class="label">Last Module PM:</span> ${formatDDMMYYYY(c[39])}</p>
+<p><span class="label">Last VFD PM:</span> ${formatDDMMYYYY(c[40])}</p>
     </div>
 
   <div class="action-row">
