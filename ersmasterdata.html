@@ -81,11 +81,17 @@ tbody tr:hover { background:#eef5ff; }
 
 <div class="header">
   <div class="header-bar">
-    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+
+    <!-- Back Button -->
+    <button class="header-btn" onclick="goBack()">⬅ Back</button>
+
     <div class="header-center">
       <h1>ERS MASTER DATA</h1>
     </div>
-    <div style="width:60px"></div>
+
+    <!-- Home Button -->
+    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+
   </div>
 </div>
 
@@ -121,7 +127,9 @@ const JSON_URL =
 function goHome(){
   location.href="https://08electricaldata.github.io/";
 }
-
+function goBack(){
+  window.history.back();
+}
 function parseDate(v){
   if(!v) return null;
   const d=new Date(v);
