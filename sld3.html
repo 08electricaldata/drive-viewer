@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,7 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{font-family:Arial;margin:0;background:#f2f6ff}
+body{
+  font-family:Arial;
+  margin:0;
+  background:#f2f6ff;
+}
 
 /* HEADER */
 .header{
@@ -14,15 +19,16 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   color:white;
   padding:10px;
   text-align:center;
+  box-shadow:0 3px 10px rgba(0,0,0,.25);
 }
 
 .header-title{
-  font-size:20px;
+  font-size:22px;
   font-weight:700;
 }
 
 .subtitle{
-  font-size:13px;
+  font-size:14px;
   margin-top:3px;
   font-weight:500;
 }
@@ -43,12 +49,12 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 /* SECTIONS */
 .section{
   background:white;
-  border-radius:6px;
-  box-shadow:0 3px 8px rgba(0,0,0,.2);
-  margin-right:8px;
+  border-radius:8px;
+  box-shadow:0 6px 15px rgba(0,0,0,.25);
+  margin-right:10px;
   display:flex;
   flex-direction:column;
-  width:150px;
+  width:160px;
 }
 
 .section-title{
@@ -56,75 +62,105 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   color:white;
   text-align:center;
   font-weight:bold;
-  padding:6px;
-  font-size:13px;
+  padding:8px;
+  font-size:14px;
+  letter-spacing:.5px;
 }
 
 /* BASE CELL */
 .cell{
   border:2px solid #333;
-  padding:6px;
-  margin:5px;
-  font-size:11px;
-  border-radius:4px;
+  padding:8px;
+  margin:6px;
+  font-size:12px;
+  border-radius:6px;
   cursor:pointer;
-  min-height:60px;
+  min-height:75px;
   display:flex;
   flex-direction:column;
   justify-content:center;
   text-align:center;
+
+  /* 3D SHADOW */
+  box-shadow:
+    0 4px 8px rgba(0,0,0,.25),
+    inset 0 1px 2px rgba(255,255,255,.6);
+
+  transition:all .25s ease;
+}
+
+/* ZOOM HOVER EFFECT */
+.cell:hover{
+  transform:scale(1.05);
+  box-shadow:
+    0 8px 16px rgba(0,0,0,.35),
+    inset 0 1px 2px rgba(255,255,255,.7);
 }
 
 /* BIGGER INCOMER BOX */
 .incomer-box{
-  min-height:95px;
-  font-size:13px;
+  min-height:110px;
+  font-size:14px;
   font-weight:bold;
 }
 
-/* BREAKER FONT ENHANCEMENT */
+/* BREAKER FONT */
 .breaker-font{
-  font-size:13px;
+  font-size:14px;
   font-weight:bold;
 }
 
 /* STATUS COLORS */
 .status-on{
   border-color:#00aa00;
+  box-shadow:
+    0 0 12px rgba(0,255,0,.7),
+    0 6px 14px rgba(0,0,0,.3);
+}
+
+/* GLOW ANIMATION FOR ON */
+@keyframes glowPulse{
+  0%{box-shadow:0 0 6px rgba(0,255,0,.6);}
+  50%{box-shadow:0 0 16px rgba(0,255,0,1);}
+  100%{box-shadow:0 0 6px rgba(0,255,0,.6);}
+}
+.status-on{
+  animation:glowPulse 2s infinite;
 }
 
 .status-off{
   border-color:#cc0000;
 }
 
-/* DEVICE BASE COLORS */
+/* DEVICE COLORS (DEEP & DISTINCT) */
 
 .incomer{
-  background:#ffcccc;      /* Red */
+  background:#ff4d4d;
 }
 
 .coupler{
-  background:#fff3b0;      /* Yellow */
+  background:#ffd633;
 }
 
 .outgoing-breaker{
-  background:#ffd699;      /* Orange */
+  background:#ff944d;
 }
 
 .outgoing-dol{
-  background:#d9e8ff;      /* Blue */
+  background:#4d94ff;
+  color:#000;
 }
 
 .outgoing-mccb{
-  background:#e6ccff;      /* Purple */
+  background:#b366ff;
 }
 
 .outgoing-sfu{
-  background:#ccf2ff;      /* Cyan */
+  background:#33ccff;
 }
 
 .spare{
-  background:#eee;
+  background:#e0e0e0;
 }
 
 /* BUS COUPLER BRIDGE */
@@ -133,9 +169,25 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   width:6px;
   background:red;
   top:50px;
-  height:60px;
+  height:70px;
   z-index:1;
+
+  /* Animated Power Flow Effect */
+  background:linear-gradient(
+    to bottom,
+    red 0%,
+    yellow 50%,
+    red 100%
+  );
+  background-size:100% 200%;
+  animation:flowAnimation 1.5s linear infinite;
 }
+
+@keyframes flowAnimation{
+  0%{background-position:0% 0%;}
+  100%{background-position:0% 200%;}
+}
+
 </style>
 </head>
 
@@ -184,7 +236,6 @@ async function load(){
   const sectionWidth=160;
   container.style.width=(sections.length*sectionWidth)+"px";
 
-  /* Find max height for equal columns */
   let maxDevices=0;
   sections.forEach(sec=>{
     const count=board.sections[sec].length;
@@ -209,29 +260,22 @@ async function load(){
       const cell=document.createElement("div");
       cell.className="cell";
 
-      /* STATUS BORDER */
       if(d.status && d.status.toUpperCase()==="ON"){
         cell.classList.add("status-on");
       }else{
         cell.classList.add("status-off");
       }
 
-      /* DEVICE TYPE COLOR + SIZE LOGIC */
-
       if(d.feederType === "INCOMER"){
-
         cell.classList.add("incomer","incomer-box","breaker-font");
-
       }
       else if(d.feederType === "BUS_COUPLER"){
-
         cell.classList.add("coupler","breaker-font");
 
         const bridge=document.createElement("div");
         bridge.className="coupler-bridge";
         bridge.style.left=(index*sectionWidth + 78)+"px";
         container.appendChild(bridge);
-
       }
       else if(d.feederType === "OUTGOING"){
 
@@ -279,7 +323,6 @@ async function load(){
       secDiv.appendChild(cell);
     });
 
-    /* Equal Height Columns */
     const missing = maxDevices - devices.length;
     for(let i=0;i<missing;i++){
       const empty=document.createElement("div");
