@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-  .subtitle{
+.subtitle{
   font-size:14px;
   font-weight:600;
   color:#cce0ff;
@@ -31,20 +31,22 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 .container{padding:12px}
 .card{
-  background:#fff;border-radius:10px;
+  background:#fff;
+  border-radius:10px;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
   padding:12px;
+}
+
+/* TABLE AUTO EXPAND */
 .table-wrapper{
   overflow-x:auto;
   margin-bottom:15px;
 }
-
 #columnTable{
   border-collapse:collapse;
   width:max-content;
   min-width:100%;
 }
-
 #columnTable th,#columnTable td{
   border:1px solid #000;
   padding:8px 12px;
@@ -59,7 +61,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 .outgoing{background:#d9e8ff}
 .coupler{background:#fff3b0}
 
-/* ===== SLD ===== */
+/* SLD */
 #wrap{
   overflow:auto;
   border:1px solid #ccc;
@@ -68,17 +70,23 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 }
 .bus{stroke:#000;stroke-width:4}
 .power-line{
-  stroke:#00cc44;stroke-width:4;
+  stroke:#00cc44;
+  stroke-width:4;
   stroke-dasharray:10 6;
   animation:flow 1s linear infinite;
 }
-@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
+@keyframes flow{
+  from{stroke-dashoffset:0}
+  to{stroke-dashoffset:-32}
+}
 
 .label{font-size:16px;font-weight:600;text-anchor:middle}
 .cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
 .board-title{
-  font-size:24px;font-weight:900;
-  fill:#003f88;text-anchor:middle;
+  font-size:24px;
+  font-weight:900;
+  fill:#003f88;
+  text-anchor:middle;
 }
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
 </style>
@@ -90,9 +98,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
   <div style="flex:1;text-align:center;">
-  <div class="header-title" id="title">HT BOARD SLD</div>
-  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
-</div>
+    <div class="header-title" id="title">HT BOARD SLD</div>
+    <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+  </div>
 </div>
 
 <div class="container">
@@ -100,12 +108,10 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
     <div class="info" id="boardInfo">Loading...</div>
 
-    <!-- TABLE -->
     <div class="table-wrapper">
-  <table id="columnTable"></table>
-</div>
+      <table id="columnTable"></table>
+    </div>
 
-    <!-- SLD -->
     <div id="wrap">
       <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
     </div>
@@ -129,7 +135,7 @@ const svg=document.getElementById("sldCanvas");
 
 function clearSVG(){svg.innerHTML=""}
 
-/* ================= TABLE ================= */
+/* TABLE */
 
 function buildColumnTable(board){
 
@@ -193,7 +199,7 @@ function buildColumnTable(board){
   columnTable.appendChild(row3);
 }
 
-/* ================= SLD ================= */
+/* SLD */
 
 function line(x1,y1,x2,y2,cls="bus"){
   const e=document.createElementNS("http://www.w3.org/2000/svg","line");
@@ -283,17 +289,18 @@ function draw(board){
   clearSVG();
 
   let maxPos=0;
-[...(board.outgoings||[])].forEach(r=>{
-  if(r.position>maxPos) maxPos=r.position;
-});
+  [...(board.outgoings||[])].forEach(r=>{
+    if(r.position>maxPos) maxPos=r.position;
+  });
 
-const W = Math.max(1400, maxPos * 120);
-svg.setAttribute("viewBox",`0 0 ${W} 620`);
+  const W=Math.max(1400,maxPos*120);
+  svg.setAttribute("viewBox",`0 0 ${W} 620`);
+
   const BUS_Y=280;
   const GAP=120;
   const mid=W/2;
 
-  text(700,40,getParam("id"),"middle","board-title");
+  text(mid,40,getParam("id"),"middle","board-title");
 
   line(100,BUS_Y,mid-GAP/2,BUS_Y);
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
@@ -313,16 +320,14 @@ svg.setAttribute("viewBox",`0 0 ${W} 620`);
     breaker(x,BUS_Y-40,inc.breakerId,i===0?"left":"right");
   });
 
-  let maxPos=0;
-  [...(board.outgoings||[])].forEach(r=>{if(r.position>maxPos) maxPos=r.position;});
   const leftMargin=120;
   const rightMargin=W-120;
   const usableWidth=rightMargin-leftMargin;
 
-function posToX(pos){
-  if(maxPos<=1) return mid;
-  return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
-}
+  function posToX(pos){
+    if(maxPos<=1) return mid;
+    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
+  }
 
   (board.outgoings||[]).forEach((o,index)=>{
     const x=posToX(o.position);
@@ -339,7 +344,7 @@ function posToX(pos){
   });
 }
 
-/* ================= LOAD ================= */
+/* LOAD */
 
 async function loadSLD(){
   try{
