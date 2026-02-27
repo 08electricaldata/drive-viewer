@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -364,10 +363,25 @@ if(board.busCouplers?.length){
 
     const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
 
-    if(index%2===0)
-      text(x,BUS_Y+150,o.breakerId,"middle","label",clickUrl);
-    else
-      text(x,BUS_Y+195,o.breakerId,"middle","label",clickUrl);
+   // 🔹 Split only at FIRST "-"
+let line1 = o.breakerId;
+let line2 = null;
+
+if(o.breakerId && o.breakerId.includes("-")){
+  const parts = o.breakerId.split(/-(.+)/);  
+  line1 = parts[0];       // before first -
+  line2 = parts[1];       // after first -
+}
+
+const baseY = (index%2===0) ? BUS_Y+150 : BUS_Y+195;
+
+// First Line
+text(x, baseY, line1, "middle", "label", clickUrl);
+
+// Second Line (if exists)
+if(line2){
+  text(x, baseY+20, line2, "middle", "label", clickUrl);
+}
   });
 }
 
