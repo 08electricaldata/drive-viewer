@@ -35,8 +35,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 .container{padding:12px}
 .card{
-  background:#fff;
-  border-radius:10px;
+  background:#fff;border-radius:10px;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
   padding:12px;
 }
@@ -46,7 +45,6 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   margin-bottom:12px;
   display:flex;
   gap:8px;
-  flex-wrap:wrap;
 }
 .toolbar button{
   background:#003f88;
@@ -58,24 +56,19 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   font-size:13px;
 }
 
-/* TABLE AUTO EXPAND */
-.table-wrapper{
-  overflow-x:auto;
-  margin-bottom:15px;
-}
+/* TABLE */
 #columnTable{
+  width:100%;
   border-collapse:collapse;
-  width:max-content;
-  min-width:100%;
+  margin-bottom:15px;
+  table-layout:fixed;
 }
 #columnTable th,#columnTable td{
   border:1px solid #000;
-  padding:8px 12px;
+  padding:6px;
   text-align:center;
   font-size:13px;
   font-weight:600;
-  white-space:nowrap;
-  min-width:95px;
 }
 
 .incomer{background:#d9f2d9}
@@ -92,23 +85,17 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 }
 .bus{stroke:#000;stroke-width:4}
 .power-line{
-  stroke:#00cc44;
-  stroke-width:4;
+  stroke:#00cc44;stroke-width:4;
   stroke-dasharray:10 6;
   animation:flow 1s linear infinite;
 }
-@keyframes flow{
-  from{stroke-dashoffset:0}
-  to{stroke-dashoffset:-32}
-}
+@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
 
 .label{font-size:16px;font-weight:600;text-anchor:middle}
 .cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
 .board-title{
-  font-size:24px;
-  font-weight:900;
-  fill:#003f88;
-  text-anchor:middle;
+  font-size:24px;font-weight:900;
+  fill:#003f88;text-anchor:middle;
 }
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
 </style>
@@ -120,9 +107,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
   <div style="flex:1;text-align:center;">
-    <div class="header-title" id="title">HT BOARD SLD</div>
-    <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
-  </div>
+  <div class="header-title" id="title">HT BOARD SLD</div>
+  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+</div>
 </div>
 
 <div class="container">
@@ -138,9 +125,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
       <button onclick="exportPDF()">📄 Export PDF</button>
     </div>
 
-    <div class="table-wrapper">
-      <table id="columnTable"></table>
-    </div>
+    <table id="columnTable"></table>
 
     <div id="wrap">
       <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
@@ -166,7 +151,7 @@ const wrap=document.getElementById("wrap");
 
 let zoomLevel=1;
 
-/* ZOOM */
+/* ZOOM FUNCTIONS */
 function zoomIn(){ zoomLevel+=0.1; wrap.style.transform=`scale(${zoomLevel})`; }
 function zoomOut(){ zoomLevel=Math.max(0.5,zoomLevel-0.1); wrap.style.transform=`scale(${zoomLevel})`; }
 function fitScreen(){
@@ -206,23 +191,88 @@ async function exportPDF(){
   pdf.save(titleEl.innerText+".pdf");
 }
 
-/* EVERYTHING BELOW IS YOUR ORIGINAL WORKING LOGIC */
-/* ONLY WIDTH LINE MODIFIED TO SUPPORT 30 FEEDERS */
+/* ================= ORIGINAL LOGIC (ONLY WIDTH MODIFIED) ================= */
 
 function clearSVG(){svg.innerHTML=""}
 
-/* keep your transformer(), breaker(), arrowDown(), buildColumnTable(), loadSLD() exactly same */
-/* inside draw(), change only this part: */
+/* KEEP YOUR ORIGINAL buildColumnTable(), transformer(), breaker(), arrowDown() HERE EXACTLY */
 
-/*
-let maxPos=0;
-[...(board.outgoings||[])].forEach(r=>{
-  if(r.position>maxPos) maxPos=r.position;
-});
-maxPos=Math.max(maxPos,30);
-const W=Math.max(1400,maxPos*130);
-svg.setAttribute("viewBox",`0 0 ${W} 620`);
-*/
+/* ONLY MODIFY THIS PART INSIDE draw() */
+
+function draw(board){
+
+  clearSVG();
+
+  let maxPos=0;
+  [...(board.outgoings||[])].forEach(r=>{
+    if(r.position>maxPos) maxPos=r.position;
+  });
+
+  maxPos=Math.max(maxPos,30); // support 30 feeders
+
+  const W=Math.max(1400,maxPos*120);
+  const BUS_Y=280;
+  const GAP=120;
+  const mid=W/2;
+
+  svg.setAttribute("viewBox",`0 0 ${W} 620`);
+
+  text(mid,40,getParam("id"),"middle","board-title");
+
+  line(100,BUS_Y,mid-GAP/2,BUS_Y);
+  line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
+
+  if(board.busCouplers?.length){
+    const bc=board.busCouplers[0];
+    breaker(mid,BUS_Y,bc.breakerId,null,true);
+  }
+
+  const incomers=[...(board.incomers||[])];
+  const spacing=W/(incomers.length+1);
+
+  incomers.forEach((inc,i)=>{
+    const x=spacing*(i+1);
+    transformer(x,120,inc.source,inc.transformer);
+    line(x,140,x,BUS_Y-30,"power-line");
+    breaker(x,BUS_Y-40,inc.breakerId,i===0?"left":"right");
+  });
+
+  const leftMargin=120;
+  const rightMargin=W-120;
+  const usableWidth=rightMargin-leftMargin;
+
+  function posToX(pos){
+    if(maxPos<=1) return mid;
+    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
+  }
+
+  (board.outgoings||[]).forEach((o,index)=>{
+    const x=posToX(o.position);
+    line(x,BUS_Y+6,x,BUS_Y+46);
+    breaker(x,BUS_Y+66,null);
+    arrowDown(x,BUS_Y+82);
+
+    const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
+
+    if(index%2===0)
+      text(x,BUS_Y+150,o.breakerId,"middle","label",clickUrl);
+    else
+      text(x,BUS_Y+195,o.breakerId,"middle","label",clickUrl);
+  });
+}
+
+/* LOAD */
+async function loadSLD(){
+  const boardId=getParam("id");
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
+  const board=data.boards?.[boardId];
+  if(!board){boardInfoEl.innerText="Board not found";return;}
+  boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
+  buildColumnTable(board);
+  draw(board);
+}
+loadSLD();
 
 </script>
 
