@@ -243,11 +243,18 @@ function transformer(x,y,name,transformerNo){
   svg.appendChild(g);
 }
 
-function breaker(x,y,label,side=null,isCoupler=false){
+function breaker(x,y,label,side=null,isCoupler=false,isOutgoing=false){
 
-  const clickUrl = label
-    ? "https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-" + label
-    : null;
+  let clickUrl = null;
+
+  // 🔹 Outgoing CB → go to feeder index page (NO Breaker- prefix)
+  if(isOutgoing && label){
+    clickUrl = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + label;
+  }
+  // 🔹 Incomer & Bus Coupler CB → go to breaker history page
+  else if(label){
+    clickUrl = "https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-" + label;
+  }
 
   const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
   r.setAttribute("x",x-18);
@@ -258,7 +265,6 @@ function breaker(x,y,label,side=null,isCoupler=false){
   r.setAttribute("stroke","#000");
   r.setAttribute("stroke-width","2");
 
-  // ✅ Only rectangle clickable
   if(clickUrl){
     r.style.cursor="pointer";
     r.addEventListener("click",()=>location.href=clickUrl);
@@ -266,10 +272,8 @@ function breaker(x,y,label,side=null,isCoupler=false){
 
   svg.appendChild(r);
 
-  // CB text (NOT clickable)
   text(x,y+5,"CB","middle","cbtext");
 
-  // Breaker label (NOT clickable)
   if(!label) return;
 
   if(isCoupler)
