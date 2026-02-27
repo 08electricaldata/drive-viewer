@@ -5,12 +5,10 @@
 <title>HT Board Professional SLD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- PDF Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
-.subtitle{font-size:14px;font-weight:600;color:#cce0ff;text-align:center;margin-top:2px;}
+.subtitle{
+  font-size:14px;font-weight:600;color:#cce0ff;text-align:center;margin-top:2px;
+}
 body{font-family:Arial;margin:0;background:#f2f6ff}
 
 .header-bar{
@@ -27,37 +25,68 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 .container{padding:12px}
 .card{background:#fff;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.15);padding:12px;}
 
-.toolbar{margin-bottom:12px;display:flex;gap:8px;}
-.toolbar button{background:#003f88;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;}
+/* TABLE */
+.table-wrapper{overflow-x:auto;margin-bottom:15px;}
 
-#columnTable{width:100%;border-collapse:collapse;margin-bottom:15px;table-layout:fixed;}
-#columnTable th,#columnTable td{border:1px solid #000;padding:6px;text-align:center;font-size:13px;font-weight:600;}
+#columnTable{
+  border-collapse:collapse;
+  width:max-content;
+  min-width:100%;
+}
+#columnTable th,#columnTable td{
+  border:1px solid #000;
+  padding:6px 14px;
+  text-align:center;
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+  min-width:110px;
+}
 
 .incomer{background:#d9f2d9}
 .outgoing{background:#d9e8ff}
 .coupler{background:#fff3b0}
 
-#wrap{overflow:auto;border:1px solid #ccc;background:#fff;height:70vh;transform-origin:0 0;}
+/* SLD */
+#wrap{
+  overflow:auto;
+  border:1px solid #ccc;
+  background:#fff;
+  height:70vh;
+  transform-origin:0 0;
+}
 .bus{stroke:#000;stroke-width:4}
-.power-line{stroke:#00cc44;stroke-width:4;stroke-dasharray:10 6;animation:flow 1s linear infinite;}
+.power-line{
+  stroke:#00cc44;stroke-width:4;
+  stroke-dasharray:10 6;
+  animation:flow 1s linear infinite;
+}
 @keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
 
 .label{font-size:16px;font-weight:600;text-anchor:middle}
 .cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
 .board-title{font-size:24px;font-weight:900;fill:#003f88;text-anchor:middle;}
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
+
+/* Zoom */
+.zoom-bar{margin-bottom:10px}
+.zoom-bar button{
+  padding:6px 10px;margin-right:6px;
+  border:none;background:#003f88;color:#fff;
+  border-radius:4px;cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 
 <div class="header-bar">
-  <button onclick="goHome()">🏠 Home</button>
-  <button onclick="goBack()">⬅ Back</button>
-  <div style="flex:1;text-align:center;">
-    <div class="header-title" id="title">HT BOARD SLD</div>
-    <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
-  </div>
+<button onclick="goHome()">🏠 Home</button>
+<button onclick="goBack()">⬅ Back</button>
+<div style="flex:1;text-align:center;">
+<div class="header-title" id="title">HT BOARD SLD</div>
+<div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+</div>
 </div>
 
 <div class="container">
@@ -65,17 +94,18 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 <div class="info" id="boardInfo">Loading...</div>
 
-<div class="toolbar">
-  <button onclick="zoomIn()">🔍 +</button>
-  <button onclick="zoomOut()">🔎 -</button>
-  <button onclick="fitScreen()">📐 Fit</button>
-  <button onclick="exportPDF()">📄 Export PDF</button>
+<div class="zoom-bar">
+<button onclick="zoomIn()">Zoom +</button>
+<button onclick="zoomOut()">Zoom -</button>
+<button onclick="fitScreen()">Fit</button>
 </div>
 
+<div class="table-wrapper">
 <table id="columnTable"></table>
+</div>
 
 <div id="wrap">
-  <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
+<svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
 </div>
 
 </div>
@@ -96,28 +126,82 @@ const svg=document.getElementById("sldCanvas");
 const wrap=document.getElementById("wrap");
 
 let zoomLevel=1;
-
 function zoomIn(){zoomLevel+=0.1;wrap.style.transform=`scale(${zoomLevel})`}
 function zoomOut(){zoomLevel=Math.max(0.5,zoomLevel-0.1);wrap.style.transform=`scale(${zoomLevel})`}
 function fitScreen(){
   zoomLevel=wrap.clientWidth/svg.viewBox.baseVal.width;
   wrap.style.transform=`scale(${zoomLevel})`
 }
-wrap.addEventListener("wheel",(e)=>{e.preventDefault();e.deltaY<0?zoomIn():zoomOut()});
+wrap.addEventListener("wheel",(e)=>{
+  e.preventDefault();
+  e.deltaY<0?zoomIn():zoomOut();
+});
 
-async function exportPDF(){
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF("l","mm","a3");
-  const canvas=await html2canvas(document.querySelector(".card"),{scale:2});
-  const img=canvas.toDataURL("image/png");
-  const pageWidth=pdf.internal.pageSize.getWidth();
-  const imgProps=pdf.getImageProperties(img);
-  const imgHeight=(imgProps.height*pageWidth)/imgProps.width;
-  pdf.addImage(img,"PNG",0,0,pageWidth,imgHeight);
-  pdf.save(titleEl.innerText+".pdf");
+/* ===== TABLE LOGIC ===== */
+
+function buildColumnTable(board){
+
+  columnTable.innerHTML="";
+  const allDevices=[];
+
+  (board.incomers||[]).forEach(d=>{d._type="INCOMER";allDevices.push(d);});
+  (board.outgoings||[]).forEach(d=>{d._type="OUTGOING";allDevices.push(d);});
+  (board.busCouplers||[]).forEach(d=>{d._type="BUS_COUPLER";allDevices.push(d);});
+  (board.busPT||[]).forEach(d=>{d._type="BUS_PT";allDevices.push(d);});
+  (board.linePT||[]).forEach(d=>{d._type="LINE_PT";allDevices.push(d);});
+  (board.dgIncomers||[]).forEach(d=>{d._type="INCOMER";allDevices.push(d);});
+  (board.emergencyIncomers||[]).forEach(d=>{d._type="INCOMER";allDevices.push(d);});
+
+  if(!allDevices.length) return;
+
+  let maxPos=0;
+  allDevices.forEach(d=>{if(d.position>maxPos) maxPos=d.position;});
+  maxPos=Math.max(maxPos,30);
+
+  const headerRow=document.createElement("tr");
+  for(let i=1;i<=maxPos;i++){
+    const th=document.createElement("th");
+    th.innerText=i;
+    headerRow.appendChild(th);
+  }
+  columnTable.appendChild(headerRow);
+
+  const row1=document.createElement("tr");
+  const row2=document.createElement("tr");
+  const row3=document.createElement("tr");
+
+  for(let i=1;i<=maxPos;i++){
+    const device=allDevices.find(d=>d.position===i);
+    const td1=document.createElement("td");
+    const td2=document.createElement("td");
+    const td3=document.createElement("td");
+
+    if(device){
+      td1.innerText=device._type;
+      td2.innerText=device.breakerId||"";
+      td3.innerText=device.breakerType||"";
+
+      let cls="";
+      if(["INCOMER","LINE_PT","BUS_PT"].includes(device._type)) cls="incomer";
+      else if(device._type==="OUTGOING") cls="outgoing";
+      else if(device._type==="BUS_COUPLER") cls="coupler";
+
+      td1.className=cls;
+      td2.className=cls;
+      td3.className=cls;
+    }
+
+    row1.appendChild(td1);
+    row2.appendChild(td2);
+    row3.appendChild(td3);
+  }
+
+  columnTable.appendChild(row1);
+  columnTable.appendChild(row2);
+  columnTable.appendChild(row3);
 }
 
-/* ORIGINAL LOGIC */
+/* ===== SLD LOGIC ===== */
 
 function clearSVG(){svg.innerHTML=""}
 
@@ -154,75 +238,53 @@ function transformer(x,y,name,transformerNo){
   lbl.setAttribute("x",x);lbl.setAttribute("y",y-18);
   lbl.setAttribute("class","label");lbl.textContent=name;
   g.appendChild(c1);g.appendChild(c2);g.appendChild(lbl);
-  g.addEventListener("click",()=>location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+transformerNo);
   svg.appendChild(g);
 }
 
-function breaker(x,y,label,side=null,isCoupler=false){
+function breaker(x,y,label){
   const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
   r.setAttribute("x",x-18);r.setAttribute("y",y-12);
   r.setAttribute("width",36);r.setAttribute("height",24);
   r.setAttribute("fill","#fff");r.setAttribute("stroke","#000");
-  r.setAttribute("stroke-width","2");svg.appendChild(r);
+  r.setAttribute("stroke-width","2");
+  svg.appendChild(r);
   text(x,y+5,"CB","middle","cbtext");
-  if(!label)return;
-  const clickUrl="https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-"+label;
-  if(isCoupler) text(x,y-24,label,"middle","label",clickUrl);
-  else if(side==="left") text(x-150,y+5,label,"end","label",clickUrl);
-  else if(side==="right") text(x+150,y+5,label,"start","label",clickUrl);
 }
 
 function arrowDown(x,y){
   line(x,y,x,y+24,"bus");
-  const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
-  p.setAttribute("points",`${x-6},${y+24} ${x+6},${y+24} ${x},${y+36}`);
-  p.setAttribute("fill","#000");svg.appendChild(p);
 }
 
 function draw(board){
+
   clearSVG();
+
   let maxPos=0;
   [...(board.outgoings||[])].forEach(r=>{if(r.position>maxPos) maxPos=r.position;});
   maxPos=Math.max(maxPos,30);
-  const W=Math.max(1400,maxPos*120);
+
+  const W=Math.max(1400,maxPos*150);
   svg.setAttribute("viewBox",`0 0 ${W} 620`);
 
-  const BUS_Y=280;const GAP=120;const mid=W/2;
+  const BUS_Y=280;
+  const mid=W/2;
+
   text(mid,40,getParam("id"),"middle","board-title");
+  line(100,BUS_Y,W-100,BUS_Y);
 
-  line(100,BUS_Y,mid-GAP/2,BUS_Y);
-  line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
-
-  if(board.busCouplers?.length){
-    breaker(mid,BUS_Y,board.busCouplers[0].breakerId,null,true);
-  }
-
-  const incomers=[...(board.incomers||[])];
-  const spacing=W/(incomers.length+1);
-
-  incomers.forEach((inc,i)=>{
-    const x=spacing*(i+1);
-    transformer(x,120,inc.source,inc.transformer);
-    line(x,140,x,BUS_Y-30,"power-line");
-    breaker(x,BUS_Y-40,inc.breakerId,i===0?"left":"right");
-  });
-
-  const leftMargin=120;const rightMargin=W-120;
+  const leftMargin=120;
+  const rightMargin=W-120;
   const usableWidth=rightMargin-leftMargin;
 
   function posToX(pos){
-    if(maxPos<=1)return mid;
     return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
   }
 
   (board.outgoings||[]).forEach((o,index)=>{
     const x=posToX(o.position);
     line(x,BUS_Y+6,x,BUS_Y+46);
-    breaker(x,BUS_Y+66,null);
+    breaker(x,BUS_Y+66);
     arrowDown(x,BUS_Y+82);
-    const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
-    if(index%2===0) text(x,BUS_Y+150,o.breakerId,"middle","label",clickUrl);
-    else text(x,BUS_Y+195,o.breakerId,"middle","label",clickUrl);
   });
 }
 
@@ -233,6 +295,7 @@ async function loadSLD(){
   const board=data.boards?.[boardId];
   if(!board){boardInfoEl.innerText="Board not found";return;}
   boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
+  buildColumnTable(board);
   draw(board);
 }
 
