@@ -38,17 +38,20 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 /* ===== TABLE ===== */
 #columnTable{
-  width:100%;
+  width:auto;                 /* auto width */
   border-collapse:collapse;
-  margin-bottom:15px;
-  table-layout:fixed;
+  margin:0 auto 15px auto;    /* center table */
+  table-layout:auto;          /* dynamic column width */
 }
-#columnTable th,#columnTable td{
+
+#columnTable th,
+#columnTable td{
   border:1px solid #000;
-  padding:6px;
+  padding:8px 12px;
   text-align:center;
   font-size:13px;
   font-weight:600;
+  white-space:nowrap;         /* no wrap */
 }
 
 .incomer{background:#d9f2d9}
@@ -57,7 +60,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 /* ===== SLD ===== */
 #wrap{
-  overflow:auto;
+  width:100%;
+  overflow-x:auto;     /* horizontal scroll */
+  overflow-y:auto;
   border:1px solid #ccc;
   background:#fff;
   height:70vh;
