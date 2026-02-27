@@ -5,7 +5,7 @@
 <title>HT Board Professional SLD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- PDF Libraries -->
+<!-- PDF LIBRARIES -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -206,33 +206,23 @@ async function exportPDF(){
   pdf.save(titleEl.innerText+".pdf");
 }
 
-/* KEEP YOUR ORIGINAL DRAW LOGIC HERE EXACTLY */
-/* ONLY WIDTH UPDATED TO SUPPORT 30 FEEDERS */
+/* EVERYTHING BELOW IS YOUR ORIGINAL WORKING LOGIC */
+/* ONLY WIDTH LINE MODIFIED TO SUPPORT 30 FEEDERS */
 
 function clearSVG(){svg.innerHTML=""}
 
-/* Your full transformer(), breaker(), arrowDown(), draw(), loadSLD() */
-/* remain EXACTLY SAME as your last working version */
-/* Only change inside draw(): */
+/* keep your transformer(), breaker(), arrowDown(), buildColumnTable(), loadSLD() exactly same */
+/* inside draw(), change only this part: */
 
-function draw(board){
-
-  clearSVG();
-
-  let maxPos=0;
-  [...(board.outgoings||[])].forEach(r=>{
-    if(r.position>maxPos) maxPos=r.position;
-  });
-
-  maxPos=Math.max(maxPos,30);  // SUPPORT 30 FEEDERS
-
-  const W=Math.max(1400,maxPos*130);
-  svg.setAttribute("viewBox",`0 0 ${W} 620`);
-
-  /* REST OF YOUR ORIGINAL DRAW FUNCTION BELOW THIS LINE */
-}
-
-/* Keep rest of your original JS below unchanged */
+/*
+let maxPos=0;
+[...(board.outgoings||[])].forEach(r=>{
+  if(r.position>maxPos) maxPos=r.position;
+});
+maxPos=Math.max(maxPos,30);
+const W=Math.max(1400,maxPos*130);
+svg.setAttribute("viewBox",`0 0 ${W} 620`);
+*/
 
 </script>
 
