@@ -192,9 +192,9 @@ async function checkDrawingAvailability(id){
 
 function createTable(title, dataArray){
 
-  // 🔎 Check if any row has remarks (Column J)
-  const showRemarks = dataArray.some(row =>
-    row.remarks && row.remarks.trim() !== ""
+  // 🔎 Check if any row has board value
+  const showBoard = dataArray.some(row =>
+    row.board && row.board.trim() !== ""
   );
 
   let html = `
@@ -209,7 +209,7 @@ function createTable(title, dataArray){
           <th>Panel</th>
           <th>TB No</th>
           <th>RL</th>
-          ${showRemarks ? "<th>Remarks</th>" : ""}
+          ${showBoard ? "<th>Board</th>" : ""}
         </tr>
       </thead>
       <tbody>
@@ -225,7 +225,7 @@ function createTable(title, dataArray){
         <td>${row.panel || ""}</td>
         <td>${row.tb || ""}</td>
         <td>${row.rl || ""}</td>
-        ${showRemarks ? `<td>${row.remarks || ""}</td>` : ""}
+        ${showBoard ? `<td>${row.board || ""}</td>` : ""}
       </tr>
     `;
   });
