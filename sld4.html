@@ -358,7 +358,7 @@ if(board.busCouplers?.length){
   (board.outgoings||[]).forEach((o,index)=>{
     const x=posToX(o.position);
     line(x,BUS_Y+6,x,BUS_Y+46);
-    breaker(x,BUS_Y+66,o.breakerId);
+    breaker(x,BUS_Y+66,o.breakerId,null,false,true);
     arrowDown(x,BUS_Y+82);
 
     const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
