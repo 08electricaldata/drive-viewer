@@ -297,10 +297,26 @@ svg.setAttribute("viewBox", `0 0 ${W} 620`);
   line(100,BUS_Y,mid-GAP/2,BUS_Y);
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
 
-  if(board.busCouplers?.length){
-    const bc=board.busCouplers[0];
-    breaker(mid,BUS_Y,bc.breakerId,null,true);
-  }
+if(board.busCouplers?.length){
+
+  const couplers = board.busCouplers;
+  const count = couplers.length;
+
+  couplers.forEach((bc,i)=>{
+
+    let x;
+
+    if(count === 1){
+      x = mid;
+    } else {
+      const start = mid - ((count-1) * GAP);
+      x = start + (i * GAP * 2);
+    }
+
+    breaker(x, BUS_Y, bc.breakerId, null, true);
+
+  });
+}
 
   const incomers=[...(board.incomers||[])];
   const spacing=W/(incomers.length+1);
