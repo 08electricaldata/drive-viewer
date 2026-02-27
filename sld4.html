@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,20 +39,20 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 /* ===== TABLE ===== */
 #columnTable{
-  width:auto;                 /* auto width */
+  width:auto;               /* auto expand */
   border-collapse:collapse;
-  margin:0 auto 15px auto;    /* center table */
-  table-layout:auto;          /* dynamic column width */
+  margin-bottom:15px;
+  table-layout:auto;        /* allow dynamic width */
+  white-space:nowrap;       /* prevent text wrap */
 }
-
-#columnTable th,
-#columnTable td{
+#columnTable th,#columnTable td{
   border:1px solid #000;
-  padding:8px 12px;
+  padding:8px 10px;
   text-align:center;
   font-size:13px;
   font-weight:600;
-  white-space:nowrap;         /* no wrap */
+  white-space:nowrap;
+  min-width:90px;
 }
 
 .incomer{background:#d9f2d9}
@@ -60,9 +61,7 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
 /* ===== SLD ===== */
 #wrap{
-  width:100%;
-  overflow-x:auto;     /* horizontal scroll */
-  overflow-y:auto;
+  overflow:auto;
   border:1px solid #ccc;
   background:#fff;
   height:70vh;
@@ -259,7 +258,7 @@ function breaker(x,y,label,side=null,isCoupler=false){
   r.setAttribute("stroke","#000");
   r.setAttribute("stroke-width","2");
 
-  // ✅ Make CB clickable
+  // ✅ Only rectangle clickable
   if(clickUrl){
     r.style.cursor="pointer";
     r.addEventListener("click",()=>location.href=clickUrl);
@@ -267,17 +266,18 @@ function breaker(x,y,label,side=null,isCoupler=false){
 
   svg.appendChild(r);
 
+  // CB text (NOT clickable)
   text(x,y+5,"CB","middle","cbtext");
 
+  // Breaker label (NOT clickable)
   if(!label) return;
 
-  // Label click also remains working
   if(isCoupler)
-    text(x,y-24,label,"middle","label",clickUrl);
+    text(x,y-24,label,"middle","label");
   else if(side==="left")
-    text(x-150,y+5,label,"end","label",clickUrl);
+    text(x-150,y+5,label,"end","label");
   else if(side==="right")
-    text(x+150,y+5,label,"start","label",clickUrl);
+    text(x+150,y+5,label,"start","label");
 }
 
 function arrowDown(x,y){
@@ -292,7 +292,14 @@ function draw(board){
 
   clearSVG();
 
-  const W=1400;
+  const deviceCount = Math.max(
+  board.outgoings?.length || 0,
+  board.incomers?.length || 0,
+  10
+);
+
+const W = deviceCount * 140;   // dynamic width
+svg.setAttribute("viewBox", `0 0 ${W} 620`);
   const BUS_Y=280;
   const GAP=120;
   const mid=W/2;
@@ -302,10 +309,26 @@ function draw(board){
   line(100,BUS_Y,mid-GAP/2,BUS_Y);
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
 
-  if(board.busCouplers?.length){
-    const bc=board.busCouplers[0];
-    breaker(mid,BUS_Y,bc.breakerId,null,true);
-  }
+if(board.busCouplers?.length){
+
+  const couplers = board.busCouplers;
+  const count = couplers.length;
+
+  couplers.forEach((bc,i)=>{
+
+    let x;
+
+    if(count === 1){
+      x = mid;
+    } else {
+      const start = mid - ((count-1) * GAP);
+      x = start + (i * GAP * 2);
+    }
+
+    breaker(x, BUS_Y, bc.breakerId, null, true);
+
+  });
+}
 
   const incomers=[...(board.incomers||[])];
   const spacing=W/(incomers.length+1);
@@ -324,13 +347,14 @@ function draw(board){
   const usableWidth=rightMargin-leftMargin;
 
   function posToX(pos){
-    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
-  }
+  if(maxPos <= 1) return leftMargin + usableWidth/2;
+  return leftMargin + (usableWidth * (pos-1) / (maxPos-1));
+}
 
   (board.outgoings||[]).forEach((o,index)=>{
     const x=posToX(o.position);
     line(x,BUS_Y+6,x,BUS_Y+46);
-    breaker(x,BUS_Y+66,null);
+    breaker(x,BUS_Y+66,o.breakerId);
     arrowDown(x,BUS_Y+82);
 
     const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
