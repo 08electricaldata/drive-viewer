@@ -5,12 +5,8 @@
 <title>HT Board Professional SLD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- PDF LIBRARIES -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
-.subtitle{
+  .subtitle{
   font-size:14px;
   font-weight:600;
   color:#cce0ff;
@@ -38,37 +34,18 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   background:#fff;border-radius:10px;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
   padding:12px;
-}
-
-/* TOOLBAR */
-.toolbar{
-  margin-bottom:12px;
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.toolbar button{
-  background:#003f88;
-  color:#fff;
-  border:none;
-  padding:8px 14px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:14px;
-}
-
-/* TABLE */
 .table-wrapper{
   overflow-x:auto;
   margin-bottom:15px;
 }
+
 #columnTable{
   border-collapse:collapse;
   width:max-content;
   min-width:100%;
 }
-#columnTable th,
-#columnTable td{
+
+#columnTable th,#columnTable td{
   border:1px solid #000;
   padding:8px 12px;
   text-align:center;
@@ -77,45 +54,33 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   white-space:nowrap;
   min-width:95px;
 }
+
 .incomer{background:#d9f2d9}
 .outgoing{background:#d9e8ff}
 .coupler{background:#fff3b0}
 
-/* SLD */
+/* ===== SLD ===== */
 #wrap{
   overflow:auto;
   border:1px solid #ccc;
   background:#fff;
   height:70vh;
-  transform-origin:0 0;
 }
 .bus{stroke:#000;stroke-width:4}
 .power-line{
-  stroke:#00cc44;
-  stroke-width:4;
+  stroke:#00cc44;stroke-width:4;
   stroke-dasharray:10 6;
   animation:flow 1s linear infinite;
 }
-@keyframes flow{
-  from{stroke-dashoffset:0}
-  to{stroke-dashoffset:-32}
-}
+@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
+
 .label{font-size:16px;font-weight:600;text-anchor:middle}
 .cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
 .board-title{
-  font-size:24px;
-  font-weight:900;
-  fill:#003f88;
-  text-anchor:middle;
+  font-size:24px;font-weight:900;
+  fill:#003f88;text-anchor:middle;
 }
 .info{font-weight:bold;color:#003f88;margin-bottom:8px}
-
-/* PRINT MODE */
-@media print{
-  body{background:#fff}
-  .header-bar,.toolbar{display:none}
-  #wrap{height:auto;overflow:visible;border:none}
-}
 </style>
 </head>
 
@@ -125,9 +90,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
   <div style="flex:1;text-align:center;">
-    <div class="header-title" id="title">HT BOARD SLD</div>
-    <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
-  </div>
+  <div class="header-title" id="title">HT BOARD SLD</div>
+  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+</div>
 </div>
 
 <div class="container">
@@ -135,21 +100,14 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 
     <div class="info" id="boardInfo">Loading...</div>
 
-    <!-- TOOLBAR -->
-    <div class="toolbar">
-      <button onclick="zoomIn()">🔍 Zoom In</button>
-      <button onclick="zoomOut()">🔎 Zoom Out</button>
-      <button onclick="resetZoom()">♻ Reset</button>
-      <button onclick="exportPDF()">📄 Export PDF</button>
-      <button onclick="window.print()">🖨 Print</button>
-    </div>
-
+    <!-- TABLE -->
     <div class="table-wrapper">
-      <table id="columnTable"></table>
-    </div>
+  <table id="columnTable"></table>
+</div>
 
+    <!-- SLD -->
     <div id="wrap">
-      <svg id="sldCanvas"></svg>
+      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
     </div>
 
   </div>
@@ -171,7 +129,7 @@ const svg=document.getElementById("sldCanvas");
 
 function clearSVG(){svg.innerHTML=""}
 
-/* TABLE */
+/* ================= TABLE ================= */
 
 function buildColumnTable(board){
 
@@ -235,7 +193,7 @@ function buildColumnTable(board){
   columnTable.appendChild(row3);
 }
 
-/* SLD */
+/* ================= SLD ================= */
 
 function line(x1,y1,x2,y2,cls="bus"){
   const e=document.createElementNS("http://www.w3.org/2000/svg","line");
@@ -261,39 +219,116 @@ function text(x,y,str,anchor="middle",cls="label",clickUrl=null){
   svg.appendChild(t);
 }
 
+function transformer(x,y,name,transformerNo){
+  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.style.cursor="pointer";
+
+  const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c1.setAttribute("cx",x-12);c1.setAttribute("cy",y);
+  c1.setAttribute("r",10);c1.setAttribute("stroke","#000");c1.setAttribute("fill","none");
+
+  const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c2.setAttribute("cx",x+12);c2.setAttribute("cy",y);
+  c2.setAttribute("r",10);c2.setAttribute("stroke","#000");c2.setAttribute("fill","none");
+
+  const lbl=document.createElementNS("http://www.w3.org/2000/svg","text");
+  lbl.setAttribute("x",x);lbl.setAttribute("y",y-18);
+  lbl.setAttribute("class","label");
+  lbl.textContent=name;
+
+  g.appendChild(c1);g.appendChild(c2);g.appendChild(lbl);
+
+  g.addEventListener("click",()=>{
+    location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+transformerNo;
+  });
+
+  svg.appendChild(g);
+}
+
+function breaker(x,y,label,side=null,isCoupler=false){
+  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+  r.setAttribute("x",x-18);
+  r.setAttribute("y",y-12);
+  r.setAttribute("width",36);
+  r.setAttribute("height",24);
+  r.setAttribute("fill","#fff");
+  r.setAttribute("stroke","#000");
+  r.setAttribute("stroke-width","2");
+  svg.appendChild(r);
+
+  text(x,y+5,"CB","middle","cbtext");
+
+  if(!label) return;
+
+  const clickUrl="https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-"+label;
+
+  if(isCoupler)
+    text(x,y-24,label,"middle","label",clickUrl);
+  else if(side==="left")
+    text(x-150,y+5,label,"end","label",clickUrl);
+  else if(side==="right")
+    text(x+150,y+5,label,"start","label",clickUrl);
+}
+
+function arrowDown(x,y){
+  line(x,y,x,y+24,"bus");
+  const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+  p.setAttribute("points",`${x-6},${y+24} ${x+6},${y+24} ${x},${y+36}`);
+  p.setAttribute("fill","#000");
+  svg.appendChild(p);
+}
+
 function draw(board){
 
   clearSVG();
 
   let maxPos=0;
-  [...(board.outgoings||[])].forEach(r=>{if(r.position>maxPos) maxPos=r.position;});
+[...(board.outgoings||[])].forEach(r=>{
+  if(r.position>maxPos) maxPos=r.position;
+});
 
-  const W=Math.max(1400,maxPos*110);
-  const H=620;
-  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-
+const W = Math.max(1400, maxPos * 120);
+svg.setAttribute("viewBox",`0 0 ${W} 620`);
   const BUS_Y=280;
   const GAP=120;
   const mid=W/2;
 
-  text(mid,40,getParam("id"),"middle","board-title");
+  text(700,40,getParam("id"),"middle","board-title");
 
   line(100,BUS_Y,mid-GAP/2,BUS_Y);
   line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
 
+  if(board.busCouplers?.length){
+    const bc=board.busCouplers[0];
+    breaker(mid,BUS_Y,bc.breakerId,null,true);
+  }
+
+  const incomers=[...(board.incomers||[])];
+  const spacing=W/(incomers.length+1);
+
+  incomers.forEach((inc,i)=>{
+    const x=spacing*(i+1);
+    transformer(x,120,inc.source,inc.transformer);
+    line(x,140,x,BUS_Y-30,"power-line");
+    breaker(x,BUS_Y-40,inc.breakerId,i===0?"left":"right");
+  });
+
+  let maxPos=0;
+  [...(board.outgoings||[])].forEach(r=>{if(r.position>maxPos) maxPos=r.position;});
   const leftMargin=120;
   const rightMargin=W-120;
   const usableWidth=rightMargin-leftMargin;
 
-  function posToX(pos){
-    if(maxPos<=1) return mid;
-    return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
-  }
+function posToX(pos){
+  if(maxPos<=1) return mid;
+  return leftMargin+(usableWidth*(pos-1)/(maxPos-1));
+}
 
   (board.outgoings||[]).forEach((o,index)=>{
     const x=posToX(o.position);
     line(x,BUS_Y+6,x,BUS_Y+46);
-    line(x,BUS_Y+46,x,BUS_Y+70);
+    breaker(x,BUS_Y+66,null);
+    arrowDown(x,BUS_Y+82);
 
     const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
 
@@ -304,7 +339,7 @@ function draw(board){
   });
 }
 
-/* LOAD */
+/* ================= LOAD ================= */
 
 async function loadSLD(){
   try{
@@ -329,30 +364,6 @@ async function loadSLD(){
 }
 
 loadSLD();
-
-/* ZOOM */
-
-let zoomLevel=1;
-function zoomIn(){zoomLevel+=0.1;wrap.style.transform="scale("+zoomLevel+")";}
-function zoomOut(){zoomLevel=Math.max(0.5,zoomLevel-0.1);wrap.style.transform="scale("+zoomLevel+")";}
-function resetZoom(){zoomLevel=1;wrap.style.transform="scale(1)";}
-
-/* PDF EXPORT */
-
-async function exportPDF(){
-  const { jsPDF } = window.jspdf;
-  const element=document.querySelector(".card");
-  const canvas=await html2canvas(element,{scale:2});
-  const imgData=canvas.toDataURL("image/png");
-
-  const pdf=new jsPDF("l","mm","a3");
-  const imgProps=pdf.getImageProperties(imgData);
-  const pdfWidth=pdf.internal.pageSize.getWidth();
-  const pdfHeight=(imgProps.height*pdfWidth)/imgProps.width;
-
-  pdf.addImage(imgData,"PNG",0,10,pdfWidth,pdfHeight);
-  pdf.save(titleEl.innerText+".pdf");
-}
 
 </script>
 
