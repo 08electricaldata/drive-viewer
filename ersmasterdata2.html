@@ -61,18 +61,28 @@ th {
 /* Chart Layout */
 .chart-wrapper{
   display:flex;
+  justify-content:center;
   gap:20px;
   padding:15px;
 }
+
 .chart-box{
-  flex:1;
+  width:70%;           /* reduced size */
+  max-width:400px;     /* limit max */
   background:#fff;
-  padding:15px;
+  padding:10px;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
 }
+
 .chart-box h3{
   text-align:center;
-  margin-top:0;
+  margin:5px 0 10px;
+  font-size:16px;
+}
+
+canvas{
+  max-width:100%;
+  height:250px !important;  /* smaller height */
 }
 
 </style>
@@ -82,11 +92,11 @@ th {
 
 <div class="header">
   <div class="header-bar">
-    <button class="header-btn" onclick="goBack()">⬅ Back</button>
+    <button class="header-btn" onclick="history.back()">⬅ Back</button>
     <div class="header-center">
       <h1>ERS MASTER DATA</h1>
     </div>
-    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+    <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
   </div>
 </div>
 
@@ -130,9 +140,6 @@ th {
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
 
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
-function goBack(){ window.history.back(); }
-
 let statusChart, ersChart;
 
 async function load(){
@@ -148,23 +155,17 @@ async function load(){
   const statusFilter=document.getElementById("statusFilter");
   const ersFilter=document.getElementById("ersFilter");
 
-  const statusColors={}, shiftedColors={};
-  let h1=0, h2=180;
-
   const areas=new Set(), statuses=new Set(), ersStatuses=new Set();
 
   rows.forEach(r=>{
-    if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h1+=40},70%,50%)`;
-    if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h2+=40},65%,50%)`;
-
     if(r[13]) areas.add(r[13]);
     if(r[4]) statuses.add(r[4]);
     if(r[3]) ersStatuses.add(r[3]);
   });
 
-  areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-  statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-  ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+  areas.forEach(v=>areaFilter.innerHTML+=`<option>${v}</option>`);
+  statuses.forEach(v=>statusFilter.innerHTML+=`<option>${v}</option>`);
+  ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option>${v}</option>`);
 
   function render(){
     tbody.innerHTML="";
@@ -186,18 +187,20 @@ async function load(){
       total++;
 
       if(r[4]) statusCount[r[4]]=(statusCount[r[4]]||0)+1;
-      if(r[3]) ersCount[r[3]]=(ersCount[r[3]]||0)+1;
 
-      let ersColor=r[3]?.toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
+      if(r[3]){
+        let ers=r[3].substring(0,9).toUpperCase();
+        if(ers==="COMPLETED") ers="COMPLETED";
+        ersCount[ers]=(ersCount[ers]||0)+1;
+      }
 
       const tr=document.createElement("tr");
-      tr.innerHTML=`
-<td>${r[0]||""}</td>
+      tr.innerHTML=`<td>${r[0]||""}</td>
 <td>${r[1]||""}</td>
 <td>${r[2]||""}</td>
-<td style="background:${ersColor};color:#fff;">${r[3]||""}</td>
-<td style="background:${statusColors[r[4]]||""};color:#fff;">${r[4]||""}</td>
-<td style="background:${shiftedColors[r[5]]||""};color:#fff;">${r[5]||""}</td>
+<td>${r[3]||""}</td>
+<td>${r[4]||""}</td>
+<td>${r[5]||""}</td>
 <td>${r[6]||""}</td>
 <td>${r[7]||""}</td>
 <td>${r[8]||""}</td>
@@ -221,27 +224,21 @@ async function load(){
       tbody.appendChild(tr);
     });
 
-    updatePie(statusChart,"statusChart",statusCount,statusColors,total);
-    updatePie(ersChart,"ersChart",ersCount,null,total,true);
+    createPie("statusChart",statusCount,total);
+    createPie("ersChart",ersCount,total);
   }
 
-  function updatePie(chart,id,dataMap,colorMap,total,isERS=false){
+  function createPie(id,dataMap,total){
     const labels=Object.keys(dataMap);
     const values=Object.values(dataMap);
-    const colors=labels.map(l=>{
-      if(isERS){
-        return l.toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
-      }
-      return colorMap[l];
-    });
+    const colors=labels.map((_,i)=>`hsl(${i*40},70%,55%)`);
 
-    if(chart) chart.destroy();
+    const existing=id==="statusChart"?statusChart:ersChart;
+    if(existing) existing.destroy();
 
-    chart=new Chart(document.getElementById(id),{
+    const chart=new Chart(document.getElementById(id),{
       type:"pie",
-      data:{ labels:labels,
-        datasets:[{ data:values, backgroundColor:colors }]
-      },
+      data:{labels:labels,datasets:[{data:values,backgroundColor:colors}]},
       options:{
         plugins:{
           tooltip:{
