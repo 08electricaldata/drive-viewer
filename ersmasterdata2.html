@@ -2,55 +2,59 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ERS MASTER DATA</title>
+<title>Pending Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
-
-.header { background:#003f88; color:#fff; padding:14px 16px; }
-.header-bar { display:flex; align-items:center; justify-content:space-between; }
-.header-btn {
-  background:#fff; color:#003f88; border:none;
-  padding:6px 10px; border-radius:6px;
-  font-size:16px; cursor:pointer;
+body{
+  font-family:Arial, sans-serif;
+  margin:0;
+  background:#f4f7ff;
 }
-.header-center { text-align:center; flex:1; }
-.header-center h1 { margin:0; font-size:26px; }
 
-.controls {
+.header{
+  background:#003f88;
+  color:#fff;
   padding:15px;
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-.table-wrapper {
-  overflow:auto;
-  height:55vh;
-  padding:10px;
-}
-
-table {
-  border-collapse:collapse;
-  width:max-content;
-  min-width:100%;
-  table-layout:auto;
-  background:#fff;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-}
-
-th,td {
-  border:1px solid #ccc;
-  padding:10px 14px;
   text-align:center;
-  white-space:nowrap;
+  font-size:22px;
+  font-weight:bold;
+}
+
+.controls{
+  padding:15px;
+  text-align:center;
+}
+
+select{
+  padding:8px 12px;
   font-size:15px;
 }
 
-th {
+.table-wrapper{
+  padding:15px;
+  overflow:auto;
+  height:75vh;
+}
+
+table{
+  border-collapse:collapse;
+  background:#fff;
+  width:max-content;
+  min-width:100%;
+  table-layout:auto;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+
+th, td{
+  border:1px solid #ccc;
+  padding:8px 12px;
+  white-space:nowrap;
+  font-size:14px;
+  text-align:center;
+}
+
+th{
   background:#003f88;
   color:#fff;
   position:sticky;
@@ -58,31 +62,8 @@ th {
   z-index:2;
 }
 
-/* Chart Layout */
-.chart-wrapper{
-  display:flex;
-  justify-content:center;
-  gap:20px;
-  padding:15px;
-}
-
-.chart-box{
-  width:70%;           /* reduced size */
-  max-width:400px;     /* limit max */
-  background:#fff;
-  padding:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-}
-
-.chart-box h3{
-  text-align:center;
-  margin:5px 0 10px;
-  font-size:16px;
-}
-
-canvas{
-  max-width:100%;
-  height:250px !important;  /* smaller height */
+tbody tr:hover{
+  background:#eef5ff;
 }
 
 </style>
@@ -90,182 +71,91 @@ canvas{
 
 <body>
 
-<div class="header">
-  <div class="header-bar">
-    <button class="header-btn" onclick="history.back()">⬅ Back</button>
-    <div class="header-center">
-      <h1>ERS MASTER DATA</h1>
-    </div>
-    <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
-  </div>
-</div>
+<div class="header">Rewinding / Overhauling Pending Dashboard</div>
 
 <div class="controls">
-  <input id="search" placeholder="Search any field">
-  <select id="areaFilter"><option value="">All Areas</option></select>
-  <select id="statusFilter"><option value="">All Status</option></select>
-  <select id="ersFilter"><option value="">All ERS Status</option></select>
-</div>
-
-<div class="chart-wrapper">
-  <div class="chart-box">
-    <h3>STATUS Distribution</h3>
-    <canvas id="statusChart"></canvas>
-  </div>
-  <div class="chart-box">
-    <h3>ERS STATUS Distribution</h3>
-    <canvas id="ersChart"></canvas>
-  </div>
+  <label>Select Type: </label>
+  <select id="typeSelect">
+    <option value="rewinding">Rewinding</option>
+    <option value="overhauling">Overhauling</option>
+  </select>
 </div>
 
 <div class="table-wrapper">
-<table id="tbl">
-<thead>
-<tr>
-<th>SL</th><th>DATE</th><th>W.O NO</th><th>ERS STATUS</th>
-<th>STATUS</th><th>SHIFTED TO</th><th>USE STATUS</th>
-<th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th>
-<th>MOUNT</th><th>MOTOR SL</th><th>AREA</th>
-<th>EQPT DETAILS</th><th>TYPE</th><th>DRIVE1</th><th>DRIVE2</th>
-<th>DATE2</th><th>W.O2</th><th>KW2</th><th>MAKE2</th>
-<th>MOUNT2</th><th>M/C NO</th><th>AREA2</th>
-<th>LAST MOTORTR</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+  <table id="dataTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
 </div>
 
 <script>
-const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
 
-let statusChart, ersChart;
+const JSON_FILES = {
+  rewinding: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
+  overhauling: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
+};
 
-async function load(){
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
-  let rows=data.rows;
+const tableHead = document.querySelector("#dataTable thead");
+const tableBody = document.querySelector("#dataTable tbody");
+const select = document.getElementById("typeSelect");
 
-  rows.sort((a,b)=>(b[0]||0)-(a[0]||0));
+async function loadData(type){
 
-  const tbody=document.querySelector("#tbl tbody");
-  const search=document.getElementById("search");
-  const areaFilter=document.getElementById("areaFilter");
-  const statusFilter=document.getElementById("statusFilter");
-  const ersFilter=document.getElementById("ersFilter");
+  tableHead.innerHTML="";
+  tableBody.innerHTML="";
 
-  const areas=new Set(), statuses=new Set(), ersStatuses=new Set();
+  const response = await fetch(JSON_FILES[type]);
+  const json = await response.json();
 
-  rows.forEach(r=>{
-    if(r[13]) areas.add(r[13]);
-    if(r[4]) statuses.add(r[4]);
-    if(r[3]) ersStatuses.add(r[3]);
+  if(!json.data || json.data.length===0){
+    tableBody.innerHTML="<tr><td>No Data Found</td></tr>";
+    return;
+  }
+
+  let records = json.data;
+
+  // 🔹 Sort by Column O (15th column) ascending
+  records.sort((a,b)=>{
+    let pa = Number(a[Object.keys(a)[14]] || 9999);
+    let pb = Number(b[Object.keys(b)[14]] || 9999);
+    return pa - pb;
   });
 
-  areas.forEach(v=>areaFilter.innerHTML+=`<option>${v}</option>`);
-  statuses.forEach(v=>statusFilter.innerHTML+=`<option>${v}</option>`);
-  ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option>${v}</option>`);
+  const headers = Object.keys(records[0]);
 
-  function render(){
-    tbody.innerHTML="";
-    const q=search.value.toLowerCase();
-    const areaVal=areaFilter.value;
-    const statusVal=statusFilter.value;
-    const ersVal=ersFilter.value;
+  // 🔹 Rearrange header order
+  const priorityKey = headers[14];   // Column O
+  const orderedHeaders = [priorityKey].concat(headers.slice(0,14));
 
-    const statusCount={}, ersCount={};
-    let total=0;
+  // 🔹 Create header row
+  let headerRow = "<tr>";
+  orderedHeaders.forEach(h=>{
+    headerRow += `<th>${h}</th>`;
+  });
+  headerRow += "</tr>";
+  tableHead.innerHTML = headerRow;
 
-    rows.forEach(r=>{
-      if(!r[2] && !r[19]) return;
-      if(q && !r.join(" ").toLowerCase().includes(q)) return;
-      if(areaVal && r[13]!==areaVal) return;
-      if(statusVal && r[4]!==statusVal) return;
-      if(ersVal && r[3]!==ersVal) return;
+  // 🔹 Create rows
+  records.forEach(row=>{
+    let tr = "<tr>";
 
-      total++;
-
-      if(r[4]) statusCount[r[4]]=(statusCount[r[4]]||0)+1;
-
-      if(r[3]){
-        let ers=r[3].substring(0,9).toUpperCase();
-        if(ers==="COMPLETED") ers="COMPLETED";
-        ersCount[ers]=(ersCount[ers]||0)+1;
-      }
-
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${r[0]||""}</td>
-<td>${r[1]||""}</td>
-<td>${r[2]||""}</td>
-<td>${r[3]||""}</td>
-<td>${r[4]||""}</td>
-<td>${r[5]||""}</td>
-<td>${r[6]||""}</td>
-<td>${r[7]||""}</td>
-<td>${r[8]||""}</td>
-<td>${r[9]||""}</td>
-<td>${r[10]||""}</td>
-<td>${r[11]||""}</td>
-<td>${r[12]||""}</td>
-<td>${r[13]||""}</td>
-<td>${r[14]||""}</td>
-<td>${r[15]||""}</td>
-<td>${r[16]||""}</td>
-<td>${r[17]||""}</td>
-<td>${r[18]||""}</td>
-<td>${r[19]||""}</td>
-<td>${r[20]||""}</td>
-<td>${r[21]||""}</td>
-<td>${r[22]||""}</td>
-<td>${r[23]||""}</td>
-<td>${r[24]||""}</td>
-<td>${r[25]||""}</td>`;
-      tbody.appendChild(tr);
+    orderedHeaders.forEach(h=>{
+      tr += `<td>${row[h] ?? ""}</td>`;
     });
 
-    createPie("statusChart",statusCount,total);
-    createPie("ersChart",ersCount,total);
-  }
-
-  function createPie(id,dataMap,total){
-    const labels=Object.keys(dataMap);
-    const values=Object.values(dataMap);
-    const colors=labels.map((_,i)=>`hsl(${i*40},70%,55%)`);
-
-    const existing=id==="statusChart"?statusChart:ersChart;
-    if(existing) existing.destroy();
-
-    const chart=new Chart(document.getElementById(id),{
-      type:"pie",
-      data:{labels:labels,datasets:[{data:values,backgroundColor:colors}]},
-      options:{
-        plugins:{
-          tooltip:{
-            callbacks:{
-              label:function(ctx){
-                const pct=((ctx.raw/total)*100).toFixed(1);
-                return `${ctx.label}: ${ctx.raw} (${pct}%)`;
-              }
-            }
-          }
-        }
-      }
-    });
-
-    if(id==="statusChart") statusChart=chart;
-    else ersChart=chart;
-  }
-
-  search.onkeyup=render;
-  areaFilter.onchange=render;
-  statusFilter.onchange=render;
-  ersFilter.onchange=render;
-
-  render();
+    tr += "</tr>";
+    tableBody.innerHTML += tr;
+  });
 }
 
-load();
+// 🔹 Initial load
+loadData(select.value);
+
+// 🔹 Change event
+select.addEventListener("change", function(){
+  loadData(this.value);
+});
+
 </script>
 
 </body>
