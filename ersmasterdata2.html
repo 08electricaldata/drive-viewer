@@ -7,7 +7,7 @@
 
 <style>
 body{
-  font-family:Arial, sans-serif;
+  font-family:Arial;
   margin:0;
   background:#f4f7ff;
 }
@@ -23,35 +23,56 @@ body{
 
 .controls{
   padding:15px;
-  text-align:center;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
 }
 
-select{
-  padding:8px 12px;
-  font-size:15px;
+select,input,button{
+  padding:7px 10px;
+  font-size:14px;
 }
+
+.summary{
+  display:flex;
+  gap:15px;
+  justify-content:center;
+  padding:10px;
+  flex-wrap:wrap;
+}
+
+.card{
+  background:#fff;
+  padding:12px 18px;
+  border-radius:6px;
+  box-shadow:0 2px 5px rgba(0,0,0,.15);
+  text-align:center;
+  min-width:120px;
+}
+
+.card h3{ margin:0; font-size:18px; }
+.card span{ font-size:14px; }
 
 .table-wrapper{
-  padding:15px;
+  padding:10px;
   overflow:auto;
-  height:75vh;
+  height:65vh;
 }
 
 table{
   border-collapse:collapse;
-  background:#fff;
   width:max-content;
   min-width:100%;
-  table-layout:auto;
-  box-shadow:0 2px 6px rgba(0,0,0,.2);
+  background:#fff;
 }
 
-th, td{
+th,td{
   border:1px solid #ccc;
-  padding:8px 12px;
+  padding:8px 10px;
   white-space:nowrap;
-  font-size:14px;
   text-align:center;
+  font-size:13px;
 }
 
 th{
@@ -60,25 +81,50 @@ th{
   position:sticky;
   top:0;
   z-index:2;
+  cursor:pointer;
 }
 
 tbody tr:hover{
   background:#eef5ff;
 }
 
+.priority-1{ background:#ff4d4d;color:#fff; }
+.priority-2{ background:#ff9933;color:#fff; }
+.priority-3{ background:#ffcc00;color:#000; }
+.priority-4{ background:#66cc66;color:#000; }
+
+.badge{
+  padding:4px 8px;
+  border-radius:4px;
+  color:#fff;
+  font-weight:bold;
+}
+
+.completed{ background:#28a745; }
+.pending{ background:#dc3545; }
+
 </style>
 </head>
-
 <body>
 
-<div class="header">Rewinding / Overhauling Pending Dashboard</div>
+<div class="header">Rewinding / Overhauling Dashboard</div>
 
 <div class="controls">
-  <label>Select Type: </label>
   <select id="typeSelect">
     <option value="rewinding">Rewinding</option>
     <option value="overhauling">Overhauling</option>
   </select>
+
+  <input type="text" id="searchBox" placeholder="Search...">
+
+  <button onclick="exportCSV()">Export Excel</button>
+</div>
+
+<div class="summary">
+  <div class="card"><h3 id="totalCount">0</h3><span>Total</span></div>
+  <div class="card"><h3 id="highCount">0</h3><span>High Priority</span></div>
+  <div class="card"><h3 id="mediumCount">0</h3><span>Medium</span></div>
+  <div class="card"><h3 id="lowCount">0</h3><span>Low</span></div>
 </div>
 
 <div class="table-wrapper">
@@ -95,66 +141,118 @@ const JSON_FILES = {
   overhauling: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
 };
 
-const tableHead = document.querySelector("#dataTable thead");
-const tableBody = document.querySelector("#dataTable tbody");
-const select = document.getElementById("typeSelect");
+let currentData=[];
+let headers=[];
+let priorityKey="";
+
+const tableHead=document.querySelector("#dataTable thead");
+const tableBody=document.querySelector("#dataTable tbody");
+const select=document.getElementById("typeSelect");
+const searchBox=document.getElementById("searchBox");
 
 async function loadData(type){
 
   tableHead.innerHTML="";
   tableBody.innerHTML="";
+  
+  const res=await fetch(JSON_FILES[type]);
+  const json=await res.json();
 
-  const response = await fetch(JSON_FILES[type]);
-  const json = await response.json();
+  currentData=json.data || [];
+  if(currentData.length===0) return;
 
-  if(!json.data || json.data.length===0){
-    tableBody.innerHTML="<tr><td>No Data Found</td></tr>";
-    return;
-  }
+  headers=Object.keys(currentData[0]);
+  priorityKey=headers[14];
 
-  let records = json.data;
-
-  // 🔹 Sort by Column O (15th column) ascending
-  records.sort((a,b)=>{
-    let pa = Number(a[Object.keys(a)[14]] || 9999);
-    let pb = Number(b[Object.keys(b)[14]] || 9999);
-    return pa - pb;
-  });
-
-  const headers = Object.keys(records[0]);
-
-  // 🔹 Rearrange header order
-  const priorityKey = headers[14];   // Column O
-  const orderedHeaders = [priorityKey].concat(headers.slice(0,14));
-
-  // 🔹 Create header row
-  let headerRow = "<tr>";
-  orderedHeaders.forEach(h=>{
-    headerRow += `<th>${h}</th>`;
-  });
-  headerRow += "</tr>";
-  tableHead.innerHTML = headerRow;
-
-  // 🔹 Create rows
-  records.forEach(row=>{
-    let tr = "<tr>";
-
-    orderedHeaders.forEach(h=>{
-      tr += `<td>${row[h] ?? ""}</td>`;
-    });
-
-    tr += "</tr>";
-    tableBody.innerHTML += tr;
-  });
+  renderTable(currentData);
 }
 
-// 🔹 Initial load
-loadData(select.value);
+function renderTable(data){
 
-// 🔹 Change event
-select.addEventListener("change", function(){
+  data.sort((a,b)=>{
+    return (Number(a[priorityKey]||9999) - Number(b[priorityKey]||9999));
+  });
+
+  const orderedHeaders=[priorityKey].concat(headers.slice(0,14));
+
+  let headRow="<tr>";
+  orderedHeaders.forEach(h=>{
+    headRow+=`<th onclick="sortBy('${h}')">${h}</th>`;
+  });
+  headRow+="</tr>";
+  tableHead.innerHTML=headRow;
+
+  tableBody.innerHTML="";
+
+  let high=0,med=0,low=0;
+
+  data.forEach(row=>{
+    let pr=Number(row[priorityKey]||0);
+    if(pr===1) high++;
+    if(pr===2) med++;
+    if(pr>=3) low++;
+
+    let tr="<tr>";
+    orderedHeaders.forEach(h=>{
+      let value=row[h] ?? "";
+
+      if(h===priorityKey){
+        tr+=`<td class="priority-${pr}">${value}</td>`;
+      }
+      else if(String(value).toUpperCase().includes("COMPLETED")){
+        tr+=`<td><span class="badge completed">${value}</span></td>`;
+      }
+      else{
+        tr+=`<td>${value}</td>`;
+      }
+    });
+    tr+="</tr>";
+    tableBody.innerHTML+=tr;
+  });
+
+  document.getElementById("totalCount").innerText=data.length;
+  document.getElementById("highCount").innerText=high;
+  document.getElementById("mediumCount").innerText=med;
+  document.getElementById("lowCount").innerText=low;
+}
+
+function sortBy(key){
+  currentData.sort((a,b)=>{
+    return String(a[key]).localeCompare(String(b[key]));
+  });
+  renderTable(currentData);
+}
+
+searchBox.addEventListener("keyup",function(){
+  const q=this.value.toLowerCase();
+  const filtered=currentData.filter(r=>{
+    return Object.values(r).join(" ").toLowerCase().includes(q);
+  });
+  renderTable(filtered);
+});
+
+function exportCSV(){
+  let csv="";
+  const orderedHeaders=[priorityKey].concat(headers.slice(0,14));
+  csv+=orderedHeaders.join(",")+"\n";
+
+  currentData.forEach(r=>{
+    csv+=orderedHeaders.map(h=>`"${r[h]??""}"`).join(",")+"\n";
+  });
+
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="pending_data.csv";
+  a.click();
+}
+
+select.addEventListener("change",function(){
   loadData(this.value);
 });
+
+loadData(select.value);
 
 </script>
 
