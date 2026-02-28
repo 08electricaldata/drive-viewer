@@ -146,8 +146,7 @@ async function load(){
   const data=await res.json();
   let rows = data.rows;
 
-  // Sort based on Column T (index 19) instead of Column B
-rows.sort((a,b)=>(parseDate(b[19])||0)-(parseDate(a[19])||0));
+rows.sort((a,b)=>(parseDate(b[1])||0)-(parseDate(a[1])||0));
 
   const tbody=document.querySelector("#tbl tbody");
 
