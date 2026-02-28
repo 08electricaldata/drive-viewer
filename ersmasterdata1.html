@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ERS MASTER DATA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
+
+/* HEADER */
+.header { background:#003f88; color:#fff; padding:14px 16px; }
+.header-bar { display:flex; align-items:center; justify-content:space-between; }
+.header-btn {
+  background:#fff; color:#003f88; border:none;
+  padding:6px 10px; border-radius:6px;
+  font-size:16px; cursor:pointer;
+}
+.header-center { text-align:center; flex:1; }
+.header-center h1 { margin:0; font-size:26px; }
+
+/* CONTROLS */
+.controls {
+  padding:15px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* TABLE WRAPPER */
+.table-wrapper {
+  overflow:auto;
+  height:75vh;
+  padding:10px;
+}
+
+/* TABLE */
+table {
+  border-collapse:collapse;
+  background:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  width:max-content;
+  min-width:100%;
+  table-layout:auto;
+}
+
+th,td {
+  border:1px solid #ccc;
+  padding:8px 10px;
+  text-align:center;
+  white-space:nowrap;
+  font-size:13px;
+}
+
+th {
+  background:#003f88;
+  color:#fff;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+
+/* BADGES */
+.badge {
+  padding:4px 8px;
+  border-radius:4px;
+  color:#fff;
+  font-weight:bold;
+  display:inline-block;
+}
+
+.completed { background:#28a745; }
+.default-status { background:#007bff; }
+
+tbody tr:hover { background:#eef5ff; }
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="header-bar">
+
+    <!-- Back Button -->
+    <button class="header-btn" onclick="goBack()">⬅ Back</button>
+
+    <div class="header-center">
+      <h1>ERS MASTER DATA</h1>
+    </div>
+
+    <!-- Home Button -->
+    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+
+  </div>
+</div>
+
+<div class="controls">
+  <input id="search" placeholder="Search any field">
+  <select id="areaFilter"><option value="">All Areas</option></select>
+  <select id="statusFilter"><option value="">All Status</option></select>
+  <select id="ersFilter"><option value="">All ERS Status</option></select>
+</div>
+
+<div class="table-wrapper">
+<table id="tbl">
+<thead>
+<tr>
+<th>SL</th><th>DATE</th><th>W.O NO</th><th>ERS STATUS</th>
+<th>STATUS</th><th>SHIFTED TO</th><th>USE STATUS</th>
+<th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th>
+<th>MOUNT</th><th>MOTOR SL</th><th>AREA</th>
+<th>EQPT DETAILS</th><th>TYPE</th><th>DRIVE1</th><th>DRIVE2</th>
+<th>DATE2</th><th>W.O2</th><th>KW2</th><th>MAKE2</th>
+<th>MOUNT2</th><th>M/C NO</th><th>AREA2</th>
+<th>LAST MOTORTR</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<script>
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
+
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+function goBack(){
+  window.history.back();
+}
+function parseDate(v){
+  if(!v) return null;
+  const d=new Date(v);
+  return isNaN(d)?null:d;
+}
+function fmt(d){
+  if(!d) return "";
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+async function load(){
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
+  let rows = data.rows;
+
+  // Sort based on Column T (index 19) instead of Column B
+rows.sort((a,b)=>(parseDate(b[19])||0)-(parseDate(a[19])||0));
+
+  const tbody=document.querySelector("#tbl tbody");
+
+  /* ===== UNIQUE COLOR MAPS ===== */
+  const shiftedColors={}, statusColors={};
+  let h1=0, h2=180;
+
+  rows.forEach(r=>{
+    if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
+    if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
+  });
+
+  function render(){
+    tbody.innerHTML="";
+    const q=search.value.toLowerCase();
+
+    rows.forEach(r=>{
+      if(q && !r.join(" ").toLowerCase().includes(q)) return;
+
+      /* Column D – ERS STATUS */
+      let ers="";
+      if(r[3]){
+        ers=r[3].toUpperCase().includes("COMPLETED")
+          ? `<span class="badge completed">${r[3]}</span>`
+          : `<span class="badge default-status">${r[3]}</span>`;
+      }
+
+      /* Column E – STATUS (unique color) */
+      let status=r[4]
+        ? `<span class="badge" style="background:${statusColors[r[4]]}">${r[4]}</span>`
+        : "";
+
+      /* Column F – SHIFTED TO (unique color) */
+      let shifted=r[5]
+        ? `<span class="badge" style="background:${shiftedColors[r[5]]}">${r[5]}</span>`
+        : "";
+
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${r[0]||""}</td>
+        <td>${fmt(parseDate(r[1]))}</td>
+        <td>${r[2]||""}</td>
+        <td>${ers}</td>
+        <td>${status}</td>
+        <td>${shifted}</td>
+        <td>${r[6]||""}</td>
+        <td>${r[7]||""}</td>
+        <td>${r[8]||""}</td>
+        <td>${r[9]||""}</td>
+        <td>${r[10]||""}</td>
+        <td>${r[11]||""}</td>
+        <td>${r[12]||""}</td>
+        <td>${r[13]||""}</td>
+        <td>${r[14]||""}</td>
+        <td>${r[15]||""}</td>
+        <td>${r[16]||""}</td>
+        <td>${r[17]||""}</td>
+        <td>${fmt(parseDate(r[18]))}</td>
+        <td>${r[19]||""}</td>
+        <td>${r[20]||""}</td>
+        <td>${r[21]||""}</td>
+        <td>${r[22]||""}</td>
+        <td>${r[23]||""}</td>
+        <td>${r[24]||""}</td>
+        <td>${r[25]||""}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  search.onkeyup=render;
+  render();
+}
+
+load();
+</script>
+
+</body>
+</html>
