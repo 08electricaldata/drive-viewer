@@ -163,8 +163,12 @@ rows.sort((a,b)=>(b[0]||0)-(a[0]||0));
     tbody.innerHTML="";
     const q=search.value.toLowerCase();
 
-    rows.forEach(r=>{
-      if(q && !r.join(" ").toLowerCase().includes(q)) return;
+   rows.forEach(r=>{
+
+  // Hide row ONLY if Column C (index 2) AND Column T (index 19) both blank
+  if(!r[2] && !r[19]) return;
+
+  if(q && !r.join(" ").toLowerCase().includes(q)) return;
 
       /* Column D – ERS STATUS */
       let ers="";
