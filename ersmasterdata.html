@@ -26,30 +26,33 @@ body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
   gap:10px;
   flex-wrap:wrap;
 }
+.controls input, .controls select{
+  padding:6px 8px;
+  font-size:14px;
+}
 
-/* TABLE WRAPPER */
+/* TABLE */
 .table-wrapper {
   overflow:auto;
   height:75vh;
   padding:10px;
 }
 
-/* TABLE */
 table {
   border-collapse:collapse;
   background:#fff;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
-  width:max-content;
-  min-width:100%;
-  table-layout:auto;
+  width:max-content;     /* expand based on content */
+  min-width:100%;        /* but not smaller than screen */
+  table-layout:auto;     /* auto adjust column width */
 }
 
 th,td {
   border:1px solid #ccc;
-  padding:8px 10px;
+  padding:10px 14px;
   text-align:center;
-  white-space:nowrap;
-  font-size:13px;
+  white-space:nowrap;    /* NO WRAP */
+  font-size:15px;        /* bigger text */
 }
 
 th {
@@ -60,38 +63,19 @@ th {
   z-index:2;
 }
 
-/* BADGES */
-.badge {
-  padding:4px 8px;
-  border-radius:4px;
-  color:#fff;
-  font-weight:bold;
-  display:inline-block;
-}
-
-.completed { background:#28a745; }
-.default-status { background:#007bff; }
-
 tbody tr:hover { background:#eef5ff; }
 
 </style>
 </head>
-
 <body>
 
 <div class="header">
   <div class="header-bar">
-
-    <!-- Back Button -->
     <button class="header-btn" onclick="goBack()">⬅ Back</button>
-
     <div class="header-center">
       <h1>ERS MASTER DATA</h1>
     </div>
-
-    <!-- Home Button -->
     <button class="header-btn" onclick="goHome()">🏠 Home</button>
-
   </div>
 </div>
 
@@ -124,12 +108,9 @@ tbody tr:hover { background:#eef5ff; }
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
 
-function goHome(){
-  location.href="https://08electricaldata.github.io/";
-}
-function goBack(){
-  window.history.back();
-}
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ window.history.back(); }
+
 function parseDate(v){
   if(!v) return null;
   const d=new Date(v);
@@ -143,79 +124,97 @@ function fmt(d){
 async function load(){
   const res=await fetch(JSON_URL);
   const data=await res.json();
-  let rows=data.rows.filter(r=>r[1]||r[2]);
+  let rows=data.rows;
 
-  rows.sort((a,b)=>(parseDate(b[1])||0)-(parseDate(a[1])||0));
+  // Sort by Column A descending
+  rows.sort((a,b)=>(b[0]||0)-(a[0]||0));
 
   const tbody=document.querySelector("#tbl tbody");
+  const areaFilter=document.getElementById("areaFilter");
+  const statusFilter=document.getElementById("statusFilter");
+  const ersFilter=document.getElementById("ersFilter");
+  const search=document.getElementById("search");
 
-  /* ===== UNIQUE COLOR MAPS ===== */
   const shiftedColors={}, statusColors={};
   let h1=0, h2=180;
+
+  const areas=new Set();
+  const statuses=new Set();
+  const ersStatuses=new Set();
 
   rows.forEach(r=>{
     if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
     if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
+
+    if(r[13]) areas.add(r[13]);
+    if(r[4]) statuses.add(r[4]);
+    if(r[3]) ersStatuses.add(r[3]);
   });
+
+  // Fill dropdowns
+  areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+  statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+  ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
 
   function render(){
     tbody.innerHTML="";
     const q=search.value.toLowerCase();
+    const areaVal=areaFilter.value;
+    const statusVal=statusFilter.value;
+    const ersVal=ersFilter.value;
 
     rows.forEach(r=>{
+
+      // Hide if Column C & T both blank
+      if(!r[2] && !r[19]) return;
+
       if(q && !r.join(" ").toLowerCase().includes(q)) return;
+      if(areaVal && r[13]!==areaVal) return;
+      if(statusVal && r[4]!==statusVal) return;
+      if(ersVal && r[3]!==ersVal) return;
 
-      /* Column D – ERS STATUS */
-      let ers="";
+      let ersColor="";
       if(r[3]){
-        ers=r[3].toUpperCase().includes("COMPLETED")
-          ? `<span class="badge completed">${r[3]}</span>`
-          : `<span class="badge default-status">${r[3]}</span>`;
+        ersColor=r[3].toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
       }
-
-      /* Column E – STATUS (unique color) */
-      let status=r[4]
-        ? `<span class="badge" style="background:${statusColors[r[4]]}">${r[4]}</span>`
-        : "";
-
-      /* Column F – SHIFTED TO (unique color) */
-      let shifted=r[5]
-        ? `<span class="badge" style="background:${shiftedColors[r[5]]}">${r[5]}</span>`
-        : "";
 
       const tr=document.createElement("tr");
       tr.innerHTML=`
-        <td>${r[0]||""}</td>
-        <td>${fmt(parseDate(r[1]))}</td>
-        <td>${r[2]||""}</td>
-        <td>${ers}</td>
-        <td>${status}</td>
-        <td>${shifted}</td>
-        <td>${r[6]||""}</td>
-        <td>${r[7]||""}</td>
-        <td>${r[8]||""}</td>
-        <td>${r[9]||""}</td>
-        <td>${r[10]||""}</td>
-        <td>${r[11]||""}</td>
-        <td>${r[12]||""}</td>
-        <td>${r[13]||""}</td>
-        <td>${r[14]||""}</td>
-        <td>${r[15]||""}</td>
-        <td>${r[16]||""}</td>
-        <td>${r[17]||""}</td>
-        <td>${fmt(parseDate(r[18]))}</td>
-        <td>${r[19]||""}</td>
-        <td>${r[20]||""}</td>
-        <td>${r[21]||""}</td>
-        <td>${r[22]||""}</td>
-        <td>${r[23]||""}</td>
-        <td>${r[24]||""}</td>
-        <td>${r[25]||""}</td>`;
+<td>${r[0]||""}</td>
+<td>${fmt(parseDate(r[1]))}</td>
+<td>${r[2]||""}</td>
+<td style="background:${ersColor};color:#fff;">${r[3]||""}</td>
+<td style="background:${statusColors[r[4]]||""};color:#fff;">${r[4]||""}</td>
+<td style="background:${shiftedColors[r[5]]||""};color:#fff;">${r[5]||""}</td>
+<td>${r[6]||""}</td>
+<td>${r[7]||""}</td>
+<td>${r[8]||""}</td>
+<td>${r[9]||""}</td>
+<td>${r[10]||""}</td>
+<td>${r[11]||""}</td>
+<td>${r[12]||""}</td>
+<td>${r[13]||""}</td>
+<td>${r[14]||""}</td>
+<td>${r[15]||""}</td>
+<td>${r[16]||""}</td>
+<td>${r[17]||""}</td>
+<td>${fmt(parseDate(r[18]))}</td>
+<td>${r[19]||""}</td>
+<td>${r[20]||""}</td>
+<td>${r[21]||""}</td>
+<td>${r[22]||""}</td>
+<td>${r[23]||""}</td>
+<td>${r[24]||""}</td>
+<td>${r[25]||""}</td>`;
       tbody.appendChild(tr);
     });
   }
 
   search.onkeyup=render;
+  areaFilter.onchange=render;
+  statusFilter.onchange=render;
+  ersFilter.onchange=render;
+
   render();
 }
 
