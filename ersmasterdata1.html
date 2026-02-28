@@ -1,61 +1,115 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>ERS MASTER DATA</title>
+<title>Pending Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
+body{font-family:Arial;margin:0;background:#f4f7ff;}
 
 /* HEADER */
-.header { background:#003f88; color:#fff; padding:14px 16px; }
-.header-bar { display:flex; align-items:center; justify-content:space-between; }
-.header-btn {
-  background:#fff; color:#003f88; border:none;
-  padding:6px 10px; border-radius:6px;
-  font-size:16px; cursor:pointer;
+.header{
+  background:#003f88;
+  color:#fff;
+  padding:15px 10px;
 }
-.header-center { text-align:center; flex:1; }
-.header-center h1 { margin:0; font-size:26px; }
 
-/* CONTROLS */
-.controls {
+.header-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.header-center{
+  text-align:center;
+  flex:1;
+}
+
+.header-center h1{
+  margin:0;
+  font-size:22px;
+}
+
+.header-center p{
+  margin:3px 0 0;
+  font-size:13px;
+  font-weight:normal;
+}
+
+.header-btn{
+  background:#fff;
+  color:#003f88;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  font-size:13px;
+  cursor:pointer;
+  margin:3px;
+}
+
+.controls{
   padding:15px;
   display:flex;
   gap:10px;
+  justify-content:center;
   flex-wrap:wrap;
 }
-.controls input, .controls select{
-  padding:6px 8px;
+
+select,input,button{
+  padding:7px 10px;
   font-size:14px;
 }
 
-/* TABLE */
-.table-wrapper {
-  overflow:auto;
-  height:75vh;
+.summary{
+  display:flex;
+  gap:15px;
+  justify-content:center;
   padding:10px;
+  flex-wrap:wrap;
 }
 
-table {
-  border-collapse:collapse;
+.card{
   background:#fff;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-  width:max-content;     /* expand based on content */
-  min-width:100%;        /* but not smaller than screen */
-  table-layout:auto;     /* auto adjust column width */
-}
-
-th,td {
-  border:1px solid #ccc;
-  padding:10px 14px;
+  padding:12px 18px;
+  border-radius:6px;
+  box-shadow:0 2px 5px rgba(0,0,0,.15);
   text-align:center;
-  white-space:nowrap;    /* NO WRAP */
-  font-size:15px;        /* bigger text */
+  min-width:130px;
 }
 
-th {
+.card h3{margin:0;font-size:18px;}
+
+.table-wrapper{
+  padding:10px;
+  overflow:auto;
+  max-height:40vh;
+}
+
+.section-title{
+  padding-left:15px;
+  font-weight:bold;
+  margin-top:10px;
+}
+
+table{
+  border-collapse:collapse;
+  width:max-content;
+  min-width:100%;
+  background:#fff;
+}
+
+th,td{
+  border:1px solid #ccc;
+  padding:8px 10px;
+  white-space:nowrap;
+  text-align:center;
+  font-size:13px;
+}
+
+th{
   background:#003f88;
   color:#fff;
   position:sticky;
@@ -63,162 +117,199 @@ th {
   z-index:2;
 }
 
-tbody tr:hover { background:#eef5ff; }
+.priority-1{background:#ff4d4d;color:#fff;}
+.priority-2{background:#ff9933;color:#fff;}
+.priority-3{background:#ffcc00;color:#000;}
+.priority-4{background:#66cc66;color:#000;}
+
+.badge{
+  padding:4px 8px;
+  border-radius:4px;
+  color:#fff;
+  font-weight:bold;
+}
+
+.completed{background:#28a745;}
 
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <div class="header">
   <div class="header-bar">
-    <button class="header-btn" onclick="goBack()">⬅ Back</button>
-    <div class="header-center">
-      <h1>ERS MASTER DATA</h1>
+
+    <div>
+      <button class="header-btn" onclick="history.back()">⬅ Back</button>
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/drive-viewer/ersmasterdata.html'">🗂️ ERS Master</button>
     </div>
-    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+
+    <div class="header-center">
+      <h1>Rewinding / Overhauling Dashboard</h1>
+      <p>Designed and maintained by Rakesh Chandra Sethi</p>
+    </div>
+
+    <div></div>
+
   </div>
 </div>
 
+<!-- CONTROLS -->
 <div class="controls">
-  <input id="search" placeholder="Search any field">
-  <select id="areaFilter"><option value="">All Areas</option></select>
-  <select id="statusFilter"><option value="">All Status</option></select>
-  <select id="ersFilter"><option value="">All ERS Status</option></select>
+  <select id="typeSelect">
+    <option value="rewinding">Rewinding</option>
+    <option value="overhauling">Overhauling</option>
+  </select>
+  <input type="text" id="searchBox" placeholder="Search...">
+  <button onclick="exportCSV()">Export Excel</button>
 </div>
 
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="card"><h3 id="totalCount">0</h3><span>Total</span></div>
+  <div class="card"><h3 id="highCount">0</h3><span>High Priority</span></div>
+  <div class="card"><h3 id="mediumCount">0</h3><span>Medium</span></div>
+  <div class="card"><h3 id="lowCount">0</h3><span>Low</span></div>
+  <div class="card"><h3 id="noPriorityCount">0</h3><span>No Priority</span></div>
+</div>
+
+<div class="section-title">Priority Assigned</div>
 <div class="table-wrapper">
-<table id="tbl">
-<thead>
-<tr>
-<th>SL</th><th>DATE</th><th>W.O NO</th><th>ERS STATUS</th>
-<th>STATUS</th><th>SHIFTED TO</th><th>USE STATUS</th>
-<th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th>
-<th>MOUNT</th><th>MOTOR SL</th><th>AREA</th>
-<th>EQPT DETAILS</th><th>TYPE</th><th>DRIVE1</th><th>DRIVE2</th>
-<th>DATE2</th><th>W.O2</th><th>KW2</th><th>MAKE2</th>
-<th>MOUNT2</th><th>M/C NO</th><th>AREA2</th>
-<th>LAST MOTORTR</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+  <table id="priorityTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section-title">No Priority Assigned</div>
+<div class="table-wrapper">
+  <table id="noPriorityTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
 </div>
 
 <script>
-const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
+// 🔵 Your previous full working JS remains unchanged below this line
+// (Keeping your priority logic exactly same)
 
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
-function goBack(){ window.history.back(); }
+const JSON_FILES={
+  rewinding:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
+  overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
+};
 
-function parseDate(v){
-  if(!v) return null;
-  const d=new Date(v);
-  return isNaN(d)?null:d;
-}
-function fmt(d){
-  if(!d) return "";
-  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
-}
+let currentData=[];
+let headers=[];
+let priorityKey="";
 
-async function load(){
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
-  let rows=data.rows;
+const select=document.getElementById("typeSelect");
+const searchBox=document.getElementById("searchBox");
 
-  // Sort by Column A descending
-  rows.sort((a,b)=>(b[0]||0)-(a[0]||0));
-
-  const tbody=document.querySelector("#tbl tbody");
-  const areaFilter=document.getElementById("areaFilter");
-  const statusFilter=document.getElementById("statusFilter");
-  const ersFilter=document.getElementById("ersFilter");
-  const search=document.getElementById("search");
-
-  const shiftedColors={}, statusColors={};
-  let h1=0, h2=180;
-
-  const areas=new Set();
-  const statuses=new Set();
-  const ersStatuses=new Set();
-
-  rows.forEach(r=>{
-    if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
-    if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
-
-    if(r[13]) areas.add(r[13]);
-    if(r[4]) statuses.add(r[4]);
-    if(r[3]) ersStatuses.add(r[3]);
-  });
-
-  // Fill dropdowns
-  areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-  statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-  ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-
-  function render(){
-    tbody.innerHTML="";
-    const q=search.value.toLowerCase();
-    const areaVal=areaFilter.value;
-    const statusVal=statusFilter.value;
-    const ersVal=ersFilter.value;
-
-    rows.forEach(r=>{
-
-      // Hide if Column C & T both blank
-      if(!r[2] && !r[19]) return;
-
-      if(q && !r.join(" ").toLowerCase().includes(q)) return;
-      if(areaVal && r[13]!==areaVal) return;
-      if(statusVal && r[4]!==statusVal) return;
-      if(ersVal && r[3]!==ersVal) return;
-
-      let ersColor="";
-      if(r[3]){
-        ersColor=r[3].toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
-      }
-
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-<td>${r[0]||""}</td>
-<td>${fmt(parseDate(r[1]))}</td>
-<td>${r[2]||""}</td>
-<td style="background:${ersColor};color:#fff;">${r[3]||""}</td>
-<td style="background:${statusColors[r[4]]||""};color:#fff;">${r[4]||""}</td>
-<td style="background:${shiftedColors[r[5]]||""};color:#fff;">${r[5]||""}</td>
-<td>${r[6]||""}</td>
-<td>${r[7]||""}</td>
-<td>${r[8]||""}</td>
-<td>${r[9]||""}</td>
-<td>${r[10]||""}</td>
-<td>${r[11]||""}</td>
-<td>${r[12]||""}</td>
-<td>${r[13]||""}</td>
-<td>${r[14]||""}</td>
-<td>${r[15]||""}</td>
-<td>${r[16]||""}</td>
-<td>${r[17]||""}</td>
-<td>${fmt(parseDate(r[18]))}</td>
-<td>${r[19]||""}</td>
-<td>${r[20]||""}</td>
-<td>${r[21]||""}</td>
-<td>${r[22]||""}</td>
-<td>${r[23]||""}</td>
-<td>${r[24]||""}</td>
-<td>${r[25]||""}</td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  search.onkeyup=render;
-  areaFilter.onchange=render;
-  statusFilter.onchange=render;
-  ersFilter.onchange=render;
-
+async function loadData(type){
+  const res=await fetch(JSON_FILES[type]);
+  const json=await res.json();
+  currentData=json.data||[];
+  if(currentData.length===0) return;
+  headers=Object.keys(currentData[0]);
+  priorityKey=headers[14];
   render();
 }
 
-load();
+function render(){
+  const q=searchBox.value.toLowerCase();
+  const filtered=currentData.filter(r=>{
+    return Object.values(r).join(" ").toLowerCase().includes(q);
+  });
+
+  const withPriority=[];
+  const withoutPriority=[];
+
+  filtered.forEach(r=>{
+    if(r[priorityKey]) withPriority.push(r);
+    else withoutPriority.push(r);
+  });
+
+  withPriority.sort((a,b)=>Number(a[priorityKey])-Number(b[priorityKey]));
+
+  buildTable("priorityTable",withPriority);
+  buildTable("noPriorityTable",withoutPriority);
+  updateCards(withPriority,withoutPriority);
+}
+
+function buildTable(id,data){
+  const table=document.getElementById(id);
+  const thead=table.querySelector("thead");
+  const tbody=table.querySelector("tbody");
+
+  if(data.length===0){
+    thead.innerHTML="";
+    tbody.innerHTML="<tr><td>No Data</td></tr>";
+    return;
+  }
+
+  const ordered=[priorityKey].concat(headers.slice(0,14));
+
+  let head="<tr>";
+  ordered.forEach(h=>head+=`<th>${h}</th>`);
+  head+="</tr>";
+  thead.innerHTML=head;
+
+  tbody.innerHTML="";
+  data.forEach(r=>{
+    let tr="<tr>";
+    ordered.forEach(h=>{
+      let val=r[h]??"";
+      if(h===priorityKey){
+        tr+=`<td class="priority-${val}">${val}</td>`;
+      }
+      else if(String(val).toUpperCase().includes("COMPLETED")){
+        tr+=`<td><span class="badge completed">${val}</span></td>`;
+      }
+      else{
+        tr+=`<td>${val}</td>`;
+      }
+    });
+    tr+="</tr>";
+    tbody.innerHTML+=tr;
+  });
+}
+
+function updateCards(withP,withoutP){
+  let high=0,med=0,low=0;
+  withP.forEach(r=>{
+    let p=Number(r[priorityKey]);
+    if(p===1) high++;
+    if(p===2) med++;
+    if(p>=3) low++;
+  });
+
+  document.getElementById("totalCount").innerText=withP.length+withoutP.length;
+  document.getElementById("highCount").innerText=high;
+  document.getElementById("mediumCount").innerText=med;
+  document.getElementById("lowCount").innerText=low;
+  document.getElementById("noPriorityCount").innerText=withoutP.length;
+}
+
+function exportCSV(){
+  let csv="";
+  const ordered=[priorityKey].concat(headers.slice(0,14));
+  csv+=ordered.join(",")+"\n";
+  currentData.forEach(r=>{
+    csv+=ordered.map(h=>`"${r[h]??""}"`).join(",")+"\n";
+  });
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="pending_data.csv";
+  a.click();
+}
+
+select.addEventListener("change",()=>loadData(select.value));
+searchBox.addEventListener("keyup",render);
+
+loadData(select.value);
 </script>
 
 </body>
