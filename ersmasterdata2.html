@@ -29,7 +29,7 @@ body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
 
 .table-wrapper {
   overflow:auto;
-  height:60vh;
+  height:55vh;
   padding:10px;
 }
 
@@ -58,12 +58,23 @@ th {
   z-index:2;
 }
 
-.chart-container{
-  padding:20px;
+/* Chart Layout */
+.chart-wrapper{
+  display:flex;
+  gap:20px;
+  padding:15px;
+}
+.chart-box{
+  flex:1;
   background:#fff;
-  margin:10px;
+  padding:15px;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
 }
+.chart-box h3{
+  text-align:center;
+  margin-top:0;
+}
+
 </style>
 </head>
 
@@ -86,8 +97,15 @@ th {
   <select id="ersFilter"><option value="">All ERS Status</option></select>
 </div>
 
-<div class="chart-container">
-  <canvas id="statusChart"></canvas>
+<div class="chart-wrapper">
+  <div class="chart-box">
+    <h3>STATUS Distribution</h3>
+    <canvas id="statusChart"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>ERS STATUS Distribution</h3>
+    <canvas id="ersChart"></canvas>
+  </div>
 </div>
 
 <div class="table-wrapper">
@@ -115,7 +133,7 @@ const JSON_URL =
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ window.history.back(); }
 
-let chart;
+let statusChart, ersChart;
 
 async function load(){
   const res=await fetch(JSON_URL);
@@ -126,37 +144,60 @@ async function load(){
 
   const tbody=document.querySelector("#tbl tbody");
   const search=document.getElementById("search");
+  const areaFilter=document.getElementById("areaFilter");
   const statusFilter=document.getElementById("statusFilter");
+  const ersFilter=document.getElementById("ersFilter");
 
-  const statuses=new Set();
+  const statusColors={}, shiftedColors={};
+  let h1=0, h2=180;
+
+  const areas=new Set(), statuses=new Set(), ersStatuses=new Set();
+
   rows.forEach(r=>{
+    if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h1+=40},70%,50%)`;
+    if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h2+=40},65%,50%)`;
+
+    if(r[13]) areas.add(r[13]);
     if(r[4]) statuses.add(r[4]);
+    if(r[3]) ersStatuses.add(r[3]);
   });
 
-  statuses.forEach(v=>{
-    statusFilter.innerHTML+=`<option value="${v}">${v}</option>`;
-  });
+  areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+  statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+  ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
 
   function render(){
     tbody.innerHTML="";
     const q=search.value.toLowerCase();
+    const areaVal=areaFilter.value;
     const statusVal=statusFilter.value;
+    const ersVal=ersFilter.value;
 
-    const countMap={};
+    const statusCount={}, ersCount={};
     let total=0;
 
     rows.forEach(r=>{
       if(!r[2] && !r[19]) return;
       if(q && !r.join(" ").toLowerCase().includes(q)) return;
+      if(areaVal && r[13]!==areaVal) return;
       if(statusVal && r[4]!==statusVal) return;
+      if(ersVal && r[3]!==ersVal) return;
+
+      total++;
+
+      if(r[4]) statusCount[r[4]]=(statusCount[r[4]]||0)+1;
+      if(r[3]) ersCount[r[3]]=(ersCount[r[3]]||0)+1;
+
+      let ersColor=r[3]?.toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
 
       const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${r[0]||""}</td>
+      tr.innerHTML=`
+<td>${r[0]||""}</td>
 <td>${r[1]||""}</td>
 <td>${r[2]||""}</td>
-<td>${r[3]||""}</td>
-<td>${r[4]||""}</td>
-<td>${r[5]||""}</td>
+<td style="background:${ersColor};color:#fff;">${r[3]||""}</td>
+<td style="background:${statusColors[r[4]]||""};color:#fff;">${r[4]||""}</td>
+<td style="background:${shiftedColors[r[5]]||""};color:#fff;">${r[5]||""}</td>
 <td>${r[6]||""}</td>
 <td>${r[7]||""}</td>
 <td>${r[8]||""}</td>
@@ -178,48 +219,51 @@ async function load(){
 <td>${r[24]||""}</td>
 <td>${r[25]||""}</td>`;
       tbody.appendChild(tr);
-
-      if(r[4]){
-        countMap[r[4]]=(countMap[r[4]]||0)+1;
-        total++;
-      }
     });
 
-    updateChart(countMap,total);
+    updatePie(statusChart,"statusChart",statusCount,statusColors,total);
+    updatePie(ersChart,"ersChart",ersCount,null,total,true);
   }
 
-  function updateChart(countMap,total){
-    const labels=Object.keys(countMap);
-    const counts=Object.values(countMap);
-    const percentages=counts.map(c=>((c/total)*100).toFixed(1));
+  function updatePie(chart,id,dataMap,colorMap,total,isERS=false){
+    const labels=Object.keys(dataMap);
+    const values=Object.values(dataMap);
+    const colors=labels.map(l=>{
+      if(isERS){
+        return l.toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
+      }
+      return colorMap[l];
+    });
 
     if(chart) chart.destroy();
 
-    chart=new Chart(document.getElementById("statusChart"),{
-      type:"bar",
-      data:{
-        labels:labels,
-        datasets:[{
-          label:"Count",
-          data:counts
-        }]
+    chart=new Chart(document.getElementById(id),{
+      type:"pie",
+      data:{ labels:labels,
+        datasets:[{ data:values, backgroundColor:colors }]
       },
       options:{
         plugins:{
           tooltip:{
             callbacks:{
               label:function(ctx){
-                return `Count: ${ctx.raw} (${percentages[ctx.dataIndex]}%)`;
+                const pct=((ctx.raw/total)*100).toFixed(1);
+                return `${ctx.label}: ${ctx.raw} (${pct}%)`;
               }
             }
           }
         }
       }
     });
+
+    if(id==="statusChart") statusChart=chart;
+    else ersChart=chart;
   }
 
   search.onkeyup=render;
+  areaFilter.onchange=render;
   statusFilter.onchange=render;
+  ersFilter.onchange=render;
 
   render();
 }
