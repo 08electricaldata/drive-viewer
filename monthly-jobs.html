@@ -192,6 +192,56 @@ tr:hover{
   margin-bottom:10px;
 }
 
+/* ===== JOB DETAIL MODAL ===== */
+#jobDetailModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(6px);
+  z-index:10000;
+  align-items:center;
+  justify-content:center;
+}
+
+.job-modal-box{
+  background:white;
+  width:95%;
+  max-width:1000px;
+  border-radius:18px;
+  padding:25px;
+  max-height:85%;
+  overflow:auto;
+  position:relative;
+}
+
+.spinner{
+  text-align:center;
+  font-weight:bold;
+  color:#003f88;
+  padding:20px;
+}
+
+.search-box{
+  margin:10px 0;
+  text-align:right;
+}
+
+.search-box input{
+  padding:6px 10px;
+  width:200px;
+}
+
+.export-btn{
+  margin-left:10px;
+  padding:6px 12px;
+  background:#003f88;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
 </style>
 </head>
 
@@ -213,13 +263,30 @@ tr:hover{
   <table id="jobTable"></table>
 </div>
 
-<!-- MODAL -->
+<!-- TREND MODAL -->
 <div id="trendModal">
   <div class="modal-box">
     <button class="close-btn" onclick="closeTrend()">✕</button>
     <h3 id="trendTitle" style="text-align:center;color:#003f88"></h3>
     <div id="growthInfo" class="growth-text"></div>
     <canvas id="trendChart" height="120"></canvas>
+  </div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div id="jobDetailModal">
+  <div class="job-modal-box">
+    <button class="close-btn" onclick="closeJobDetail()">✕</button>
+    <h3 id="jobDetailTitle" style="text-align:center;color:#003f88"></h3>
+
+    <div class="search-box">
+      <input type="text" id="jobSearch" placeholder="Search..." onkeyup="filterPopup()">
+      <button class="export-btn" onclick="exportPopupCSV()">Export Excel</button>
+    </div>
+
+    <div id="popupSpinner" class="spinner">Loading...</div>
+
+    <table id="jobDetailTable" style="width:100%;border-collapse:collapse;"></table>
   </div>
 </div>
 
@@ -231,17 +298,26 @@ const DASHBOARD_JSON =
 const MONTHLY_JOB_JSON =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthly_job_count.json";
 
+const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+
 let monthlyData;
 let chartInstance;
+let HISTORY_DATA = [];
+let popupRows = [];
 
-/* 🔥 KPI PAGE MAPPING */
-const KPI_PAGE_MAP = {
-  "overdue_motors_oh": "motoroh.html",
-  "overdue_motors_pm": "motorpm.html",
-  "overdue_modules_pm": "motorpm.html",
-  "overdue_transformers_pm": "trafopm.html",
-  "overdue_breaker_pm": "breakerpm.html"
-};
+/* PRELOAD ALL HISTORY */
+async function preloadHistory(){
+  for(const y of HISTORY_YEARS){
+    try{
+      const res = await fetch(HISTORY_BASE + y + ".json");
+      if(!res.ok) continue;
+      const data = await res.json();
+      if(data.rows) HISTORY_DATA = HISTORY_DATA.concat(data.rows);
+    }catch(e){}
+  }
+}
 
 /* KPI */
 async function loadKPI(){
@@ -257,17 +333,6 @@ async function loadKPI(){
       "<h3>"+m.key.replace(/_/g," ")+"</h3>"+
       "<div class='num'>"+m.due+"</div>"+
       "<small>Installed: "+m.installed+"</small>";
-
-    box.onclick=function(){
-
-      const key = m.key.toLowerCase();
-      const page = KPI_PAGE_MAP[key];
-
-      if(page){
-        window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/" + page;
-      }
-    };
 
     container.appendChild(box);
   });
@@ -296,14 +361,23 @@ async function loadTable(){
     for(let i=1;i<r.length;i++){
       total+=Number(r[i]||0);
     }
-
     if(total===0) return;
 
     html+="<tr onclick='openTrend("+index+")'>";
     html+="<td>"+r[0]+"</td>";
 
     for(let i=1;i<r.length;i++){
-      html+="<td>"+(r[i]||0)+"</td>";
+
+      const jobType=r[0];
+      const headerDate=headers[i];
+      const monthIndex=new Date(headerDate).getMonth();
+      const yearValue=new Date(headerDate).getFullYear();
+      const value=(r[i]||0);
+
+      html+="<td onclick='openMonthDetail(\""
+           +jobType+"\","+monthIndex+","
+           +yearValue+",event)'>"
+           +value+"</td>";
     }
 
     html+="<td class='total-col'>"+total+"</td>";
@@ -313,9 +387,84 @@ async function loadTable(){
   document.getElementById("jobTable").innerHTML=html;
 }
 
+/* POPUP FROM JSON */
+async function openMonthDetail(jobType, monthIndex, yearValue, ev){
+
+  ev.stopPropagation();
+
+  document.getElementById("jobDetailModal").style.display="flex";
+  document.getElementById("popupSpinner").style.display="block";
+  document.getElementById("jobDetailTable").innerHTML="";
+
+  await new Promise(r=>setTimeout(r,300));
+
+  popupRows = HISTORY_DATA.filter(r=>{
+    const d=new Date(r[4]);
+    return r[7]===jobType &&
+           d.getMonth()===monthIndex &&
+           d.getFullYear()===yearValue;
+  });
+
+  renderPopupTable(popupRows);
+
+  document.getElementById("popupSpinner").style.display="none";
+
+  document.getElementById("jobDetailTitle").innerText=
+    jobType+" - "+
+    new Date(yearValue,monthIndex)
+    .toLocaleString('default',{month:'long'})+
+    " "+yearValue;
+}
+
+function renderPopupTable(data){
+
+  let html="<tr style='background:#003f88;color:white'>"
+          +"<th>TR</th><th>BAT</th><th>EQP</th>"
+          +"<th>Date</th><th>Details</th></tr>";
+
+  if(data.length===0){
+    html+="<tr><td colspan='5'>No Records Found</td></tr>";
+  }else{
+    data.forEach(r=>{
+      html+="<tr>"
+           +"<td>"+(r[0]||"")+"</td>"
+           +"<td>"+(r[2]||"")+"</td>"
+           +"<td>"+(r[3]||"")+"</td>"
+           +"<td>"+new Date(r[4]).toLocaleDateString()+"</td>"
+           +"<td>"+(r[5]||"")+"</td>"
+           +"</tr>";
+    });
+  }
+
+  document.getElementById("jobDetailTable").innerHTML=html;
+}
+
+function filterPopup(){
+  const val=document.getElementById("jobSearch").value.toLowerCase();
+  const filtered=popupRows.filter(r=>
+    JSON.stringify(r).toLowerCase().includes(val)
+  );
+  renderPopupTable(filtered);
+}
+
+function exportPopupCSV(){
+  let csv=[];
+  document.querySelectorAll("#jobDetailTable tr").forEach(r=>{
+    csv.push([...r.children].map(c=>c.innerText).join(","));
+  });
+  const blob=new Blob([csv.join("\n")]);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="job_details.csv";
+  a.click();
+}
+
+function closeJobDetail(){
+  document.getElementById("jobDetailModal").style.display="none";
+}
+
 /* TREND */
 function openTrend(index){
-
   const headers=monthlyData.headers.slice(1);
   const row=monthlyData.rows[index];
 
@@ -325,16 +474,7 @@ function openTrend(index){
 
   const values=row.slice(1);
 
-  const prev=values[values.length-2]||0;
-  const curr=values[values.length-1]||0;
-
-  let growth="No Change";
-  if(prev>0){
-    growth="Growth: "+(((curr-prev)/prev)*100).toFixed(1)+"%";
-  }
-
   document.getElementById("trendTitle").innerText=row[0]+" Trend";
-  document.getElementById("growthInfo").innerText=growth;
   document.getElementById("trendModal").style.display="flex";
 
   const ctx=document.getElementById("trendChart");
@@ -349,11 +489,7 @@ function openTrend(index){
         {type:'line',data:values,borderColor:'#003f88',tension:0.4}
       ]
     },
-    options:{
-      responsive:true,
-      plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true}}
-    }
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
   });
 }
 
@@ -361,6 +497,7 @@ function closeTrend(){
   document.getElementById("trendModal").style.display="none";
 }
 
+preloadHistory();
 loadKPI();
 loadTable();
 
