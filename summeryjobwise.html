@@ -20,10 +20,16 @@ body {
   background: #003f88;
   color: white;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   padding: 12px;
 }
+
+.header-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
 .header-bar button {
   background: white;
   color: #003f88;
@@ -33,11 +39,20 @@ body {
   font-size: 16px;
   cursor: pointer;
 }
+
 .header-title {
   flex: 1;
   text-align: center;
   font-size: 22px;
   font-weight: 700;
+}
+
+.header-subtitle{
+  text-align:center;
+  font-size:13px;
+  margin-top:4px;
+  font-weight:500;
+  opacity:0.9;
 }
 
 /* ===== PAGE ===== */
@@ -67,6 +82,14 @@ button {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* ===== TOTAL COUNT ===== */
+.total-count{
+  margin:10px 0;
+  font-weight:700;
+  font-size:15px;
+  color:#003f88;
 }
 
 /* ===== TABLE ===== */
@@ -100,7 +123,8 @@ tbody tr:hover {
 @media print {
   .header-bar, .controls { display: none; }
 }
-  /* ===== FIX DATE COLUMN WIDTH ===== */
+
+/* ===== FIX DATE COLUMN WIDTH ===== */
 #resultTable th:nth-child(4),
 #resultTable td:nth-child(4) {
   width: 120px;
@@ -108,16 +132,20 @@ tbody tr:hover {
   white-space: nowrap;
   text-align: center;
 }
-
 </style>
 </head>
 
 <body>
 
 <div class="header-bar">
-  <button onclick="goHome()">🏠 Home</button>
-  <button onclick="history.back()">⬅ Back</button>
-  <div class="header-title">Jobwise History</div>
+  <div class="header-top">
+    <button onclick="goHome()">🏠 Home</button>
+    <button onclick="history.back()">⬅ Back</button>
+    <div class="header-title">Jobwise History</div>
+  </div>
+  <div class="header-subtitle">
+    Designed and Maintained by Rakesh Chandra Sethhy
+  </div>
 </div>
 
 <div class="page">
@@ -132,9 +160,18 @@ tbody tr:hover {
     <option value="">Select Year</option>
   </select>
 
+  <select id="month">
+    <option value="">Select Month</option>
+  </select>
+
   <button onclick="loadData()">Search</button>
   <button onclick="exportCSV()">Export Excel</button>
   <button onclick="window.print()">Export PDF</button>
+</div>
+
+<!-- ✅ TOTAL COUNT DISPLAY -->
+<div id="totalCount" class="total-count">
+  Total Records Found: 0
 </div>
 
 <table id="resultTable">
@@ -159,7 +196,6 @@ tbody tr:hover {
 </div>
 
 <script>
-/* ===== CONFIG ===== */
 const HISTORY_SHEET =
   "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
   "?gid=751880096&tqx=out:json";
@@ -167,12 +203,16 @@ const HISTORY_SHEET =
 const JSON_URL =
   "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dropdown/drives.json";
 
-/* ===== NAV ===== */
 function goHome() {
   location.href = "https://08electricaldata.github.io/";
 }
 
-/* ===== LOAD JOB TYPES (JSON COLUMN C) ===== */
+function getUrlJobType() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
+}
+
+/* ===== LOAD JOB TYPES ===== */
 async function loadJobTypes() {
   const r = await fetch(JSON_URL);
   const d = await r.json();
@@ -189,17 +229,46 @@ async function loadJobTypes() {
     o.textContent = v;
     sel.appendChild(o);
   });
+
+  const urlJob = getUrlJobType();
+  if (urlJob) {
+    sel.value = urlJob;
+    sel.disabled = true;
+    setTimeout(loadData, 500);
+  }
 }
 
-/* ===== LOAD YEARS ===== */
+/* ===== LOAD YEARS (AUTO CURRENT YEAR) ===== */
 function loadYears() {
   const y = document.getElementById("year");
+  const currentYear = new Date().getFullYear();
+
   for (let i = 2018; i <= 2026; i++) {
     const o = document.createElement("option");
     o.value = i;
     o.textContent = i;
+    if (i === currentYear) o.selected = true;
     y.appendChild(o);
   }
+}
+
+/* ===== LOAD MONTHS (AUTO CURRENT MONTH) ===== */
+function loadMonths() {
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  const currentMonth = new Date().getMonth();
+  const m = document.getElementById("month");
+
+  months.forEach((name,index)=>{
+    const o = document.createElement("option");
+    o.value = index;
+    o.textContent = name;
+    if (index === currentMonth) o.selected = true;
+    m.appendChild(o);
+  });
 }
 
 /* ===== DATE UTIL ===== */
@@ -224,6 +293,7 @@ function formatDate(d) {
 async function loadData() {
   const job = document.getElementById("jobType").value;
   const year = document.getElementById("year").value;
+  const month = document.getElementById("month").value;
 
   if (!job || !year) {
     alert("Select Job Type and Year");
@@ -236,44 +306,40 @@ async function loadData() {
 
   const tbody = document.querySelector("#resultTable tbody");
   const noRes = document.getElementById("noResult");
+  const totalDiv = document.getElementById("totalCount");
+
   tbody.innerHTML = "";
   noRes.style.display = "none";
 
-  let found = false;
+  let found = 0;
 
   json.table.rows.forEach(r => {
     const c = r.c || [];
-
-    const jobType = c[7]?.v;   // 🔥 COLUMN H
-    const dateObj = parseDate(c[4]?.v); // 🔥 COLUMN E
+    const jobType = c[7]?.v;
+    const dateObj = parseDate(c[4]?.v);
 
     if (!dateObj) return;
     if (jobType !== job) return;
     if (dateObj.getFullYear() != year) return;
+    if (month !== "" && dateObj.getMonth() != month) return;
 
-    found = true;
+    found++;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${c[0]?.v || ""}</td>   <!-- 🔥 COLUMN A -->
+      <td>${c[0]?.v || ""}</td>
       <td>${c[2]?.v || ""}</td>
       <td>${c[3]?.v || ""}</td>
       <td>${formatDate(dateObj)}</td>
       <td>${jobType}</td>
       <td>${c[5]?.v || ""}</td>
     `;
-
-    tr.onclick = () => {
-      const id = `${c[2]?.v}-${c[3]?.v}`;
-      location.href =
-        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-        encodeURIComponent(id);
-    };
-
     tbody.appendChild(tr);
   });
 
-  if (!found) noRes.style.display = "block";
+  totalDiv.innerText = "Total Records Found: " + found;
+
+  if (found === 0) noRes.style.display = "block";
 }
 
 /* ===== EXPORT ===== */
@@ -291,6 +357,7 @@ function exportCSV() {
 /* INIT */
 loadJobTypes();
 loadYears();
+loadMonths();
 </script>
 
 </body>
