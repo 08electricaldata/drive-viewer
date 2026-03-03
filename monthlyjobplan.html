@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Monthly Job Plan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family:Arial, sans-serif;
+  margin:0;
+  background:linear-gradient(135deg,#e6f0ff,#f4f9ff);
+}
+
+/* HEADER */
+.header{
+  background:linear-gradient(135deg,#002b5c,#0052cc);
+  color:white;
+  padding:20px;
+  text-align:center;
+  position:relative;
+}
+
+.header h1{
+  margin:0;
+  font-size:26px;
+}
+
+/* NAV BUTTONS */
+.nav-buttons{
+  position:absolute;
+  top:20px;
+  left:20px;
+  display:flex;
+  gap:10px;
+}
+
+.nav-buttons button{
+  padding:8px 14px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+  background:white;
+  color:#003f88;
+}
+
+.container{
+  padding:25px;
+  overflow-x:auto;
+}
+
+/* TABLE */
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:900px;
+  background:white;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+
+th, td{
+  border:1px solid #ccc;
+  padding:8px 10px;
+  text-align:center;
+  white-space:nowrap;
+}
+
+th{
+  background:linear-gradient(135deg,#003f88,#0052cc);
+  color:white;
+  font-weight:bold;
+}
+
+tr:nth-child(even){
+  background:#f4f9ff;
+}
+
+.footer{
+  text-align:center;
+  padding:15px;
+  font-size:14px;
+  color:#555;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="nav-buttons">
+    <button onclick="history.back()">⬅ Back</button>
+    <button onclick="goHome()">🏠 Home</button>
+  </div>
+  <h1>Monthly Job Plan</h1>
+</div>
+
+<div class="container">
+  <table id="dataTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="footer">
+© 08 Electrical Data
+</div>
+
+<script>
+
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthlyjob.json";
+
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+
+async function loadData(){
+
+  const res = await fetch(JSON_URL);
+  const data = await res.json();
+
+  const headers = data.headers;
+  const rows = data.rows;
+
+  const thead = document.querySelector("#dataTable thead");
+  const tbody = document.querySelector("#dataTable tbody");
+
+  // Columns A → K = index 0 to 10
+  // Exclude column D = index 3
+
+  const includedIndexes = [];
+  for(let i=0;i<=10;i++){
+    if(i!==3) includedIndexes.push(i);
+  }
+
+  // Build Header
+  let headerRow = "<tr>";
+  includedIndexes.forEach(i=>{
+    headerRow += "<th>" + (headers[i] || "") + "</th>";
+  });
+  headerRow += "</tr>";
+  thead.innerHTML = headerRow;
+
+  // Build Rows
+  let bodyHTML = "";
+
+  rows.forEach(r=>{
+    bodyHTML += "<tr>";
+    includedIndexes.forEach(i=>{
+      bodyHTML += "<td>" + (r[i] ?? "") + "</td>";
+    });
+    bodyHTML += "</tr>";
+  });
+
+  tbody.innerHTML = bodyHTML;
+}
+
+loadData();
+
+</script>
+
+</body>
+</html>
