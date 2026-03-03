@@ -133,8 +133,7 @@ const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricald
 
 let pages=[];
 let currentIndex=0;
-let currentURL="";
-let cache={};
+let pdfURL="";
 
 function getCurrentID(){
   return new URLSearchParams(location.search).get("id");
@@ -144,31 +143,31 @@ function normalize(v){
   return String(v||"").toUpperCase().trim();
 }
 
-function getFileId(link){
-  const match=link.match(/[-\w]{25,}/);
-  return match?match[0]:null;
-}
-
+/* Build GitHub PDF URL with page jump */
 function buildURL(link,page){
-  const id=getFileId(link);
-  return "https://drive.google.com/file/d/"+id+"/preview#page="+page;
+  return link + "#page=" + page;
 }
 
 async function load(){
 
   const id=normalize(getCurrentID());
-  if(!id) return;
 
-  const j=await (await fetch(JSON_URL)).json();
+  if(!id){
+    document.getElementById("content").innerHTML="<h3>No Drive ID</h3>";
+    return;
+  }
+
+  const response=await fetch(JSON_URL);
+  const j=await response.json();
 
   const row=j.rows.find(r=>normalize(r.id)===id);
 
   if(!row){
-    content.innerHTML="<h3>No PLC Ladder Found</h3>";
+    document.getElementById("content").innerHTML="<h3>No PLC Ladder Found</h3>";
     return;
   }
 
-  currentURL=row.url;
+  pdfURL=row.url;
   pages=row.pages.sort((a,b)=>a-b);
 
   let html="<div class='grid'>";
@@ -179,7 +178,7 @@ async function load(){
   });
   html+="</div>";
 
-  content.innerHTML=html;
+  document.getElementById("content").innerHTML=html;
 }
 
 function openPage(index){
@@ -192,32 +191,12 @@ function openPage(index){
 function showPage(){
 
   const page=pages[currentIndex];
-  const url=buildURL(currentURL,page);
+  const url=buildURL(pdfURL,page);
 
-  if(cache[page]){
-    document.getElementById("pdfFrame").src=cache[page];
-  } else {
-    document.getElementById("pdfFrame").src=url;
-    cache[page]=url;
-  }
+  document.getElementById("pdfFrame").src=url;
 
   document.getElementById("pageInfo").innerText=
     "Page "+page+" ("+(currentIndex+1)+"/"+pages.length+")";
-
-  preloadAround();
-}
-
-function preloadAround(){
-
-  if(currentIndex<pages.length-1){
-    const next=pages[currentIndex+1];
-    cache[next]=buildURL(currentURL,next);
-  }
-
-  if(currentIndex>0){
-    const prev=pages[currentIndex-1];
-    cache[prev]=buildURL(currentURL,prev);
-  }
 }
 
 function nextPage(){
@@ -237,6 +216,7 @@ function prevPage(){
 function jumpPage(){
   const val=Number(document.getElementById("jumpBox").value);
   const index=pages.indexOf(val);
+
   if(index!==-1){
     currentIndex=index;
     showPage();
