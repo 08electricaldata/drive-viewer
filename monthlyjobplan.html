@@ -170,13 +170,18 @@ async function loadData(){
   const thead = document.querySelector("#dataTable thead");
   const tbody = document.querySelector("#dataTable tbody");
 
-  // Include A → K excluding column D (index 3)
+  /* 
+     Include A → K
+     Exclude:
+     - Column D (index 3)
+     - Column B (index 1) → will be used as heading
+  */
   const includedIndexes = [];
   for(let i=0;i<=10;i++){
-    if(i!==3) includedIndexes.push(i);
+    if(i!==3 && i!==1) includedIndexes.push(i);
   }
 
-  /* HEADER */
+  /* HEADER ROW */
   let headerRow = "<tr>";
   includedIndexes.forEach(i=>{
     headerRow += "<th>" + (headers[i] || "") + "</th>";
@@ -184,10 +189,22 @@ async function loadData(){
   headerRow += "</tr>";
   thead.innerHTML = headerRow;
 
-  /* ROWS */
+  /* BODY */
   let bodyHTML = "";
 
   rows.forEach(r=>{
+
+    // ✅ If Column B has value → make section heading row
+    if(r[1] && String(r[1]).trim() !== ""){
+      bodyHTML += `
+        <tr style="background:#003f88;color:white;font-weight:bold;">
+          <td colspan="${includedIndexes.length}">
+            ${r[1]}
+          </td>
+        </tr>
+      `;
+    }
+
     bodyHTML += "<tr>";
 
     includedIndexes.forEach(i=>{
@@ -195,14 +212,14 @@ async function loadData(){
       let cellValue = r[i] ?? "";
       let className = "";
 
-      /* ✅ Animate Column B (index 1)
-         BUT only if Column A has number */
-      if(i === 1 && !isNaN(r[0]) && r[0] !== ""){
+      /* Animate Column C (which is now index 2)
+         Only if Column A has number */
+      if(i === 2 && !isNaN(r[0]) && r[0] !== ""){
         className = "col-b";
       }
 
-      /* ✅ Highlight 5th column (index 5 now)
-         Compare Achieved (index 4) vs Target (index 5) */
+      /* Highlight 5th column (index 5)
+         Compare Achieved (4) vs Target (5) */
       if(i === 5){
         const achieved = Number(r[4]) || 0;
         const target = Number(r[5]) || 0;
@@ -216,6 +233,7 @@ async function loadData(){
     });
 
     bodyHTML += "</tr>";
+
   });
 
   tbody.innerHTML = bodyHTML;
