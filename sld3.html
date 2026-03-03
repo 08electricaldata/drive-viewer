@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -20,6 +19,7 @@ body{
   padding:10px;
   text-align:center;
   box-shadow:0 3px 10px rgba(0,0,0,.25);
+  position:relative;
 }
 
 .header-title{
@@ -31,6 +31,33 @@ body{
   font-size:14px;
   margin-top:3px;
   font-weight:500;
+}
+
+/* NEW NAV BUTTONS */
+.nav-buttons{
+  position:absolute;
+  top:10px;
+  left:10px;
+  display:flex;
+  gap:10px;
+}
+
+.nav-btn{
+  background:white;
+  color:#003f88;
+  border:none;
+  padding:6px 12px;
+  border-radius:5px;
+  font-size:13px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 3px 8px rgba(0,0,0,.3);
+  transition:all .2s ease;
+}
+
+.nav-btn:hover{
+  background:#ffd633;
+  transform:scale(1.05);
 }
 
 /* BOARD AREA */
@@ -81,7 +108,6 @@ body{
   justify-content:center;
   text-align:center;
 
-  /* 3D SHADOW */
   box-shadow:
     0 4px 8px rgba(0,0,0,.25),
     inset 0 1px 2px rgba(255,255,255,.6);
@@ -89,7 +115,6 @@ body{
   transition:all .25s ease;
 }
 
-/* ZOOM HOVER EFFECT */
 .cell:hover{
   transform:scale(1.05);
   box-shadow:
@@ -97,20 +122,17 @@ body{
     inset 0 1px 2px rgba(255,255,255,.7);
 }
 
-/* BIGGER INCOMER BOX */
 .incomer-box{
   min-height:110px;
   font-size:14px;
   font-weight:bold;
 }
 
-/* BREAKER FONT */
 .breaker-font{
   font-size:14px;
   font-weight:bold;
 }
 
-/* STATUS COLORS */
 .status-on{
   border-color:#00aa00;
   box-shadow:
@@ -118,7 +140,6 @@ body{
     0 6px 14px rgba(0,0,0,.3);
 }
 
-/* GLOW ANIMATION FOR ON */
 @keyframes glowPulse{
   0%{box-shadow:0 0 6px rgba(0,255,0,.6);}
   50%{box-shadow:0 0 16px rgba(0,255,0,1);}
@@ -132,38 +153,14 @@ body{
   border-color:#cc0000;
 }
 
-/* DEVICE COLORS (DEEP & DISTINCT) */
+.incomer{ background:#ff4d4d; }
+.coupler{ background:#ffd633; }
+.outgoing-breaker{ background:#ff944d; }
+.outgoing-dol{ background:#4d94ff; color:#000; }
+.outgoing-mccb{ background:#b366ff; }
+.outgoing-sfu{ background:#33ccff; }
+.spare{ background:#e0e0e0; }
 
-.incomer{
-  background:#ff4d4d;
-}
-
-.coupler{
-  background:#ffd633;
-}
-
-.outgoing-breaker{
-  background:#ff944d;
-}
-
-.outgoing-dol{
-  background:#4d94ff;
-  color:#000;
-}
-
-.outgoing-mccb{
-  background:#b366ff;
-}
-
-.outgoing-sfu{
-  background:#33ccff;
-}
-
-.spare{
-  background:#e0e0e0;
-}
-
-/* BUS COUPLER BRIDGE */
 .coupler-bridge{
   position:absolute;
   width:6px;
@@ -171,14 +168,7 @@ body{
   top:50px;
   height:70px;
   z-index:1;
-
-  /* Animated Power Flow Effect */
-  background:linear-gradient(
-    to bottom,
-    red 0%,
-    yellow 50%,
-    red 100%
-  );
+  background:linear-gradient(to bottom, red 0%, yellow 50%, red 100%);
   background-size:100% 200%;
   animation:flowAnimation 1.5s linear infinite;
 }
@@ -187,13 +177,19 @@ body{
   0%{background-position:0% 0%;}
   100%{background-position:0% 200%;}
 }
-
 </style>
 </head>
 
 <body>
 
 <div class="header">
+
+  <!-- NEW BUTTONS -->
+  <div class="nav-buttons">
+    <button class="nav-btn" onclick="goHome()">Home</button>
+    <button class="nav-btn" onclick="goBack()">Back</button>
+  </div>
+
   <div class="header-title" id="title">Industrial LT MCC Layout</div>
   <div class="subtitle">
     Designed and Maintained by Rakesh Chandra Sethy
@@ -205,6 +201,14 @@ body{
 </div>
 
 <script>
+
+function goHome(){
+  window.location.href="https://08electricaldata.github.io/";
+}
+
+function goBack(){
+  window.history.back();
+}
 
 const JSON_URL =
 "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
