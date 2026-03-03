@@ -21,19 +21,9 @@ body{
   position:relative;
 }
 
-.header h1{
-  margin:0;
-  font-size:26px;
-}
+.header h1{margin:0;font-size:26px;}
+.credit{margin-top:5px;font-size:14px;font-weight:bold;color:#cce0ff;}
 
-.header .credit{
-  margin-top:5px;
-  font-size:14px;
-  color:#cce0ff;
-  font-weight:bold;
-}
-
-/* NAV BUTTONS */
 .nav-buttons{
   position:absolute;
   right:20px;
@@ -52,7 +42,6 @@ body{
   cursor:pointer;
 }
 
-/* TABLE */
 .container{
   padding:25px;
   overflow-x:auto;
@@ -85,7 +74,12 @@ th{
   font-weight:bold;
 }
 
-/* Highlight Rules */
+/* Item indent */
+.item-name{
+  padding-left:25px;
+}
+
+/* Highlight for Column E */
 .positive{
   background:#e8f5e9;
   color:#1b5e20;
@@ -106,7 +100,6 @@ th{
 
 .footer{
   padding:15px;
-  text-align:left;
   font-size:14px;
   color:#555;
 }
@@ -159,22 +152,20 @@ async function loadData(){
   const thead = document.querySelector("#table thead");
   const tbody = document.querySelector("#table tbody");
 
-  /* Show A→K, exclude:
-     Column B (index 1)
-     Column D (index 3)
+  /* Show:
+     Column B (item/heading name)
+     Column D to J (index 3 to 9)
+     Skip Column C (index 2)
   */
-  const displayColumns = [];
-  for(let i=0;i<=10;i++){
-    if(i !== 1 && i !== 3){
-      displayColumns.push(i);
-    }
-  }
+
+  const displayColumns = [1,3,4,5,6,7,8,9];
 
   /* HEADER */
   let headerHTML = "<tr>";
-  displayColumns.forEach(i=>{
+  headerHTML += "<th>Item</th>";
+  for(let i=3;i<=9;i++){
     headerHTML += `<th>${headers[i] || ""}</th>`;
-  });
+  }
   headerHTML += "</tr>";
   thead.innerHTML = headerHTML;
 
@@ -183,26 +174,35 @@ async function loadData(){
 
   rows.forEach(r=>{
 
-    // If Column B has value → make section heading
-    if(r[1] && String(r[1]).trim() !== ""){
+    const colA = r[0];
+    const colB = r[1];
+
+    // If Column A has number → Section Heading
+    if(!isNaN(colA) && colA !== ""){
       bodyHTML += `
         <tr class="section-row">
           <td colspan="${displayColumns.length}">
-            ${r[1]}
+            ${colA}. ${colB}
           </td>
         </tr>
       `;
+      return;
     }
 
+    // Otherwise → Item row
     bodyHTML += "<tr>";
 
-    displayColumns.forEach(i=>{
+    // Item name
+    bodyHTML += `<td class="item-name">${colB || ""}</td>`;
+
+    // Columns D → J
+    for(let i=3;i<=9;i++){
 
       let value = r[i] ?? "";
       let className = "";
 
-      // Highlight 5th column (index 5)
-      if(i === 5){
+      // Column E highlight (index 4)
+      if(i === 4){
         const achieved = Number(r[4]) || 0;
         const target   = Number(r[5]) || 0;
 
@@ -212,9 +212,10 @@ async function loadData(){
       }
 
       bodyHTML += `<td class="${className}">${value}</td>`;
-    });
+    }
 
     bodyHTML += "</tr>";
+
   });
 
   tbody.innerHTML = bodyHTML;
