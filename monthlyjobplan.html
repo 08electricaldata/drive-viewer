@@ -170,9 +170,10 @@ async function loadData(){
   const thead = document.querySelector("#dataTable thead");
   const tbody = document.querySelector("#dataTable tbody");
 
+  // Include A → K excluding column D (index 3)
   const includedIndexes = [];
   for(let i=0;i<=10;i++){
-    if(i!==3) includedIndexes.push(i); // exclude column D
+    if(i!==3) includedIndexes.push(i);
   }
 
   /* HEADER */
@@ -194,14 +195,15 @@ async function loadData(){
       let cellValue = r[i] ?? "";
       let className = "";
 
-      // Column B animation (index 1)
-      if(i === 1){
+      /* ✅ Animate Column B (index 1)
+         BUT only if Column A has number */
+      if(i === 1 && !isNaN(r[0]) && r[0] !== ""){
         className = "col-b";
       }
 
-      // Achieved vs Target highlight
-      // Achieved = index 4, Target = index 5
-      if(i === 4){
+      /* ✅ Highlight 5th column (index 5 now)
+         Compare Achieved (index 4) vs Target (index 5) */
+      if(i === 5){
         const achieved = Number(r[4]) || 0;
         const target = Number(r[5]) || 0;
 
