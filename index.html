@@ -152,6 +152,13 @@ function openPLC(){
   encodeURIComponent(id);
 }
 
+/* ===== PLC LADDER OPEN ===== */
+function openPLCLadder(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  location.href =
+  "https://08electricaldata.github.io/drive-viewer/plcladder.html?id=" +
+  encodeURIComponent(id);
+}
 /* ===== PRELOAD DRAWINGS ===== */
 async function preloadDrawings(){
   try{
@@ -323,6 +330,7 @@ async function showMotor(c,id){
   <button class="action-btn" onclick="openHistory()">📜 History</button>
   <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
   <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
+  <button class="action-btn" onclick="openPLCLadder()">⚙ PLC-LDR</button>
   <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
 </div>
 
