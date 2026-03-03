@@ -152,14 +152,6 @@ async function loadData(){
   const thead = document.querySelector("#table thead");
   const tbody = document.querySelector("#table tbody");
 
-  /* Show:
-     Column B (item/heading name)
-     Column D to J (index 3 to 9)
-     Skip Column C (index 2)
-  */
-
-  const displayColumns = [1,3,4,5,6,7,8,9];
-
   /* HEADER */
   let headerHTML = "<tr>";
   headerHTML += "<th>Item</th>";
@@ -174,47 +166,49 @@ async function loadData(){
 
   rows.forEach(r=>{
 
-    const colA = r[0];
-    const colB = r[1];
+    const colA = String(r[0] ?? "").trim();
+    const colB = String(r[1] ?? "").trim();
 
-    // If Column A has number → Section Heading
-    if(!isNaN(colA) && colA !== ""){
+    // ✅ FIXED HEADING DETECTION
+    if(colA !== "" && !isNaN(Number(colA))){
+
       bodyHTML += `
         <tr class="section-row">
-          <td colspan="${displayColumns.length}">
+          <td colspan="8">
             ${colA}. ${colB}
           </td>
         </tr>
       `;
-      return;
-    }
 
-    // Otherwise → Item row
-    bodyHTML += "<tr>";
+    } else {
 
-    // Item name
-    bodyHTML += `<td class="item-name">${colB || ""}</td>`;
+      // Item Row
+      bodyHTML += "<tr>";
 
-    // Columns D → J
-    for(let i=3;i<=9;i++){
+      // Item Name
+      bodyHTML += `<td class="item-name">${colB}</td>`;
 
-      let value = r[i] ?? "";
-      let className = "";
+      // Columns D → J (index 3 to 9)
+      for(let i=3;i<=9;i++){
 
-      // Column E highlight (index 4)
-      if(i === 4){
-        const achieved = Number(r[4]) || 0;
-        const target   = Number(r[5]) || 0;
+        let value = r[i] ?? "";
+        let className = "";
 
-        if(achieved > target) className = "positive";
-        else if(achieved < target) className = "negative";
-        else className = "equal";
+        // Column E Highlight (index 4)
+        if(i === 4){
+          const achieved = Number(r[4]) || 0;
+          const target   = Number(r[5]) || 0;
+
+          if(achieved > target) className = "positive";
+          else if(achieved < target) className = "negative";
+          else className = "equal";
+        }
+
+        bodyHTML += `<td class="${className}">${value}</td>`;
       }
 
-      bodyHTML += `<td class="${className}">${value}</td>`;
+      bodyHTML += "</tr>";
     }
-
-    bodyHTML += "</tr>";
 
   });
 
