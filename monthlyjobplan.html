@@ -17,7 +17,7 @@ body{
   background:linear-gradient(135deg,#002b5c,#0052cc);
   color:white;
   padding:20px;
-  text-align:center;
+  text-align:left;
   position:relative;
 }
 
@@ -26,11 +26,18 @@ body{
   font-size:26px;
 }
 
+.header .credit{
+  margin-top:5px;
+  font-size:14px;
+  font-weight:bold;
+  color:#cce0ff;
+}
+
 /* NAV BUTTONS */
 .nav-buttons{
   position:absolute;
   top:20px;
-  left:20px;
+  right:20px;
   display:flex;
   gap:10px;
 }
@@ -45,12 +52,12 @@ body{
   color:#003f88;
 }
 
+/* TABLE */
 .container{
   padding:25px;
   overflow-x:auto;
 }
 
-/* TABLE */
 table{
   border-collapse:collapse;
   width:100%;
@@ -62,7 +69,7 @@ table{
 th, td{
   border:1px solid #ccc;
   padding:8px 10px;
-  text-align:center;
+  text-align:left;   /* ✅ LEFT ALIGNED */
   white-space:nowrap;
 }
 
@@ -76,8 +83,41 @@ tr:nth-child(even){
   background:#f4f9ff;
 }
 
+/* 🔵 Column B Animated Color */
+.col-b{
+  font-weight:bold;
+  animation:colorShift 6s infinite alternate;
+}
+
+@keyframes colorShift{
+  0%{color:#003f88;}
+  25%{color:#009688;}
+  50%{color:#e65100;}
+  75%{color:#8e24aa;}
+  100%{color:#2e7d32;}
+}
+
+/* 🔴 Achieved vs Target Highlight */
+.positive{
+  background:#e8f5e9 !important;
+  color:#1b5e20;
+  font-weight:bold;
+}
+
+.negative{
+  background:#ffebee !important;
+  color:#b71c1c;
+  font-weight:bold;
+}
+
+.equal{
+  background:#fff8e1 !important;
+  color:#e65100;
+  font-weight:bold;
+}
+
 .footer{
-  text-align:center;
+  text-align:left;
   padding:15px;
   font-size:14px;
   color:#555;
@@ -88,11 +128,15 @@ tr:nth-child(even){
 <body>
 
 <div class="header">
+  <h1>Monthly Job Plan</h1>
+  <div class="credit">
+    Designed and Maintained by Rakesh Chandra Sethy
+  </div>
+
   <div class="nav-buttons">
     <button onclick="history.back()">⬅ Back</button>
     <button onclick="goHome()">🏠 Home</button>
   </div>
-  <h1>Monthly Job Plan</h1>
 </div>
 
 <div class="container">
@@ -126,15 +170,12 @@ async function loadData(){
   const thead = document.querySelector("#dataTable thead");
   const tbody = document.querySelector("#dataTable tbody");
 
-  // Columns A → K = index 0 to 10
-  // Exclude column D = index 3
-
   const includedIndexes = [];
   for(let i=0;i<=10;i++){
-    if(i!==3) includedIndexes.push(i);
+    if(i!==3) includedIndexes.push(i); // exclude column D
   }
 
-  // Build Header
+  /* HEADER */
   let headerRow = "<tr>";
   includedIndexes.forEach(i=>{
     headerRow += "<th>" + (headers[i] || "") + "</th>";
@@ -142,14 +183,36 @@ async function loadData(){
   headerRow += "</tr>";
   thead.innerHTML = headerRow;
 
-  // Build Rows
+  /* ROWS */
   let bodyHTML = "";
 
   rows.forEach(r=>{
     bodyHTML += "<tr>";
+
     includedIndexes.forEach(i=>{
-      bodyHTML += "<td>" + (r[i] ?? "") + "</td>";
+
+      let cellValue = r[i] ?? "";
+      let className = "";
+
+      // Column B animation (index 1)
+      if(i === 1){
+        className = "col-b";
+      }
+
+      // Achieved vs Target highlight
+      // Achieved = index 4, Target = index 5
+      if(i === 4){
+        const achieved = Number(r[4]) || 0;
+        const target = Number(r[5]) || 0;
+
+        if(achieved > target) className += " positive";
+        else if(achieved < target) className += " negative";
+        else className += " equal";
+      }
+
+      bodyHTML += `<td class="${className.trim()}">${cellValue}</td>`;
     });
+
     bodyHTML += "</tr>";
   });
 
