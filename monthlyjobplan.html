@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+
 body{
   font-family:Arial, sans-serif;
   margin:0;
@@ -17,7 +18,6 @@ body{
   background:linear-gradient(135deg,#002b5c,#0052cc);
   color:white;
   padding:20px;
-  text-align:left;
   position:relative;
 }
 
@@ -29,15 +29,15 @@ body{
 .header .credit{
   margin-top:5px;
   font-size:14px;
-  font-weight:bold;
   color:#cce0ff;
+  font-weight:bold;
 }
 
 /* NAV BUTTONS */
 .nav-buttons{
   position:absolute;
-  top:20px;
   right:20px;
+  top:20px;
   display:flex;
   gap:10px;
 }
@@ -46,10 +46,10 @@ body{
   padding:8px 14px;
   border:none;
   border-radius:6px;
-  cursor:pointer;
-  font-weight:bold;
   background:white;
   color:#003f88;
+  font-weight:bold;
+  cursor:pointer;
 }
 
 /* TABLE */
@@ -69,59 +69,48 @@ table{
 th, td{
   border:1px solid #ccc;
   padding:8px 10px;
-  text-align:left;   /* ✅ LEFT ALIGNED */
+  text-align:left;
   white-space:nowrap;
 }
 
 th{
   background:linear-gradient(135deg,#003f88,#0052cc);
   color:white;
+}
+
+/* Section Heading */
+.section-row{
+  background:#003f88;
+  color:white;
   font-weight:bold;
 }
 
-tr:nth-child(even){
-  background:#f4f9ff;
-}
-
-/* 🔵 Column B Animated Color */
-.col-b{
-  font-weight:bold;
-  animation:colorShift 6s infinite alternate;
-}
-
-@keyframes colorShift{
-  0%{color:#003f88;}
-  25%{color:#009688;}
-  50%{color:#e65100;}
-  75%{color:#8e24aa;}
-  100%{color:#2e7d32;}
-}
-
-/* 🔴 Achieved vs Target Highlight */
+/* Highlight Rules */
 .positive{
-  background:#e8f5e9 !important;
+  background:#e8f5e9;
   color:#1b5e20;
   font-weight:bold;
 }
 
 .negative{
-  background:#ffebee !important;
+  background:#ffebee;
   color:#b71c1c;
   font-weight:bold;
 }
 
 .equal{
-  background:#fff8e1 !important;
+  background:#fff8e1;
   color:#e65100;
   font-weight:bold;
 }
 
 .footer{
-  text-align:left;
   padding:15px;
+  text-align:left;
   font-size:14px;
   color:#555;
 }
+
 </style>
 </head>
 
@@ -140,7 +129,7 @@ tr:nth-child(even){
 </div>
 
 <div class="container">
-  <table id="dataTable">
+  <table id="table">
     <thead></thead>
     <tbody></tbody>
   </table>
@@ -167,38 +156,38 @@ async function loadData(){
   const headers = data.headers;
   const rows = data.rows;
 
-  const thead = document.querySelector("#dataTable thead");
-  const tbody = document.querySelector("#dataTable tbody");
+  const thead = document.querySelector("#table thead");
+  const tbody = document.querySelector("#table tbody");
 
-  /* 
-     Include A → K
-     Exclude:
-     - Column D (index 3)
-     - Column B (index 1) → will be used as heading
+  /* Show A→K, exclude:
+     Column B (index 1)
+     Column D (index 3)
   */
-  const includedIndexes = [];
+  const displayColumns = [];
   for(let i=0;i<=10;i++){
-    if(i!==3 && i!==1) includedIndexes.push(i);
+    if(i !== 1 && i !== 3){
+      displayColumns.push(i);
+    }
   }
 
-  /* HEADER ROW */
-  let headerRow = "<tr>";
-  includedIndexes.forEach(i=>{
-    headerRow += "<th>" + (headers[i] || "") + "</th>";
+  /* HEADER */
+  let headerHTML = "<tr>";
+  displayColumns.forEach(i=>{
+    headerHTML += `<th>${headers[i] || ""}</th>`;
   });
-  headerRow += "</tr>";
-  thead.innerHTML = headerRow;
+  headerHTML += "</tr>";
+  thead.innerHTML = headerHTML;
 
   /* BODY */
   let bodyHTML = "";
 
   rows.forEach(r=>{
 
-    // ✅ If Column B has value → make section heading row
+    // If Column B has value → make section heading
     if(r[1] && String(r[1]).trim() !== ""){
       bodyHTML += `
-        <tr style="background:#003f88;color:white;font-weight:bold;">
-          <td colspan="${includedIndexes.length}">
+        <tr class="section-row">
+          <td colspan="${displayColumns.length}">
             ${r[1]}
           </td>
         </tr>
@@ -207,33 +196,25 @@ async function loadData(){
 
     bodyHTML += "<tr>";
 
-    includedIndexes.forEach(i=>{
+    displayColumns.forEach(i=>{
 
-      let cellValue = r[i] ?? "";
+      let value = r[i] ?? "";
       let className = "";
 
-      /* Animate Column C (which is now index 2)
-         Only if Column A has number */
-      if(i === 2 && !isNaN(r[0]) && r[0] !== ""){
-        className = "col-b";
-      }
-
-      /* Highlight 5th column (index 5)
-         Compare Achieved (4) vs Target (5) */
+      // Highlight 5th column (index 5)
       if(i === 5){
         const achieved = Number(r[4]) || 0;
-        const target = Number(r[5]) || 0;
+        const target   = Number(r[5]) || 0;
 
-        if(achieved > target) className += " positive";
-        else if(achieved < target) className += " negative";
-        else className += " equal";
+        if(achieved > target) className = "positive";
+        else if(achieved < target) className = "negative";
+        else className = "equal";
       }
 
-      bodyHTML += `<td class="${className.trim()}">${cellValue}</td>`;
+      bodyHTML += `<td class="${className}">${value}</td>`;
     });
 
     bodyHTML += "</tr>";
-
   });
 
   tbody.innerHTML = bodyHTML;
