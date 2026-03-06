@@ -216,9 +216,7 @@ function goDrawing(){
 
 /* ===== BUILD PDF URL (jsDelivr CDN) ===== */
 function buildURL(link,page){
-  return "https://docs.google.com/gview?embedded=1&url=" 
-         + encodeURIComponent(link) 
-         + "#page=" + page;
+  return link + "#page=" + page + "&view=FitH";
 }
 
 async function load(){
@@ -269,7 +267,7 @@ function showPage(){
 
   const frame=document.getElementById("pdfFrame");
 
-frame.src = url + "&t=" + Date.now(); // cache bust
+frame.src = url + "&t=" + Date.now(); // force reload
 
   document.getElementById("pageInfo").innerText=
     "Page "+page+" ("+(currentIndex+1)+"/"+pages.length+")";
