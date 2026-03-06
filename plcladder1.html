@@ -150,7 +150,7 @@ input{
   <div id="content">Loading...</div>
 
   <div class="viewer" id="viewerBox">
-    <iframe id="pdfFrame"></iframe>
+    <iframe id="pdfFrame" loading="lazy"></iframe>
   </div>
 
   <div class="controls" id="controls" style="display:none">
@@ -214,10 +214,7 @@ function goDrawing(){
   location.href="https://08electricaldata.github.io/drive-viewer/drawing.html?id="+id;
 }
 
-/* ===== BUILD PDF URL (jsDelivr CDN) ===== */
-function buildURL(link,page){
-  return link + "#page=" + page + "&view=FitH";
-}
+/* ===== LOAD JSON ===== */
 
 async function load(){
 
@@ -239,39 +236,50 @@ async function load(){
   }
 
   pdfURL=row.url;
-  pages=row.pages.sort((a,b)=>a-b);
+  pages=[...row.pages].sort((a,b)=>a-b);
 
   let html="<div class='grid'>";
+
   pages.forEach((p,i)=>{
-    html+=`<div class="tile" onclick="openPage(${i})">
-              Page ${p}
-           </div>`;
+    html+=`<div class="tile" onclick="openPage(${i})">Page ${p}</div>`;
   });
+
   html+="</div>";
 
   document.getElementById("content").innerHTML=html;
 }
 
+/* ===== OPEN PAGE ===== */
+
 function openPage(index){
+
   currentIndex=index;
-  showPage();
+
   document.getElementById("viewerBox").style.display="block";
   document.getElementById("controls").style.display="block";
+
+  showPage();
 }
 
-/* 🔥 FORCE FULL RELOAD EACH CLICK */
+/* ===== SHOW PAGE (FIXED FOR MOBILE) ===== */
+
 function showPage(){
 
   const page=pages[currentIndex];
-  const url=buildURL(pdfURL,page);
 
   const frame=document.getElementById("pdfFrame");
 
-frame.src = url + "&t=" + Date.now(); // force reload
+  frame.src="";
+
+  setTimeout(()=>{
+      frame.src = pdfURL + "#page=" + page;
+  },150);
 
   document.getElementById("pageInfo").innerText=
     "Page "+page+" ("+(currentIndex+1)+"/"+pages.length+")";
 }
+
+/* ===== NAVIGATION ===== */
 
 function nextPage(){
   if(currentIndex<pages.length-1){
@@ -288,16 +296,20 @@ function prevPage(){
 }
 
 function jumpPage(){
+
   const val=Number(document.getElementById("jumpBox").value);
+
   const index=pages.indexOf(val);
 
   if(index!==-1){
     currentIndex=index;
     showPage();
-  } else {
+  }else{
     alert("Page not available for this Drive");
   }
 }
+
+/* ===== FULLSCREEN ===== */
 
 function toggleFull(){
   document.getElementById("viewerBox")
