@@ -1,1 +1,315 @@
-<!DOCTYPE html> <html> <head> <meta charset="UTF-8"> <title>Ultra PLC Ladder Viewer</title> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <style> body{ font-family:Arial; margin:0; background:#f2f6ff; } /* HEADER */ .header{ background:#003f88; color:white; padding:12px 15px; display:flex; align-items:center; gap:10px; } .header-title{ flex:1; text-align:center; } .header-title h2{ margin:0; } .header-title small{ display:block; font-size:13px; opacity:.9; } /* HEADER BUTTONS */ .header-btn{ background:white; color:#003f88; border:1px solid #003f88; border-radius:6px; padding:6px 10px; cursor:pointer; font-weight:bold; } /* CONTAINER */ .container{padding:20px} /* GRID */ .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; margin-bottom:20px; } .tile{ background:white; padding:10px; text-align:center; border-radius:8px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.15); transition:.2s; } .tile:hover{transform:scale(1.05)} /* VIEWER */ .viewer{ display:none; border-radius:10px; overflow:hidden; border:1px solid #ccc; position:relative; } .viewer iframe{ width:100%; height:700px; border:none; } /* CONTROLS */ .controls{ margin-top:10px; text-align:center; } .btn{ padding:8px 14px; background:#003f88; color:white; border:none; border-radius:6px; cursor:pointer; margin:5px; } input{ padding:6px; width:80px; text-align:center; } /* FULLSCREEN */ .viewer.fullscreen{ position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; } .viewer.fullscreen iframe{ height:100%; } @media(max-width:768px){ .viewer iframe{height:450px} } </style> </head> <body> <!-- HEADER --> <div class="header"> <button class="header-btn" onclick="goHome()">🏠 Home</button> <button class="header-btn" onclick="goBack()">⬅ Back</button> <button class="header-btn" onclick="goDriveInfo()">ℹ️ Drive Info</button> <button class="header-btn" onclick="goHistory()">📜 History</button> <button class="header-btn" onclick="goPLC()">⚡ PLC-ADD</button> <button class="header-btn" onclick="goDrawing()">📄 Equipment Drawings</button> <div class="header-title"> <h2>Ultra PLC Ladder Viewer</h2> <small>Designed and developed by Rakesh Chandra Sethy</small> </div> </div> <div class="container"> <div id="content">Loading...</div> <div class="viewer" id="viewerBox"> <iframe id="pdfFrame"></iframe> </div> <div class="controls" id="controls" style="display:none"> <button class="btn" onclick="prevPage()">⬅</button> <span id="pageInfo"></span> <button class="btn" onclick="nextPage()">➡</button> Jump: <input type="number" id="jumpBox"> <button class="btn" onclick="jumpPage()">Go</button> <button class="btn" onclick="toggleFull()">📱 Fullscreen</button> </div> </div> <script> const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/plcladder.json"; let pages=[]; let currentIndex=0; let pdfURL=""; /* ===== GET DRIVE ID ===== */ function getCurrentID(){ return new URLSearchParams(location.search).get("id"); } function normalize(v){ return String(v||"").toUpperCase().trim(); } /* ===== NAVIGATION ===== */ function goHome(){ location.href="https://08electricaldata.github.io/"; } function goBack(){ history.back(); } function goDriveInfo(){ const id=getCurrentID(); location.href="https://08electricaldata.github.io/drive-viewer/index.html?id="+id; } function goHistory(){ const id=getCurrentID(); location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+id; } function goPLC(){ const id=getCurrentID(); location.href="https://08electricaldata.github.io/drive-viewer/plc.html?id="+id; } function goDrawing(){ const id=getCurrentID(); location.href="https://08electricaldata.github.io/drive-viewer/drawing.html?id="+id; } /* ===== BUILD PDF URL (jsDelivr CDN) ===== */ function buildURL(link,page){ return link + "#page=" + page; } async function load(){ const id=normalize(getCurrentID()); if(!id){ document.getElementById("content").innerHTML="<h3>No Drive ID</h3>"; return; } const response=await fetch(JSON_URL); const j=await response.json(); const row=j.rows.find(r=>normalize(r.id)===id); if(!row){ document.getElementById("content").innerHTML="<h3>No PLC Ladder Found</h3>"; return; } pdfURL=row.url; pages=row.pages.sort((a,b)=>a-b); let html="<div class='grid'>"; pages.forEach((p,i)=>{ html+=`<div class="tile" onclick="openPage(${i})"> Page ${p} </div>`; }); html+="</div>"; document.getElementById("content").innerHTML=html; } function openPage(index){ currentIndex=index; showPage(); document.getElementById("viewerBox").style.display="block"; document.getElementById("controls").style.display="block"; } /* 🔥 FORCE FULL RELOAD EACH CLICK */ function showPage(){ const page=pages[currentIndex]; const url=buildURL(pdfURL,page); const frame=document.getElementById("pdfFrame"); frame.src="";          // clear first setTimeout(()=>{ frame.src=url;       // reload fresh },50); document.getElementById("pageInfo").innerText= "Page "+page+" ("+(currentIndex+1)+"/"+pages.length+")"; } function nextPage(){ if(currentIndex<pages.length-1){ currentIndex++; showPage(); } } function prevPage(){ if(currentIndex>0){ currentIndex--; showPage(); } } function jumpPage(){ const val=Number(document.getElementById("jumpBox").value); const index=pages.indexOf(val); if(index!==-1){ currentIndex=index; showPage(); } else { alert("Page not available for this Drive"); } } function toggleFull(){ document.getElementById("viewerBox") .classList.toggle("fullscreen"); } load(); </script> </body> </html>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ultra PLC Ladder Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family:Arial;
+  margin:0;
+  background:#f2f6ff;
+}
+
+/* HEADER */
+.header{
+  background:#003f88;
+  color:white;
+  padding:12px 15px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.header-title{
+  flex:1;
+  text-align:center;
+}
+
+.header-title h2{
+  margin:0;
+}
+
+.header-title small{
+  display:block;
+  font-size:13px;
+  opacity:.9;
+}
+
+/* HEADER BUTTONS */
+.header-btn{
+  background:white;
+  color:#003f88;
+  border:1px solid #003f88;
+  border-radius:6px;
+  padding:6px 10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+/* CONTAINER */
+.container{padding:20px}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.tile{
+  background:white;
+  padding:10px;
+  text-align:center;
+  border-radius:8px;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  transition:.2s;
+}
+.tile:hover{transform:scale(1.05)}
+
+/* VIEWER */
+.viewer{
+  display:none;
+  border-radius:10px;
+  overflow:hidden;
+  border:1px solid #ccc;
+  position:relative;
+}
+
+.viewer iframe{
+  width:100%;
+  height:700px;
+  border:none;
+}
+
+/* CONTROLS */
+.controls{
+  margin-top:10px;
+  text-align:center;
+}
+
+.btn{
+  padding:8px 14px;
+  background:#003f88;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  margin:5px;
+}
+
+input{
+  padding:6px;
+  width:80px;
+  text-align:center;
+}
+
+/* FULLSCREEN */
+.viewer.fullscreen{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:white;
+  z-index:9999;
+}
+.viewer.fullscreen iframe{
+  height:100%;
+}
+
+@media(max-width:768px){
+  .viewer iframe{height:450px}
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+
+  <button class="header-btn" onclick="goHome()">🏠 Home</button>
+  <button class="header-btn" onclick="goBack()">⬅ Back</button>
+  <button class="header-btn" onclick="goDriveInfo()">ℹ️ Drive Info</button>
+  <button class="header-btn" onclick="goHistory()">📜 History</button>
+  <button class="header-btn" onclick="goPLC()">⚡ PLC-ADD</button>
+  <button class="header-btn" onclick="goDrawing()">📄 Equipment Drawings</button>
+
+  <div class="header-title">
+    <h2>Ultra PLC Ladder Viewer</h2>
+    <small>Designed and developed by Rakesh Chandra Sethy</small>
+  </div>
+</div>
+
+<div class="container">
+
+  <div id="content">Loading...</div>
+
+  <div class="viewer" id="viewerBox">
+    <iframe id="pdfFrame"></iframe>
+  </div>
+
+  <div class="controls" id="controls" style="display:none">
+    <button class="btn" onclick="prevPage()">⬅</button>
+    <span id="pageInfo"></span>
+    <button class="btn" onclick="nextPage()">➡</button>
+
+    Jump:
+    <input type="number" id="jumpBox">
+    <button class="btn" onclick="jumpPage()">Go</button>
+
+    <button class="btn" onclick="toggleFull()">📱 Fullscreen</button>
+  </div>
+
+</div>
+
+<script>
+
+const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/plcladder.json";
+
+let pages=[];
+let currentIndex=0;
+let pdfURL="";
+
+/* ===== GET DRIVE ID ===== */
+function getCurrentID(){
+  return new URLSearchParams(location.search).get("id");
+}
+
+function normalize(v){
+  return String(v||"").toUpperCase().trim();
+}
+
+/* ===== NAVIGATION ===== */
+
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+
+function goBack(){
+  history.back();
+}
+
+function goDriveInfo(){
+  const id=getCurrentID();
+  location.href="https://08electricaldata.github.io/drive-viewer/index.html?id="+id;
+}
+
+function goHistory(){
+  const id=getCurrentID();
+  location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+id;
+}
+
+function goPLC(){
+  const id=getCurrentID();
+  location.href="https://08electricaldata.github.io/drive-viewer/plc.html?id="+id;
+}
+
+function goDrawing(){
+  const id=getCurrentID();
+  location.href="https://08electricaldata.github.io/drive-viewer/drawing.html?id="+id;
+}
+
+/* ===== BUILD PDF URL (jsDelivr CDN) ===== */
+function buildURL(link,page){
+  return link + "#page=" + page;
+}
+
+async function load(){
+
+  const id=normalize(getCurrentID());
+
+  if(!id){
+    document.getElementById("content").innerHTML="<h3>No Drive ID</h3>";
+    return;
+  }
+
+  const response=await fetch(JSON_URL);
+  const j=await response.json();
+
+  const row=j.rows.find(r=>normalize(r.id)===id);
+
+  if(!row){
+    document.getElementById("content").innerHTML="<h3>No PLC Ladder Found</h3>";
+    return;
+  }
+
+  pdfURL=row.url;
+  pages=row.pages.sort((a,b)=>a-b);
+
+  let html="<div class='grid'>";
+  pages.forEach((p,i)=>{
+    html+=`<div class="tile" onclick="openPage(${i})">
+              Page ${p}
+           </div>`;
+  });
+  html+="</div>";
+
+  document.getElementById("content").innerHTML=html;
+}
+
+function openPage(index){
+  currentIndex=index;
+  showPage();
+  document.getElementById("viewerBox").style.display="block";
+  document.getElementById("controls").style.display="block";
+}
+
+/* 🔥 FORCE FULL RELOAD EACH CLICK */
+function showPage(){
+
+  const page=pages[currentIndex];
+  const url=buildURL(pdfURL,page);
+
+  const frame=document.getElementById("pdfFrame");
+
+  frame.src="";          // clear first
+  setTimeout(()=>{
+    frame.src=url;       // reload fresh
+  },50);
+
+  document.getElementById("pageInfo").innerText=
+    "Page "+page+" ("+(currentIndex+1)+"/"+pages.length+")";
+}
+
+function nextPage(){
+  if(currentIndex<pages.length-1){
+    currentIndex++;
+    showPage();
+  }
+}
+
+function prevPage(){
+  if(currentIndex>0){
+    currentIndex--;
+    showPage();
+  }
+}
+
+function jumpPage(){
+  const val=Number(document.getElementById("jumpBox").value);
+  const index=pages.indexOf(val);
+
+  if(index!==-1){
+    currentIndex=index;
+    showPage();
+  } else {
+    alert("Page not available for this Drive");
+  }
+}
+
+function toggleFull(){
+  document.getElementById("viewerBox")
+    .classList.toggle("fullscreen");
+}
+
+load();
+
+</script>
+
+</body>
+</html>
