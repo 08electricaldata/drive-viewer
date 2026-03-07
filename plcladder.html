@@ -37,7 +37,6 @@ body{
   opacity:.9;
 }
 
-/* HEADER BUTTONS */
 .header-btn{
   background:white;
   color:#003f88;
@@ -70,13 +69,11 @@ body{
 }
 .tile:hover{transform:scale(1.05)}
 
-/* VIEWER */
 .viewer{
   display:none;
   border-radius:10px;
   overflow:hidden;
   border:1px solid #ccc;
-  position:relative;
 }
 
 .viewer iframe{
@@ -85,7 +82,6 @@ body{
   border:none;
 }
 
-/* CONTROLS */
 .controls{
   margin-top:10px;
   text-align:center;
@@ -107,20 +103,6 @@ input{
   text-align:center;
 }
 
-/* FULLSCREEN */
-.viewer.fullscreen{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:white;
-  z-index:9999;
-}
-.viewer.fullscreen iframe{
-  height:100%;
-}
-
 @media(max-width:768px){
   .viewer iframe{height:450px}
 }
@@ -129,7 +111,6 @@ input{
 
 <body>
 
-<!-- HEADER -->
 <div class="header">
 
   <button class="header-btn" onclick="goHome()">🏠 Home</button>
@@ -161,8 +142,6 @@ input{
     Jump:
     <input type="number" id="jumpBox">
     <button class="btn" onclick="jumpPage()">Go</button>
-
-    <button class="btn" onclick="toggleFull()">📱 Fullscreen</button>
   </div>
 
 </div>
@@ -175,7 +154,6 @@ let pages=[];
 let currentIndex=0;
 let pdfURL="";
 
-/* ===== GET DRIVE ID ===== */
 function getCurrentID(){
   return new URLSearchParams(location.search).get("id");
 }
@@ -184,7 +162,7 @@ function normalize(v){
   return String(v||"").toUpperCase().trim();
 }
 
-/* ===== NAVIGATION ===== */
+/* NAVIGATION */
 
 function goHome(){
   location.href="https://08electricaldata.github.io/";
@@ -214,10 +192,7 @@ function goDrawing(){
   location.href="https://08electricaldata.github.io/drive-viewer/drawing.html?id="+id;
 }
 
-/* ===== BUILD PDF URL (jsDelivr CDN) ===== */
-function buildURL(link,page){
-  return link + "#page=" + page;
-}
+/* LOAD DATA */
 
 async function load(){
 
@@ -239,40 +214,43 @@ async function load(){
   }
 
   pdfURL=row.url;
-  pages=row.pages.sort((a,b)=>a-b);
+  pages=[...row.pages].sort((a,b)=>a-b);
 
   let html="<div class='grid'>";
+
   pages.forEach((p,i)=>{
-    html+=`<div class="tile" onclick="openPage(${i})">
-              Page ${p}
-           </div>`;
+    html+=`<div class="tile" onclick="openPage(${i})">Page ${p}</div>`;
   });
+
   html+="</div>";
 
   document.getElementById("content").innerHTML=html;
 }
 
 function openPage(index){
+
   currentIndex=index;
-  showPage();
+
   document.getElementById("viewerBox").style.display="block";
   document.getElementById("controls").style.display="block";
+
+  showPage();
 }
 
-/* 🔥 FORCE FULL RELOAD EACH CLICK */
+/* PDF.js viewer link */
+
 function showPage(){
 
   const page=pages[currentIndex];
-  const url=buildURL(pdfURL,page);
 
-  const frame=document.getElementById("pdfFrame");
+  const viewerURL =
+    "https://mozilla.github.io/pdf.js/web/viewer.html?file="
+    + encodeURIComponent(pdfURL)
+    + "#page=" + page;
 
-  frame.src="";          // clear first
-  setTimeout(()=>{
-    frame.src=url;       // reload fresh
-  },50);
+  document.getElementById("pdfFrame").src = viewerURL;
 
-  document.getElementById("pageInfo").innerText=
+  document.getElementById("pageInfo").innerText =
     "Page "+page+" ("+(currentIndex+1)+"/"+pages.length+")";
 }
 
@@ -291,20 +269,16 @@ function prevPage(){
 }
 
 function jumpPage(){
+
   const val=Number(document.getElementById("jumpBox").value);
   const index=pages.indexOf(val);
 
   if(index!==-1){
     currentIndex=index;
     showPage();
-  } else {
+  }else{
     alert("Page not available for this Drive");
   }
-}
-
-function toggleFull(){
-  document.getElementById("viewerBox")
-    .classList.toggle("fullscreen");
 }
 
 load();
