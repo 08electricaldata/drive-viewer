@@ -185,18 +185,20 @@ tbody tr:hover { background: #eef5ff; }
 <div class="container">
 
 <div class="summary">
-  <div class="card">
-    <h3>Total Motors</h3>
-    <p id="totalMotors">0</p>
-  </div>
-  <div class="card">
-    <h3>Overdue Modules 🔔</h3>
-    <p id="overdueModules" class="overdue">0</p>
-  </div>
-  <div class="card">
-    <h3>Overdue Motors 🔔</h3>
-    <p id="overdueMotors" class="overdue">0</p>
-  </div>
+<div class="card" onclick="filterRows('all')">
+  <h3>Total Motors</h3>
+  <p id="totalMotors">0</p>
+</div>
+
+<div class="card" onclick="filterRows('module')">
+  <h3>Overdue Modules 🔔</h3>
+  <p id="overdueModules" class="overdue">0</p>
+</div>
+
+<div class="card" onclick="filterRows('motor')">
+  <h3>Overdue Motors 🔔</h3>
+  <p id="overdueMotors" class="overdue">0</p>
+</div>
 </div>
 
 <div class="controls">
@@ -303,6 +305,8 @@ async function loadData(){
     const bandColor=getDriveColor(drive);
 
     const tr=document.createElement("tr");
+tr.dataset.moduleOver = sOver ? "1" : "0";
+tr.dataset.motorOver  = tOver ? "1" : "0";
 
     tr.onclick=()=> {
       const id=`${row[1]}-${row[2]}`;
@@ -350,6 +354,30 @@ function exportExcel(){
   a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
   a.download="motor_module_pm_status.csv";
   a.click();
+}
+  function filterRows(type){
+
+  const rows = document.querySelectorAll("#pmTable tbody tr");
+
+  rows.forEach(tr=>{
+
+    if(type==="all"){
+      tr.style.display="";
+      return;
+    }
+
+    if(type==="module"){
+      tr.style.display = tr.dataset.moduleOver==="1" ? "" : "none";
+      return;
+    }
+
+    if(type==="motor"){
+      tr.style.display = tr.dataset.motorOver==="1" ? "" : "none";
+      return;
+    }
+
+  });
+
 }
 
 loadData();
