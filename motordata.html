@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Motor Details</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+  font-family: Arial,sans-serif;
+  margin:0;
+  background:#f4f7ff;
+}
+
+.top-credit{
+  text-align:center;
+  padding:10px;
+  background:#1f3c88;
+  color:#fff;
+  font-size:13px;
+}
+
+.header{
+  text-align:center;
+  padding:20px;
+}
+
+.header h2{
+  margin:0;
+}
+
+.button-bar{
+  display:flex;
+  justify-content:center;
+  gap:15px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+
+.button-bar button{
+  padding:8px 16px;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+  background:#1f3c88;
+  color:#fff;
+}
+
+.button-bar button:hover{
+  background:#162d66;
+}
+
+.container{
+  max-width:1100px;
+  margin:auto;
+  padding:0 20px 30px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+}
+
+th,td{
+  border:1px solid #ccc;
+  padding:8px;
+}
+
+th{
+  background:#dbe4ff;
+}
+
+tr:hover{
+  background:#f2f6ff;
+}
+
+.loader{
+  text-align:center;
+  padding:40px;
+}
+
+.no-data{
+  text-align:center;
+  color:red;
+  padding:30px;
+  font-weight:bold;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="top-credit">
+Designed and Maintained by RAKESH CHANDRA SETHY
+</div>
+
+<div class="container">
+
+<div id="app">
+<div class="loader">Loading Motor Details...</div>
+</div>
+
+</div>
+
+<script>
+
+const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+
+function getID(){
+  return new URLSearchParams(location.search).get("id");
+}
+
+function goBack(){
+  history.back();
+}
+
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+
+function goPLC(){
+  location.href="https://08electricaldata.github.io/drive-viewer/plc.html?id="+encodeURIComponent(getID());
+}
+
+async function loadMotor(){
+
+const app=document.getElementById("app");
+const id=getID();
+
+if(!id){
+app.innerHTML="<div class='no-data'>No Drive ID supplied.</div>";
+return;
+}
+
+try{
+
+const data=await (await fetch(JSON_URL)).json();
+
+const row=data.rows.find(r=>
+String(r[0]).toUpperCase()==id.toUpperCase()
+);
+
+let html=`
+
+<div class="header">
+<h2>MOTOR DETAILS — ${id}</h2>
+</div>
+
+<div class="button-bar">
+<button onclick="goBack()">⬅ Back</button>
+<button onclick="goHome()">🏠 Home</button>
+<button onclick="goPLC()">PLC</button>
+</div>
+
+`;
+
+if(!row){
+
+html+=`<div class="no-data">Motor details not found.</div>`;
+app.innerHTML=html;
+return;
+
+}
+
+html+=`
+
+<table>
+
+<tr>
+<th>KW</th>
+<th>MAKE</th>
+<th>FRAME SIZE</th>
+<th>RPM</th>
+<th>FLC</th>
+<th>MTG</th>
+</tr>
+
+<tr>
+<td>${row[5]||""}</td>
+<td>${row[7]||""}</td>
+<td>${row[8]||""}</td>
+<td>${row[9]||""}</td>
+<td>${row[10]||""}</td>
+<td>${row[11]||""}</td>
+</tr>
+
+</table>
+
+`;
+
+app.innerHTML=html;
+
+}
+catch(e){
+
+app.innerHTML="<div class='no-data'>Unable to load JSON.</div>";
+
+}
+
+}
+
+loadMotor();
+
+</script>
+
+</body>
+</html>
