@@ -250,6 +250,7 @@ Motor details not found for <b>${id}</b>
 app.innerHTML=html;
 return;
 }
+// Main Motor Details
 html+=`
 
 <table>
@@ -274,8 +275,49 @@ html+=`
 
 </table>
 
+<br><br>
+
+<h2 style="text-align:center;color:#0d47a1;">
+Spare Motor Details
+</h2>
+
+<table>
+
+<tr>
+<th>Sl No.</th>
+<th>Spare Motor Details</th>
+</tr>
+
 `;
 
+const spareData=(row[24]||"").trim();
+
+if(spareData){
+
+const spareList=spareData.split(",");
+
+spareList.forEach((item,index)=>{
+
+html+=`
+<tr>
+<td>${index+1}</td>
+<td>${item.trim()}</td>
+</tr>
+`;
+
+});
+
+}else{
+
+html+=`
+<tr>
+<td colspan="2">No Spare Motor Details Available</td>
+</tr>
+`;
+
+}
+
+html+=`</table>`;
 app.innerHTML=html;
 
 }
