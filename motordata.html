@@ -130,7 +130,7 @@ async function loadMotor(){
     if(spareData){
       const spareList=spareData.split(",");
       spareList.forEach((item,index)=>{
-        const parts=item.trim().split("-");
+        const parts=item.trim().split("!");
         html+=`<tr><td>${index+1}</td>`;
         for(let i=0;i<8;i++){
           html+=`<td>${parts[i]?parts[i].trim():""}</td>`;
