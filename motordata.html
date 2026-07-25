@@ -142,6 +142,64 @@ async function loadMotor(){
     }
 
     html+="</table>";
+    // ================= Pending Motors at ERS =================
+
+html += `
+<br><br>
+
+<h2 style="text-align:center;color:#0d47a1;">
+Pending Motors at ERS
+</h2>
+
+<table>
+<tr>
+<th>Sl No.</th>
+<th>W/O Number</th>
+<th>KW</th>
+<th>MAKE</th>
+<th>FRAME</th>
+<th>RPM</th>
+<th>MTG</th>
+<th>DRIVE</th>
+<th>LOCATION</th>
+</tr>
+`;
+
+const pendingData = (row[26] || "").trim();
+
+if (pendingData) {
+
+    const pendingList = pendingData.split(",");
+
+    pendingList.forEach((item, index) => {
+
+        const parts = item.trim().split("!");
+
+        html += `<tr>
+<td>${index + 1}</td>
+<td>${parts[0] ? parts[0].trim() : ""}</td>
+<td>${parts[1] ? parts[1].trim() : ""}</td>
+<td>${parts[2] ? parts[2].trim() : ""}</td>
+<td>${parts[3] ? parts[3].trim() : ""}</td>
+<td>${parts[4] ? parts[4].trim() : ""}</td>
+<td>${parts[5] ? parts[5].trim() : ""}</td>
+<td>${parts[6] ? parts[6].trim() : ""}</td>
+<td>${parts[7] ? parts[7].trim() : ""}</td>
+</tr>`;
+
+    });
+
+} else {
+
+    html += `
+<tr>
+<td colspan="9">No Pending Motors Available</td>
+</tr>
+`;
+
+}
+
+html += "</table>";
     app.innerHTML=html;
 
   } catch(err){
