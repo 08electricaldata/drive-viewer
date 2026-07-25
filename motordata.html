@@ -128,7 +128,7 @@ async function loadMotor(){
 
     const spareData=(row[24]||"").trim();
     if(spareData){
-      const spareList=spareData.split(",");
+      const spareList=spareData.split("#");
       spareList.forEach((item,index)=>{
         const parts=item.trim().split("!");
         html+=`<tr><td>${index+1}</td>`;
@@ -169,7 +169,7 @@ const pendingData = (row[26] || "").trim();
 
 if (pendingData) {
 
-    const pendingList = pendingData.split(",");
+    const pendingList = pendingData.split("#");
 
     pendingList.forEach((item, index) => {
 
