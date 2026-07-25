@@ -276,7 +276,29 @@ html+=`
 </table>
 
 <br><br>
+html+=`
 
+<table>
+
+<tr>
+<th>Last Motor Replacement</th>
+<th>Last Motor PM</th>
+</tr>
+
+<tr>
+<td>${formatDate(row[37])}</td>
+<td>${formatDate(row[38])}</td>
+</tr>
+
+</table>
+
+<br><br>
+
+<h2 style="text-align:center;color:#0d47a1;">
+Spare Motor Details
+</h2>
+
+`;
 <h2 style="text-align:center;color:#0d47a1;">
 Spare Motor Details
 </h2>
@@ -335,7 +357,16 @@ ${err.message}
 }
 
 }
+function formatDate(v){
 
+    if(!v) return "N/A";
+
+    const d = new Date(v);
+
+    if(isNaN(d)) return v;
+
+    return d.toLocaleDateString("en-GB");
+}
 loadMotor();
 
 </script>
