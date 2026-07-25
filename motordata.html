@@ -158,217 +158,139 @@ function getID(){
     return new URLSearchParams(window.location.search).get("id");
 }
 
-function goBack(){
-    history.back();
-}
-
-function goHome(){
-    window.location.href="https://08electricaldata.github.io/";
-}
-
-function goPLC(){
-    window.location.href="plc.html?id="+encodeURIComponent(getID());
-}
-
-function goDrive(){
-    window.location.href="index.html?id="+encodeURIComponent(getID());
-}
+function goBack(){ history.back(); }
+function goHome(){ window.location.href="https://08electricaldata.github.io/"; }
+function goPLC(){ window.location.href="plc.html?id="+encodeURIComponent(getID()); }
+function goDrive(){ window.location.href="index.html?id="+encodeURIComponent(getID()); }
 
 async function loadMotor(){
+  const app=document.getElementById("app");
+  const id=getID();
 
-const app=document.getElementById("app");
-const id=getID();
+  if(!id){
+      app.innerHTML="<div class='no-data'>No Drive ID supplied.</div>";
+      return;
+  }
 
-if(!id){
-    app.innerHTML="<div class='no-data'>No Drive ID supplied.</div>";
-    return;
-}
+  try{
+    const response=await fetch(JSON_URL);
+    if(!response.ok) throw new Error("Unable to fetch JSON");
 
-try{
+    const data=await response.json();
+    let row=null;
 
-const response=await fetch(JSON_URL);
-
-if(!response.ok){
-    throw new Error("Unable to fetch JSON");
-}
-
-const data=await response.json();
-
-let row=null;
-
-// Search using Equipment Number (Column D = index 3)
-for(const r of data.rows){
-
-    if(
-        String(r[3]||"")
-        .trim()
-        .toUpperCase()===id.trim().toUpperCase()
-    ){
-        row=r;
-        break;
+    // Search using Equipment Number (Column D = index 3)
+    for(const r of data.rows){
+        if(String(r[3]||"").trim().toUpperCase()===id.trim().toUpperCase()){
+            row=r;
+            break;
+        }
     }
 
+    let html=`
+    <div class="header">
+      <h2>MOTOR DETAILS</h2>
+      <h3>${id}</h3>
+      <div class="updated">
+        Last Updated : ${new Date(data.updated).toLocaleString("en-GB")}
+      </div>
+    </div>
+
+    <div class="button-bar">
+      <button onclick="goBack()">⬅ Back</button>
+      <button onclick="goHome()">🏠 Home</button>
+      <button onclick="goDrive()">Drive Info</button>
+      <button onclick="goPLC()">PLC</button>
+    </div>
+    `;
+
+    if(!row){
+      html+=`
+      <div class="no-data">
+        Motor details not found for <b>${id}</b>
+      </div>`;
+      app.innerHTML=html;
+      return;
+    }
+
+    // Main Motor Details
+    html+=`
+    <table>
+      <tr>
+        <th>KW</th><th>MAKE</th><th>FRAME SIZE</th>
+        <th>RPM</th><th>FLC</th><th>MTG</th>
+      </tr>
+      <tr>
+        <td>${row[5]||""}</td>
+        <td>${row[7]||""}</td>
+        <td>${row[8]||""}</td>
+        <td>${row[9]||""}</td>
+        <td>${row[10]||""}</td>
+        <td>${row[11]||""}</td>
+      </tr>
+    </table>
+
+    <br><br>
+
+    <table>
+      <tr>
+        <th>Last Motor Replacement</th>
+        <th>Last Motor PM</th>
+      </tr>
+      <tr>
+        <td>${formatDate(row[37])}</td>
+        <td>${formatDate(row[38])}</td>
+      </tr>
+    </table>
+
+    <br><br>
+
+    <h2 style="text-align:center;color:#0d47a1;">Spare Motor Details</h2>
+
+    <table>
+      <tr>
+        <th>Sl No.</th>
+        <th>Spare Motor Details</th>
+      </tr>
+    `;
+
+    const spareData=(row[24]||"").trim();
+    if(spareData){
+      const spareList=spareData.split(",");
+      spareList.forEach((item,index)=>{
+        html+=`
+        <tr>
+          <td>${index+1}</td>
+          <td>${item.trim()}</td>
+        </tr>`;
+      });
+    } else {
+      html+=`
+      <tr>
+        <td colspan="2">No Spare Motor Details Available</td>
+      </tr>`;
+    }
+
+    html+=`</table>`;
+    app.innerHTML=html;
+
+  } catch(err){
+    console.error(err);
+    app.innerHTML=`
+    <div class="no-data">
+      Unable to load Motor Details.<br><br>${err.message}
+    </div>`;
+  }
 }
 
-let html=`
-
-<div class="header">
-
-<h2>MOTOR DETAILS</h2>
-
-<h3>${id}</h3>
-
-<div class="updated">
-Last Updated :
-${new Date(data.updated).toLocaleString("en-GB")}
-</div>
-
-</div>
-
-<div class="button-bar">
-
-<button onclick="goBack()">⬅ Back</button>
-
-<button onclick="goHome()">🏠 Home</button>
-
-<button onclick="goDrive()">Drive Info</button>
-
-<button onclick="goPLC()">PLC</button>
-
-</div>
-
-`;
-
-if(!row){
-
-html+=`
-<div class="no-data">
-Motor details not found for <b>${id}</b>
-</div>
-`;
-
-app.innerHTML=html;
-return;
-}
-// Main Motor Details
-html+=`
-
-<table>
-
-<tr>
-<th>KW</th>
-<th>MAKE</th>
-<th>FRAME SIZE</th>
-<th>RPM</th>
-<th>FLC</th>
-<th>MTG</th>
-</tr>
-
-<tr>
-<td>${row[5]||""}</td>
-<td>${row[7]||""}</td>
-<td>${row[8]||""}</td>
-<td>${row[9]||""}</td>
-<td>${row[10]||""}</td>
-<td>${row[11]||""}</td>
-</tr>
-
-</table>
-
-<br><br>
-html+=`
-
-<table>
-
-<tr>
-<th>Last Motor Replacement</th>
-<th>Last Motor PM</th>
-</tr>
-
-<tr>
-<td>${formatDate(row[37])}</td>
-<td>${formatDate(row[38])}</td>
-</tr>
-
-</table>
-
-<br><br>
-
-<h2 style="text-align:center;color:#0d47a1;">
-Spare Motor Details
-</h2>
-
-`;
-<h2 style="text-align:center;color:#0d47a1;">
-Spare Motor Details
-</h2>
-
-<table>
-
-<tr>
-<th>Sl No.</th>
-<th>Spare Motor Details</th>
-</tr>
-
-`;
-
-const spareData=(row[24]||"").trim();
-
-if(spareData){
-
-const spareList=spareData.split(",");
-
-spareList.forEach((item,index)=>{
-
-html+=`
-<tr>
-<td>${index+1}</td>
-<td>${item.trim()}</td>
-</tr>
-`;
-
-});
-
-}else{
-
-html+=`
-<tr>
-<td colspan="2">No Spare Motor Details Available</td>
-</tr>
-`;
-
-}
-
-html+=`</table>`;
-app.innerHTML=html;
-
-}
-catch(err){
-
-console.error(err);
-
-app.innerHTML=`
-<div class="no-data">
-Unable to load Motor Details.<br><br>
-${err.message}
-</div>
-`;
-
-}
-
-}
 function formatDate(v){
-
-    if(!v) return "N/A";
-
-    const d = new Date(v);
-
-    if(isNaN(d)) return v;
-
-    return d.toLocaleDateString("en-GB");
+  if(!v) return "N/A";
+  const d=new Date(v);
+  if(isNaN(d)) return v;
+  return d.toLocaleDateString("en-GB");
 }
-loadMotor();
 
+loadMotor();
 </script>
 
 </body>
