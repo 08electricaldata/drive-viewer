@@ -247,29 +247,42 @@ async function loadMotor(){
 
     <h2 style="text-align:center;color:#0d47a1;">Spare Motor Details</h2>
 
-    <table>
-      <tr>
-        <th>Sl No.</th>
-        <th>Spare Motor Details</th>
-      </tr>
-    `;
+    // Spare Motor Details
+html += `
+<h2 style="text-align:center;color:#0d47a1;">Spare Motor Details</h2>
+<table>
+  <tr>
+    <th>Sl No.</th>
+    <th>W/O number</th>
+    <th>KW</th>
+    <th>MAKE</th>
+    <th>FRAME</th>
+    <th>RPM</th>
+    <th>MTG</th>
+    <th>DRIVE</th>
+    <th>LOCATION</th>
+  </tr>
+`;
 
-    const spareData=(row[24]||"").trim();
-    if(spareData){
-      const spareList=spareData.split(",");
-      spareList.forEach((item,index)=>{
-        html+=`
-        <tr>
-          <td>${index+1}</td>
-          <td>${item.trim()}</td>
-        </tr>`;
-      });
-    } else {
-      html+=`
-      <tr>
-        <td colspan="2">No Spare Motor Details Available</td>
-      </tr>`;
+const spareData = (row[24] || "").trim();
+if (spareData) {
+  const spareList = spareData.split(",");
+  spareList.forEach((item, index) => {
+    const parts = item.trim().split("-");
+    html += `<tr><td>${index + 1}</td>`;
+    for (let i = 0; i < 8; i++) {
+      html += `<td>${parts[i] ? parts[i].trim() : ""}</td>`;
     }
+    html += "</tr>";
+  });
+} else {
+  html += `
+  <tr>
+    <td colspan="9">No Spare Motor Details Available</td>
+  </tr>`;
+}
+
+html += `</table>`;
 
     html+=`</table>`;
     app.innerHTML=html;
