@@ -468,12 +468,12 @@ const rawId = new URLSearchParams(location.search).get("id");
 const id = normalize(rawId);
 
 /* ===== NAV ===== */
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goHome(){ location.href="https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
 function goDriveInfo(){
   if(!id) return;
   location.href =
-    "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+    "https://08electricaldata.github.io/drive-viewer/mobile/index.html?id=" +
     encodeURIComponent(id);
 }
 
