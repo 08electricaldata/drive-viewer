@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Drive History</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  padding: 0;
+  margin: 0;
+  background: #f2f6ff;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== STICKY HEADER ===== */
+.header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #003f88;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px;
+}
+
+.header-left {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.header-bar button {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+
+.header-bar button:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.header-credit {
+  display: none;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+/* ===== PAGE ===== */
+.page { 
+  padding: 10px 8px; 
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+h2, h3 {
+  color: #003f88;
+  text-align: center;
+  font-weight: 600;
+  margin: 8px 0;
+}
+
+h2 { 
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+h3 { 
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.card {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+  margin-bottom: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.label {
+  font-weight: 600;
+  color: #003f88;
+  font-size: 12px;
+}
+
+.grid p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.grid p span {
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* CONTROLS */
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.controls input {
+  grid-column: 1 / -1;
+  padding: 8px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.controls button {
+  padding: 8px 10px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+
+.controls button:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 6px 4px;
+  text-align: left;
+}
+
+th {
+  background: #003f88;
+  color: white;
+  font-weight: 600;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+td {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+#historyTable th:nth-child(1),
+#historyTable td:nth-child(1) {
+  width: 50px;
+}
+
+#historyTable th:nth-child(2),
+#historyTable td:nth-child(2) {
+  width: 60px;
+}
+
+#historyTable th:nth-child(3),
+#historyTable td:nth-child(3) {
+  width: 65px;
+  text-align: center;
+}
+
+#historyTable th:nth-child(8),
+#historyTable td:nth-child(8) {
+  width: 50px;
+  text-align: center;
+}
+
+#historyTable a {
+  color: #003f88;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 4px 6px;
+  display: inline-block;
+  background: #e8f0ff;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+#historyTable a:active {
+  background: #d0e0ff;
+}
+
+.year-row td {
+  background: #e8f0ff;
+  color: #003f88;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px;
+  font-size: 12px;
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 480px) {
+  .header-bar {
+    padding: 6px 6px;
+  }
+
+  .header-bar button {
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  .header-title {
+    font-size: 13px;
+  }
+
+  .page {
+    padding: 8px 6px;
+  }
+
+  h2 {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  h3 {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .card {
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .controls {
+    gap: 6px;
+  }
+
+  .controls input {
+    padding: 7px;
+    font-size: 12px;
+  }
+
+  .controls button {
+    padding: 7px 8px;
+    font-size: 11px;
+  }
+
+  table {
+    font-size: 11px;
+  }
+
+  th, td {
+    padding: 5px 3px;
+  }
+
+  th {
+    font-size: 10px;
+  }
+
+  .year-row td {
+    padding: 5px;
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 768px) {
+  .page {
+    max-width: 900px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .controls {
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .controls input {
+    grid-column: 1;
+  }
+
+  .btn-group {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  table {
+    font-size: 13px;
+  }
+
+  th, td {
+    padding: 7px 5px;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  h3 {
+    font-size: 16px;
+  }
+}
+
+/* SCROLLABLE TABLE FOR MOBILE */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-size: 13px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header-bar">
+  <div class="header-left">
+    <button onclick="goHome()">🏠</button>
+    <button onclick="goBack()">⬅</button>
+    <button onclick="goDriveInfo()">ℹ️</button>
+  </div>
+  <div class="header-title">History</div>
+  <div class="header-credit">By Rakesh Chandra Sethy</div>
+</div>
+
+<div class="page">
+
+<h2>Drive Info</h2>
+
+<div id="driveInfo" class="card">
+  Loading data…
+</div>
+
+<h2>History</h2>
+
+<div class="card">
+  <div class="controls">
+    <input id="search" placeholder="Search…" type="text">
+    <div class="btn-group">
+      <button onclick="exportExcel()">📥 Export CSV</button>
+      <button onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table id="historyTable">
+      <thead>
+        <tr>
+          <th>TR NO</th>
+          <th>MONTH</th>
+          <th>DATE</th>
+          <th>DETAILS</th>
+          <th>JOB TYPE</th>
+          <th>CATEGORY</th>
+          <th>BY</th>
+          <th>LINK</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="no-data" id="noData" style="display:none;">No history found</div>
+</div>
+
+</div>
+
+<script>
+/* ===== NORMALIZE (ONLY ADDITION) ===== */
+function normalize(v){
+  return String(v || "")
+    .replace(/[–—?]/g, "-")
+    .toUpperCase()
+    .trim();
+}
+
+/* ===== ID ===== */
+const rawId = new URLSearchParams(location.search).get("id");
+const id = normalize(rawId);
+
+/* ===== NAV ===== */
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
+function goDriveInfo(){
+  if(!id) return;
+  location.href =
+    "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+    encodeURIComponent(id);
+}
+
+/* ===== DRIVE INFO (UNCHANGED) ===== */
+async function loadDriveInfo(){
+  if(!id) return;
+
+  const url="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+  const r=await fetch(url);
+  const j=await r.json();
+
+  let c=null;
+  j.rows.forEach(r=>{
+    if(normalize(`${r[1]}-${r[2]}`) === id) c=r;
+  });
+
+  if(!c){
+    driveInfo.innerHTML="<p style='color:#d32f2f;'>Drive not found.</p>";
+    return;
+  }
+
+  const type=normalize(c[1]);
+
+  if(type==="TRANSFORMER"){
+    driveInfo.innerHTML=`
+      <h3>Transformer – ${c[2]}</h3>
+      <div class="grid">
+        <p><span class="label">TR Sl No:</span> ${c[3]}</p>
+        <p><span class="label">Make:</span> ${c[4]}</p>
+        <p><span class="label">Rating:</span> ${c[5]} KVA</p>
+        <p><span class="label">From S/S:</span> ${c[6]}</p>
+        <p><span class="label">Unit S/S:</span> ${c[7]}</p>
+        <p><span class="label">% Impedance:</span> ${c[8]}</p>
+        <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+        <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+      </div>`;
+    return;
+  }
+
+  if(type==="BREAKER"){
+    driveInfo.innerHTML=`
+      <h3>Breaker – ${c[2]}</h3>
+      <div class="grid">
+        <p><span class="label">Compartment No:</span> ${c[3]}</p>
+        <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
+        <p><span class="label">Make:</span> ${c[5]}</p>
+        <p><span class="label">Rating:</span> ${c[6]} A</p>
+        <p><span class="label">Type:</span> ${c[7]}</p>
+        <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+        <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+      </div>`;
+    return;
+  }
+
+  driveInfo.innerHTML=`
+    <h3>${c[1]} – ${c[2]}</h3>
+    <div class="grid">
+      <p><span class="label">Rating:</span> ${c[5]} KW</p>
+      <p><span class="label">FLC:</span> ${c[10]} A</p>
+      <p><span class="label">SFU:</span> ${c[14]}</p>
+      <p><span class="label">Fuse:</span> ${c[15]}</p>
+      <p><span class="label">Contactor:</span> ${c[16]}</p>
+      <p><span class="label">Relay:</span> ${c[17]}</p>
+      <p><span class="label">CT (M):</span> ${c[18]}</p>
+      <p><span class="label">CT (P):</span> ${c[19]}</p>
+      <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
+    </div>`;
+}
+
+/* ===== DATE NORMALIZER (UNCHANGED) ===== */
+function normalizeDateKey(v){
+  if(!v) return "";
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return v;
+  if(typeof v==="string" && v.startsWith("Date(")){
+    const p=v.match(/\d+/g);
+    const d=new Date(p[0],p[1],p[2]);
+    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+  }
+  const d=new Date(v);
+  if(!isNaN(d)){
+    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+  }
+  return "";
+}
+
+function formatDate(v){
+  const key=normalizeDateKey(v);
+  if(!key) return "";
+  const[d,m,y]=key.split("/");
+  return `${d}-${m}-${y}`;
+}
+
+/* ===== JOB BOOK ===== */
+const JOBBOOK_JSON =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/jobbook.json";
+
+let jobBookMap = {};
+
+async function loadJobBook(){
+  try{
+    const r = await fetch(JOBBOOK_JSON);
+    const j = await r.json();
+    j.rows.forEach(r=>{
+      const key = normalizeDateKey(r[0]);
+      if(key && r[1]) jobBookMap[key] = r[1];
+    });
+  }catch(e){}
+}
+
+/* ===== HISTORY ===== */
+const HISTORY_YEARS=[2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+
+async function loadHistory(){
+  let all=[];
+
+  for(const y of HISTORY_YEARS){
+    try{
+      const r=await fetch(HISTORY_BASE+y+".json");
+      if(!r.ok) continue;
+      const j=await r.json();
+      j.rows.forEach(row=>{
+        if(normalize(`${row[2]}-${row[3]}`) === id){
+          all.push(row);
+        }
+      });
+    }catch(e){}
+  }
+
+  all.sort((a,b)=>new Date(b[4])-new Date(a[4]));
+  renderHistory(all);
+}
+
+function renderHistory(rows){
+  const tbody=document.querySelector("#historyTable tbody");
+  const noData=document.getElementById("noData");
+  
+  tbody.innerHTML="";
+  
+  if(!rows.length){
+    noData.style.display="block";
+    return;
+  }
+  
+  noData.style.display="none";
+  let currentYear="";
+
+  rows.forEach(r=>{
+    const key=normalizeDateKey(r[4]);
+    const y=key.slice(-4);
+
+    if(y!==currentYear){
+      currentYear=y;
+      const yr=document.createElement("tr");
+      yr.className="year-row";
+      yr.innerHTML=`<td colspan="8">${y}</td>`;
+      tbody.appendChild(yr);
+    }
+
+    const link = jobBookMap[key] || r[10];
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${r[0]||"-"}</td>
+      <td>${r[1]||"-"}</td>
+      <td>${formatDate(r[4])||"-"}</td>
+      <td>${r[5]||"-"}</td>
+      <td>${r[6]||"-"}</td>
+      <td>${r[7]||"-"}</td>
+      <td>${r[9]||"-"}</td>
+      <td>${link?`<a href="${link}" target="_blank">📎</a>`:"-"}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ===== SEARCH ===== */
+document.getElementById("search").addEventListener("input",function(){
+  const v=this.value.toLowerCase();
+  let visibleCount=0;
+  document.querySelectorAll("#historyTable tbody tr").forEach(tr=>{
+    const isYearRow=tr.classList.contains("year-row");
+    const matches=tr.innerText.toLowerCase().includes(v);
+    tr.style.display=matches?"":"none";
+    if(matches && !isYearRow) visibleCount++;
+  });
+  document.getElementById("noData").style.display=visibleCount===0?"block":"none";
+});
+
+/* ===== EXPORT ===== */
+function exportExcel(){
+  let csv=[];
+  document.querySelectorAll("#historyTable tr").forEach(r=>{
+    if(r.classList.contains("year-row")){
+      csv.push([r.innerText]);
+    }else{
+      csv.push([...r.children].map(c=>`"${c.innerText.trim()}"`).join(","));
+    }
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")],{type:"text/csv"}));
+  a.download=`drive-history-${id}-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+/* ===== INIT ===== */
+(async function(){
+  await loadJobBook();
+  loadDriveInfo();
+  loadHistory();
+})();
+</script>
+
+</body>
+</html>
