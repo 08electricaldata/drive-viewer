@@ -6,78 +6,235 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
+* { box-sizing: border-box; }
 
-.header-bar {
-  position: sticky; top: 0; z-index: 1000;
-  background: #f2f6ff; padding: 10px 12px;
-  display: flex; align-items: center; gap: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+body { 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+  margin: 0; 
+  background: #f2f6ff; 
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
-.header-title { flex: 1; text-align: center; }
-.header-title h2 { margin: 0; color: #003f88; }
-.header-title small { display: block; font-size: 15px; font-weight: 600; }
+.header-bar {
+  position: sticky; 
+  top: 0; 
+  z-index: 1000;
+  background: #003f88;
+  padding: 8px 8px;
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+
+.header-left {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.header-title { 
+  flex: 1; 
+  text-align: center; 
+  padding: 0 10px;
+}
+
+.header-title h2 { 
+  margin: 0; 
+  color: #ffffff; 
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.header-title small { 
+  display: none; 
+  font-size: 11px; 
+  font-weight: 600;
+  color: #e0e0e0;
+}
 
 .icon-btn {
   background: #ffffff;
   color: #003f88;
-  border: 1px solid #003f88;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 18px;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 14px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
 }
 
-.container { padding: 20px; }
+.icon-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+
+.container { 
+  padding: 10px 8px; 
+  max-width: 100%;
+  margin: 0 auto;
+}
 
 .card {
-  background: #fff; padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  background: #fff; 
+  padding: 14px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+  margin-bottom: 10px;
 }
 
-.label { font-weight: bold; color: #003f88; }
+.card h3 {
+  margin: 0 0 12px 0;
+  color: #003f88;
+  font-size: 16px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.label { 
+  font-weight: 600; 
+  color: #003f88; 
+  font-size: 13px;
+}
 
 .grid {
   display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.grid p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.grid p span {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.action-row {
+  display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .action-btn {
-  margin-top: 20px;
-  padding: 10px 18px;
+  padding: 10px 8px;
   background: #003f88;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: normal;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(0,0,0,.1);
 }
 
 .action-btn:disabled {
-  background:#ccc;
-  cursor:not-allowed;
+  background: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .badge {
-  color:red;
-  font-weight:bold;
-  margin-top:10px;
+  color: #d32f2f;
+  font-weight: 600;
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 4px 6px;
+  background: #ffebee;
+  border-radius: 4px;
+  border-left: 3px solid #d32f2f;
 }
 
-@media(max-width:768px){
-  .grid { grid-template-columns: 1fr; }
-  .action-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 18px;
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+  color: #003f88;
+}
+
+.not-found {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+  color: #d32f2f;
+}
+
+@media(max-width:480px){
+  .header-bar {
+    padding: 6px 6px;
   }
-  .action-row .action-btn {
-    margin-top: 0;
-    width: 100%;
+
+  .icon-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .container {
+    padding: 8px 6px;
+  }
+
+  .card {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .card h3 {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+
+  .grid {
+    gap: 10px;
+  }
+
+  .grid p {
+    font-size: 12px;
+  }
+
+  .label {
+    font-size: 12px;
+  }
+
+  .action-row {
+    gap: 6px;
+  }
+
+  .action-btn {
+    padding: 9px 6px;
+    font-size: 11px;
+  }
+}
+
+@media(min-width: 768px){
+  .container {
+    max-width: 600px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 }
 </style>
@@ -86,17 +243,19 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 <body>
 
 <div class="header-bar">
-  <button class="icon-btn" onclick="goHome()">🏠 Home</button>
-  <button class="icon-btn" onclick="goBack()">⬅ Back</button>
-  <button class="icon-btn" onclick="addJob()">➕ ADD JOB</button>
+  <div class="header-left">
+    <button class="icon-btn" onclick="goHome()">🏠</button>
+    <button class="icon-btn" onclick="goBack()">⬅</button>
+    <button class="icon-btn" onclick="addJob()">➕</button>
+  </div>
   <div class="header-title">
-    <h2>Equipment Information</h2>
-    <small>Designed and maintained by Rakesh Chandra Sethy</small>
+    <h2>Equipment Info</h2>
+    <small>By Rakesh Chandra Sethy</small>
   </div>
 </div>
 
 <div class="container">
-  <div id="content">Loading data…</div>
+  <div id="content" class="loading">Loading data…</div>
 </div>
 
 <script>
@@ -151,6 +310,7 @@ function openPLC(){
   "https://08electricaldata.github.io/drive-viewer/plc.html?id=" +
   encodeURIComponent(id);
 }
+
 /* ===== MOTOR DATA OPEN ===== */
 function openMotorData(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
@@ -166,6 +326,7 @@ function openPLCLadder(){
   "https://08electricaldata.github.io/drive-viewer/plcladder.html?id=" +
   encodeURIComponent(id);
 }
+
 /* ===== PRELOAD DRAWINGS ===== */
 async function preloadDrawings(){
   try{
@@ -238,6 +399,16 @@ async function lastDates(id,map){
   return res;
 }
 
+function formatDDMMYYYY(v){
+  if(!v) return "NO RECORDS";
+  const d = new Date(v);
+  if(isNaN(d)) return v;
+  const day = String(d.getDate()).padStart(2,"0");
+  const month = String(d.getMonth()+1).padStart(2,"0");
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
 /* ===== LOAD DATA ===== */
 async function loadData(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
@@ -248,20 +419,16 @@ async function loadData(){
     r => normalize(`${r[1]}-${r[2]}`) === id
   );
 
-if(!c){
-
-  content.innerHTML =
-    "<div class='card'>Drive data not found… opening history…</div>";
-
-  setTimeout(()=>{
-    location.href =
-      "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-      encodeURIComponent(id);
-  }, 800);
-
-  return;
-}
-
+  if(!c){
+    content.innerHTML =
+      "<div class='not-found'>Equipment data not found… opening history…</div>";
+    setTimeout(()=>{
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+        encodeURIComponent(id);
+    }, 800);
+    return;
+  }
 
   const TYPE = normalize(c[1]);
 
@@ -279,37 +446,28 @@ function applyButtonState(id){
     drawBtn.disabled = true;
     const badge = document.createElement("div");
     badge.className="badge";
-    badge.innerText="🎨 No Drawing Available";
-    drawBtn.parentNode.appendChild(badge);
+    badge.innerText="No Drawing";
+    drawBtn.parentNode.insertBefore(badge, drawBtn.nextSibling);
   }
 
   if(plcBtn && !plcAvailableMap[id]){
     plcBtn.disabled = true;
     const badge = document.createElement("div");
     badge.className="badge";
-    badge.innerText="⚡ No PLC Address Available";
-    plcBtn.parentNode.appendChild(badge);
+    badge.innerText="No PLC Data";
+    plcBtn.parentNode.insertBefore(badge, plcBtn.nextSibling);
   }
 }
 
+function openHistory(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  location.href =
+  "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+  encodeURIComponent(id);
+}
 
-
- function formatDDMMYYYY(v){
-  if(!v) return "NO RECORDS";
-
-  const d = new Date(v);
-  if(isNaN(d)) return v; // if already formatted text
-
-  const day = String(d.getDate()).padStart(2,"0");
-  const month = String(d.getMonth()+1).padStart(2,"0");
-  const year = d.getFullYear();
-
-  return `${day}-${month}-${year}`;
-} 
 /* ===== MOTOR ===== */
 async function showMotor(c,id){
-
-
   content.innerHTML = `
   <div class="card">
     <h3>${c[1]} – ${c[2]}</h3>
@@ -325,25 +483,23 @@ async function showMotor(c,id){
       <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
       <p><span class="label">Ammeter:</span> ${c[21]}</p>
       <p><span class="label">Ind Lamp:</span> ${c[22]}</p>
-      <p><span class="label">No of Spare Motors:</span> ${c[23]}</p>
-
-     <p><span class="label">Last Motor Replacement:</span> ${formatDDMMYYYY(c[37])}</p>
-<p><span class="label">Last Motor PM:</span> ${formatDDMMYYYY(c[38])}</p>
-<p><span class="label">Last Module PM:</span> ${formatDDMMYYYY(c[39])}</p>
-<p><span class="label">Last VFD PM:</span> ${formatDDMMYYYY(c[40])}</p>
-<p><span class="label">Low Current Trip:</span> ${c[41]} </p>
-<p><span class="label">Drive Location:</span> ${c[42]} </p>
+      <p><span class="label">Spare Motors:</span> ${c[23]}</p>
+      <p><span class="label">Motor Repl:</span> ${formatDDMMYYYY(c[37])}</p>
+      <p><span class="label">Motor PM:</span> ${formatDDMMYYYY(c[38])}</p>
+      <p><span class="label">Module PM:</span> ${formatDDMMYYYY(c[39])}</p>
+      <p><span class="label">VFD PM:</span> ${formatDDMMYYYY(c[40])}</p>
+      <p><span class="label">Low Current:</span> ${c[41]} A</p>
+      <p><span class="label">Location:</span> ${c[42]}</p>
     </div>
 
-  <div class="action-row">
-  <button class="action-btn" onclick="openHistory()">📜 History</button>
-  <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
-  <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
-  <button class="action-btn" onclick="openPLCLadder()">⚙ PLC-LDR</button>
-  <button class="action-btn" onclick="openMotorData()">🛠 Motor Data</button>
-  <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
-</div>
-
+    <div class="action-row">
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Draw</button>
+      <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
+      <button class="action-btn" onclick="openPLCLadder()">⚙ Ladder</button>
+      <button class="action-btn" onclick="openMotorData()">🛠 Data</button>
+      <button class="action-btn" onclick="addJob()">➕ Job</button>
+    </div>
   </div>`;
 
   applyButtonState(id);
@@ -371,19 +527,20 @@ async function showTransformer(c,id){
       <p><span class="label">% Impedance:</span> ${c[8]}</p>
       <p><span class="label">LT SWBD:</span> ${c[9]}</p>
       <p><span class="label">Panel Rating:</span> ${c[10]}</p>
-
-      <p><span class="label">Last Transformer PM:</span> ${t.pm}</p>
-      <p><span class="label">Last Transformer O/H:</span> ${t.oh}</p>
-      <p><span class="label">Last Oil Leakage Arrest:</span> ${t.leak}</p>
-      <p><span class="label">Last Oil Top-up:</span> ${t.top}</p>
-      <p><span class="label">Last Oil Checked:</span> ${t.chk}</p>
+      <p><span class="label">Last TR PM:</span> ${t.pm}</p>
+      <p><span class="label">Last TR O/H:</span> ${t.oh}</p>
+      <p><span class="label">Last Oil L/A:</span> ${t.leak}</p>
+      <p><span class="label">Last Oil T-Up:</span> ${t.top}</p>
+      <p><span class="label">Last Oil Chk:</span> ${t.chk}</p>
     </div>
 
     <div class="action-row">
       <button class="action-btn" onclick="openHistory()">📜 History</button>
-      <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
-      <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
-      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
+      <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Draw</button>
+      <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
+      <button class="action-btn" onclick="addJob()">➕ Job</button>
+      <button class="action-btn" style="visibility: hidden;"></button>
+      <button class="action-btn" style="visibility: hidden;"></button>
     </div>
   </div>`;
 
@@ -398,33 +555,27 @@ async function showBreaker(c,id){
   <div class="card">
     <h3>Breaker – ${c[2]}</h3>
     <div class="grid">
-      <p><span class="label">Compartment No:</span> ${c[3]}</p>
-      <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
+      <p><span class="label">Compartment:</span> ${c[3]}</p>
+      <p><span class="label">Description:</span> ${c[4]}</p>
       <p><span class="label">Make:</span> ${c[5]}</p>
       <p><span class="label">Rating:</span> ${c[6]} A</p>
       <p><span class="label">Type:</span> ${c[7]}</p>
       <p><span class="label">LT SWBD:</span> ${c[9]}</p>
       <p><span class="label">Panel Rating:</span> ${c[10]}</p>
-
-      <p><span class="label">Last Breaker PM:</span> ${b.pm}</p>
+      <p><span class="label">Last BR PM:</span> ${b.pm}</p>
     </div>
 
     <div class="action-row">
       <button class="action-btn" onclick="openHistory()">📜 History</button>
-      <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
-      <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
-      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
+      <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Draw</button>
+      <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
+      <button class="action-btn" onclick="addJob()">➕ Job</button>
+      <button class="action-btn" style="visibility: hidden;"></button>
+      <button class="action-btn" style="visibility: hidden;"></button>
     </div>
   </div>`;
 
   applyButtonState(id);
-}
-
-function openHistory(){
-  const id = normalize(new URLSearchParams(location.search).get("id"));
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-  encodeURIComponent(id);
 }
 
 /* ===== INIT ===== */
