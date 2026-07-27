@@ -182,79 +182,62 @@ h2 {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
-  white-space: nowrap;
+  font-size: 12px;
 }
 
 th, td {
   border: 1px solid #ddd;
-  padding: 5px 4px;
+  padding: 6px 5px;
   text-align: left;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 th {
   background: #003f88;
   color: white;
   font-weight: 600;
-  font-size: 10px;
-  padding: 5px 3px;
+  font-size: 11px;
+  white-space: normal;
 }
 
-td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80px;
-}
-
+/* Column Widths */
 #historyTable th:nth-child(1),
 #historyTable td:nth-child(1) {
-  width: 45px;
-  padding: 4px 2px;
+  width: 50px;
+  text-align: center;
 }
 
 #historyTable th:nth-child(2),
 #historyTable td:nth-child(2) {
-  width: 45px;
+  width: 65px;
+  text-align: center;
 }
 
 #historyTable th:nth-child(3),
 #historyTable td:nth-child(3) {
-  width: 55px;
-  text-align: center;
+  width: 100px;
+  min-width: 100px;
 }
 
 #historyTable th:nth-child(4),
 #historyTable td:nth-child(4) {
-  width: 70px;
+  width: 100px;
+  min-width: 100px;
 }
 
 #historyTable th:nth-child(5),
 #historyTable td:nth-child(5) {
-  width: 60px;
-}
-
-#historyTable th:nth-child(6),
-#historyTable td:nth-child(6) {
-  width: 65px;
-}
-
-#historyTable th:nth-child(7),
-#historyTable td:nth-child(7) {
-  width: 60px;
-}
-
-#historyTable th:nth-child(8),
-#historyTable td:nth-child(8) {
   width: 40px;
   text-align: center;
-  padding: 4px 2px;
 }
 
 #historyTable a {
   color: #003f88;
   text-decoration: none;
   font-weight: 600;
-  font-size: 10px;
+  font-size: 14px;
+  display: inline-block;
 }
 
 #historyTable a:active {
@@ -266,8 +249,8 @@ td {
   color: #003f88;
   font-weight: 700;
   text-align: center;
-  padding: 5px;
-  font-size: 11px;
+  padding: 6px;
+  font-size: 12px;
 }
 
 /* MOBILE RESPONSIVE */
@@ -321,24 +304,47 @@ td {
   }
 
   table {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   th, td {
-    padding: 4px 2px;
+    padding: 5px 4px;
   }
 
   th {
-    font-size: 9px;
+    font-size: 10px;
   }
 
-  td {
-    max-width: 60px;
+  #historyTable th:nth-child(1),
+  #historyTable td:nth-child(1) {
+    width: 45px;
+  }
+
+  #historyTable th:nth-child(2),
+  #historyTable td:nth-child(2) {
+    width: 60px;
+  }
+
+  #historyTable th:nth-child(3),
+  #historyTable td:nth-child(3) {
+    width: 80px;
+    min-width: 80px;
+  }
+
+  #historyTable th:nth-child(4),
+  #historyTable td:nth-child(4) {
+    width: 90px;
+    min-width: 90px;
+  }
+
+  #historyTable th:nth-child(5),
+  #historyTable td:nth-child(5) {
+    width: 35px;
   }
 
   .year-row td {
     padding: 4px;
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 
@@ -349,15 +355,42 @@ td {
   }
 
   table {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   th, td {
-    padding: 6px 4px;
+    padding: 7px 6px;
   }
 
   h2 {
     font-size: 16px;
+  }
+
+  #historyTable th:nth-child(1),
+  #historyTable td:nth-child(1) {
+    width: 60px;
+  }
+
+  #historyTable th:nth-child(2),
+  #historyTable td:nth-child(2) {
+    width: 75px;
+  }
+
+  #historyTable th:nth-child(3),
+  #historyTable td:nth-child(3) {
+    width: 120px;
+    min-width: 120px;
+  }
+
+  #historyTable th:nth-child(4),
+  #historyTable td:nth-child(4) {
+    width: 150px;
+    min-width: 150px;
+  }
+
+  #historyTable th:nth-child(5),
+  #historyTable td:nth-child(5) {
+    width: 50px;
   }
 }
 
@@ -407,13 +440,10 @@ td {
       <thead>
         <tr>
           <th>TR NO</th>
-          <th>MTH</th>
           <th>DATE</th>
           <th>DETAILS</th>
-          <th>TYPE</th>
-          <th>CATG</th>
-          <th>BY</th>
-          <th>LNK</th>
+          <th>CATEGORY</th>
+          <th>LINK</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -597,7 +627,7 @@ function renderHistory(rows){
       currentYear=y;
       const yr=document.createElement("tr");
       yr.className="year-row";
-      yr.innerHTML=`<td colspan="8">${y}</td>`;
+      yr.innerHTML=`<td colspan="5">${y}</td>`;
       tbody.appendChild(yr);
     }
 
@@ -605,13 +635,10 @@ function renderHistory(rows){
 
     const tr=document.createElement("tr");
     tr.innerHTML=`
-      <td title="${r[0]||"-"}">${r[0]||"-"}</td>
-      <td title="${r[1]||"-"}">${r[1]||"-"}</td>
-      <td title="${formatDate(r[4])||"-"}">${formatDate(r[4])||"-"}</td>
-      <td title="${r[5]||"-"}">${r[5]||"-"}</td>
-      <td title="${r[6]||"-"}">${r[6]||"-"}</td>
-      <td title="${r[7]||"-"}">${r[7]||"-"}</td>
-      <td title="${r[9]||"-"}">${r[9]||"-"}</td>
+      <td>${r[0]||"-"}</td>
+      <td>${formatDate(r[4])||"-"}</td>
+      <td>${r[5]||"-"}</td>
+      <td>${r[7]||"-"}</td>
       <td>${link?`<a href="${link}" target="_blank" title="Open">📎</a>`:"-"}</td>`;
     tbody.appendChild(tr);
   });
@@ -637,7 +664,10 @@ function exportExcel(){
     if(r.classList.contains("year-row")){
       csv.push([r.innerText]);
     }else{
-      csv.push([...r.children].map(c=>`"${c.innerText.trim()}"`).join(","));
+      csv.push([...r.children].map((c,i)=>{
+        if(i===4) return `"Open"`;
+        return `"${c.innerText.trim()}"`;
+      }).join(","));
     }
   });
   const a=document.createElement("a");
