@@ -7,7 +7,6 @@
 <meta name="theme-color" content="#0052cc">
 
 <style>
-/* App shell */
 :root{
   --app-bg: linear-gradient(135deg,#e6f0ff,#f4f9ff);
   --header-start:#002b5c;
@@ -108,7 +107,7 @@ table{
   border-collapse:collapse;
   width:100%;
   background:transparent;
-  min-width:900px; /* keep for wide datasets; on small screens we'll convert to cards */
+  min-width:900px;
 }
 th, td{
   border:1px solid #e1e6ef;
@@ -165,7 +164,6 @@ th{
 
 /* MOBILE: convert table into stacked cards */
 @media (max-width:600px){
-  /* Make the app feel closer to a native card stack */
   .app-shell{padding:8px;}
   .header{top:8px;border-radius:12px;}
   .app-card{border-radius:12px;overflow:visible;}
@@ -200,7 +198,6 @@ th{
     line-height:1.2;
   }
 
-  /* label on left using data-label attribute */
   tbody td::before{
     content: attr(data-label);
     display:block;
@@ -212,13 +209,11 @@ th{
     min-width:40%;
   }
 
-  /* When numeric-like value, align right and use smaller label */
   tbody td:last-child{
     flex-basis:30%;
     justify-content:flex-end;
   }
 
-  /* make highlight cells look good on cards */
   .positive, .negative, .equal{
     border-radius:8px;
     padding:6px 10px;
@@ -266,7 +261,7 @@ th{
 
 <script>
 const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthlyjob.json";
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthlyjob.json";
 
 function goHome(){
   // open the mobile index as requested
@@ -279,8 +274,32 @@ async function loadData(){
     if(!res.ok) throw new Error('Failed to fetch data: ' + res.status);
     const data = await res.json();
 
-    const headers = data.headers || [];
-    const rows = data.rows || [];
+    console.log("monthlyjob.json loaded:", data);
+
+    // Normalize headers into an array of strings
+    let headers = data.headers ?? [];
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+
+    if(!Array.isArray(headers)){
+      // If headers is an object with numeric keys, convert to array of values
+      if(typeof headers === 'object' && headers !== null){
+        headers = Object.values(headers);
+      } else {
+        headers = [];
+      }
+    }
+
+    // If headers is empty, ensure we have at least placeholder column labels
+    if(headers.length === 0 && rows.length > 0){
+      // find maximum row length
+      const maxCols = rows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+      if(maxCols > 0){
+        headers = Array.from({length: maxCols}, (_, i) => `Column ${i+1}`);
+      }
+    }
+
+    // Ensure every header is a string
+    headers = headers.map(h => (h === null || h === undefined) ? "" : String(h));
 
     const thead = document.querySelector("#table thead");
     const tbody = document.querySelector("#table tbody");
@@ -305,8 +324,11 @@ async function loadData(){
     /* ===== BODY ===== */
     let bodyHTML = "";
     rows.forEach(r=>{
-      const colA = String(r[0] ?? "").trim();
-      const colB = String(r[1] ?? "").trim();
+      // ensure row is an array
+      const row = Array.isArray(r) ? r : [];
+
+      const colA = String(row[0] ?? "").trim();
+      const colB = String(row[1] ?? "").trim();
 
       // If Column A has number → Section Heading
       if(colA !== "" && !isNaN(Number(colA))){
@@ -320,24 +342,26 @@ async function loadData(){
       } else {
         bodyHTML += "<tr>";
         displayColumns.forEach(i=>{
-
-          let value = r[i] ?? "";
+          let value = row[i] ?? "";
           let className = "";
 
           // Column E Highlight (index 4)
           if(i === 4){
-            const achieved = Number(r[4]) || 0;
-            const target   = Number(r[5]) || 0;
-
+            const achieved = Number(row[4]) || 0;
+            const target   = Number(row[5]) || 0;
             if(achieved > target) className = "positive";
             else if(achieved < target) className = "negative";
             else className = "equal";
           }
 
-          // add data-label for responsive mobile view
-          const label = (headers[i] ?? "").replace(/"/g,'&quot;');
+          // Coerce header to string and escape double quotes for data-label
+          const rawLabel = headers[i] ?? "";
+          const label = String(rawLabel).replace(/"/g, '&quot;');
 
-          bodyHTML += `<td class="${className}" data-label="${label}">${value}</td>`;
+          // Use empty string for undefined values
+          const cellHtml = value === null || value === undefined ? "" : value;
+
+          bodyHTML += `<td class="${className}" data-label="${label}">${cellHtml}</td>`;
         });
         bodyHTML += "</tr>";
       }
