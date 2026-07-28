@@ -27,7 +27,7 @@ html,body{
 /* Container & controls */
 .container{ padding:8px; }
 .controls{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
-.controls button{ padding:8px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; }
+.controls button{ padding:8px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; }
 .controls .filter{ flex:1; min-width:120px; }
 .controls .filter input{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
 
@@ -160,7 +160,7 @@ html,body{
 
   <div id="tileGrid" class="tile-grid" aria-live="polite"></div>
 
-  <div id="emptyNote" class="empty-note" style="display:none">No data available</div>
+  <div id="emptyNote" class="empty-note" style="display:none">No transformers found</div>
 
   <div class="table-wrapper" id="tableWrapper" aria-hidden="true">
     <table id="xfmrTable"><thead><tr id="headerRow"></tr></thead><tbody></tbody></table>
@@ -168,10 +168,10 @@ html,body{
 </div>
 
 <script>
-/* Transformer Master List - Enhanced Card Layout
- - Each card displays: S/S, TRF-No, TR SL NO, MAKE
- - Then: KVA, MAIN S/S, UNIT S/S, %IMP, LT SWBD, RATING
- - Full structured layout with labels and values
+/* Transformer Master List - Fixed for actual JSON structure
+ - Row 0: Area/section header (skip)
+ - Row 1: Column headers
+ - Rows 2+: Actual transformer data
 */
 
 // JSON endpoint
@@ -190,30 +190,6 @@ function openOil(){ location.href = "https://08electricaldata.github.io/drive-vi
 
 // helpers
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function isNumericString(x){ if(x === null || x === undefined) return false; const t = String(x).trim(); if(t === '') return false; return !isNaN(Number(t)); }
-
-// find header index by keywords
-function findHeaderIndex(headers, keywords){
-  if(!Array.isArray(headers)) return -1;
-  const low = headers.map(h => (h ?? '').toString().toLowerCase());
-  for(const kw of keywords){
-    for(let i=0;i<low.length;i++){
-      if(low[i].includes(kw)) return i;
-    }
-  }
-  return -1;
-}
-
-// fallback sample
-const fallback = {
-  headers: ["SNo","S/S","TRF_NO","TR_SL_NO","MAKE","KVA","MAIN_S/S","UNIT_S/S","IMP%","LT_SWBD","RATING","KV"],
-  rows: [
-    [1,"US-08E","2244","JN - 4865 / 1","VOLTAMP","2000","LS04E #04","US-08E#01","6.47","PANEL-1","244","11/6.6 KV, 105/168 amp"],
-    [2,"US-08F","2245","JN - 4865 / 2","ABB","2500","LS04F #05","US-08F#02","6.50","PANEL-2","250","11/6.6 KV, 110/175 amp"],
-    ["","Section: Low Voltage","","","","","","","","","",""],
-    [3,"US-08G","2246","JN - 4865 / 3","Siemens","1500","LS04G #06","US-08G#03","6.45","PANEL-3","220","11/6.6 KV, 95/150 amp"]
-  ]
-};
 
 async function loadAndRender(){
   statusEl.style.display = '';
@@ -240,55 +216,73 @@ async function loadAndRender(){
     statusEl.textContent = 'Offline / using cache';
   }
 
-  if(!data) data = fallback;
-
-  // Normalize headers and rows
-  let headers = Array.isArray(data.headers) ? data.headers.slice() : (data.headers ? Object.values(data.headers) : []);
-  const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
-
-  if(headers.length === 0 && rows.length > 0){
-    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
-    headers = Array.from({length:max}, (_,i) => 'Col' + (i+1));
+  if(!data || !data.rows){
+    statusEl.textContent = 'No data available';
+    emptyNote.style.display = 'block';
+    return;
   }
 
-  // Find column indices
-  const idxSS = findHeaderIndex(headers, ['s/s','substation','ss']);
-  const idxTRFNo = findHeaderIndex(headers, ['trf','trf_no','transformer','trf no']);
-  const idxTRSlNo = findHeaderIndex(headers, ['tr_sl_no','trsl','slno','serial']);
-  const idxMake = findHeaderIndex(headers, ['make','manufacturer','mfr']);
-  const idxKVA = findHeaderIndex(headers, ['kva','rating','capacity']);
-  const idxMainSS = findHeaderIndex(headers, ['main_s/s','main_ss','main']);
-  const idxUnitSS = findHeaderIndex(headers, ['unit_s/s','unit_ss','unit']);
-  const idxImp = findHeaderIndex(headers, ['imp','%imp','impedance']);
-  const idxLTSWBD = findHeaderIndex(headers, ['lt','swbd','lt_swbd']);
-  const idxRating = findHeaderIndex(headers, ['rating','voltage','kv']);
+  // Process rows
+  const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
+  
+  if(rows.length < 2){
+    statusEl.textContent = 'Insufficient data';
+    emptyNote.style.display = 'block';
+    return;
+  }
 
-  // Render tiles (skip rows where column 0 is empty or not numeric)
+  // Skip row 0 (area/section header)
+  // Row 1 contains headers: 0, "S/S", "TRF-No", "TR SL NO", "MAKE", "KVA", "MAIN S/S", "UNIT S/S", "%IMP", "LT SWBD", "RATING"
+  // Data rows start from row 2
+  
+  const headerRow = rows[1]; // This contains the column names
+  
+  // Map headers to column indices
+  const idxSS = 1;           // S/S
+  const idxTRFNo = 2;        // TRF-No
+  const idxTRSlNo = 3;       // TR SL NO
+  const idxMake = 4;         // MAKE
+  const idxKVA = 5;          // KVA
+  const idxMainSS = 6;       // MAIN S/S
+  const idxUnitSS = 7;       // UNIT S/S
+  const idxImp = 8;          // %IMP
+  const idxLTSWBD = 9;       // LT SWBD
+  const idxRating = 10;      // RATING
+
+  // Render tiles (start from row 2)
   tileGrid.innerHTML = '';
   let shown = false;
 
-  for(const r of rows){
-    const row = Array.isArray(r) ? r : [];
-    if(!isNumericString(row[0] ?? '')) continue; // skip headings
+  for(let i = 2; i < rows.length; i++){
+    const row = Array.isArray(rows[i]) ? rows[i] : [];
+    
+    // Skip if this looks like a header row (contains text in first column that starts with common keywords)
+    const firstCol = String(row[0] || '').trim().toUpperCase();
+    if(firstCol.includes('AREA') || firstCol.includes('SECTION') || firstCol.includes('SUBSTATION NO')){
+      continue;
+    }
 
-    // Get values
-    const ss = row[idxSS] ?? '';
-    const trfNo = row[idxTRFNo] ?? '';
-    const trSlNo = row[idxTRSlNo] ?? '';
-    const make = row[idxMake] ?? '';
-    const kva = row[idxKVA] ?? '';
-    const mainSS = row[idxMainSS] ?? '';
-    const unitSS = row[idxUnitSS] ?? '';
-    const imp = row[idxImp] ?? '';
-    const ltswbd = row[idxLTSWBD] ?? '';
-    const rating = row[idxRating] ?? '';
+    // Get values, clean up newlines and trim
+    const ss = (row[idxSS] || '').toString().trim().replace(/\n/g, ' ');
+    const trfNo = (row[idxTRFNo] || '').toString().trim();
+    const trSlNo = (row[idxTRSlNo] || '').toString().trim();
+    const make = (row[idxMake] || '').toString().trim().replace(/\n/g, ' ');
+    const kva = (row[idxKVA] || '').toString().trim();
+    const mainSS = (row[idxMainSS] || '').toString().trim();
+    const unitSS = (row[idxUnitSS] || '').toString().trim();
+    const imp = (row[idxImp] || '').toString().trim();
+    const ltswbd = (row[idxLTSWBD] || '').toString().trim();
+    const rating = (row[idxRating] || '').toString().trim();
+
+    // Skip if no S/S and TRF-No
+    if(!ss && !trfNo) continue;
 
     // create tile
     const tile = document.createElement('div');
     tile.className = 'tile';
     tile.title = row.map(x => x ?? '').join(' | ');
 
-    // Header section
+    // Header section (S/S and TRF-No)
     const header = document.createElement('div');
     header.className = 'tile-header';
 
@@ -358,7 +352,13 @@ function exportCSV(){
   const tiles = Array.from(document.querySelectorAll('.tile')).filter(t => getComputedStyle(t).display !== 'none');
   if(tiles.length === 0){ alert('No data to export'); return; }
   const rows = tiles.map(tile => {
-    const parts = Array.from(tile.querySelectorAll('.tile-field-label, .tile-field-value')).map(el => el.innerText.replace(/"/g,'""'));
+    const parts = [];
+    Array.from(tile.querySelectorAll('.tile-header-item')).forEach(item => {
+      parts.push(item.querySelector('.tile-value').innerText.replace(/"/g,'""'));
+    });
+    Array.from(tile.querySelectorAll('.tile-field')).forEach(field => {
+      parts.push(field.querySelector('.tile-field-value').innerText.replace(/"/g,'""'));
+    });
     return '"' + parts.join('","') + '"';
   });
   const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8;' });
