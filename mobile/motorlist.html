@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Motor Master List - Compact Cards</title>
+<title>Motor Master List - Double Compact Cards</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#003f88" />
 <style>
@@ -34,7 +34,7 @@ html,body{ margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "
 .controls .filter{ flex:1; min-width:120px; }
 .controls .filter input{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
 
-/* Table (for wide screens) */
+/* Table (wide screens) */
 .table-wrapper{ display:none; }
 table{ width:100%; border-collapse:collapse; font-size:13px; table-layout:auto; }
 th, td{ border:1px solid var(--border); padding:6px 8px; white-space:normal; overflow-wrap:break-word; word-break:break-word; font-size:12px; }
@@ -43,90 +43,73 @@ thead tr:nth-child(2) th{ position:sticky; top:92px; background:var(--accent); z
 tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
 .section-row{ background:#dbe9ff !important; font-weight:600; }
 
-/* Cards grid - compact */
+/* Cards grid (each .card-item now contains TWO drive-blocks side-by-side) */
 .cards-grid{
   display:grid;
-  grid-template-columns: repeat(1, 1fr);
+  grid-template-columns: 1fr;
   gap:8px;
-  align-items:start;
 }
 
-/* Use two columns where there's enough width (auto layout) */
-@media (min-width:380px){
+/* If space allows, show two card-items per row (keeps each card compact) */
+@media (min-width:480px){
   .cards-grid{ grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Card styling (compact + 3D subtle) */
+/* Each card wraps two drive-blocks horizontally */
 .card-item{
   background: linear-gradient(180deg, #ffffff, #fbfdff);
   border-radius:10px;
-  padding:8px;                 /* compact */
-  box-shadow: var(--shadow-1), 0 3px 10px rgba(8,15,42,0.04);
+  padding:6px;
+  box-shadow: var(--shadow-1);
   border: 1px solid rgba(12,24,60,0.04);
-  transform: translateZ(0);
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+}
+
+/* Lift effect */
+.card-item:hover, .card-item:active{ transform: translateY(-4px); box-shadow: var(--shadow-2); }
+
+/* Drive block (left/right inside card) */
+.drive-block{
+  flex:1 1 50%;
   display:flex;
   flex-direction:column;
-  gap:6px;
-  min-height:52px;            /* keep compact */
+  gap:4px;
+  padding:6px;
+  border-radius:8px;
+  background: linear-gradient(180deg,#fff,#fcfeff);
+  min-width:0;
+  cursor:pointer;
 }
 
-/* Slight lift on hover/touch */
-.card-item:hover, .card-item:active{
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-2);
-}
+/* subtle divider between left/right drive on tiny screens */
+.drive-block + .drive-block{ border-left: 1px dashed rgba(0,0,0,0.04); padding-left:10px; }
 
-/* Reduce spacing within label/value rows */
-.card-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:6px;
-  padding:2px 0;
-}
+/* Compact label/value rows inside each drive-block */
+.dv-row{ display:flex; justify-content:space-between; align-items:center; gap:6px; padding:2px 0; }
+.dv-label{ flex:0 0 46%; font-size:12px; font-weight:600; color:#1f3246; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dv-value{ flex:1 1 54%; font-size:13px; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-/* Labels smaller and narrower to fit more rows per card */
-.card-label{
-  flex:0 0 44%;
-  font-size:12px;
-  color:#234;
-  font-weight:600;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-/* Values compact */
-.card-value{
-  flex:1 1 56%;
-  text-align:right;
-  font-size:13px;
-  color:#103049;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-/* Achieved numeric badges */
-.badge-num{ display:inline-block; padding:4px 8px; border-radius:10px; font-weight:700; font-size:12px; }
+/* Achieved numeric badge */
+.badge-num{ display:inline-block; padding:4px 8px; border-radius:10px; font-weight:700; font-size:12px; white-space:nowrap; }
 .positive{ background:#e8f5e9; color:#1b5e20; }
 .negative{ background:#fff0f0; color:#a01f1f; }
 .equal{ background:#fff8e1; color:#e65100; }
 
-/* status area */
+/* status */
 .status{ font-size:12px; color:#223; padding:6px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
 
-/* Hide-by-attribute fallback */
+/* Hidden-by-attribute fallback */
 [data-hide="true"]{ display:none !important; }
 
-/* smaller fonts for small screens */
+/* Adjustments for very small screens */
 @media (max-width:360px){
-  .card-item{ padding:6px; min-height:48px; }
-  .card-label{ font-size:11px; flex:0 0 42%; }
-  .card-value{ font-size:12px; }
+  .card-item{ padding:6px; gap:6px; }
+  .dv-label{ font-size:11px; flex:0 0 44%; }
+  .dv-value{ font-size:12px; }
   .header-title{ font-size:14px; }
-  .controls button{ font-size:13px; padding:6px 8px; }
 }
 </style>
 </head>
@@ -153,7 +136,7 @@ tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
       </div>
     </div>
 
-    <!-- table for wider screens -->
+    <!-- Table for wide screens (kept for desktop) -->
     <div class="table-wrapper" aria-hidden="true">
       <table id="motorTable">
         <thead>
@@ -164,13 +147,18 @@ tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
       </table>
     </div>
 
-    <!-- compact cards grid for mobile -->
+    <!-- Cards grid (each .card-item contains 2 drives side-by-side) -->
     <div class="cards-grid" id="cardsGrid" aria-live="polite"></div>
 
   </div>
 </div>
 
 <script>
+/* Pair-card layout: each card contains two drive-blocks (left & right).
+   If odd number of rows, second drive-block is empty (no click).
+   Hides 4th and last columns when computing visible fields.
+*/
+
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
 const statusEl = document.getElementById('status');
 const headerRowEl = document.getElementById('headerRow');
@@ -190,8 +178,8 @@ function isNumericVal(v){ if(v === null || v === undefined) return false; const 
 function computeVisibleIndices(headers, rows){
   const hdrCount = headers.length;
   const skip = new Set();
-  if(hdrCount > 3) skip.add(3);        // hide 4th column (index 3)
-  if(hdrCount > 0) skip.add(hdrCount-1); // hide last column
+  if(hdrCount > 3) skip.add(3);              // hide 4th column (index 3)
+  if(hdrCount > 0) skip.add(hdrCount - 1);   // hide last column
   const indices = headers.map((_,i)=>i).filter(i => !skip.has(i));
   if(indices.length === 0 && rows.length > 0){
     const maxCols = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
@@ -200,6 +188,7 @@ function computeVisibleIndices(headers, rows){
   return indices;
 }
 
+/* Render table (desktop) - unchanged from before */
 function renderTable(headers, rows, visibleIndices){
   headerRowEl.innerHTML = '';
   filterRowEl.innerHTML = '';
@@ -230,42 +219,104 @@ function renderTable(headers, rows, visibleIndices){
   });
 }
 
-function renderCards(headers, rows, visibleIndices){
+/* Render paired cards: two drives per .card-item */
+function renderPairedCards(headers, rows, visibleIndices){
   cardsGridEl.innerHTML = '';
-  rows.forEach(r => {
-    const row = Array.isArray(r)? r : [];
-    if(!row[1]) return;
+  // iterate rows in pairs (0-1, 2-3, 4-5, ...)
+  for(let i=0; i<rows.length; i += 2){
+    const rowA = Array.isArray(rows[i]) ? rows[i] : [];
+    const rowB = (i+1 < rows.length && Array.isArray(rows[i+1])) ? rows[i+1] : null;
+
+    // if both rows missing or both have falsy id (r[1]), skip
+    if(!rowA[1] && !(rowB && rowB[1])) continue;
+
     const card = document.createElement('div'); card.className = 'card-item';
-    visibleIndices.forEach(i => {
-      const label = headers[i] ?? ('Col ' + (i+1));
-      const raw = row[i] ?? '';
-      const rowDiv = document.createElement('div'); rowDiv.className = 'card-row';
-      const lab = document.createElement('div'); lab.className = 'card-label'; lab.textContent = label;
-      const valWrap = document.createElement('div'); valWrap.className = 'card-value';
-      if(i === 4 && isNumericVal(raw)){
-        const badge = document.createElement('span'); badge.className = 'badge-num';
-        const achieved = Number(String(row[4] ?? '').replace(/,/g,'')) || 0;
-        const target = Number(String(row[5] ?? '').replace(/,/g,'')) || 0;
-        if(achieved > target) badge.classList.add('positive');
-        else if(achieved < target) badge.classList.add('negative');
-        else badge.classList.add('equal');
-        badge.textContent = String(raw);
-        valWrap.appendChild(badge);
-      } else {
-        valWrap.innerHTML = escapeHtml(String(raw));
+
+    // helper to build a drive-block for a row
+    function buildDriveBlock(row){
+      const drive = document.createElement('div'); drive.className = 'drive-block';
+      if(!row || !row[1]){
+        // empty placeholder (keep space)
+        // add a faint placeholder line
+        const ph = document.createElement('div'); ph.className = 'dv-row';
+        const lab = document.createElement('div'); lab.className = 'dv-label'; lab.textContent = '';
+        const val = document.createElement('div'); val.className = 'dv-value'; val.textContent = '';
+        ph.appendChild(lab); ph.appendChild(val);
+        drive.appendChild(ph);
+        return drive;
       }
-      rowDiv.appendChild(lab); rowDiv.appendChild(valWrap);
-      card.appendChild(rowDiv);
-    });
-    card.addEventListener('click', () => {
-      const id = (row[1] ?? '') + '-' + (row[2] ?? '');
-      if((row[1] ?? '') === '') return;
-      window.location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
-    });
+
+      visibleIndices.forEach(idx => {
+        const label = headers[idx] ?? ('Col ' + (idx+1));
+        const raw = row[idx] ?? '';
+        const dv = document.createElement('div'); dv.className = 'dv-row';
+        const lab = document.createElement('div'); lab.className = 'dv-label'; lab.textContent = label;
+        const val = document.createElement('div'); val.className = 'dv-value';
+
+        // Achieved column handling (index 4) as badge
+        if(idx === 4 && isNumericVal(raw)){
+          const badge = document.createElement('span'); badge.className = 'badge-num';
+          const achieved = Number(String(row[4] ?? '').replace(/,/g,'')) || 0;
+          const target = Number(String(row[5] ?? '').replace(/,/g,'')) || 0;
+          if(achieved > target) badge.classList.add('positive');
+          else if(achieved < target) badge.classList.add('negative');
+          else badge.classList.add('equal');
+          badge.textContent = String(raw);
+          val.appendChild(badge);
+        } else {
+          val.innerHTML = escapeHtml(String(raw));
+        }
+
+        dv.appendChild(lab); dv.appendChild(val);
+        drive.appendChild(dv);
+      });
+
+      // click navigates specific drive
+      drive.addEventListener('click', (e) => {
+        // prevent click bubbling to the whole card when clicking left/right
+        e.stopPropagation();
+        const id = (row[1] ?? '') + '-' + (row[2] ?? '');
+        if((row[1] ?? '') === '') return;
+        window.location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
+      });
+
+      return drive;
+    }
+
+    const leftBlock = buildDriveBlock(rowA);
+    const rightBlock = buildDriveBlock(rowB);
+
+    card.appendChild(leftBlock);
+    card.appendChild(rightBlock);
+
     cardsGridEl.appendChild(card);
-  });
+  }
+
+  // If no cards created, show placeholder
+  if(cardsGridEl.children.length === 0){
+    const msg = document.createElement('div');
+    msg.style.padding = '12px';
+    msg.style.color = '#445';
+    msg.textContent = 'No data available';
+    cardsGridEl.appendChild(msg);
+  }
 }
 
+/* compute visible indices (skip 4th and last) */
+function computeVisibleIndices(headers, rows){
+  const hdrCount = headers.length;
+  const skip = new Set();
+  if(hdrCount > 3) skip.add(3);
+  if(hdrCount > 0) skip.add(hdrCount - 1);
+  const indices = headers.map((_,i)=>i).filter(i => !skip.has(i));
+  if(indices.length === 0 && rows.length > 0){
+    const maxCols = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
+    return Array.from({length:maxCols}, (_,i)=>i).filter(i => ![3, maxCols-1].includes(i));
+  }
+  return indices;
+}
+
+/* load data and render both table + paired cards */
 async function loadData(){
   statusEl.textContent = 'Loading…';
   let data = null;
@@ -275,16 +326,20 @@ async function loadData(){
     if(res && res.ok){ const json = await res.json(); data = json; try { localStorage.setItem('motorJSON', JSON.stringify(json)); } catch(e){} statusEl.textContent = 'Loaded remote'; }
     else statusEl.textContent = 'Using cache';
   } catch(err){ console.warn('fetch failed', err); statusEl.textContent = 'Offline / using cache'; }
+
   if(!data) data = { headers: [], rows: [] };
+
   let headers = Array.isArray(data.headers) ? data.headers.slice() : (data.headers ? Object.values(data.headers) : []);
   const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
+
   if(headers.length === 0 && rows.length > 0){
     const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
     headers = Array.from({length:max}, (_,i) => 'Col ' + (i+1));
   }
+
   const visible = computeVisibleIndices(headers, rows);
   renderTable(headers, rows, visible);
-  renderCards(headers, rows, visible);
+  renderPairedCards(headers, rows, visible);
 
   // universal filter
   universalFilter.addEventListener('input', () => {
@@ -295,7 +350,7 @@ async function loadData(){
       const text = Array.from(tr.children).map(td => td.innerText).join(' ').toLowerCase();
       tr.style.display = text.includes(q) ? '' : 'none';
     });
-    // filter cards
+    // filter cards (search across card text)
     document.querySelectorAll('.card-item').forEach(card => {
       const text = card.innerText.toLowerCase();
       card.style.display = text.includes(q) ? '' : 'none';
@@ -305,11 +360,13 @@ async function loadData(){
   statusEl.textContent = '';
 }
 
-/* CSV export (visible rows only) */
+/* Export CSV from currently visible rows/columns */
 function exportExcel(){
+  // use headerRow to get visible headers
   const headerCells = Array.from(document.querySelectorAll('#headerRow th')).map(th => th.innerText);
   const lines = [];
   if(headerCells.length) lines.push(headerCells.map(h => `"${h.replace(/"/g,'""')}"`).join(','));
+  // prefer table when visible
   const tableVisible = getComputedStyle(document.querySelector('.table-wrapper')).display !== 'none';
   if(tableVisible){
     document.querySelectorAll('#motorTable tbody tr').forEach(tr => {
@@ -318,9 +375,14 @@ function exportExcel(){
       lines.push(vals.join(','));
     });
   } else {
+    // extract drive values from card grid: each card has two drive-blocks with rows
     document.querySelectorAll('.card-item').forEach(card => {
       if(getComputedStyle(card).display === 'none') return;
-      const vals = Array.from(card.querySelectorAll('.card-row .card-value')).map(v => `"${v.innerText.replace(/"/g,'""')}"`);
+      // gather text of both drive-blocks concatenated
+      const left = card.children[0] ? Array.from(card.children[0].querySelectorAll('.dv-row .dv-value')).map(v => v.innerText) : [];
+      const right = card.children[1] ? Array.from(card.children[1].querySelectorAll('.dv-row .dv-value')).map(v => v.innerText) : [];
+      // join left and right in a single CSV row
+      const vals = left.concat(right).map(v => `"${String(v).replace(/"/g,'""')}"`);
       lines.push(vals.join(','));
     });
   }
@@ -328,7 +390,7 @@ function exportExcel(){
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'motor_master_list.csv'; a.click();
 }
 
-/* init */
+/* Initialize */
 loadData();
 </script>
 </body>
