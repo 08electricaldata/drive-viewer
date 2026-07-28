@@ -79,7 +79,7 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 .subdrive{font-weight:700;color:#0b3b74;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .meta{font-size:13px;color:var(--muted);}
 
-/* details grid */
+/* details grid (smaller: removed OCT25-MAR26 fields) */
 .card-grid{display:flex;flex-wrap:wrap;padding:10px 12px 14px;gap:8px;border-top:1px solid rgba(0,0,0,0.04)}
 .grid-item{flex:1 1 45%;min-width:120px;background:transparent;border-radius:8px;padding:6px 8px}
 .grid-item strong{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px}
@@ -170,7 +170,7 @@ const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electrica
 function goHome(){ location.href="https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
 
-/* Robust date parser (same approach used previously) */
+/* Robust date parser */
 function parseISO(v){
   if (v == null || v === "") return null;
   if (v instanceof Date) return isNaN(v)?null:v;
@@ -179,7 +179,6 @@ function parseISO(v){
   }
   if (typeof v === "string"){
     const s=v.trim();
-    // Google Date(...) or /Date(...)/
     if (s.startsWith("Date(") || s.startsWith("/Date(")){
       const nums = s.match(/-?\d+/g);
       if (nums && nums.length){
@@ -250,8 +249,8 @@ async function loadData(){
       // preserve raw for export
       allRows.push(row);
 
-      const mRaw = row[12], nRaw = row[13], oRaw = row[14], pRaw = row[15], sRaw = row[18], tRaw = row[19];
-      const m = parseISO(mRaw), n = parseISO(nRaw), o = parseISO(oRaw), p = parseISO(pRaw), s = parseISO(sRaw), t = parseISO(tRaw);
+      const mRaw = row[12], nRaw = row[13], /* oRaw = row[14], pRaw = row[15], */ sRaw = row[18], tRaw = row[19];
+      const m = parseISO(mRaw), n = parseISO(nRaw), /* o = parseISO(oRaw), p = parseISO(pRaw), */ s = parseISO(sRaw), t = parseISO(tRaw);
       const sOver = !s || s < today;
       const tOver = !t || t < today;
 
@@ -272,6 +271,7 @@ async function loadData(){
       card.tabIndex = 0;
       card.dataset.moduleOver = sOver ? "1":"0";
       card.dataset.motorOver = tOver ? "1":"0";
+      card.dataset.id = `${drive}-${sub}`;
 
       card.innerHTML = `
         <div class="card-top">
@@ -288,8 +288,6 @@ async function loadData(){
         <div class="card-grid">
           <div class="grid-item"><strong>Before OCT-25 Module</strong><span>${m ? fmt(m) : (mRaw||"")}</span></div>
           <div class="grid-item"><strong>Before OCT-25 Motor</strong><span>${n ? fmt(n) : (nRaw||"")}</span></div>
-          <div class="grid-item"><strong>OCT25-MAR26 Module</strong><span>${o ? fmt(o) : (oRaw||"")}</span></div>
-          <div class="grid-item"><strong>OCT25-MAR26 Motor</strong><span>${p ? fmt(p) : (pRaw||"")}</span></div>
 
           <div class="grid-item" style="flex-basis:60%"><strong>Module Due</strong>
             <div style="margin-top:6px" class="badges">
@@ -361,26 +359,30 @@ function filterShow(type){
   });
 }
 
-/* CSV export (simple) */
+/* CSV export uses original raw rows (keeps all columns even if hidden from card) */
 function exportCSV(){
-  // header row and rows from allRows (only exported ones that match filter/search)
   const header = ["Main Drive","Sub Drive","LT/HT","EQPT NAME","Before OCT-25 Module","Before OCT-25 Motor","OCT25-MAR26 Module","OCT25-MAR26 Motor","Module Due","Motor Due"];
   const visibleCards = Array.from(document.querySelectorAll(".cards .card")).filter(c=> c.style.display!=='none');
   const csvRows = [ header.join(",") ];
 
   visibleCards.forEach(card=>{
-    // try to extract values from the card DOM (safe fallback)
-    const drive = card.querySelector(".drive-band")?.innerText.replace(/,/g,'') || "";
-    const sub = card.querySelector(".subdrive")?.innerText.replace(/,/g,'') || "";
-    const ltht = card.querySelector(".card-top .meta")?.innerText.replace(/,/g,'')?.replace(/^LT\/HT:\s*/,'') || "";
-    const cells = card.querySelectorAll(".card-grid .grid-item span");
-    const a = Array.from(cells).map(s => (s.innerText||"").replace(/,/g,''));
-    // a order corresponds to m,n,o,p, moduleDue,motorDue
-    const row = [
-      drive, sub, ltht, "", // EQPT NAME not present
-      a[0]||"", a[1]||"", a[2]||"", a[3]||"", a[4]||"", a[5]||""
-    ];
-    csvRows.push( row.map(v=> `"${String(v).replace(/"/g,'""')}"` ).join(",") );
+    const id = card.dataset.id;
+    const row = allRows.find(r => `${r[1]}-${r[2]}` === id);
+    if(!row) return;
+    // map original indices used earlier
+    const drive = row[1] || "";
+    const sub = row[2] || "";
+    const ltht = row[5] || "";
+    const eqptName = row[3] || "";
+    const mRaw = row[12] || "";
+    const nRaw = row[13] || "";
+    const oRaw = row[14] || "";
+    const pRaw = row[15] || "";
+    const sRaw = row[18] || "";
+    const tRaw = row[19] || "";
+
+    const values = [drive, sub, ltht, eqptName, mRaw, nRaw, oRaw, pRaw, sRaw, tRaw];
+    csvRows.push( values.map(v=> `"${String(v).replace(/"/g,'""')}"` ).join(",") );
   });
 
   const blob = new Blob([csvRows.join("\n")], {type:"text/csv"});
