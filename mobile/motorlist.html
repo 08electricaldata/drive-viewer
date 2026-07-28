@@ -2,26 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Motor Master List — Compact Small Tiles</title>
+<title>Motor Master List — Compact Tiles</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#003f88" />
 <style>
 :root{
   --primary:#003f88;
   --bg:#f6f8ff;
-  --tile-bg: #ffffff;
+  --tile-bg:#ffffff;
   --muted:#556;
   --border:#e6edf6;
   --tile-shadow: 0 6px 18px rgba(8,15,42,0.06);
 }
 
 /* Basic */
-html,body{ margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#0b2540; -webkit-text-size-adjust:100%; }
+html,body{ margin:0; height:100%; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:#0b2540; -webkit-text-size-adjust:100%; }
 .header-bar{ position:sticky; top:0; z-index:1000; background:var(--primary); color:white; display:flex; align-items:center; gap:8px; padding:8px; }
 .header-bar button{ background:white; color:var(--primary); border:none; border-radius:8px; padding:8px 10px; font-size:14px; cursor:pointer; min-width:40px; height:36px; display:inline-flex; align-items:center; justify-content:center; }
 .header-title{ flex:1; text-align:center; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:0.2px; }
 
-/* Container and controls */
+/* layout */
 .container{ padding:8px; }
 .controls{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
 .controls button{ padding:8px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; }
@@ -31,90 +31,58 @@ html,body{ margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "
 /* status */
 .status{ font-size:12px; color:#223; padding:6px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
 
-/* Tile grid: compact two columns on narrow phones */
-.tile-grid{
-  display:grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap:8px;
-  align-items:start;
-}
+/* Tile grid: compact two columns on phones */
+.tile-grid{ display:grid; grid-template-columns: repeat(2,1fr); gap:8px; align-items:start; }
 
-/* optional 3 columns on larger phones/tablets */
-@media (min-width:640px){
-  .tile-grid{ grid-template-columns: repeat(3, 1fr); }
-}
+/* 3 columns on larger phones */
+@media (min-width:640px){ .tile-grid{ grid-template-columns: repeat(3,1fr); } }
 
-/* Small compact tile */
+/* Tiny tile */
 .tile{
-  background: linear-gradient(180deg, var(--tile-bg), #fbfdff);
+  background: linear-gradient(180deg,var(--tile-bg),#fbfdff);
   border-radius:10px;
-  padding:6px;                 /* very compact */
+  padding:6px;
   box-shadow: var(--tile-shadow);
   border:1px solid rgba(8,15,42,0.04);
-  transition: transform 150ms ease, box-shadow 150ms ease;
-  min-height:48px;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+  min-height:56px;
   display:flex;
   flex-direction:column;
   gap:4px;
   cursor:pointer;
 }
-
-/* subtle lift on hover/touch */
 .tile:active, .tile:hover{ transform: translateY(-4px); box-shadow: 0 12px 24px rgba(8,15,42,0.08); }
 
-/* four rows inside tile; each row holds two short label-value tokens (left/right) */
-.tile-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  padding:1px 0;
-  min-height:16px;
-}
-
-/* left & right token styles */
-.token-left, .token-right{
-  display:block;
-  font-size:12px;
-  color:#163047;
-  font-weight:600;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:48%;
-}
-
-/* right token aligns right */
+/* each tile has four compact rows; each row contains two short tokens */
+.tile-row{ display:flex; justify-content:space-between; gap:8px; align-items:center; padding:1px 0; min-height:14px; }
+.token-left, .token-right{ font-size:12px; font-weight:700; color:#163047; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:48%; }
 .token-right{ text-align:right; }
 
-/* achieved badge (kept small if used) */
+/* small badge style (not required but kept) */
 .badge{ display:inline-block; padding:3px 6px; border-radius:8px; font-weight:700; font-size:11px; white-space:nowrap; }
 .pos{ background:#e8f5e9; color:#1b5e20; }
 .neg{ background:#fff0f0; color:#a01f1f; }
 .eq{ background:#fff8e1; color:#e65100; }
 
-/* fallback table for large screens (kept hidden on mobile) */
+/* fallback table for very wide screens (kept hidden on mobile) */
 .table-wrapper{ display:none; margin-top:6px; }
-@media (min-width:980px){
-  .table-wrapper{ display:block; }
-  .tile-grid{ display:none; }
-}
+@media (min-width:980px){ .table-wrapper{ display:block; } .tile-grid{ display:none; } }
 
 /* empty note */
 .empty-note{ padding:8px; color:#445; font-size:13px; border-radius:8px; background:#fff; border:1px solid #eef3ff; margin-top:8px; }
 
-/* slight compacting for very small screens */
+/* extra compact on very small devices */
 @media (max-width:360px){
-  .tile{ padding:5px; min-height:44px; }
+  .tile{ padding:5px; min-height:50px; }
   .token-left, .token-right{ font-size:11px; }
   .header-title{ font-size:14px; }
-  .controls button{ font-size:13px; padding:6px 8px; }
+  .controls button{ padding:6px 8px; font-size:13px; }
 }
 </style>
 </head>
 <body>
 
-<div class="header-bar" role="banner">
+<div class="header-bar">
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
   <button onclick="openMotorOH()">🛠️ Motor O/H</button>
@@ -135,169 +103,163 @@ html,body{ margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "
 
   <div id="emptyNote" class="empty-note" style="display:none">No data available</div>
 
-  <!-- table (for wide screens) -->
   <div class="table-wrapper" id="tableWrapper" aria-hidden="true">
-    <table id="motorTable">
-      <thead><tr id="headerRow"></tr></thead>
-      <tbody></tbody>
-    </table>
+    <table id="motorTable"><thead><tr id="headerRow"></tr></thead><tbody></tbody></table>
   </div>
 </div>
 
 <script>
-/*
- Updated behavior:
- - Do NOT create tiles for rows where column A (index 0) is empty or not numeric.
- - Only rows where column A contains a numeric value (Number(trimmed) is not NaN) are rendered as tiles.
- - Tiles remain compact small layout and show 4 rows of two tokens each (left/right).
- - Mapping attempts to pick sensible fields; falls back to available columns.
+/* Robust small-tiles implementation that:
+ - skips rows where column 0 is not numeric (section headers)
+ - maps common header names into the requested 4x2 layout
+ - falls back gracefully and includes sample data
+ - search + export supported
+ - mobile-friendly compact tiles
 */
 
+// JSON source (your repo)
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
+
 const tileGrid = document.getElementById('tileGrid');
 const statusEl = document.getElementById('status');
 const universalFilter = document.getElementById('universalFilter');
 const emptyNote = document.getElementById('emptyNote');
 
-// nav links
+// navigation
 function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
 function openMotorOH(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motoroh.html"; }
 function openMotorPM(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html"; }
 
+// utilities
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function isNumeric(v){ if(v===null||v===undefined) return false; const s = String(v).trim(); if(s==='') return false; return !isNaN(Number(s)); }
+function isNumericString(x){ if(x === null || x === undefined) return false; const t = String(x).trim(); if(t === '') return false; return !isNaN(Number(t)); }
 
-/* prefer header index by keywords, fallback indices used later */
-function findIndex(headers, keywords){
-  const low = headers.map(h => (h??'').toString().toLowerCase());
-  for(const k of keywords){
+// find header index by keywords (returns first match or -1)
+function findHeader(headers, keywords){
+  if(!Array.isArray(headers)) return -1;
+  const low = headers.map(h => (h ?? '').toString().toLowerCase());
+  for(const kw of keywords){
     for(let i=0;i<low.length;i++){
-      if(low[i].includes(k)) return i;
+      if(low[i].includes(kw)) return i;
     }
   }
   return -1;
 }
 
-/* build short token like "KW-90KW" */
-function makeToken(header, value){
-  if(!value && value !== 0) return '';
-  const h = (header||'').toString();
-  const short = h.split(/\s|[-_]/)[0] || h;
-  return `${short}-${String(value)}`;
-}
+// fallback sample data (so you always see tiles while testing)
+const fallback = {
+  headers: ["S.No", "Tag", "Model", "C", "KW", "MAKE", "FRAME", "RPM", "FLC", "MTG"],
+  rows: [
+    [1, "BAT_A", "P-202", "", "90", "KEC", "280M4", "1478", "154", "B3"],
+    [2, "BAT_B", "P-203", "", "75", "KEC", "280M4", "1460", "120", "B3"],
+    [3, "BAT_C", "P-204", "", "45", "ABC", "200M4", "1500", "78", "V5"],
+    ["", "Pump Section", "", "", "", "", "", "", "", ""], // heading row (should be skipped)
+    [4, "BAT_D", "P-205", "", "37", "XYZ", "180M4", "1440", "63", "B3"]
+  ]
+};
 
+// main loader + renderer
 async function loadAndRender(){
+  statusEl.style.display = '';
   statusEl.textContent = 'Loading…';
   let data = null;
-  try { const cached = localStorage.getItem('motorJSON'); if(cached) data = JSON.parse(cached); } catch(e){ /* ignore */ }
 
+  // try cache
   try {
-    const res = await fetch(JSON_URL, {cache:'no-store'});
+    const c = localStorage.getItem('motorJSON');
+    if(c) data = JSON.parse(c);
+  } catch(e){ /* ignore */ }
+
+  // try fetch
+  try {
+    const res = await fetch(JSON_URL, { cache: 'no-store' });
     if(res && res.ok){
-      const js = await res.json();
-      data = js;
-      try { localStorage.setItem('motorJSON', JSON.stringify(js)); } catch(e) {}
+      const json = await res.json();
+      data = json;
+      try { localStorage.setItem('motorJSON', JSON.stringify(json)); } catch(e){}
       statusEl.textContent = 'Loaded';
     } else {
-      statusEl.textContent = 'Using cache';
+      statusEl.textContent = 'Using cache/fallback';
     }
-  } catch(e){
-    console.warn('fetch failed', e);
-    statusEl.textContent = 'Offline / using cache';
+  } catch(err){
+    console.warn('Fetch failed, using cache/fallback', err);
+    statusEl.textContent = 'Offline or fetch failed — using cache/fallback';
   }
 
-  if(!data) data = { headers: [], rows: [] };
+  if(!data) data = fallback;
 
+  // normalize headers & rows
   let headers = Array.isArray(data.headers) ? data.headers.slice() : (data.headers ? Object.values(data.headers) : []);
   const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
 
-  // If headers empty, infer from rows
   if(headers.length === 0 && rows.length > 0){
-    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
-    headers = Array.from({length:max}, (_,i) => 'Col ' + (i+1));
+    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+    headers = Array.from({length:max}, (_,i) => 'Col' + (i+1));
   }
 
-  // Decide which fields to show in token pairs (prefer common names)
-  // We will show 4 rows → 8 tokens (left/right). We'll pick these fields in priority:
-  // 1) Name/Tag (index 1)
-  // 2) KW
-  // 3) MAKE
-  // 4) FRAME
-  // 5) RPM
-  // 6) FLC
-  // 7) MTG / MTG-B etc
-  // 8) fallback other columns
-  const headerLower = headers.map(h => (h||'').toString().toLowerCase());
-  const idxName = findIndex(headers, ['tag','name','id','asset','drive']) !== -1 ? findIndex(headers, ['tag','name','id','asset','drive']) : 1;
-  const idxKW = findIndex(headers, ['kw','k.w','kw-']) !== -1 ? findIndex(headers, ['kw','k.w','kw-']) : findIndex(headers, ['power']) ;
-  const idxMake = findIndex(headers, ['make','manufacturer','mfr']) ;
-  const idxFrame = findIndex(headers, ['frame']) ;
-  const idxRPM = findIndex(headers, ['rpm']) ;
-  const idxFLC = findIndex(headers, ['flc','full load','amp']) ;
-  const idxMTG = findIndex(headers, ['mtg','mount','mtg-b','mtg']) ;
+  // pick indices for the tokens we want (with sensible fallbacks)
+  const idxName = findHeader(headers, ['tag','name','asset','bat','id','drive']) !== -1 ? findHeader(headers, ['tag','name','asset','bat','id','drive']) : 1;
+  const idxModel = findHeader(headers, ['model','modelno','p-','pno','code']) !== -1 ? findHeader(headers, ['model','modelno','p-','pno','code']) : 2;
+  const idxKW = findHeader(headers, ['kw','k.w','power']) !== -1 ? findHeader(headers, ['kw','k.w','power']) : findHeader(headers, ['hp']) ;
+  const idxMake = findHeader(headers, ['make','manufacturer','mfr']) !== -1 ? findHeader(headers, ['make','manufacturer','mfr']) : findHeader(headers, ['brand']);
+  const idxFrame = findHeader(headers, ['frame']) !== -1 ? findHeader(headers, ['frame']) : -1;
+  const idxRPM = findHeader(headers, ['rpm']) !== -1 ? findHeader(headers, ['rpm']) : -1;
+  const idxFLC = findHeader(headers, ['flc','full load','amp','amps']) !== -1 ? findHeader(headers, ['flc','full load','amp','amps']) : -1;
+  const idxMTG = findHeader(headers, ['mtg','mount','mounting']) !== -1 ? findHeader(headers, ['mtg','mount','mounting']) : -1;
 
-  // Collect a list of indices to use in order
+  // create ordered picks for tokens; ensure uniqueness and fallback to other headers if needed
   const picks = [];
-  [idxName, idxKW, idxMake, idxFrame, idxRPM, idxFLC, idxMTG].forEach(i => { if(i !== -1 && !picks.includes(i)) picks.push(i); });
-
-  // Add other columns as fallback until we have at least 8 tokens or exhaust headers
-  for(let i=0; i<headers.length && picks.length < 10; i++){
+  [idxName, idxModel, idxKW, idxMake, idxFrame, idxRPM, idxFLC, idxMTG].forEach(i => { if(i !== -1 && !picks.includes(i)) picks.push(i); });
+  // fill from remaining headers if picks < 8
+  for(let i=0;i<headers.length && picks.length < 8; i++){
     if(!picks.includes(i)) picks.push(i);
   }
 
-  // For each row: include only if column 0 is numeric (non-empty and Number(...) not NaN)
+  // Render tiles: skip rows where column 0 is empty or not numeric
   tileGrid.innerHTML = '';
-  let anyShown = false;
-  for(let r of rows){
+  let any = false;
+  for(const r of rows){
     const row = Array.isArray(r) ? r : [];
-    const col0Raw = row[0] ?? '';
-    const col0Trim = String(col0Raw).trim();
-    if(col0Trim === '' || isNaN(Number(col0Trim))) {
-      // Skip this row: it's a section heading / non-numeric first column
-      continue;
-    }
+    const c0 = row[0] ?? '';
+    if(!isNumericString(c0)) continue; // skip headings / section rows
 
-    // It's a data row — build a tile
-    // Title uses idxName if available, else use r[1] fallback
-    const titleVal = row[idxName] ?? row[1] ?? '';
-    // Prepare 4 rows (each with left & right token)
-    // We'll take picks[0]..picks[7] as tokens; create pairs
-    const tokens = picks.slice(0, 8).map(i => {
-      const h = headers[i] ?? ('Col' + (i+1));
-      const v = row[i] ?? '';
-      if(String(v).trim() === '') return '';
-      // format: HEADERSHORT-VALUE (user wanted e.g. "KW-90KW" "MAKE-KEC")
-      const short = String(h).split(/\s|[-_]/)[0].toUpperCase();
+    // build tokens (up to 8 tokens -> 4 rows of 2 tokens)
+    const tokens = picks.slice(0,8).map((idx) => {
+      if(idx === -1) return '';
+      const hdr = headers[idx] ?? ('Col' + (idx+1));
+      const v = row[idx] ?? '';
+      if(v === null || v === undefined || String(v).trim() === '') return '';
+      // Format: if KW -> "KW-90KW" else if MAKE-> "MAKE-KEC" etc.
+      const short = String(hdr).split(/\s|[-_]/)[0].toUpperCase();
       return `${short}-${v}`;
     });
-
-    // Ensure we always have 4 rows: if less tokens, fill with blanks
     while(tokens.length < 8) tokens.push('');
 
+    // create tile element
     const tile = document.createElement('div'); tile.className = 'tile';
-    tile.title = (Array.isArray(row) ? row.join(' | ') : String(row));
+    tile.title = row.map(x => x ?? '').join(' | ');
 
-    // First row: show title (left) and maybe second identifier (right)
+    // Row 1: left = name/tag, right = model/id (don't include header names, only values)
     const row1 = document.createElement('div'); row1.className = 'tile-row';
-    const left1 = document.createElement('div'); left1.className = 'token-left'; left1.textContent = String(titleVal) || '';
-    const right1 = document.createElement('div'); right1.className = 'token-right'; right1.textContent = tokens[1] || '';
+    const left1 = document.createElement('div'); left1.className = 'token-left';
+    left1.textContent = row[idxName] ?? row[1] ?? '';
+    const right1 = document.createElement('div'); right1.className = 'token-right';
+    // show model value (no label) if present else tokens[1] fallback
+    right1.textContent = row[idxModel] ?? row[2] ?? (tokens[1] || '');
     row1.appendChild(left1); row1.appendChild(right1);
     tile.appendChild(row1);
 
-    // Next three compact rows from tokens pairs (2..7)
-    for(let ri = 2; ri <= 7; ri += 2){
+    // Rows 2..4: display token pairs as requested (like KW-90KW / MAKE-KEC, FRAME-280M4 / RPM-1478, FLC-154 / MTG-B3)
+    for(let t=0; t<3; t++){
       const rdiv = document.createElement('div'); rdiv.className = 'tile-row';
-      const l = document.createElement('div'); l.className = 'token-left'; l.textContent = tokens[ri] || '';
-      const rgt = document.createElement('div'); rgt.className = 'token-right';
-      // If this token corresponds to Achieved-like (we don't know exact index here),
-      // we used tokens built from headers; keep them plain as user requested simple "KW-90KW" style.
-      rgt.textContent = tokens[ri+1] || '';
-      rdiv.appendChild(l); rdiv.appendChild(rgt);
+      const l = document.createElement('div'); l.className = 'token-left'; l.textContent = tokens[2*t + 0] || '';
+      const rr = document.createElement('div'); rr.className = 'token-right'; rr.textContent = tokens[2*t + 1] || '';
+      rdiv.appendChild(l); rdiv.appendChild(rr);
       tile.appendChild(rdiv);
     }
 
-    // click navigates to detail page using r[1] and r[2] as earlier convention
+    // click navigates to detail (r[1]-r[2])
     tile.addEventListener('click', () => {
       const id = (row[1] ?? '') + '-' + (row[2] ?? '');
       if((row[1] ?? '') === '') return;
@@ -305,18 +267,13 @@ async function loadAndRender(){
     });
 
     tileGrid.appendChild(tile);
-    anyShown = true;
+    any = true;
   }
 
-  if(!anyShown) {
-    emptyNote.style.display = 'block';
-  } else {
-    emptyNote.style.display = 'none';
-  }
-
+  if(!any) emptyNote.style.display = 'block'; else emptyNote.style.display = 'none';
   statusEl.style.display = 'none';
 
-  // search behavior
+  // filter/search
   universalFilter.addEventListener('input', () => {
     const q = universalFilter.value.trim().toLowerCase();
     document.querySelectorAll('.tile').forEach(tile => {
@@ -325,21 +282,19 @@ async function loadAndRender(){
   });
 }
 
-/* CSV export from shown tiles */
+// CSV export (tiles visible)
 function exportCSV(){
   const tiles = Array.from(document.querySelectorAll('.tile')).filter(t => getComputedStyle(t).display !== 'none');
   if(tiles.length === 0){ alert('No data to export'); return; }
-  const lines = [];
-  tiles.forEach(tile => {
-    // flatten tile lines
+  const rows = tiles.map(tile => {
     const parts = Array.from(tile.querySelectorAll('.tile-row')).map(tr => tr.innerText.replace(/"/g,'""'));
-    lines.push('"' + parts.join('","') + '"');
+    return '"' + parts.join('","') + '"';
   });
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8;' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'motor_tiles.csv'; a.click();
 }
 
-/* init */
+// init
 loadAndRender();
 </script>
 </body>
