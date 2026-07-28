@@ -167,7 +167,7 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/2026_oct_mar.json";
 
 /* Navigation helpers */
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goHome(){ location.href="https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
 
 /* Robust date parser (same approach used previously) */
@@ -333,7 +333,7 @@ async function loadData(){
 function navigateToHistory(row){
   if(!row[1]||!row[2]) return;
   const id = `${row[1]}-${row[2]}`;
-  location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(id);
+  location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
 }
 
 /* search across all visible card text */
