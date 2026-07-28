@@ -327,7 +327,7 @@ async function loadAndRender(){
     tile.addEventListener('click', () => {
       const id = (row[1] ?? '') + '-' + (row[2] ?? '');
       if((row[1] ?? '') === '') return;
-      location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
+      location.href = 'https://08electricaldata.github.io/drive-viewer/mobile/index.html?id=' + encodeURIComponent(id);
     });
 
     tileGrid.appendChild(tile);
