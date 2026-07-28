@@ -20,6 +20,7 @@
   --shadow: 0 8px 24px rgba(2,6,23,0.12);
 }
 
+/* Reset and base */
 html,body{
   height:100%;
   margin:0;
@@ -28,66 +29,67 @@ html,body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   color:#0b2540;
+  -webkit-text-size-adjust:100%;
+  overflow-x:hidden; /* prevent accidental horizontal scroll */
 }
 
-/* center narrow app-like column */
+/* App shell centered (narrow) */
 .app-shell{
   width:100%;
   max-width:420px;
-  margin:16px auto;
-  background:transparent;
-  min-height:calc(100vh - 32px);
+  margin:12px auto;
+  min-height:calc(100vh - 24px);
   display:flex;
   flex-direction:column;
-  gap:12px;
-  padding:0 12px;
+  gap:10px;
+  padding:0 8px;
   box-sizing:border-box;
 }
 
-/* Card-like container inside shell */
+/* Card container */
 .app-card{
   background:var(--card-bg);
-  border-radius:14px;
+  border-radius:12px;
   overflow:hidden;
   box-shadow:var(--shadow);
   display:flex;
   flex-direction:column;
 }
 
-/* HEADER */
+/* Header */
 .header{
   background:linear-gradient(135deg,var(--header-start),var(--header-end));
   color:white;
-  padding:14px 16px;
+  padding:10px 12px;
   position:sticky;
-  top:16px;
+  top:12px;
   display:flex;
   align-items:center;
-  gap:12px;
+  gap:10px;
   z-index:20;
-  border-radius:14px 14px 0 0;
+  border-radius:12px 12px 0 0;
 }
 
 .header .title-block{flex:1;min-width:0;}
-.header h1{margin:0;font-size:18px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.credit{margin-top:4px;font-size:12px;font-weight:600;color:#cce0ff;opacity:0.95;}
+.header h1{margin:0;font-size:16px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.credit{margin-top:3px;font-size:11px;font-weight:600;color:#cce0ff;opacity:0.95;}
 
 /* Nav buttons (touch-friendly) */
 .nav-buttons{
   display:flex;
-  gap:8px;
+  gap:6px;
   align-items:center;
 }
 .nav-buttons button{
-  padding:8px 10px;
+  padding:8px;
   border:none;
   border-radius:10px;
-  background:rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.12);
   color:white;
   font-weight:700;
   cursor:pointer;
-  min-width:44px;
-  height:40px;
+  min-width:40px;
+  height:36px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -95,32 +97,34 @@ html,body{
 }
 .nav-buttons button:active{transform:translateY(1px);opacity:0.95;}
 
-/* main content scroll area */
+/* Content area with vertical scroll allowed */
 .container{
-  padding:12px;
+  padding:8px;
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
 
-/* Table styles - desktop */
+/* Table styles (now flexible) */
 table{
   border-collapse:collapse;
   width:100%;
   background:transparent;
-  min-width:900px;
+  /* removed min-width forcing horizontal scroll */
+  table-layout: auto;
+  font-size:13px;
 }
 th, td{
-  border:1px solid #e1e6ef;
+  border:1px solid #e6edf6;
   padding:8px 10px;
   text-align:left;
-  white-space:nowrap;
-  font-size:13px;
+  white-space:nowrap; /* default desktop behavior */
+  font-size:12px;
 }
 th{
   background:linear-gradient(135deg,var(--accent),#0052cc);
   color:white;
   font-weight:700;
-  font-size:13px;
+  font-size:12px;
 }
 
 /* Section Heading */
@@ -134,7 +138,7 @@ th{
 
 /* Item indent */
 .item-name{
-  padding-left:18px;
+  padding-left:14px;
 }
 
 /* Highlights */
@@ -156,76 +160,95 @@ th{
 
 /* footer */
 .footer{
-  padding:12px;
-  font-size:13px;
+  padding:10px;
+  font-size:12px;
   color:var(--muted);
   text-align:center;
 }
 
-/* MOBILE: convert table into stacked cards */
+/* MOBILE: stacked cards, smaller fonts, wrapping so no left-right scroll */
 @media (max-width:600px){
-  .app-shell{padding:8px;}
-  .header{top:8px;border-radius:12px;}
-  .app-card{border-radius:12px;overflow:visible;}
+  .app-shell{padding:6px;}
+  .header{top:8px;border-radius:10px;padding:10px;}
+  .app-card{border-radius:10px;overflow:visible;}
 
-  table{min-width:unset; width:100%;}
-  thead{display:none;} /* hide header row on mobile; we'll show labels via data-label */
+  /* hide the thead and show data-label on each cell */
+  thead{display:none;}
 
   tbody tr{
     display:block;
     margin:8px 0;
     border-radius:10px;
     overflow:hidden;
-    box-shadow:0 6px 18px rgba(2,6,23,0.08);
+    box-shadow:0 6px 16px rgba(2,6,23,0.06);
     border:1px solid rgba(10,20,40,0.03);
     background:linear-gradient(180deg,#fff,#fbfdff);
   }
 
   tbody tr.section-row{
     display:block;
-    margin:0;
+    margin:0 0 8px 0;
     border-radius:10px;
   }
 
+  /* make cells stack vertically inside each card row */
   tbody td{
     display:flex;
+    flex-direction:row;
     justify-content:space-between;
-    padding:12px 14px;
+    padding:10px 12px;
     border:none;
     align-items:center;
     gap:8px;
-    font-size:14px;
+    font-size:13px; /* slightly smaller */
     line-height:1.2;
+    white-space:normal; /* allow wrapping */
+    word-break:break-word;
   }
 
+  /* label on left using data-label attribute (smaller) */
   tbody td::before{
     content: attr(data-label);
     display:block;
     font-weight:700;
     color:#243b58;
     margin-right:8px;
-    font-size:12px;
-    opacity:0.85;
-    min-width:40%;
+    font-size:11px;
+    opacity:0.9;
+    min-width:42%;
+    flex:0 0 42%;
+    white-space:normal;
   }
 
-  tbody td:last-child{
-    flex-basis:30%;
-    justify-content:flex-end;
+  /* value area */
+  tbody td > .cell-value{
+    flex:1 1 58%;
+    text-align:right;
+    font-size:13px;
+    word-break:break-word;
+    white-space:normal;
   }
 
+  /* make highlight badges compact */
   .positive, .negative, .equal{
     border-radius:8px;
-    padding:6px 10px;
+    padding:4px 8px;
     font-weight:700;
     display:inline-block;
+    font-size:12px;
+  }
+
+  /* reduce padding for very small devices */
+  @media (max-width:380px){
+    tbody td{padding:8px 10px;}
+    tbody td::before{font-size:10px;min-width:40%;flex:0 0 40%;}
+    .header h1{font-size:15px;}
   }
 }
 
-/* extra small devices - increase hit targets */
-@media (max-width:400px){
-  .nav-buttons button{padding:10px;height:44px;min-width:44px;}
-  .header h1{font-size:16px;}
+/* For medium screens (tablet) allow more wrapping instead of horizontal scroll */
+@media (min-width:601px) and (max-width:900px){
+  th, td{font-size:12px; padding:7px 8px; white-space:normal; word-break:break-word;}
 }
 </style>
 </head>
@@ -264,7 +287,6 @@ const JSON_URL =
   "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthlyjob.json";
 
 function goHome(){
-  // open the mobile index as requested
   location.href = "https://08electricaldata.github.io/index_mob.html";
 }
 
@@ -281,7 +303,6 @@ async function loadData(){
     const rows = Array.isArray(data.rows) ? data.rows : [];
 
     if(!Array.isArray(headers)){
-      // If headers is an object with numeric keys, convert to array of values
       if(typeof headers === 'object' && headers !== null){
         headers = Object.values(headers);
       } else {
@@ -289,28 +310,19 @@ async function loadData(){
       }
     }
 
-    // If headers is empty, ensure we have at least placeholder column labels
     if(headers.length === 0 && rows.length > 0){
-      // find maximum row length
       const maxCols = rows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
       if(maxCols > 0){
         headers = Array.from({length: maxCols}, (_, i) => `Column ${i+1}`);
       }
     }
 
-    // Ensure every header is a string
     headers = headers.map(h => (h === null || h === undefined) ? "" : String(h));
 
     const thead = document.querySelector("#table thead");
     const tbody = document.querySelector("#table tbody");
 
-    /*
-       SHOW:
-       Column A (0)
-       Column B (1)
-       Skip Column C (2)
-       Show Column D → J (3 to 9)
-    */
+    /* show columns: A(0), B(1), skip C(2), show D->J (3..9) */
     const displayColumns = [0,1,3,4,5,6,7,8,9];
 
     /* ===== HEADER ===== */
@@ -324,13 +336,11 @@ async function loadData(){
     /* ===== BODY ===== */
     let bodyHTML = "";
     rows.forEach(r=>{
-      // ensure row is an array
       const row = Array.isArray(r) ? r : [];
 
       const colA = String(row[0] ?? "").trim();
       const colB = String(row[1] ?? "").trim();
 
-      // If Column A has number → Section Heading
       if(colA !== "" && !isNaN(Number(colA))){
         bodyHTML += `
           <tr class="section-row">
@@ -345,7 +355,6 @@ async function loadData(){
           let value = row[i] ?? "";
           let className = "";
 
-          // Column E Highlight (index 4)
           if(i === 4){
             const achieved = Number(row[4]) || 0;
             const target   = Number(row[5]) || 0;
@@ -354,20 +363,24 @@ async function loadData(){
             else className = "equal";
           }
 
-          // Coerce header to string and escape double quotes for data-label
           const rawLabel = headers[i] ?? "";
           const label = String(rawLabel).replace(/"/g, '&quot;');
 
-          // Use empty string for undefined values
-          const cellHtml = value === null || value === undefined ? "" : value;
+          const cellValue = (value === null || value === undefined) ? "" : value;
 
-          bodyHTML += `<td class="${className}" data-label="${label}">${cellHtml}</td>`;
+          // Wrap value in a span.cell-value so mobile CSS can align properly
+          bodyHTML += `<td class="${className}" data-label="${label}"><span class="cell-value">${cellValue}</span></td>`;
         });
         bodyHTML += "</tr>";
       }
     });
 
     tbody.innerHTML = bodyHTML;
+
+    // Accessibility: if no rows, show friendly message
+    if(rows.length === 0){
+      tbody.innerHTML = `<tr><td colspan="${displayColumns.length}" style="padding:14px;color:#445;">No data available</td></tr>`;
+    }
 
   } catch(err){
     console.error(err);
