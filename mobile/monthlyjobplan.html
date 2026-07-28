@@ -30,10 +30,10 @@ html,body{
   -moz-osx-font-smoothing:grayscale;
   color:#0b2540;
   -webkit-text-size-adjust:100%;
-  overflow-x:hidden; /* prevent accidental horizontal scroll */
+  overflow-x:hidden;
 }
 
-/* App shell centered (narrow) */
+/* App shell centered */
 .app-shell{
   width:100%;
   max-width:420px;
@@ -97,27 +97,26 @@ html,body{
 }
 .nav-buttons button:active{transform:translateY(1px);opacity:0.95;}
 
-/* Content area with vertical scroll allowed */
+/* Content area */
 .container{
   padding:8px;
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
 
-/* Table styles (now flexible) */
+/* Table styles */
 table{
   border-collapse:collapse;
   width:100%;
   background:transparent;
-  /* removed min-width forcing horizontal scroll */
-  table-layout: auto;
+  table-layout:auto;
   font-size:13px;
 }
 th, td{
   border:1px solid #e6edf6;
   padding:8px 10px;
   text-align:left;
-  white-space:nowrap; /* default desktop behavior */
+  white-space:nowrap;
   font-size:12px;
 }
 th{
@@ -158,6 +157,10 @@ th{
   font-weight:700;
 }
 
+/* numeric alignment */
+td.num { text-align:right; }
+td.num .cell-value { text-align:right; display:block; }
+
 /* footer */
 .footer{
   padding:10px;
@@ -166,13 +169,12 @@ th{
   text-align:center;
 }
 
-/* MOBILE: stacked cards, smaller fonts, wrapping so no left-right scroll */
+/* MOBILE: stacked cards, wrapping, right-aligned numeric column */
 @media (max-width:600px){
   .app-shell{padding:6px;}
   .header{top:8px;border-radius:10px;padding:10px;}
   .app-card{border-radius:10px;overflow:visible;}
 
-  /* hide the thead and show data-label on each cell */
   thead{display:none;}
 
   tbody tr{
@@ -191,7 +193,6 @@ th{
     border-radius:10px;
   }
 
-  /* make cells stack vertically inside each card row */
   tbody td{
     display:flex;
     flex-direction:row;
@@ -200,13 +201,12 @@ th{
     border:none;
     align-items:center;
     gap:8px;
-    font-size:13px; /* slightly smaller */
+    font-size:13px;
     line-height:1.2;
-    white-space:normal; /* allow wrapping */
+    white-space:normal;
     word-break:break-word;
   }
 
-  /* label on left using data-label attribute (smaller) */
   tbody td::before{
     content: attr(data-label);
     display:block;
@@ -220,16 +220,14 @@ th{
     white-space:normal;
   }
 
-  /* value area */
   tbody td > .cell-value{
     flex:1 1 58%;
-    text-align:right;
-    font-size:13px;
     word-break:break-word;
     white-space:normal;
+    text-align:right; /* default to right for better numeric placement */
   }
 
-  /* make highlight badges compact */
+  /* numeric badge compact */
   .positive, .negative, .equal{
     border-radius:8px;
     padding:4px 8px;
@@ -238,7 +236,6 @@ th{
     font-size:12px;
   }
 
-  /* reduce padding for very small devices */
   @media (max-width:380px){
     tbody td{padding:8px 10px;}
     tbody td::before{font-size:10px;min-width:40%;flex:0 0 40%;}
@@ -246,7 +243,7 @@ th{
   }
 }
 
-/* For medium screens (tablet) allow more wrapping instead of horizontal scroll */
+/* Medium screens: allow wrapping to avoid horizontal scroll */
 @media (min-width:601px) and (max-width:900px){
   th, td{font-size:12px; padding:7px 8px; white-space:normal; word-break:break-word;}
 }
@@ -283,114 +280,5 @@ th{
 </div>
 
 <script>
-const JSON_URL =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthlyjob.json";
-
-function goHome(){
-  location.href = "https://08electricaldata.github.io/index_mob.html";
-}
-
-async function loadData(){
-  try {
-    const res = await fetch(JSON_URL);
-    if(!res.ok) throw new Error('Failed to fetch data: ' + res.status);
-    const data = await res.json();
-
-    console.log("monthlyjob.json loaded:", data);
-
-    // Normalize headers into an array of strings
-    let headers = data.headers ?? [];
-    const rows = Array.isArray(data.rows) ? data.rows : [];
-
-    if(!Array.isArray(headers)){
-      if(typeof headers === 'object' && headers !== null){
-        headers = Object.values(headers);
-      } else {
-        headers = [];
-      }
-    }
-
-    if(headers.length === 0 && rows.length > 0){
-      const maxCols = rows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
-      if(maxCols > 0){
-        headers = Array.from({length: maxCols}, (_, i) => `Column ${i+1}`);
-      }
-    }
-
-    headers = headers.map(h => (h === null || h === undefined) ? "" : String(h));
-
-    const thead = document.querySelector("#table thead");
-    const tbody = document.querySelector("#table tbody");
-
-    /* show columns: A(0), B(1), skip C(2), show D->J (3..9) */
-    const displayColumns = [0,1,3,4,5,6,7,8,9];
-
-    /* ===== HEADER ===== */
-    let headerHTML = "<tr>";
-    displayColumns.forEach(i=>{
-      headerHTML += `<th>${headers[i] ?? ""}</th>`;
-    });
-    headerHTML += "</tr>";
-    thead.innerHTML = headerHTML;
-
-    /* ===== BODY ===== */
-    let bodyHTML = "";
-    rows.forEach(r=>{
-      const row = Array.isArray(r) ? r : [];
-
-      const colA = String(row[0] ?? "").trim();
-      const colB = String(row[1] ?? "").trim();
-
-      if(colA !== "" && !isNaN(Number(colA))){
-        bodyHTML += `
-          <tr class="section-row">
-            <td colspan="${displayColumns.length}">
-              ${colA}. ${colB}
-            </td>
-          </tr>
-        `;
-      } else {
-        bodyHTML += "<tr>";
-        displayColumns.forEach(i=>{
-          let value = row[i] ?? "";
-          let className = "";
-
-          if(i === 4){
-            const achieved = Number(row[4]) || 0;
-            const target   = Number(row[5]) || 0;
-            if(achieved > target) className = "positive";
-            else if(achieved < target) className = "negative";
-            else className = "equal";
-          }
-
-          const rawLabel = headers[i] ?? "";
-          const label = String(rawLabel).replace(/"/g, '&quot;');
-
-          const cellValue = (value === null || value === undefined) ? "" : value;
-
-          // Wrap value in a span.cell-value so mobile CSS can align properly
-          bodyHTML += `<td class="${className}" data-label="${label}"><span class="cell-value">${cellValue}</span></td>`;
-        });
-        bodyHTML += "</tr>";
-      }
-    });
-
-    tbody.innerHTML = bodyHTML;
-
-    // Accessibility: if no rows, show friendly message
-    if(rows.length === 0){
-      tbody.innerHTML = `<tr><td colspan="${displayColumns.length}" style="padding:14px;color:#445;">No data available</td></tr>`;
-    }
-
-  } catch(err){
-    console.error(err);
-    const container = document.querySelector('.container');
-    container.innerHTML = `<div style="padding:16px;color:#922; font-weight:700;">Unable to load data. ${err.message}</div>`;
-  }
-}
-
-loadData();
-</script>
-
-</body>
-</html>
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata*
+
