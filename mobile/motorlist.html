@@ -2,36 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Motor Master List - Mobile Friendly</title>
+<title>Motor Master List - Compact Cards</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#003f88" />
 <style>
 :root{
   --primary:#003f88;
-  --bg:#f2f6ff;
+  --bg:#f6f8ff;
   --card:#ffffff;
-  --muted:#666;
+  --muted:#556;
   --accent:#eaf1ff;
+  --soft:#f3f6ff;
   --border:#e6edf6;
+  --shadow-1: 0 1px 2px rgba(8,15,42,0.06);
+  --shadow-2: 0 6px 18px rgba(8,15,42,0.08);
 }
 
-/* Basic */
-html,body{ margin:0; height:100%; font-family:Arial,Helvetica,sans-serif; background:var(--bg); color:#0b2540; -webkit-text-size-adjust:100%; }
+/* Base */
+html,body{ margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#0b2540; -webkit-text-size-adjust:100%; }
 .header-bar{ position:sticky; top:0; z-index:1000; background:var(--primary); color:white; display:flex; align-items:center; gap:8px; padding:8px; }
-.header-bar button{ background:white; color:var(--primary); border:none; border-radius:8px; padding:8px 10px; font-size:15px; cursor:pointer; min-width:40px; height:36px; display:inline-flex; align-items:center; justify-content:center; }
-.header-title{ flex:1; text-align:center; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
+.header-bar button{ background:white; color:var(--primary); border:none; border-radius:8px; padding:8px 10px; font-size:14px; cursor:pointer; min-width:40px; height:36px; display:inline-flex; align-items:center; justify-content:center; }
+.header-title{ flex:1; text-align:center; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:0.2px; }
 
 /* Layout */
 .container{ padding:8px; }
-.card-shell{ background:var(--card); border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.06); padding:8px; }
+.card-shell{ background:transparent; border-radius:10px; padding:6px; }
 
 /* Controls */
-.controls{ display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
-.controls button{ padding:8px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:14px; }
-.controls .filter { flex:1; min-width:120px; }
+.controls{ display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center; }
+.controls button{ padding:8px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; }
+.controls .filter{ flex:1; min-width:120px; }
+.controls .filter input{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
 
-/* TABLE (shown on wider screens) */
-.table-wrapper{ display:none; } /* default hidden; shown on wide screens via media query */
+/* Table (for wide screens) */
+.table-wrapper{ display:none; }
 table{ width:100%; border-collapse:collapse; font-size:13px; table-layout:auto; }
 th, td{ border:1px solid var(--border); padding:6px 8px; white-space:normal; overflow-wrap:break-word; word-break:break-word; font-size:12px; }
 thead tr:nth-child(1) th{ position:sticky; top:56px; background:var(--primary); color:white; z-index:20; padding:8px; font-size:12px; }
@@ -39,40 +43,90 @@ thead tr:nth-child(2) th{ position:sticky; top:92px; background:var(--accent); z
 tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
 .section-row{ background:#dbe9ff !important; font-weight:600; }
 
-/* CARD view (shown on small screens) */
-.cards-list{ display:block; }
-.card-item{ background:#fff; border-radius:10px; margin:8px 0; padding:8px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid rgba(0,0,0,0.03); }
-.card-row{ display:flex; justify-content:space-between; gap:8px; padding:6px 2px; border-bottom:1px dashed #f0f4ff; align-items:center; }
-.card-row:last-child{ border-bottom:none; }
-.card-label{ font-weight:700; color:#244; font-size:12px; flex:0 0 45%; }
-.card-value{ text-align:right; font-size:13px; flex:1 1 55%; word-break:break-word; }
+/* Cards grid - compact */
+.cards-grid{
+  display:grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap:8px;
+  align-items:start;
+}
 
-/* Numeric right alignment badge (for Achieved column) */
-.badge-num{ display:inline-block; padding:4px 8px; border-radius:8px; font-weight:700; font-size:12px; }
+/* Use two columns where there's enough width (auto layout) */
+@media (min-width:380px){
+  .cards-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Card styling (compact + 3D subtle) */
+.card-item{
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  border-radius:10px;
+  padding:8px;                 /* compact */
+  box-shadow: var(--shadow-1), 0 3px 10px rgba(8,15,42,0.04);
+  border: 1px solid rgba(12,24,60,0.04);
+  transform: translateZ(0);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-height:52px;            /* keep compact */
+}
+
+/* Slight lift on hover/touch */
+.card-item:hover, .card-item:active{
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-2);
+}
+
+/* Reduce spacing within label/value rows */
+.card-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:6px;
+  padding:2px 0;
+}
+
+/* Labels smaller and narrower to fit more rows per card */
+.card-label{
+  flex:0 0 44%;
+  font-size:12px;
+  color:#234;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Values compact */
+.card-value{
+  flex:1 1 56%;
+  text-align:right;
+  font-size:13px;
+  color:#103049;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Achieved numeric badges */
+.badge-num{ display:inline-block; padding:4px 8px; border-radius:10px; font-weight:700; font-size:12px; }
 .positive{ background:#e8f5e9; color:#1b5e20; }
-.negative{ background:#ffebee; color:#b71c1c; }
+.negative{ background:#fff0f0; color:#a01f1f; }
 .equal{ background:#fff8e1; color:#e65100; }
 
 /* status area */
-.status{ font-size:12px; color:#223; padding:8px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
+.status{ font-size:12px; color:#223; padding:6px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
 
-/* Hidden-by-css fallback for columns we don't want visible */
+/* Hide-by-attribute fallback */
 [data-hide="true"]{ display:none !important; }
 
-/* Responsive rules */
-@media (min-width:700px){
-  /* Show table on larger screens */
-  .table-wrapper{ display:block; }
-  .cards-list{ display:none; }
-  .header-title{ font-size:18px; }
-}
-@media (max-width:699px){
-  /* Mobile optimizations */
-  .header-bar{ padding:6px; }
-  .header-bar button{ height:36px; padding:6px 8px; font-size:14px; }
-  .header-title{ font-size:15px; }
-  .controls .filter input{ font-size:13px; padding:8px; }
-  table{ font-size:12px; }
+/* smaller fonts for small screens */
+@media (max-width:360px){
+  .card-item{ padding:6px; min-height:48px; }
+  .card-label{ font-size:11px; flex:0 0 42%; }
+  .card-value{ font-size:12px; }
+  .header-title{ font-size:14px; }
+  .controls button{ font-size:13px; padding:6px 8px; }
 }
 </style>
 </head>
@@ -94,13 +148,12 @@ tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
     <div class="controls">
       <button onclick="exportExcel()">📄 Export CSV</button>
       <button onclick="window.print()">🖨 Print</button>
-      <!-- unified filter for mobile + desktop -->
       <div class="filter" style="flex:1;">
-        <input id="universalFilter" placeholder="🔍 Search (column values)" style="width:100%; padding:8px; font-size:13px; border-radius:8px; border:1px solid #e6edf6;">
+        <input id="universalFilter" placeholder="🔍 Search" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-size:13px;">
       </div>
     </div>
 
-    <!-- Table wrapper (shown on wide screens) -->
+    <!-- table for wider screens -->
     <div class="table-wrapper" aria-hidden="true">
       <table id="motorTable">
         <thead>
@@ -111,8 +164,8 @@ tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
       </table>
     </div>
 
-    <!-- Cards list (shown on mobile) -->
-    <div class="cards-list" id="cardsList" aria-live="polite"></div>
+    <!-- compact cards grid for mobile -->
+    <div class="cards-grid" id="cardsGrid" aria-live="polite"></div>
 
   </div>
 </div>
@@ -123,7 +176,7 @@ const statusEl = document.getElementById('status');
 const headerRowEl = document.getElementById('headerRow');
 const filterRowEl = document.getElementById('filterRow');
 const tbodyEl = document.querySelector('#motorTable tbody');
-const cardsListEl = document.getElementById('cardsList');
+const cardsGridEl = document.getElementById('cardsGrid');
 const universalFilter = document.getElementById('universalFilter');
 
 function goHome(){ window.location.href = "https://08electricaldata.github.io/index_mob.html"; }
@@ -134,26 +187,34 @@ function openMotorPM(){ window.location.href = "https://08electricaldata.github.
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function isNumericVal(v){ if(v === null || v === undefined) return false; const s = String(v).trim().replace(/,/g,''); return /^-?\d+(\.\d+)?$/.test(s); }
 
-/* Renderers */
+function computeVisibleIndices(headers, rows){
+  const hdrCount = headers.length;
+  const skip = new Set();
+  if(hdrCount > 3) skip.add(3);        // hide 4th column (index 3)
+  if(hdrCount > 0) skip.add(hdrCount-1); // hide last column
+  const indices = headers.map((_,i)=>i).filter(i => !skip.has(i));
+  if(indices.length === 0 && rows.length > 0){
+    const maxCols = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
+    return Array.from({length:maxCols}, (_,i)=>i).filter(i => ![3, maxCols-1].includes(i));
+  }
+  return indices;
+}
+
 function renderTable(headers, rows, visibleIndices){
-  // Build headers
   headerRowEl.innerHTML = '';
   filterRowEl.innerHTML = '';
   visibleIndices.forEach(i => {
     const th = document.createElement('th'); th.textContent = headers[i] ?? ''; headerRowEl.appendChild(th);
     const fh = document.createElement('th'); fh.innerHTML = '<input placeholder="🔍">'; filterRowEl.appendChild(fh);
   });
-
-  // Build rows
   tbodyEl.innerHTML = '';
-  rows.forEach(row => {
-    const r = Array.isArray(row) ? row : [];
-    if(!r[1]) return; // original behavior
+  rows.forEach(r => {
+    const row = Array.isArray(r)? r : [];
+    if(!row[1]) return;
     const tr = document.createElement('tr');
-    if(!r[0]) tr.classList.add('section-row');
+    if(!row[0]) tr.classList.add('section-row');
     visibleIndices.forEach(i => {
-      const td = document.createElement('td');
-      const raw = r[i] ?? '';
+      const td = document.createElement('td'); const raw = row[i] ?? '';
       td.title = raw;
       const span = document.createElement('span'); span.className = 'cell-value'; span.innerHTML = escapeHtml(raw);
       td.appendChild(span);
@@ -161,47 +222,30 @@ function renderTable(headers, rows, visibleIndices){
       tr.appendChild(td);
     });
     tr.addEventListener('click', () => {
-      const id = (r[1] ?? '') + '-' + (r[2] ?? '');
-      if((r[1] ?? '') === '') return;
+      const id = (row[1] ?? '') + '-' + (row[2] ?? '');
+      if((row[1] ?? '') === '') return;
       window.location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
     });
     tbodyEl.appendChild(tr);
   });
-
-  // Add per-column filtering (table inputs)
-  const inputs = Array.from(document.querySelectorAll('.filter-row input'));
-  inputs.forEach((input, idx) => {
-    input.addEventListener('input', () => {
-      const q = input.value.trim().toLowerCase();
-      document.querySelectorAll('#motorTable tbody tr').forEach(tr => {
-        const cell = tr.children[idx];
-        if(!cell){ tr.style.display = ''; return; }
-        tr.style.display = cell.innerText.toLowerCase().includes(q) ? '' : 'none';
-      });
-    });
-  });
 }
 
 function renderCards(headers, rows, visibleIndices){
-  cardsListEl.innerHTML = '';
-  rows.forEach(row => {
-    const r = Array.isArray(row) ? row : [];
-    if(!r[1]) return;
-    // Card container
+  cardsGridEl.innerHTML = '';
+  rows.forEach(r => {
+    const row = Array.isArray(r)? r : [];
+    if(!row[1]) return;
     const card = document.createElement('div'); card.className = 'card-item';
-    // Build label/value pairs for visible indices
     visibleIndices.forEach(i => {
       const label = headers[i] ?? ('Col ' + (i+1));
-      const raw = r[i] ?? '';
+      const raw = row[i] ?? '';
       const rowDiv = document.createElement('div'); rowDiv.className = 'card-row';
       const lab = document.createElement('div'); lab.className = 'card-label'; lab.textContent = label;
       const valWrap = document.createElement('div'); valWrap.className = 'card-value';
-      // If Achieved column (index 4) show numeric badge and right align
       if(i === 4 && isNumericVal(raw)){
         const badge = document.createElement('span'); badge.className = 'badge-num';
-        // decide positive/negative/equal by comparing with target (index 5)
-        const achieved = Number(String(r[4] ?? '').replace(/,/g,'')) || 0;
-        const target = Number(String(r[5] ?? '').replace(/,/g,'')) || 0;
+        const achieved = Number(String(row[4] ?? '').replace(/,/g,'')) || 0;
+        const target = Number(String(row[5] ?? '').replace(/,/g,'')) || 0;
         if(achieved > target) badge.classList.add('positive');
         else if(achieved < target) badge.classList.add('negative');
         else badge.classList.add('equal');
@@ -213,77 +257,36 @@ function renderCards(headers, rows, visibleIndices){
       rowDiv.appendChild(lab); rowDiv.appendChild(valWrap);
       card.appendChild(rowDiv);
     });
-
-    // Click behavior
     card.addEventListener('click', () => {
-      const id = (r[1] ?? '') + '-' + (r[2] ?? '');
-      if((r[1] ?? '') === '') return;
+      const id = (row[1] ?? '') + '-' + (row[2] ?? '');
+      if((row[1] ?? '') === '') return;
       window.location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
     });
-
-    cardsListEl.appendChild(card);
+    cardsGridEl.appendChild(card);
   });
 }
 
-/* Build visible index list (skip 4th and last) */
-function computeVisibleIndices(headers, rows){
-  const hdrCount = headers.length;
-  const skip = new Set();
-  if(hdrCount > 3) skip.add(3); // 4th column (index 3)
-  if(hdrCount > 0) skip.add(hdrCount - 1); // last column
-  const indices = headers.map((_,i) => i).filter(i => !skip.has(i));
-  // If no headers, infer from rows
-  if(indices.length === 0 && rows.length > 0){
-    const maxCols = rows.reduce((m,r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
-    const inferred = Array.from({length:maxCols}, (_,i)=>i).filter(i => ![3, maxCols-1].includes(i));
-    return inferred;
-  }
-  return indices;
-}
-
-/* Load + render */
 async function loadData(){
   statusEl.textContent = 'Loading…';
   let data = null;
-  try {
-    const cache = localStorage.getItem('motorJSON');
-    if(cache) data = JSON.parse(cache);
-  } catch(e){ console.warn('cache parse failed', e); }
-
+  try { const cache = localStorage.getItem('motorJSON'); if(cache) data = JSON.parse(cache); } catch(e){ console.warn('cache parse failed', e); }
   try {
     const res = await fetch(JSON_URL, {cache:'no-store'});
-    if(res && res.ok){
-      const json = await res.json();
-      data = json;
-      try { localStorage.setItem('motorJSON', JSON.stringify(json)); } catch(e){}
-      statusEl.textContent = 'Loaded remote';
-    } else {
-      statusEl.textContent = 'Using cache';
-    }
-  } catch(err){
-    console.warn('fetch failed', err);
-    statusEl.textContent = 'Offline / using cache';
-  }
-
+    if(res && res.ok){ const json = await res.json(); data = json; try { localStorage.setItem('motorJSON', JSON.stringify(json)); } catch(e){} statusEl.textContent = 'Loaded remote'; }
+    else statusEl.textContent = 'Using cache';
+  } catch(err){ console.warn('fetch failed', err); statusEl.textContent = 'Offline / using cache'; }
   if(!data) data = { headers: [], rows: [] };
-
-  // Normalize
   let headers = Array.isArray(data.headers) ? data.headers.slice() : (data.headers ? Object.values(data.headers) : []);
   const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
-
   if(headers.length === 0 && rows.length > 0){
-    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
     headers = Array.from({length:max}, (_,i) => 'Col ' + (i+1));
   }
-
-  // compute visible indices once
   const visible = computeVisibleIndices(headers, rows);
-
-  // Render both views (one may be hidden via CSS)
   renderTable(headers, rows, visible);
   renderCards(headers, rows, visible);
 
-  // setup universal filter which filters both table rows and cards
+  // universal filter
   universalFilter.addEventListener('input', () => {
     const q = universalFilter.value.trim().toLowerCase();
     // filter table rows
@@ -299,16 +302,14 @@ async function loadData(){
     });
   });
 
-  statusEl.textContent = ''; // clear
+  statusEl.textContent = '';
 }
 
-/* Export CSV from currently visible rows/columns */
+/* CSV export (visible rows only) */
 function exportExcel(){
-  // Determine header cells currently visible (headerRow)
-  const headers = Array.from(document.querySelectorAll('#headerRow th')).map(th => th.innerText);
+  const headerCells = Array.from(document.querySelectorAll('#headerRow th')).map(th => th.innerText);
   const lines = [];
-  if(headers.length) lines.push(headers.map(h => `"${h.replace(/"/g,'""')}"`).join(','));
-  // rows from visible table rows OR cards (prefer table if displayed)
+  if(headerCells.length) lines.push(headerCells.map(h => `"${h.replace(/"/g,'""')}"`).join(','));
   const tableVisible = getComputedStyle(document.querySelector('.table-wrapper')).display !== 'none';
   if(tableVisible){
     document.querySelectorAll('#motorTable tbody tr').forEach(tr => {
@@ -317,10 +318,8 @@ function exportExcel(){
       lines.push(vals.join(','));
     });
   } else {
-    // from cards
     document.querySelectorAll('.card-item').forEach(card => {
       if(getComputedStyle(card).display === 'none') return;
-      // flatten label/value pairs
       const vals = Array.from(card.querySelectorAll('.card-row .card-value')).map(v => `"${v.innerText.replace(/"/g,'""')}"`);
       lines.push(vals.join(','));
     });
@@ -329,15 +328,8 @@ function exportExcel(){
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'motor_master_list.csv'; a.click();
 }
 
-/* initialize */
+/* init */
 loadData();
-
-/* optional: re-render on orientation change/resize */
-window.addEventListener('resize', () => {
-  // No special action required because both views are always generated and CSS controls visibility.
-  // But you could call loadData() here if you want to re-fetch or re-build on rotation.
-});
 </script>
-
 </body>
 </html>
