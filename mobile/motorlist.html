@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Motor Master List</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta charset="utf-8" />
+<title>Motor Master List - Mobile</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+<meta name="theme-color" content="#003f88" />
 <style>
-/* --- App / mobile-first styles --- */
 :root{
   --primary:#003f88;
   --bg:#f2f6ff;
@@ -14,356 +14,268 @@
   --accent:#eaf1ff;
 }
 
-html,body{
-  margin:0;
-  height:100%;
-  background:var(--bg);
-  font-family:Arial, Helvetica, sans-serif;
-  -webkit-text-size-adjust:100%;
-  -webkit-font-smoothing:antialiased;
-}
+/* Reset / base */
+html,body{margin:0;height:100%;background:var(--bg);font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;}
+.app-shell{max-width:420px;margin:0 auto;padding:8px;box-sizing:border-box;}
 
-/* App shell - center on larger phones but fluid on narrow screens */
+/* Header bar */
 .header-bar{
-  position:sticky;
-  top:0;
-  z-index:1000;
-  background:var(--primary);
-  color:white;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:10px;
+  position:sticky;top:0;z-index:1000;display:flex;align-items:center;gap:8px;padding:8px;background:var(--primary);color:#fff;border-radius:8px;
 }
-
-/* Touch-friendly header buttons */
 .header-bar button{
-  background:white;
-  color:var(--primary);
-  border:none;
-  border-radius:8px;
-  padding:8px 10px;
-  font-size:16px;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-width:44px;
-  height:40px;
+  background:#fff;color:var(--primary);border:none;border-radius:8px;padding:8px 10px;font-size:15px;cursor:pointer;min-width:40px;height:38px;
+  display:inline-flex;align-items:center;justify-content:center;
 }
+.header-title{flex:1;text-align:center;font-weight:700;font-size:16px;letter-spacing:0.3px;text-transform:uppercase;}
 
-/* Title - centered on small screens */
-.header-title{
-  flex:1;
-  text-align:center;
-  font-size:18px;
-  font-weight:700;
-  letter-spacing:0.3px;
-  text-transform:uppercase;
-}
+/* Container / Card */
+.container{padding:8px;}
+.card{background:var(--card);border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.06);padding:8px;}
 
-/* Main container */
-.container{
-  padding:10px;
-}
+/* Controls */
+.controls{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.controls button{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;}
 
-/* Card */
-.card{
-  background:var(--card);
-  border-radius:10px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.06);
-  padding:10px;
-}
-
-/* Controls row (buttons) */
-.controls{
-  display:flex;
-  gap:8px;
-  margin-bottom:8px;
-  flex-wrap:wrap;
-}
-.controls button{
-  padding:8px 12px;
-  background:var(--primary);
-  color:white;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:14px;
-}
-
-/* Table - compact for mobile, smaller fonts */
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px; /* slightly smaller font for better fit */
-  table-layout:fixed; /* make cells share available width */
-  word-break:break-word;
-}
+/* Table - mobile friendly */
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;word-break:break-word;}
 th, td{
-  border:1px solid #e0e7f7;
-  padding:6px 8px;
-  text-align:left;
-  vertical-align:middle;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  border:1px solid #e6edf7;padding:6px 8px;text-align:left;vertical-align:middle;
+  white-space:normal;overflow-wrap:break-word;word-break:break-word;hyphens:auto;font-size:13px;
 }
-
-/* two-row sticky header kept (first is primary header row) */
 thead tr:nth-child(1) th{
-  position:sticky;
-  top:56px;
-  background:var(--primary);
-  color:white;
-  z-index:20;
-  font-size:12px;
-  padding:8px;
+  position:sticky;top:56px;background:var(--primary);color:#fff;z-index:20;font-size:12px;padding:8px;
 }
 thead tr:nth-child(2) th{
-  position:sticky;
-  top:92px;
-  background:var(--accent);
-  z-index:15;
-  font-size:12px;
-  padding:6px;
+  position:sticky;top:92px;background:var(--accent);z-index:15;font-size:12px;padding:6px;
 }
 
-/* hover */
-tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
+/* Section rows */
+.section-row{background:#dbe9ff;font-weight:600;}
+tbody tr:hover{background:#f0f6ff;cursor:pointer;}
 
-/* filter inputs */
-.filter-row input{
-  width:100%;
-  padding:6px;
-  font-size:12px;
-  box-sizing:border-box;
+/* Filter input */
+.filter-row input{width:100%;padding:6px;font-size:12px;box-sizing:border-box;border-radius:6px;border:1px solid #dbe7ff;}
+
+/* Cell value wrapper */
+.cell-value{display:block;white-space:normal;overflow-wrap:break-word;word-break:break-word;}
+/* Right align numeric/achieved column */
+td.num .cell-value{text-align:right;}
+
+/* Hide columns flagged with data-hide (safety) */
+td[data-hide="true"], th[data-hide="true"]{display:none;}
+
+/* Very small devices adjustments */
+@media (max-width:380px){
+  .header-title{font-size:15px;}
+  .header-bar button{padding:6px;height:36px;font-size:14px;}
+  th, td{padding:5px;font-size:12px;}
+  thead tr:nth-child(1) th{top:48px;}
+  thead tr:nth-child(2) th{top:84px;}
 }
 
-/* section row style */
-.section-row{ background:#dbe9ff !important; font-weight:600; }
-
-/* hide any horizontal overflow */
-body,html{overflow-x:hidden;}
-
-/* --- Responsive tweaks --- */
-@media (max-width:420px){
-  .header-title{font-size:16px;}
-  .header-bar{padding:8px;}
-  .header-bar button{padding:8px; height:38px; font-size:15px;}
-  table{font-size:12px;}
-  th, td{padding:6px;}
-  thead tr:nth-child(1) th{top:48px}
-  thead tr:nth-child(2) th{top:84px}
+/* Print: hide controls and sticky header extras */
+@media print{
+  .header-bar button, .controls, .filter-row { display:none; }
 }
-
-/* When we hide columns (via .col-hide) we ensure no leftover gaps */
-.hidden-col { display:none; }
-
-/* Make the 4th (D) and last column non-visible on small screens/always as requested.
-   We'll remove them in JS (preferred). This CSS is a safeguard if any remain. */
-td[data-hide="true"], th[data-hide="true"] { display:none; }
 </style>
 </head>
 <body>
 
-<div class="header-bar" role="banner">
-  <button onclick="goHome()" aria-label="Home">🏠 Home</button>
-  <button onclick="goBack()" aria-label="Back">⬅ Back</button>
-  <button onclick="openMotorOH()" aria-label="Motor OH">🛠️ Motor O/H Data</button>
-  <button onclick="openMotorPM()" aria-label="Motor PM">🧾 Motor PM Status</button>
-  <div class="header-title">MOTOR MASTER LIST</div>
-</div>
+<div class="app-shell">
+  <div class="header-bar" role="banner">
+    <button onclick="goHome()" aria-label="Home">🏠 Home</button>
+    <button onclick="goBack()" aria-label="Back">⬅ Back</button>
+    <button onclick="openMotorOH()" aria-label="Motor OH">🛠️ Motor O/H</button>
+    <button onclick="openMotorPM()" aria-label="Motor PM">🧾 Motor PM</button>
+    <div class="header-title">MOTOR MASTER LIST</div>
+  </div>
 
-<div class="container">
-  <div class="card">
+  <div class="container">
+    <div class="card">
+      <div class="controls" role="toolbar" aria-label="table actions">
+        <button onclick="exportExcel()">📄 Export Excel</button>
+        <button onclick="window.print()">🖨 Export PDF</button>
+      </div>
 
-    <div class="controls" aria-hidden="false">
-      <button onclick="exportExcel()">📄 Export Excel</button>
-      <button onclick="window.print()">🖨 Export PDF</button>
+      <table id="motorTable" aria-label="Motor Master List">
+        <thead>
+          <tr id="headerRow"></tr>
+          <tr class="filter-row" id="filterRow"></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
-
-    <table id="motorTable" aria-label="Motor Master List">
-      <thead>
-        <tr id="headerRow"></tr>
-        <tr class="filter-row" id="filterRow"></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
   </div>
 </div>
 
 <script>
-// Source JSON (unchanged)
+/* Mobile-optimized table renderer with wrapping, title tooltips, hiding 4th and last columns,
+   and numeric right-align for the 'Achieved' (index 4) column. */
+
+/* Source JSON (unchanged) */
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
 
-// New mobile-targeted links
-function goHome() {
-  window.location.href = "https://08electricaldata.github.io/index_mob.html";
+/* Mobile-specific target pages */
+function goHome(){ window.location.href = "https://08electricaldata.github.io/index_mob.html"; }
+function goBack(){ history.back(); }
+function openMotorOH(){ window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motoroh.html"; }
+function openMotorPM(){ window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html"; }
+
+/* Helpers */
+function escapeHtml(s){
+  if(s === null || s === undefined) return "";
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-function goBack() {
-  history.back();
+
+/* Fetch with timeout to avoid long waits on mobile */
+function fetchWithTimeout(url, ms = 9000){
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(()=>reject(new Error("Fetch timeout")), ms);
+    fetch(url).then(res => { clearTimeout(t); resolve(res); }).catch(err => { clearTimeout(t); reject(err); });
+  });
 }
-function openMotorOH(){
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motoroh.html";
-}
-function openMotorPM(){
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html";
-}
 
-// Try cached JSON first for faster mobile load
-async function loadMotors() {
-  const cache = localStorage.getItem("motorJSON");
-  let data;
-  try {
-    if (cache) {
-      data = JSON.parse(cache);
-    } else {
-      const res = await fetch(JSON_URL);
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      data = await res.json();
-      // store a small copy; ensure it's serializable
-      try { localStorage.setItem("motorJSON", JSON.stringify(data)); } catch(e){ /* ignore storage failures */ }
-    }
-  } catch (err) {
-    console.warn("Fetch/cache error, attempting to use cached fallback or empty table", err);
-    // If fetch fails and no cache, try parse cache again or create minimal fallback
-    try { data = cache ? JSON.parse(cache) : { headers: [], rows: [] }; }
-    catch(e){ data = { headers: [], rows: [] }; }
-  }
-
-  // Defensive normalization
-  const headers = Array.isArray(data.headers) ? data.headers : (data.headers ? Object.values(data.headers) : []);
-  const rows = Array.isArray(data.rows) ? data.rows : [];
-
-  // Identify the indices to skip: 4th column (index 3) and last column (index headers.length-1)
-  // Ensure we don't try to skip an index that doesn't exist; use a Set for unique skip indices
-  const skipSet = new Set();
-  if (headers.length > 3) skipSet.add(3); // zero-based index 3 = 4th column
-  if (headers.length > 0) skipSet.add(headers.length - 1); // last column index
-
-  // If the skipSet contains only one index (because last == 3) that's fine; Set dedupes
-  // Build filtered header list (skip indices) to render
-  const visibleHeaderIndices = headers.map((_, i) => i).filter(i => !skipSet.has(i));
-
-  // Build header row and filter row
+/* Main loader */
+async function loadMotors(){
   const headerRow = document.getElementById("headerRow");
   const filterRow = document.getElementById("filterRow");
   const tbody = document.querySelector("#motorTable tbody");
-  headerRow.innerHTML = "";
-  filterRow.innerHTML = "";
-  tbody.innerHTML = "";
+  headerRow.innerHTML = ""; filterRow.innerHTML = ""; tbody.innerHTML = "";
 
-  // If no headers from JSON, attempt to infer maximum columns from rows
-  let effectiveHeaders = headers.slice();
-  if (effectiveHeaders.length === 0 && rows.length > 0) {
-    const maxCols = rows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
-    for (let i = 0; i < maxCols; i++) effectiveHeaders.push("Col " + (i + 1));
-    // recalc skipSet and visible indices
-    skipSet.clear();
-    if (effectiveHeaders.length > 3) skipSet.add(3);
-    if (effectiveHeaders.length > 0) skipSet.add(effectiveHeaders.length - 1);
-    // recalc visible indices
-    visibleHeaderIndices.length = 0;
-    effectiveHeaders.forEach((_, i) => { if (!skipSet.has(i)) visibleHeaderIndices.push(i); });
+  let data = null;
+  // Try local cache first
+  try {
+    const cache = localStorage.getItem("motorJSON");
+    if(cache){
+      data = JSON.parse(cache);
+    }
+  } catch(e){ /* ignore parse errors */ }
+
+  // Attempt remote fetch (non-blocking if cache exists)
+  try {
+    const res = await fetchWithTimeout(JSON_URL, 9000);
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    data = json;
+    try { localStorage.setItem("motorJSON", JSON.stringify(json)); } catch(e){ /* storage could fail on private mode */ }
+  } catch(fetchErr){
+    console.warn("Fetch failed, will use cache or fallback if available:", fetchErr);
+    if(!data){
+      // fallback minimal data to ensure UI shows
+      data = {
+        headers: ["S.No","Name","Tag","KW","Achieved","Target","Rating","Frame","Voltage"],
+        rows: [
+          [1,"Pump Motor A","P-01","90","80","100","1.1","B3","415V"],
+          [2,"Pump Motor B","P-02","90","60","60","1.1","B3","415V"],
+          [3,"Panel Section","","","","","","",""]
+        ]
+      };
+    }
   }
 
-  // Render headers (only visible indices)
-  visibleHeaderIndices.forEach(i => {
+  // Normalize headers & rows
+  let headers = Array.isArray(data.headers) ? data.headers : (data.headers ? Object.values(data.headers) : []);
+  let rows = Array.isArray(data.rows) ? data.rows : [];
+
+  // If headers empty but rows present, infer generic headers
+  if(!headers || headers.length === 0){
+    const maxCols = rows.reduce((m,r)=> Math.max(m, Array.isArray(r)?r.length:0), 0);
+    headers = Array.from({length: maxCols}, (_,i)=>"Col "+(i+1));
+  }
+
+  // Decide which columns to hide: 4th column (index 3) and last column (index headers.length-1)
+  const skipSet = new Set();
+  if(headers.length > 3) skipSet.add(3);                     // hide 4th
+  if(headers.length > 0) skipSet.add(headers.length - 1);    // hide last
+
+  // Visible header indices
+  const visibleHeaderIndices = headers.map((_,i)=>i).filter(i=>!skipSet.has(i));
+
+  // Render header row
+  visibleHeaderIndices.forEach(i=>{
     const th = document.createElement("th");
-    th.textContent = effectiveHeaders[i] ?? "";
+    th.textContent = headers[i] ?? "";
+    // mark the th with data-hide if somehow needed by CSS
+    if(skipSet.has(i)) th.setAttribute('data-hide','true');
     headerRow.appendChild(th);
 
     const fh = document.createElement("th");
-    fh.innerHTML = "<input placeholder='🔍' aria-label='Filter " + (effectiveHeaders[i] ?? "") + "'>";
+    fh.innerHTML = "<input placeholder='🔍' aria-label='Filter " + escapeHtml(headers[i] ?? "") + "'>";
     filterRow.appendChild(fh);
   });
 
-  // Render rows (only visible columns). Preserve section-row logic (when r[0] falsy)
-  rows.forEach(r => {
+  // Build body rows
+  rows.forEach(r=>{
     const row = Array.isArray(r) ? r : [];
-    // Skip entirely empty rows
-    // If r[1] is empty the original code returned; keep that behavior
-    if (!row[1]) return;
+    // preserve original behavior: skip row if r[1] falsy
+    if(!row[1]) return;
 
     const tr = document.createElement("tr");
-    if (!row[0]) tr.classList.add("section-row");
+    if(!row[0]) tr.classList.add("section-row");
 
-    // Build cells only for visible indices
-    visibleHeaderIndices.forEach(i => {
-      let val = row[i] ?? "";
+    visibleHeaderIndices.forEach((colIndex)=>{
       const td = document.createElement("td");
+      const valRaw = row[colIndex];
+      const text = valRaw === null || valRaw === undefined ? "" : String(valRaw);
 
-      // If this cell originally was "Schedule Maintenance" (case-insensitive exact), you may add replacements here
-      // (the user previously requested replacements elsewhere; preserving original cell text now)
-      td.textContent = val;
+      // If this is the Achieved column (original index 4), mark numeric class for right-align
+      if(colIndex === 4) td.classList.add("num");
+
+      // Set data-label for accessibility / CSS (use header label)
+      td.setAttribute('data-label', headers[colIndex] ?? "");
+
+      // Title attribute so long-press shows full text
+      td.title = text;
+
+      // Insert wrapped content in .cell-value
+      const span = document.createElement("span");
+      span.className = "cell-value";
+      span.innerText = text;
+      td.appendChild(span);
+
       tr.appendChild(td);
     });
 
-    // On click, navigate same as before (id uses r[1] and r[2])
-    tr.onclick = () => {
-      const id = row[1] + "-" + row[2];
-      window.location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
+    // row click navigates to drive-viewer same as original code
+    tr.onclick = ()=>{
+      try{
+        const id = (row[1] ?? "") + "-" + (row[2] ?? "");
+        if(id && id !== "-") {
+          location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
+        }
+      }catch(e){ console.warn(e); }
     };
 
     tbody.appendChild(tr);
   });
 
-  // Setup simple filter behavior (one input per visible header)
+  // Filters setup (one input per visible header)
   const inputs = Array.from(document.querySelectorAll(".filter-row input"));
-  inputs.forEach((input, idx) => {
-    input.addEventListener("keyup", () => {
+  inputs.forEach((input, idx)=>{
+    input.addEventListener('input', ()=>{
       const q = input.value.trim().toLowerCase();
-      document.querySelectorAll("#motorTable tbody tr").forEach(tr => {
+      document.querySelectorAll("#motorTable tbody tr").forEach(tr=>{
+        // keep section rows visible always (so headings remain)
+        if(tr.classList.contains('section-row')){ tr.style.display = ""; return; }
         const cell = tr.children[idx];
-        // If cell doesn't exist (e.g., section-row), allow it
-        if (!cell) {
-          // For section rows, show them if any child visible — simple approach: show section rows always
-          tr.style.display = "";
-          return;
-        }
+        if(!cell){ tr.style.display = ""; return; }
         tr.style.display = cell.innerText.toLowerCase().includes(q) ? "" : "none";
       });
     });
   });
 
-  // If table empty, show friendly note
-  if (tbody.children.length === 0) {
+  // If no rows present show message
+  if(tbody.children.length === 0){
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = Math.max(1, visibleHeaderIndices.length);
     td.style.padding = "12px";
     td.style.color = "#445";
-    td.textContent = "No data available";
+    td.innerText = "No data available";
     tr.appendChild(td);
     tbody.appendChild(tr);
   }
 }
 
-// CSV export - export currently shown table (headers + visible rows)
-function exportExcel() {
-  const rows = [];
-  document.querySelectorAll("#motorTable thead tr").forEach(tr => {
-    // skip filter row (we only export header row and body rows)
-    if (tr.classList.contains('filter-row')) return;
-    rows.push([...tr.children].map(td => `"${td.innerText.replace(/"/g, '""')}"`).join(","));
-  });
-  document.querySelectorAll("#motorTable tbody tr").forEach(tr => {
-    // skip hidden rows
-    if (getComputedStyle(tr).display === "none") return;
-    rows.push([...tr.children].map(td => `"${td.innerText.replace(/"/g, '""')}"`).join(","));
-  });
-  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "motor_master_list.csv";
-  a.click();
-}
-
-// Kick off
-loadMotors();
-</script>
-
-</body>
-</html>
+/* Export visible table
