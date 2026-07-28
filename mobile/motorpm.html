@@ -116,7 +116,7 @@ table {
   border-collapse: collapse;
   background: white;
   font-size: 14px;
-  min-width: 840px; /* keep table readable; scroll on small screens */
+  min-width: 840px;
 }
 th, td {
   border: 1px solid #e7e7e7;
@@ -135,10 +135,10 @@ th {
   z-index: 2;
 }
 
-/* Column widths: Main Drive, Sub Drive, then dates */
-th:nth-child(1), td:nth-child(1) { width: 220px; } /* Main Drive */
-th:nth-child(2), td:nth-child(2) { width: 160px; } /* Sub Drive */
-th:nth-child(n+3), td:nth-child(n+3) { width: 120px; } /* date columns */
+/* === HALVED WIDTHS (reduced to roughly half) === */
+th:nth-child(1), td:nth-child(1) { width: 110px; } /* Main Drive */
+th:nth-child(2), td:nth-child(2) { width: 80px; }  /* Sub Drive */
+th:nth-child(n+3), td:nth-child(n+3) { width: 60px; } /* date columns */
 
 /* ===== STATUS COLORS ===== */
 .ok {
@@ -151,7 +151,7 @@ th:nth-child(n+3), td:nth-child(n+3) { width: 120px; } /* date columns */
 }
 .overdue-cell {
   background: #d32f2f;
-  color: #fff200; /* keep yellowish for contrast similar to original */
+  color: #fff200;
   font-weight: bold;
   padding: 6px 8px;
   border-radius: 4px;
@@ -179,9 +179,9 @@ tbody tr:hover { background: #f5f9ff; }
   .controls button { font-size: 13px; padding: 8px 10px; }
   table { font-size: 13px; min-width: 680px; }
   th, td { padding: 8px 6px; }
-  th:nth-child(1), td:nth-child(1) { width: 180px; }
-  th:nth-child(2), td:nth-child(2) { width: 130px; }
-  th:nth-child(n+3), td:nth-child(n+3) { width: 110px; }
+  th:nth-child(1), td:nth-child(1) { width: 90px; }
+  th:nth-child(2), td:nth-child(2) { width: 65px; }
+  th:nth-child(n+3), td:nth-child(n+3) { width: 55px; }
 }
 
 @media (max-width: 420px) {
@@ -259,12 +259,68 @@ function goBack(){ history.back(); }
 function openMotorList(){ location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html"; }
 function openMotorOH(){ location.href="https://08electricaldata.github.io/drive-viewer/motoroh.html"; }
 
-/* DATE */
+/* DATE: more robust parsing with fallback */
 function parseISO(v){
-  if(!v) return null;
-  const d=new Date(v);
-  return isNaN(d)?null:d;
+  if (v == null || v === "") return null;
+
+  // If already a Date object
+  if (v instanceof Date) return isNaN(v) ? null : v;
+
+  // If numeric (timestamp)
+  if (typeof v === "number" && isFinite(v)) {
+    const d = new Date(v);
+    return isNaN(d) ? null : d;
+  }
+
+  // If string that looks like /Date(....)/ or Date(yyyy,mm,dd)
+  if (typeof v === "string") {
+    const s = v.trim();
+
+    // Google-style Date(...) strings: try extracting numbers
+    if (s.startsWith("Date(") || s.startsWith("/Date(")) {
+      const nums = s.match(/-?\d+/g);
+      if (nums && nums.length) {
+        // If it's milliseconds since epoch
+        if (nums[0].length >= 10) {
+          const ms = parseInt(nums[0], 10);
+          const d = new Date(ms);
+          return isNaN(d) ? null : d;
+        }
+        // else try year/month/day
+        if (nums.length >= 3) {
+          const y = parseInt(nums[0],10);
+          const m = parseInt(nums[1],10);
+          const day = parseInt(nums[2],10);
+          const d = new Date(y, m, day);
+          return isNaN(d) ? null : d;
+        }
+      }
+    }
+
+    // If ISO-like (YYYY-MM-DD or YYYY/MM/DD etc.) or other recognizable string
+    const d = new Date(s);
+    if (!isNaN(d)) return d;
+
+    // If looks like an Excel serial (number as string), try numeric parse
+    const n = Number(s);
+    if (!isNaN(n)) {
+      // treat as JS timestamp if large (ms), else attempt Excel serial -> date
+      if (n > 1e11) {
+        const d2 = new Date(n);
+        if (!isNaN(d2)) return d2;
+      } else if (n > 0) {
+        // Excel serial number -> date (Excel epoch 1899-12-30)
+        const excelEpoch = new Date(Date.UTC(1899,11,30));
+        const ms = n * 24 * 60 * 60 * 1000;
+        const d3 = new Date(excelEpoch.getTime() + ms);
+        if (!isNaN(d3)) return d3;
+      }
+    }
+  }
+
+  return null;
 }
+
 function fmt(d){
   return d
     ? `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`
@@ -295,25 +351,32 @@ async function loadData(){
     const tbody=document.querySelector("#pmTable tbody");
     const today=new Date(); today.setHours(0,0,0,0);
 
-    tbody.innerHTML = ""; // clear
+    tbody.innerHTML = ""; // clear existing
 
     j.rows.forEach(row=>{
-      // same filtering: column 5 (index 4) should be "S"
+      // filtering: only rows with "S" in column index 4 and non-empty drive/subdrive
       if(String(row[4]||"").toUpperCase()!=="S") return;
       if(!row[1] || !row[2]) return;
 
-      const m=parseISO(row[12]);
-      const n=parseISO(row[13]);
-      const o=parseISO(row[14]);
-      const p=parseISO(row[15]);
-      const s=parseISO(row[18]);
-      const t=parseISO(row[19]);
+      const mRaw = row[12];
+      const nRaw = row[13];
+      const oRaw = row[14];
+      const pRaw = row[15];
+      const sRaw = row[18];
+      const tRaw = row[19];
 
-      const sOver=!s || s<today;
-      const tOver=!t || t<today;
+      const m = parseISO(mRaw);
+      const n = parseISO(nRaw);
+      const o = parseISO(oRaw);
+      const p = parseISO(pRaw);
+      const s = parseISO(sRaw);
+      const t = parseISO(tRaw);
 
-      const drive=row[1]||"";
-      const bandColor=getDriveColor(drive);
+      const sOver = !s || s < today;
+      const tOver = !t || t < today;
+
+      const drive = row[1] || "";
+      const bandColor = getDriveColor(drive);
 
       const tr=document.createElement("tr");
       tr.dataset.moduleOver = sOver ? "1" : "0";
@@ -324,15 +387,19 @@ async function loadData(){
         location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
       };
 
+      // fallback: if parseISO returned null but raw exists, display raw trimmed
+      const moduleDueText = s ? fmt(s) : (sRaw ? String(sRaw).trim() : "");
+      const motorDueText  = t ? fmt(t) : (tRaw ? String(tRaw).trim() : "");
+
       tr.innerHTML=`
         <td class="drive-band" style="background:${bandColor}">${drive}</td>
         <td>${row[2]||""}</td>
-        <td>${fmt(m)}</td>
-        <td>${fmt(n)}</td>
-        <td>${fmt(o)}</td>
-        <td>${fmt(p)}</td>
-        <td class="${sOver?'overdue-cell':'ok'}">${fmt(s)}</td>
-        <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
+        <td>${m ? fmt(m) : (mRaw ? String(mRaw).trim() : "")}</td>
+        <td>${n ? fmt(n) : (nRaw ? String(nRaw).trim() : "")}</td>
+        <td>${o ? fmt(o) : (oRaw ? String(oRaw).trim() : "")}</td>
+        <td>${p ? fmt(p) : (pRaw ? String(pRaw).trim() : "")}</td>
+        <td class="${sOver ? 'overdue-cell' : 'ok'}">${moduleDueText}</td>
+        <td class="${tOver ? 'overdue-cell' : 'ok'}">${motorDueText}</td>
       `;
 
       tbody.appendChild(tr);
