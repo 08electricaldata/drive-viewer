@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Transformer Master List — Mobile Tiles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#003f88" />
+<style>
+:root{
+  --primary:#003f88;
+  --bg:#f6f8ff;
+  --tile-bg:#ffffff;
+  --muted:#556;
+  --border:#e6edf6;
+  --tile-shadow: 0 4px 12px rgba(8,15,42,0.06);
+}
+
+/* Base */
+html,body{
+  margin:0; height:100%; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:#0b2540;
+  -webkit-text-size-adjust:100%;
+}
+.header-bar{ position:sticky; top:0; z-index:1000; background:var(--primary); color:white; display:flex; align-items:center; gap:8px; padding:8px; }
+.header-bar button{ background:white; color:var(--primary); border:none; border-radius:8px; padding:8px 10px; font-size:14px; cursor:pointer; min-width:40px; height:36px; display:inline-flex; align-items:center; justify-content:center; }
+.header-title{ flex:1; text-align:center; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:0.2px; }
+
+/* Container & controls */
+.container{ padding:8px; }
+.controls{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+.controls button{ padding:8px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; }
+.controls .filter{ flex:1; min-width:120px; }
+.controls .filter input{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
+
+/* status */
+.status{ font-size:12px; color:#223; padding:6px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
+
+/* Tiles: single column stacked for mobile */
+.tile-grid{ display:grid; grid-template-columns: 1fr; gap:6px; align-items:start; }
+
+/* Compact tile */
+.tile{
+  background: linear-gradient(180deg,var(--tile-bg),#fbfdff);
+  border-radius:8px;
+  padding:5px;
+  box-shadow: var(--tile-shadow);
+  border:1px solid rgba(8,15,42,0.04);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  min-height:44px;
+  display:flex; flex-direction:column; gap:3px; cursor:pointer;
+}
+.tile:active, .tile:hover{ transform: translateY(-3px); box-shadow: 0 10px 18px rgba(8,15,42,0.08); }
+
+/* rows inside tile */
+.tile-row{ display:flex; justify-content:space-between; gap:6px; align-items:center; padding:0; line-height:1; min-height:14px; }
+.token-left, .token-right{ font-size:11px; font-weight:700; color:#163047; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:48%; }
+.token-right{ text-align:right; }
+
+/* small badge style */
+.badge{ display:inline-block; padding:3px 6px; border-radius:8px; font-weight:700; font-size:11px; white-space:nowrap; }
+.pos{ background:#e8f5e9; color:#1b5e20; }
+.neg{ background:#fff0f0; color:#a01f1f; }
+.eq{ background:#fff8e1; color:#e65100; }
+
+/* fallback table for large screens */
+.table-wrapper{ display:none; margin-top:6px; }
+@media (min-width:980px){ .table-wrapper{ display:block; } .tile-grid{ display:none; } }
+
+/* empty note */
+.empty-note{ padding:8px; color:#445; font-size:13px; border-radius:8px; background:#fff; border:1px solid #eef3ff; margin-top:8px; }
+
+/* very small screens */
+@media (max-width:360px){
+  .tile{ padding:4px; min-height:40px; }
+  .token-left, .token-right{ font-size:10px; }
+  .header-title{ font-size:14px; }
+  .controls button{ padding:6px 8px; font-size:13px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goBack()">⬅ Back</button>
+  <button onclick="openPM()">⚡ PM Status</button>
+  <button onclick="openOil()">🛢️ Oil Status</button>
+  <div class="header-title">TRANSFORMER MASTER LIST</div>
+</div>
+
+<div class="container">
+  <div id="status" class="status">Loading…</div>
+
+  <div class="controls">
+    <button onclick="exportCSV()">📄 Export CSV</button>
+    <button onclick="window.print()">🖨 Print</button>
+    <div class="filter"><input id="universalFilter" placeholder="🔍 Search tiles" /></div>
+  </div>
+
+  <div id="tileGrid" class="tile-grid" aria-live="polite"></div>
+
+  <div id="emptyNote" class="empty-note" style="display:none">No data available</div>
+
+  <div class="table-wrapper" id="tableWrapper" aria-hidden="true">
+    <table id="xfmrTable"><thead><tr id="headerRow"></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<script>
+/* Transformer tiles:
+ - Skip rows where column 0 is empty or not numeric (section headings)
+ - Show MAIN/EQUIP name in top-left if header exists; fall back to Tag/Name (col 1)
+ - Top-right shows model/id (col 2 or model header)
+ - Next three rows show paired tokens: picks are KV, RATING/CAPACITY, MAKE, TYPE, OIL, SERIAL, etc.
+ - Search, export, print and navigation preserved
+*/
+
+// JSON endpoint
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformers.json";
+
+const tileGrid = document.getElementById('tileGrid');
+const statusEl = document.getElementById('status');
+const universalFilter = document.getElementById('universalFilter');
+const emptyNote = document.getElementById('emptyNote');
+
+// navigation functions
+function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
+function goBack(){ history.back(); }
+function openPM(){ location.href = "https://08electricaldata.github.io/drive-viewer/trafopm.html"; }
+function openOil(){ location.href = "https://08electricaldata.github.io/drive-viewer/transformer-oil-summary.html"; }
+
+// helpers
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function isNumericString(x){ if(x === null || x === undefined) return false; const t = String(x).trim(); if(t === '') return false; return !isNaN(Number(t)); }
+
+// find header index by keywords
+function findHeaderIndex(headers, keywords){
+  if(!Array.isArray(headers)) return -1;
+  const low = headers.map(h => (h ?? '').toString().toLowerCase());
+  for(const kw of keywords){
+    for(let i=0;i<low.length;i++){
+      if(low[i].includes(kw)) return i;
+    }
+  }
+  return -1;
+}
+
+// fallback sample (so page never empty during testing)
+const fallback = {
+  headers: ["SNo","MAIN_EQUIP","TAG","MODEL","KV","RATING","MAKE","TYPE","OIL","SERIAL"],
+  rows: [
+    [1,"TX-A","T-001","M-100","11","1000","ABB","ONAN","Mineral","S123"],
+    [2,"TX-B","T-002","M-200","33","2000","Siemens","ONAF","Mineral","S124"],
+    ["","Section: Low Voltage","","","","","","","",""], // heading (skipped)
+    [3,"TX-C","T-003","M-300","11","500","GE","ONAN","Synthetic","S125"]
+  ]
+};
+
+async function loadAndRender(){
+  statusEl.style.display = '';
+  statusEl.textContent = 'Loading…';
+  let data = null;
+
+  // try cached
+  try {
+    const c = localStorage.getItem('xfmrJSON');
+    if(c) data = JSON.parse(c);
+  } catch(e){ /* ignore */ }
+
+  // try fetch
+  try {
+    const res = await fetch(JSON_URL, { cache: 'no-store' });
+    if(res && res.ok){
+      const js = await res.json();
+      data = js;
+      try { localStorage.setItem('xfmrJSON', JSON.stringify(js)); } catch(e){}
+      statusEl.textContent = 'Loaded';
+    } else {
+      statusEl.textContent = 'Using cache/fallback';
+    }
+  } catch(err){
+    console.warn('fetch failed', err);
+    statusEl.textContent = 'Offline / using cache';
+  }
+
+  if(!data) data = fallback;
+
+  // Normalize headers and rows
+  let headers = Array.isArray(data.headers) ? data.headers.slice() : (data.headers ? Object.values(data.headers) : []);
+  const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
+
+  if(headers.length === 0 && rows.length > 0){
+    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
+    headers = Array.from({length:max}, (_,i) => 'Col' + (i+1));
+  }
+
+  // Find Main/Equip name header (preferred), fallback to Tag/Name (col 2)
+  const idxMain = findHeaderIndex(headers, ['main','equip','equipment','equip name','main_equip','main drive']);
+  const idxTag = findHeaderIndex(headers, ['tag','name','id','asset']) !== -1 ? findHeaderIndex(headers, ['tag','name','id','asset']) : 2;
+  const idxModel = findHeaderIndex(headers, ['model','modelno','type','code']) !== -1 ? findHeaderIndex(headers, ['model','modelno','type','code']) : 3;
+
+  // tokens to show next (pick common transformer fields)
+  const idxKV = findHeaderIndex(headers, ['kv','k.v','voltage']);
+  const idxRating = findHeaderIndex(headers, ['rating','kva','capacity','rating']);
+  const idxMake = findHeaderIndex(headers, ['make','manufacturer','mfr']);
+  const idxType = findHeaderIndex(headers, ['type']);
+  const idxOil = findHeaderIndex(headers, ['oil','insulant']);
+  const idxSerial = findHeaderIndex(headers, ['serial','sno','srno','slno']);
+
+  const picks = [];
+  [idxKV, idxRating, idxMake, idxType, idxOil, idxSerial].forEach(i => { if(i !== -1 && !picks.includes(i)) picks.push(i); });
+  // fill with other headers if needed
+  for(let i=0;i<headers.length && picks.length < 6; i++){
+    if(!picks.includes(i)) picks.push(i);
+  }
+
+  // Render tiles (skip rows where column 0 is empty or not numeric)
+  tileGrid.innerHTML = '';
+  let shown = false;
+  for(const r of rows){
+    const row = Array.isArray(r) ? r : [];
+    if(!isNumericString(row[0] ?? '')) continue; // skip headings
+
+    // Left title: main equip or tag
+    const titleLeft = (idxMain !== -1 && row[idxMain] !== undefined && String(row[idxMain]).trim() !== '') ? row[idxMain] : (row[idxTag] ?? row[1] ?? '');
+    const titleRight = row[idxModel] ?? row[3] ?? '';
+
+    // build tokens up to 6 (3 rows of pairs)
+    const tokens = picks.slice(0,6).map(i => {
+      if(i === -1) return '';
+      const hdr = headers[i] ?? ('Col' + (i+1));
+      const val = row[i] ?? '';
+      if(val === null || val === undefined || String(val).trim() === '') return '';
+      const short = String(hdr).split(/\s|[-_]/)[0].toUpperCase();
+      return `${short}-${val}`;
+    });
+    while(tokens.length < 6) tokens.push('');
+
+    // create tile
+    const tile = document.createElement('div'); tile.className = 'tile';
+    tile.title = row.map(x => x ?? '').join(' | ');
+
+    // row 1: titleLeft and titleRight
+    const r1 = document.createElement('div'); r1.className = 'tile-row';
+    const l1 = document.createElement('div'); l1.className = 'token-left'; l1.textContent = String(titleLeft);
+    const rr1 = document.createElement('div'); rr1.className = 'token-right'; rr1.textContent = String(titleRight);
+    r1.appendChild(l1); r1.appendChild(rr1);
+    tile.appendChild(r1);
+
+    // rows 2-4: token pairs
+    for(let t=0; t<3; t++){
+      const rdiv = document.createElement('div'); rdiv.className = 'tile-row';
+      const left = document.createElement('div'); left.className = 'token-left'; left.textContent = tokens[2*t] || '';
+      const right = document.createElement('div'); right.className = 'token-right'; right.textContent = tokens[2*t + 1] || '';
+      rdiv.appendChild(left); rdiv.appendChild(right);
+      tile.appendChild(rdiv);
+    }
+
+    // click -> detail page (use transformer no at r[2] if available)
+    tile.addEventListener('click', () => {
+      const transformerNo = row[2] ?? row[1] ?? '';
+      if(!transformerNo) return;
+      location.href = 'https://08electricaldata.github.io/drive-viewer/history.html?id=' + encodeURIComponent('Transformer-' + transformerNo);
+    });
+
+    tileGrid.appendChild(tile);
+    shown = true;
+  }
+
+  emptyNote.style.display = shown ? 'none' : 'block';
+  statusEl.style.display = 'none';
+
+  // search filter
+  universalFilter.addEventListener('input', () => {
+    const q = universalFilter.value.trim().toLowerCase();
+    document.querySelectorAll('.tile').forEach(tile => {
+      tile.style.display = tile.innerText.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+// CSV export of visible tiles
+function exportCSV(){
+  const tiles = Array.from(document.querySelectorAll('.tile')).filter(t => getComputedStyle(t).display !== 'none');
+  if(tiles.length === 0){ alert('No data to export'); return; }
+  const rows = tiles.map(tile => {
+    const parts = Array.from(tile.querySelectorAll('.tile-row')).map(r => r.innerText.replace(/"/g,'""'));
+    return '"' + parts.join('","') + '"';
+  });
+  const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'transformer_tiles.csv'; a.click();
+}
+
+// Initialize
+loadAndRender();
+</script>
+</body>
+</html>
