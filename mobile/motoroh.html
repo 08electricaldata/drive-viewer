@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MOTOR O/H DUE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+  font-size: 14px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: #003f88;
+  color: white;
+  padding: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.header-left {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.header-btn {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.header-btn:active { opacity: 0.85; }
+
+.header-center {
+  text-align: center;
+  flex: 1;
+}
+
+.header-center h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.header-center p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+/* ===== CONTAINER ===== */
+.container { padding: 8px; }
+
+/* ===== SUMMARY ===== */
+.summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.summary .card {
+  background: white;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.summary .card h3 {
+  margin: 0;
+  color: #003f88;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.summary .card p {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+
+.overdue-count { color: #d32f2f; }
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.controls input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.controls button {
+  padding: 8px 10px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.controls button:active { opacity: 0.85; }
+
+/* ===== TABLE ===== */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 12px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 6px 5px;
+  text-align: left;
+}
+
+th {
+  background: #003f88;
+  color: white;
+  font-weight: 600;
+  font-size: 11px;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+/* ===== COLUMN WIDTHS ===== */
+th:nth-child(1), td:nth-child(1) { width: 70px; }
+th:nth-child(2), td:nth-child(2) { width: 70px; }
+th:nth-child(3), td:nth-child(3) { width: 50px; }
+th:nth-child(4), td:nth-child(4) { width: 50px; }
+th:nth-child(5), td:nth-child(5) { width: 80px; }
+th:nth-child(6), td:nth-child(6) { width: 80px; }
+th:nth-child(7), td:nth-child(7) { width: 120px; }
+
+/* ===== HIGHLIGHTS ===== */
+.overdue-cell {
+  background: #d32f2f;
+  color: white;
+  font-weight: 700;
+}
+
+.section-row {
+  background: #e8f0ff;
+  font-weight: 600;
+  color: #003f88;
+}
+
+/* ===== UX ===== */
+tbody tr {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+tbody tr:hover:not(.section-row) {
+  background: #f5f9ff;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .header-bar {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .header-left {
+    gap: 4px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-btn {
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  .header-center h1 {
+    font-size: 15px;
+  }
+
+  .header-center p {
+    font-size: 10px;
+  }
+
+  .container {
+    padding: 6px;
+  }
+
+  .summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .summary .card {
+    padding: 8px;
+  }
+
+  .summary .card h3 {
+    font-size: 11px;
+  }
+
+  .summary .card p {
+    font-size: 18px;
+  }
+
+  .controls {
+    gap: 6px;
+  }
+
+  .controls input {
+    padding: 7px;
+    font-size: 12px;
+    min-width: 100px;
+  }
+
+  .controls button {
+    padding: 7px 8px;
+    font-size: 11px;
+  }
+
+  table {
+    font-size: 11px;
+  }
+
+  th, td {
+    padding: 5px 4px;
+  }
+
+  th {
+    font-size: 10px;
+  }
+
+  th:nth-child(1), td:nth-child(1) { width: 65px; }
+  th:nth-child(2), td:nth-child(2) { width: 65px; }
+  th:nth-child(3), td:nth-child(3) { width: 45px; }
+  th:nth-child(4), td:nth-child(4) { width: 45px; }
+  th:nth-child(5), td:nth-child(5) { width: 75px; }
+  th:nth-child(6), td:nth-child(6) { width: 75px; }
+  th:nth-child(7), td:nth-child(7) { width: 110px; }
+}
+
+@media print {
+  .controls, .header-left { display: none; }
+  .header { background: #003f88; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-bar">
+    <div class="header-left">
+      <button class="header-btn" onclick="goHome()" title="Home">🏠 Home</button>
+      <button class="header-btn" onclick="goBack()" title="Back">⬅ Back</button>
+      <button class="header-btn" onclick="openMotorList()">⚙️ Motor List</button>
+      <button class="header-btn" onclick="openMotorPM()">🧾 Motor PM</button>
+    </div>
+
+    <div class="header-center">
+      <h1>MOTOR O/H DUE</h1>
+      <p>By Rakesh Chandra Sethy</p>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="summary">
+  <div class="card">
+    <h3>Total Motors</h3>
+    <p id="totalCount">0</p>
+  </div>
+  <div class="card">
+    <h3>Overdue 🔔</h3>
+    <p id="overdueCount" class="overdue-count">0</p>
+  </div>
+</div>
+
+<div class="controls">
+  <input id="search" placeholder="🔍 Search Battery or EQPT">
+  <button onclick="exportExcel()">📥 CSV</button>
+  <button onclick="window.print()">🖨️ Print</button>
+</div>
+
+<div class="table-wrapper">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>BATTERY</th>
+        <th>EQPT NO</th>
+        <th>KW</th>
+        <th>FRQ</th>
+        <th>OH DATE</th>
+        <th>NEXT DUE</th>
+        <th>REFERENCE</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+const SHEET =
+"https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
+
+/* NAV */
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+function openMotorList(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html";
+}
+function openMotorPM(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motorpm.html";
+}
+
+/* DATE */
+function parseDate(v) {
+  if (!v) return null;
+  if (typeof v === "string" && v.startsWith("Date(")) {
+    const p = v.match(/\d+/g);
+    return new Date(p[0], p[1], p[2]);
+  }
+  return null;
+}
+
+function fmt(d) {
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+/* LOAD */
+async function loadData() {
+  try {
+    const r = await fetch(SHEET);
+    const t = await r.text();
+    const j = JSON.parse(t.substring(47, t.length - 2));
+
+    const tbody = document.querySelector("#dataTable tbody");
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    let total = 0, overdue = 0;
+
+    j.table.rows.forEach(r => {
+      const c = r.c || [];
+      
+      // Skip if BATTERY (c[1]) and EQPT NO (c[2]) are both empty
+      if (!c[1]?.v && !c[2]?.v) return;
+
+      const tr = document.createElement("tr");
+
+      // Check if this is a section header (no RCS no - column 0)
+      if (!c[0]?.v) {
+        tr.classList.add("section-row");
+      } else {
+        total++;
+      }
+
+      // Parse dates
+      const oh = parseDate(c[8]?.v);
+      const due = parseDate(c[9]?.v);
+      const isOverdue = due && due < today;
+      
+      if (isOverdue) overdue++;
+
+      // Click handler to open history
+      tr.onclick = () => {
+        if (!c[0]?.v) return; // Don't navigate on section headers
+        const battery = c[1]?.v || '';
+        const eqptNo = c[2]?.v || '';
+        if (!battery || !eqptNo) return;
+        const id = `${battery}-${eqptNo}`;
+        window.location.href =
+          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+          encodeURIComponent(id);
+      };
+
+      // Build row without RCS (col 0) and EQPT NAME (col 3)
+      tr.innerHTML = `
+        <td>${c[1]?.v || ""}</td>
+        <td>${c[2]?.v || ""}</td>
+        <td>${c[4]?.v || ""}</td>
+        <td>${c[5]?.v || ""}</td>
+        <td>${oh ? fmt(oh) : ""}</td>
+        <td class="${isOverdue ? "overdue-cell" : ""}">
+          ${due ? fmt(due) : ""}
+        </td>
+        <td>${c[11]?.v || ""}</td>
+      `;
+      
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("totalCount").innerText = total;
+    document.getElementById("overdueCount").innerText = overdue;
+
+    // Search filter
+    document.getElementById("search").onkeyup = function () {
+      const q = this.value.toLowerCase();
+      document.querySelectorAll("#dataTable tbody tr").forEach(tr => {
+        const battery = tr.children[0].innerText.toLowerCase();
+        const eqpt = tr.children[1].innerText.toLowerCase();
+        tr.style.display = battery.includes(q) || eqpt.includes(q) ? "" : "none";
+      });
+    };
+
+  } catch(err) {
+    console.error("Error loading data:", err);
+    document.querySelector("#dataTable tbody").innerHTML = 
+      '<tr><td colspan="7" style="text-align:center;color:#d32f2f;">Error loading data</td></tr>';
+  }
+}
+
+/* EXPORT */
+function exportExcel() {
+  let csv = [];
+  document.querySelectorAll("#dataTable tr").forEach(r => {
+    csv.push([...r.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv.join("\n")], {type: "text/csv"}));
+  a.download = "motor_oh_due.csv";
+  a.click();
+}
+
+loadData();
+</script>
+
+</body>
+</html>
