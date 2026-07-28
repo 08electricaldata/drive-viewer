@@ -2,280 +2,396 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Motor Master List - Mobile</title>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+<title>Motor Master List</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#003f88" />
 <style>
+/* Mobile-first app styling */
 :root{
-  --primary:#003f88;
-  --bg:#f2f6ff;
-  --card:#ffffff;
-  --muted:#666;
-  --accent:#eaf1ff;
+  --primary: #003f88;
+  --bg: #f2f6ff;
+  --card: #ffffff;
+  --muted: #666;
+  --accent: #eaf1ff;
+  --border: #e6edf6;
 }
 
-/* Reset / base */
-html,body{margin:0;height:100%;background:var(--bg);font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;}
-.app-shell{max-width:420px;margin:0 auto;padding:8px;box-sizing:border-box;}
+html,body{
+  margin:0;
+  height:100%;
+  background:var(--bg);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-text-size-adjust:100%;
+  -webkit-font-smoothing:antialiased;
+  color:#0b2540;
+  overflow-x:hidden;
+}
 
-/* Header bar */
+/* Header */
 .header-bar{
-  position:sticky;top:0;z-index:1000;display:flex;align-items:center;gap:8px;padding:8px;background:var(--primary);color:#fff;border-radius:8px;
+  position:sticky;
+  top:0;
+  z-index:1000;
+  background:var(--primary);
+  color:white;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px;
 }
 .header-bar button{
-  background:#fff;color:var(--primary);border:none;border-radius:8px;padding:8px 10px;font-size:15px;cursor:pointer;min-width:40px;height:38px;
-  display:inline-flex;align-items:center;justify-content:center;
+  background:white;
+  color:var(--primary);
+  border:none;
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:15px;
+  cursor:pointer;
+  min-width:44px;
+  height:40px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
 }
-.header-title{flex:1;text-align:center;font-weight:700;font-size:16px;letter-spacing:0.3px;text-transform:uppercase;}
+.header-title{
+  flex:1;
+  text-align:center;
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:0.3px;
+  text-transform:uppercase;
+}
 
-/* Container / Card */
-.container{padding:8px;}
-.card{background:var(--card);border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.06);padding:8px;}
+/* Content */
+.container{ padding:10px; }
+.card{
+  background:var(--card);
+  border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  padding:10px;
+}
 
 /* Controls */
-.controls{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-.controls button{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;}
-
-/* Table - mobile friendly */
-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;word-break:break-word;}
-th, td{
-  border:1px solid #e6edf7;padding:6px 8px;text-align:left;vertical-align:middle;
-  white-space:normal;overflow-wrap:break-word;word-break:break-word;hyphens:auto;font-size:13px;
+.controls{ display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.controls button{
+  padding:8px 12px;
+  background:var(--primary);
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:14px;
 }
+
+/* Table (compact and wrapping) */
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;           /* smaller font for mobile */
+  table-layout:auto;        /* let browser size columns by content */
+  word-break:break-word;
+}
+th, td{
+  border:1px solid var(--border);
+  padding:6px 8px;
+  text-align:left;
+  vertical-align:middle;
+  white-space:normal;        /* allow wrapping */
+  overflow-wrap:break-word;
+  word-break:break-word;
+  hyphens:auto;
+  font-size:12px;
+}
+
+/* sticky header rows (if present) */
 thead tr:nth-child(1) th{
-  position:sticky;top:56px;background:var(--primary);color:#fff;z-index:20;font-size:12px;padding:8px;
+  position:sticky;
+  top:56px;
+  background:var(--primary);
+  color:white;
+  z-index:20;
+  padding:8px;
+  font-size:12px;
 }
 thead tr:nth-child(2) th{
-  position:sticky;top:92px;background:var(--accent);z-index:15;font-size:12px;padding:6px;
+  position:sticky;
+  top:92px;
+  background:var(--accent);
+  z-index:15;
+  padding:6px;
+  font-size:12px;
 }
 
-/* Section rows */
-.section-row{background:#dbe9ff;font-weight:600;}
-tbody tr:hover{background:#f0f6ff;cursor:pointer;}
+/* small status */
+.status{ font-size:12px; color:#223; padding:8px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
 
-/* Filter input */
-.filter-row input{width:100%;padding:6px;font-size:12px;box-sizing:border-box;border-radius:6px;border:1px solid #dbe7ff;}
+/* highlight section row */
+.section-row{ background:#dbe9ff !important; font-weight:600; }
 
-/* Cell value wrapper */
-.cell-value{display:block;white-space:normal;overflow-wrap:break-word;word-break:break-word;}
-/* Right align numeric/achieved column */
-td.num .cell-value{text-align:right;}
+/* compact hover */
+tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
 
-/* Hide columns flagged with data-hide (safety) */
-td[data-hide="true"], th[data-hide="true"]{display:none;}
+/* filter inputs */
+.filter-row input{ width:100%; padding:6px; font-size:12px; box-sizing:border-box; }
 
-/* Very small devices adjustments */
-@media (max-width:380px){
-  .header-title{font-size:15px;}
-  .header-bar button{padding:6px;height:36px;font-size:14px;}
-  th, td{padding:5px;font-size:12px;}
-  thead tr:nth-child(1) th{top:48px;}
-  thead tr:nth-child(2) th{top:84px;}
-}
+/* cell value wrapper (control wrapping/alignment) */
+.cell-value{ display:block; white-space:normal; overflow-wrap:break-word; word-break:break-word; }
 
-/* Print: hide controls and sticky header extras */
-@media print{
-  .header-bar button, .controls, .filter-row { display:none; }
+/* numeric alignment (right) */
+td.num .cell-value{ text-align:right; }
+
+/* hide specific columns by data-hide attribute (CSS fallback) */
+td[data-hide="true"], th[data-hide="true"]{ display:none; }
+
+/* responsive tweaks */
+@media (max-width:420px){
+  .header-title{ font-size:16px; }
+  .header-bar{ padding:8px; }
+  table{ font-size:12px; }
+  th, td{ padding:6px; }
+  thead tr:nth-child(1) th{ top:48px; }
+  thead tr:nth-child(2) th{ top:84px; }
 }
 </style>
 </head>
 <body>
 
-<div class="app-shell">
-  <div class="header-bar" role="banner">
-    <button onclick="goHome()" aria-label="Home">🏠 Home</button>
-    <button onclick="goBack()" aria-label="Back">⬅ Back</button>
-    <button onclick="openMotorOH()" aria-label="Motor OH">🛠️ Motor O/H</button>
-    <button onclick="openMotorPM()" aria-label="Motor PM">🧾 Motor PM</button>
-    <div class="header-title">MOTOR MASTER LIST</div>
-  </div>
+<div class="header-bar" role="banner">
+  <button onclick="goHome()" aria-label="Home">🏠 Home</button>
+  <button onclick="goBack()" aria-label="Back">⬅ Back</button>
+  <button onclick="openMotorOH()" aria-label="Motor O/H">🛠️ Motor O/H</button>
+  <button onclick="openMotorPM()" aria-label="Motor PM">🧾 Motor PM</button>
+  <div class="header-title">MOTOR MASTER LIST</div>
+</div>
 
-  <div class="container">
-    <div class="card">
-      <div class="controls" role="toolbar" aria-label="table actions">
-        <button onclick="exportExcel()">📄 Export Excel</button>
-        <button onclick="window.print()">🖨 Export PDF</button>
-      </div>
+<div class="container">
+  <div class="card">
+    <div id="status" class="status" aria-live="polite">Loading…</div>
 
-      <table id="motorTable" aria-label="Motor Master List">
-        <thead>
-          <tr id="headerRow"></tr>
-          <tr class="filter-row" id="filterRow"></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div class="controls">
+      <button onclick="exportExcel()">📄 Export Excel</button>
+      <button onclick="window.print()">🖨 Export PDF</button>
     </div>
+
+    <table id="motorTable" aria-label="Motor Master List">
+      <thead>
+        <tr id="headerRow"></tr>
+        <tr class="filter-row" id="filterRow"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
   </div>
 </div>
 
 <script>
-/* Mobile-optimized table renderer with wrapping, title tooltips, hiding 4th and last columns,
-   and numeric right-align for the 'Achieved' (index 4) column. */
+/* Full mobile-friendly HTML + JS:
+   - hides 4th column (index 3) and last column
+   - allows wrapping of cell text and shows full text in title tooltip
+   - right-aligns numeric-only cells
+   - navigation links updated to mobile pages
+   - caches JSON in localStorage for faster load
+*/
 
-/* Source JSON (unchanged) */
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
+const statusEl = document.getElementById('status');
+const headerRowEl = document.getElementById('headerRow');
+const filterRowEl = document.getElementById('filterRow');
+const tbodyEl = document.querySelector('#motorTable tbody');
 
-/* Mobile-specific target pages */
 function goHome(){ window.location.href = "https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
 function openMotorOH(){ window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motoroh.html"; }
 function openMotorPM(){ window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html"; }
 
-/* Helpers */
+/* safe HTML escape */
 function escapeHtml(s){
-  if(s === null || s === undefined) return "";
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-/* Fetch with timeout to avoid long waits on mobile */
-function fetchWithTimeout(url, ms = 9000){
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(()=>reject(new Error("Fetch timeout")), ms);
-    fetch(url).then(res => { clearTimeout(t); resolve(res); }).catch(err => { clearTimeout(t); reject(err); });
-  });
+/* Detect if a value is purely numeric (integer/float) */
+function isNumericValue(v){
+  if (v === null || v === undefined) return false;
+  // trim and check if it contains only digits, optional +/- and decimal
+  const s = String(v).trim();
+  if(s === '') return false;
+  // allow numeric with commas (1,000) - remove commas for test
+  const clean = s.replace(/,/g,'');
+  return /^-?\d+(\.\d+)?$/.test(clean);
 }
 
-/* Main loader */
+/* main loader */
 async function loadMotors(){
-  const headerRow = document.getElementById("headerRow");
-  const filterRow = document.getElementById("filterRow");
-  const tbody = document.querySelector("#motorTable tbody");
-  headerRow.innerHTML = ""; filterRow.innerHTML = ""; tbody.innerHTML = "";
-
+  statusEl.textContent = 'Loading data…';
   let data = null;
+
   // Try local cache first
   try {
-    const cache = localStorage.getItem("motorJSON");
-    if(cache){
-      data = JSON.parse(cache);
-    }
-  } catch(e){ /* ignore parse errors */ }
+    const cache = localStorage.getItem('motorJSON');
+    if (cache) data = JSON.parse(cache);
+  } catch(e){
+    console.warn('Invalid cache ignored', e);
+  }
 
-  // Attempt remote fetch (non-blocking if cache exists)
+  // Fetch remote data; but if fetch fails we'll still render cache or fallback
   try {
-    const res = await fetchWithTimeout(JSON_URL, 9000);
-    if(!res.ok) throw new Error("HTTP " + res.status);
-    const json = await res.json();
-    data = json;
-    try { localStorage.setItem("motorJSON", JSON.stringify(json)); } catch(e){ /* storage could fail on private mode */ }
-  } catch(fetchErr){
-    console.warn("Fetch failed, will use cache or fallback if available:", fetchErr);
-    if(!data){
-      // fallback minimal data to ensure UI shows
-      data = {
-        headers: ["S.No","Name","Tag","KW","Achieved","Target","Rating","Frame","Voltage"],
-        rows: [
-          [1,"Pump Motor A","P-01","90","80","100","1.1","B3","415V"],
-          [2,"Pump Motor B","P-02","90","60","60","1.1","B3","415V"],
-          [3,"Panel Section","","","","","","",""]
-        ]
-      };
+    const res = await fetch(JSON_URL, {cache: 'no-store'});
+    if (res && res.ok){
+      const json = await res.json();
+      data = json;
+      try { localStorage.setItem('motorJSON', JSON.stringify(json)); } catch(e){ /* ignore storage errors */ }
+      statusEl.textContent = 'Loaded from remote';
+    } else {
+      statusEl.textContent = 'Using cached data';
     }
+  } catch(fetchErr){
+    console.warn('Fetch failed, using cache/fallback', fetchErr);
+    statusEl.textContent = 'Offline or remote unavailable — using cached data (if any)';
   }
 
-  // Normalize headers & rows
-  let headers = Array.isArray(data.headers) ? data.headers : (data.headers ? Object.values(data.headers) : []);
-  let rows = Array.isArray(data.rows) ? data.rows : [];
+  // Fallback minimal structure if nothing available
+  if(!data) data = { headers: [], rows: [] };
 
-  // If headers empty but rows present, infer generic headers
-  if(!headers || headers.length === 0){
-    const maxCols = rows.reduce((m,r)=> Math.max(m, Array.isArray(r)?r.length:0), 0);
-    headers = Array.from({length: maxCols}, (_,i)=>"Col "+(i+1));
+  // Normalize headers and rows
+  let headers = Array.isArray(data.headers) ? data.headers.slice() : (data.headers ? Object.values(data.headers) : []);
+  const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
+
+  // If headers empty, infer from rows
+  if (headers.length === 0 && rows.length > 0){
+    const maxCols = rows.reduce((m,r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+    headers = Array.from({length:maxCols}, (_,i)=> 'Col ' + (i+1));
   }
 
-  // Decide which columns to hide: 4th column (index 3) and last column (index headers.length-1)
+  // Determine columns to skip:
+  // - 4th column (index 3)
+  // - last column (index headers.length - 1)
   const skipSet = new Set();
-  if(headers.length > 3) skipSet.add(3);                     // hide 4th
-  if(headers.length > 0) skipSet.add(headers.length - 1);    // hide last
+  if (headers.length > 3) skipSet.add(3);
+  if (headers.length > 0) skipSet.add(headers.length - 1);
 
-  // Visible header indices
-  const visibleHeaderIndices = headers.map((_,i)=>i).filter(i=>!skipSet.has(i));
+  // Build visible index list (order preserved)
+  const visibleIndices = headers.map((_,i) => i).filter(i => !skipSet.has(i));
 
   // Render header row
-  visibleHeaderIndices.forEach(i=>{
-    const th = document.createElement("th");
-    th.textContent = headers[i] ?? "";
-    // mark the th with data-hide if somehow needed by CSS
-    if(skipSet.has(i)) th.setAttribute('data-hide','true');
-    headerRow.appendChild(th);
+  headerRowEl.innerHTML = '';
+  filterRowEl.innerHTML = '';
 
-    const fh = document.createElement("th");
-    fh.innerHTML = "<input placeholder='🔍' aria-label='Filter " + escapeHtml(headers[i] ?? "") + "'>";
-    filterRow.appendChild(fh);
+  visibleIndices.forEach(i => {
+    const th = document.createElement('th');
+    th.textContent = headers[i] ?? '';
+    // mark hidden columns for CSS fallback (not necessary here)
+    if (skipSet.has(i)) th.setAttribute('data-hide','true');
+    headerRowEl.appendChild(th);
+
+    const fh = document.createElement('th');
+    fh.innerHTML = '<input placeholder="🔍" aria-label="Filter ' + escapeHtml(headers[i] ?? '') + '">';
+    filterRowEl.appendChild(fh);
   });
 
-  // Build body rows
-  rows.forEach(r=>{
+  // Render body
+  tbodyEl.innerHTML = '';
+  rows.forEach(r => {
     const row = Array.isArray(r) ? r : [];
-    // preserve original behavior: skip row if r[1] falsy
-    if(!row[1]) return;
+    // keep same rule as original code: if r[1] falsy skip
+    if (!row[1]) return;
 
-    const tr = document.createElement("tr");
-    if(!row[0]) tr.classList.add("section-row");
+    const tr = document.createElement('tr');
+    if (!row[0]) tr.classList.add('section-row');
 
-    visibleHeaderIndices.forEach((colIndex)=>{
-      const td = document.createElement("td");
-      const valRaw = row[colIndex];
-      const text = valRaw === null || valRaw === undefined ? "" : String(valRaw);
+    visibleIndices.forEach(i => {
+      const td = document.createElement('td');
+      const raw = row[i] ?? '';
+      const text = (raw === null || raw === undefined) ? '' : String(raw);
 
-      // If this is the Achieved column (original index 4), mark numeric class for right-align
-      if(colIndex === 4) td.classList.add("num");
-
-      // Set data-label for accessibility / CSS (use header label)
-      td.setAttribute('data-label', headers[colIndex] ?? "");
-
-      // Title attribute so long-press shows full text
+      // Provide full text via title for long-press tooltip
       td.title = text;
 
-      // Insert wrapped content in .cell-value
-      const span = document.createElement("span");
-      span.className = "cell-value";
-      span.innerText = text;
+      // Wrap visible content in span.cell-value
+      const span = document.createElement('span');
+      span.className = 'cell-value';
+      span.innerHTML = escapeHtml(text);
       td.appendChild(span);
+
+      // If content is numeric, right-align
+      if (isNumericValue(text)) td.classList.add('num');
+
+      // Mark data-hide if this index is hidden (CSS fallback)
+      if (skipSet.has(i)) td.setAttribute('data-hide','true');
 
       tr.appendChild(td);
     });
 
-    // row click navigates to drive-viewer same as original code
-    tr.onclick = ()=>{
-      try{
-        const id = (row[1] ?? "") + "-" + (row[2] ?? "");
-        if(id && id !== "-") {
-          location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
-        }
-      }catch(e){ console.warn(e); }
-    };
+    // Click navigates to drive-viewer with id composed of r[1] and r[2]
+    tr.addEventListener('click', () => {
+      const id = (row[1] ?? '') + '-' + (row[2] ?? '');
+      // if there is no meaningful id, don't navigate
+      if ((row[1] ?? '') === '') return;
+      window.location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
+    });
 
-    tbody.appendChild(tr);
+    tbodyEl.appendChild(tr);
   });
 
-  // Filters setup (one input per visible header)
-  const inputs = Array.from(document.querySelectorAll(".filter-row input"));
-  inputs.forEach((input, idx)=>{
-    input.addEventListener('input', ()=>{
+  // Setup filters (simple text contains filter per column)
+  const inputs = Array.from(document.querySelectorAll('.filter-row input'));
+  inputs.forEach((input, idx) => {
+    input.addEventListener('input', () => {
       const q = input.value.trim().toLowerCase();
-      document.querySelectorAll("#motorTable tbody tr").forEach(tr=>{
-        // keep section rows visible always (so headings remain)
-        if(tr.classList.contains('section-row')){ tr.style.display = ""; return; }
+      document.querySelectorAll('#motorTable tbody tr').forEach(tr => {
+        // For section rows without standard cells, show them if any visible child exists.
         const cell = tr.children[idx];
-        if(!cell){ tr.style.display = ""; return; }
-        tr.style.display = cell.innerText.toLowerCase().includes(q) ? "" : "none";
+        if (!cell) {
+          // keep section rows visible (they are headings)
+          tr.style.display = '';
+          return;
+        }
+        tr.style.display = cell.innerText.toLowerCase().includes(q) ? '' : 'none';
       });
     });
   });
 
-  // If no rows present show message
-  if(tbody.children.length === 0){
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = Math.max(1, visibleHeaderIndices.length);
-    td.style.padding = "12px";
-    td.style.color = "#445";
-    td.innerText = "No data available";
+  // If empty, show friendly placeholder
+  if (tbodyEl.children.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = Math.max(1, visibleIndices.length);
+    td.style.padding = '12px';
+    td.style.color = '#445';
+    td.textContent = 'No data available';
     tr.appendChild(td);
-    tbody.appendChild(tr);
+    tbodyEl.appendChild(tr);
   }
+
+  statusEl.textContent = ''; // clear loading status once rendered
 }
 
-/* Export visible table
+/* Export currently shown table to CSV */
+function exportExcel(){
+  const rows = [];
+  // header row(s): include only visible header row
+  const headerCells = Array.from(document.querySelectorAll('#headerRow th'));
+  if (headerCells.length) {
+    rows.push(headerCells.map(th => `"${th.innerText.replace(/"/g,'""')}"`).join(','));
+  }
+  // body rows
+  Array.from(document.querySelectorAll('#motorTable tbody tr')).forEach(tr => {
+    if (getComputedStyle(tr).display === 'none') return;
+    const cells = Array.from(tr.children).map(td => {
+      return `"${td.innerText.replace(/"/g,'""')}"`;
+    });
+    rows.push(cells.join(','));
+  });
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'motor_master_list.csv';
+  a.click();
+}
+
+/* Initialize */
+loadMotors();
+</script>
+
+</body>
+</html>
