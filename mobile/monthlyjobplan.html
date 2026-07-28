@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Monthly Job Plan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+  font-family:Arial, sans-serif;
+  margin:0;
+  background:linear-gradient(135deg,#e6f0ff,#f4f9ff);
+}
+
+/* HEADER */
+.header{
+  background:linear-gradient(135deg,#002b5c,#0052cc);
+  color:white;
+  padding:20px;
+  position:relative;
+}
+
+.header h1{margin:0;font-size:26px;}
+.credit{margin-top:5px;font-size:14px;font-weight:bold;color:#cce0ff;}
+
+.nav-buttons{
+  position:absolute;
+  right:20px;
+  top:20px;
+  display:flex;
+  gap:10px;
+}
+
+.nav-buttons button{
+  padding:8px 14px;
+  border:none;
+  border-radius:6px;
+  background:white;
+  color:#003f88;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.container{
+  padding:25px;
+  overflow-x:auto;
+}
+
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:900px;
+  background:white;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+
+th, td{
+  border:1px solid #ccc;
+  padding:8px 10px;
+  text-align:left;
+  white-space:nowrap;
+}
+
+th{
+  background:linear-gradient(135deg,#003f88,#0052cc);
+  color:white;
+}
+
+/* Section Heading */
+.section-row{
+  background:#003f88;
+  color:white;
+  font-weight:bold;
+}
+
+/* Item indent */
+.item-name{
+  padding-left:25px;
+}
+
+/* Highlight for Column E */
+.positive{
+  background:#e8f5e9;
+  color:#1b5e20;
+  font-weight:bold;
+}
+
+.negative{
+  background:#ffebee;
+  color:#b71c1c;
+  font-weight:bold;
+}
+
+.equal{
+  background:#fff8e1;
+  color:#e65100;
+  font-weight:bold;
+}
+
+.footer{
+  padding:15px;
+  font-size:14px;
+  color:#555;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>Monthly Job Plan</h1>
+  <div class="credit">
+    Designed and Maintained by Rakesh Chandra Sethy
+  </div>
+
+  <div class="nav-buttons">
+    <button onclick="history.back()">⬅ Back</button>
+    <button onclick="goHome()">🏠 Home</button>
+  </div>
+</div>
+
+<div class="container">
+  <table id="table">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="footer">
+© 08 Electrical Data
+</div>
+
+<script>
+
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthlyjob.json";
+
+function goHome(){
+  location.href="https://08electricaldata.github.io/";
+}
+
+async function loadData(){
+
+  const res = await fetch(JSON_URL);
+  const data = await res.json();
+
+  const headers = data.headers;
+  const rows = data.rows;
+
+  const thead = document.querySelector("#table thead");
+  const tbody = document.querySelector("#table tbody");
+
+  /* 
+     SHOW:
+     Column A (0)
+     Column B (1)
+     Skip Column C (2)
+     Show Column D → J (3 to 9)
+  */
+
+  const displayColumns = [0,1,3,4,5,6,7,8,9];
+
+  /* ===== HEADER ===== */
+  let headerHTML = "<tr>";
+
+  displayColumns.forEach(i=>{
+    headerHTML += `<th>${headers[i] ?? ""}</th>`;
+  });
+
+  headerHTML += "</tr>";
+  thead.innerHTML = headerHTML;
+
+  /* ===== BODY ===== */
+  let bodyHTML = "";
+
+  rows.forEach(r=>{
+
+    const colA = String(r[0] ?? "").trim();
+    const colB = String(r[1] ?? "").trim();
+
+    // If Column A has number → Section Heading
+    if(colA !== "" && !isNaN(Number(colA))){
+
+      bodyHTML += `
+        <tr class="section-row">
+          <td colspan="${displayColumns.length}">
+            ${colA}. ${colB}
+          </td>
+        </tr>
+      `;
+
+    } else {
+
+      bodyHTML += "<tr>";
+
+      displayColumns.forEach(i=>{
+
+        let value = r[i] ?? "";
+        let className = "";
+
+        // Column E Highlight (index 4)
+        if(i === 4){
+          const achieved = Number(r[4]) || 0;
+          const target   = Number(r[5]) || 0;
+
+          if(achieved > target) className = "positive";
+          else if(achieved < target) className = "negative";
+          else className = "equal";
+        }
+
+        bodyHTML += `<td class="${className}">${value}</td>`;
+      });
+
+      bodyHTML += "</tr>";
+    }
+
+  });
+
+  tbody.innerHTML = bodyHTML;
+}
+
+loadData();
+
+</script>
+
+</body>
+</html>
