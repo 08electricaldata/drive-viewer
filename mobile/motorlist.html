@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Motor Master List - Double Compact Cards</title>
+<title>Motor Master List — Tiles</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#003f88" />
 <style>
@@ -14,103 +14,84 @@
   --accent:#eaf1ff;
   --soft:#f3f6ff;
   --border:#e6edf6;
-  --shadow-1: 0 1px 2px rgba(8,15,42,0.06);
-  --shadow-2: 0 6px 18px rgba(8,15,42,0.08);
+  --tile-shadow: 0 6px 18px rgba(8,15,42,0.06);
 }
 
-/* Base */
-html,body{ margin:0; height:100%; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#0b2540; -webkit-text-size-adjust:100%; }
-.header-bar{ position:sticky; top:0; z-index:1000; background:var(--primary); color:white; display:flex; align-items:center; gap:8px; padding:8px; }
-.header-bar button{ background:white; color:var(--primary); border:none; border-radius:8px; padding:8px 10px; font-size:14px; cursor:pointer; min-width:40px; height:36px; display:inline-flex; align-items:center; justify-content:center; }
-.header-title{ flex:1; text-align:center; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:0.2px; }
+/* base */
+html,body{margin:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:#0b2540;-webkit-text-size-adjust:100%;}
+.header-bar{position:sticky;top:0;z-index:1000;background:var(--primary);color:white;display:flex;align-items:center;gap:8px;padding:10px;}
+.header-bar button{background:white;color:var(--primary);border:none;border-radius:8px;padding:8px 10px;font-size:14px;cursor:pointer;min-width:40px;height:36px;display:inline-flex;align-items:center;justify-content:center;}
+.header-title{flex:1;text-align:center;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.2px;}
 
-/* Layout */
-.container{ padding:8px; }
-.card-shell{ background:transparent; border-radius:10px; padding:6px; }
-
-/* Controls */
-.controls{ display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center; }
-.controls button{ padding:8px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; }
-.controls .filter{ flex:1; min-width:120px; }
-.controls .filter input{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-size:13px; }
-
-/* Table (wide screens) */
-.table-wrapper{ display:none; }
-table{ width:100%; border-collapse:collapse; font-size:13px; table-layout:auto; }
-th, td{ border:1px solid var(--border); padding:6px 8px; white-space:normal; overflow-wrap:break-word; word-break:break-word; font-size:12px; }
-thead tr:nth-child(1) th{ position:sticky; top:56px; background:var(--primary); color:white; z-index:20; padding:8px; font-size:12px; }
-thead tr:nth-child(2) th{ position:sticky; top:92px; background:var(--accent); z-index:15; padding:6px; font-size:12px; }
-tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
-.section-row{ background:#dbe9ff !important; font-weight:600; }
-
-/* Cards grid (each .card-item now contains TWO drive-blocks side-by-side) */
-.cards-grid{
-  display:grid;
-  grid-template-columns: 1fr;
-  gap:8px;
-}
-
-/* If space allows, show two card-items per row (keeps each card compact) */
-@media (min-width:480px){
-  .cards-grid{ grid-template-columns: repeat(2, 1fr); }
-}
-
-/* Each card wraps two drive-blocks horizontally */
-.card-item{
-  background: linear-gradient(180deg, #ffffff, #fbfdff);
-  border-radius:10px;
-  padding:6px;
-  box-shadow: var(--shadow-1);
-  border: 1px solid rgba(12,24,60,0.04);
-  transition: transform 160ms ease, box-shadow 160ms ease;
-  display:flex;
-  gap:8px;
-  align-items:flex-start;
-}
-
-/* Lift effect */
-.card-item:hover, .card-item:active{ transform: translateY(-4px); box-shadow: var(--shadow-2); }
-
-/* Drive block (left/right inside card) */
-.drive-block{
-  flex:1 1 50%;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  padding:6px;
-  border-radius:8px;
-  background: linear-gradient(180deg,#fff,#fcfeff);
-  min-width:0;
-  cursor:pointer;
-}
-
-/* subtle divider between left/right drive on tiny screens */
-.drive-block + .drive-block{ border-left: 1px dashed rgba(0,0,0,0.04); padding-left:10px; }
-
-/* Compact label/value rows inside each drive-block */
-.dv-row{ display:flex; justify-content:space-between; align-items:center; gap:6px; padding:2px 0; }
-.dv-label{ flex:0 0 46%; font-size:12px; font-weight:600; color:#1f3246; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dv-value{ flex:1 1 54%; font-size:13px; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-/* Achieved numeric badge */
-.badge-num{ display:inline-block; padding:4px 8px; border-radius:10px; font-weight:700; font-size:12px; white-space:nowrap; }
-.positive{ background:#e8f5e9; color:#1b5e20; }
-.negative{ background:#fff0f0; color:#a01f1f; }
-.equal{ background:#fff8e1; color:#e65100; }
+/* container + controls */
+.container{padding:10px;}
+.controls{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.controls button{padding:8px 10px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;}
+.controls .filter{flex:1;min-width:140px;}
+.controls .filter input{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;}
 
 /* status */
-.status{ font-size:12px; color:#223; padding:6px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
+.status{font-size:12px;color:#223;padding:8px;border-radius:8px;background:#f6f9ff;margin-bottom:8px;border:1px solid #e6eefc;}
 
-/* Hidden-by-attribute fallback */
-[data-hide="true"]{ display:none !important; }
-
-/* Adjustments for very small screens */
-@media (max-width:360px){
-  .card-item{ padding:6px; gap:6px; }
-  .dv-label{ font-size:11px; flex:0 0 44%; }
-  .dv-value{ font-size:12px; }
-  .header-title{ font-size:14px; }
+/* tile grid */
+.tile-grid{
+  display:grid;
+  grid-template-columns: repeat(2, 1fr); /* default 2 columns for phones */
+  gap:10px;
+  align-items:start;
 }
+
+/* use 3 columns on wider mobile/tablet */
+@media (min-width:640px){
+  .tile-grid{ grid-template-columns: repeat(3, 1fr); }
+}
+/* optional 4 columns on large screens */
+@media (min-width:1000px){
+  .tile-grid{ grid-template-columns: repeat(4, 1fr); }
+}
+
+/* tile */
+.tile{
+  background: linear-gradient(180deg,#ffffff,#fbfdff);
+  border-radius:10px;
+  padding:8px;
+  box-shadow: var(--tile-shadow);
+  border:1px solid rgba(8,15,42,0.04);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  min-height:72px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* tile hover lift */
+.tile:hover{ transform: translateY(-6px); box-shadow: 0 14px 28px rgba(8,15,42,0.10); cursor:pointer; }
+
+/* header row inside tile */
+.tile-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.tile-title{ font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tile-sub{ font-size:12px; color:#335; opacity:0.9; }
+
+/* compact key rows */
+.key-row{ display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:12px; color:#123; }
+.key-label{ flex:0 0 48%; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#234; }
+.key-value{ flex:1 1 52%; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* achieved badge */
+.badge{ display:inline-block; padding:4px 8px; border-radius:10px; font-weight:700; font-size:12px; white-space:nowrap; }
+.pos{ background:#e8f5e9; color:#1b5e20; }
+.neg{ background:#fff0f0; color:#a01f1f; }
+.eq{ background:#fff8e1; color:#e65100; }
+
+/* table wrapper for wide screens (kept) */
+.table-wrapper{ display:none; margin-top:6px; }
+@media (min-width:900px){
+  .table-wrapper{ display:block; }
+  .tile-grid{ display:none; }
+}
+
+/* small helper */
+.empty-note{ padding:8px; color:#445; font-size:13px; border-radius:8px; background:#fff; border:1px solid #eef3ff; }
 </style>
 </head>
 <body>
@@ -124,273 +105,229 @@ tbody tr:hover{ background:#f0f6ff; cursor:pointer; }
 </div>
 
 <div class="container">
-  <div class="card-shell">
+  <div id="status" class="status">Loading…</div>
 
-    <div id="status" class="status">Loading…</div>
-
-    <div class="controls">
-      <button onclick="exportExcel()">📄 Export CSV</button>
-      <button onclick="window.print()">🖨 Print</button>
-      <div class="filter" style="flex:1;">
-        <input id="universalFilter" placeholder="🔍 Search" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); font-size:13px;">
-      </div>
-    </div>
-
-    <!-- Table for wide screens (kept for desktop) -->
-    <div class="table-wrapper" aria-hidden="true">
-      <table id="motorTable">
-        <thead>
-          <tr id="headerRow"></tr>
-          <tr class="filter-row" id="filterRow"></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <!-- Cards grid (each .card-item contains 2 drives side-by-side) -->
-    <div class="cards-grid" id="cardsGrid" aria-live="polite"></div>
-
+  <div class="controls">
+    <button onclick="exportCSV()">📄 Export CSV</button>
+    <button onclick="window.print()">🖨 Print</button>
+    <div class="filter"><input id="universalFilter" placeholder="🔍 Search tiles" /></div>
   </div>
+
+  <!-- Tiles for mobile -->
+  <div id="tileGrid" class="tile-grid" aria-live="polite"></div>
+
+  <!-- fallback table for large screens -->
+  <div class="table-wrapper" id="tableWrapper">
+    <table id="motorTable">
+      <thead><tr id="headerRow"></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="emptyNote" class="empty-note" style="display:none">No data available</div>
 </div>
 
 <script>
-/* Pair-card layout: each card contains two drive-blocks (left & right).
-   If odd number of rows, second drive-block is empty (no click).
-   Hides 4th and last columns when computing visible fields.
+/* Tile layout script
+   - hides 4th and last columns from display logic
+   - each tile shows: title (headers[1]) and up to 4 visible fields
+   - Achieved (index 4) displayed as a colored badge if numeric
 */
 
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
-const statusEl = document.getElementById('status');
-const headerRowEl = document.getElementById('headerRow');
-const filterRowEl = document.getElementById('filterRow');
-const tbodyEl = document.querySelector('#motorTable tbody');
-const cardsGridEl = document.getElementById('cardsGrid');
-const universalFilter = document.getElementById('universalFilter');
 
-function goHome(){ window.location.href = "https://08electricaldata.github.io/index_mob.html"; }
+const statusEl = document.getElementById('status');
+const tileGrid = document.getElementById('tileGrid');
+const tableWrapper = document.getElementById('tableWrapper');
+const universalFilter = document.getElementById('universalFilter');
+const emptyNote = document.getElementById('emptyNote');
+
+function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
-function openMotorOH(){ window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motoroh.html"; }
-function openMotorPM(){ window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html"; }
+function openMotorOH(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motoroh.html"; }
+function openMotorPM(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html"; }
 
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function isNumericVal(v){ if(v === null || v === undefined) return false; const s = String(v).trim().replace(/,/g,''); return /^-?\d+(\.\d+)?$/.test(s); }
+function isNumeric(v){ if(v===null||v===undefined) return false; const s=String(v).trim().replace(/,/g,''); return /^-?\d+(\.\d+)?$/.test(s); }
 
-function computeVisibleIndices(headers, rows){
-  const hdrCount = headers.length;
+/* compute visible column indices: exclude index 3 (4th) and last index */
+function visibleIndices(headers, rows){
+  const n = headers.length;
   const skip = new Set();
-  if(hdrCount > 3) skip.add(3);              // hide 4th column (index 3)
-  if(hdrCount > 0) skip.add(hdrCount - 1);   // hide last column
-  const indices = headers.map((_,i)=>i).filter(i => !skip.has(i));
-  if(indices.length === 0 && rows.length > 0){
-    const maxCols = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
-    return Array.from({length:maxCols}, (_,i)=>i).filter(i => ![3, maxCols-1].includes(i));
+  if(n > 3) skip.add(3);
+  if(n > 0) skip.add(n-1);
+  const vis = headers.map((_,i)=>i).filter(i => !skip.has(i));
+  if(vis.length === 0 && rows.length > 0){
+    const max = rows.reduce((m,r)=>Math.max(m, Array.isArray(r)?r.length:0), 0);
+    return Array.from({length:max}, (_,i)=>i).filter(i => ![3, max-1].includes(i));
   }
-  return indices;
+  return vis;
 }
 
-/* Render table (desktop) - unchanged from before */
-function renderTable(headers, rows, visibleIndices){
-  headerRowEl.innerHTML = '';
-  filterRowEl.innerHTML = '';
-  visibleIndices.forEach(i => {
-    const th = document.createElement('th'); th.textContent = headers[i] ?? ''; headerRowEl.appendChild(th);
-    const fh = document.createElement('th'); fh.innerHTML = '<input placeholder="🔍">'; filterRowEl.appendChild(fh);
+/* Render tiles */
+function renderTiles(headers, rows, visIdx){
+  tileGrid.innerHTML = '';
+  if(!rows || rows.length === 0){
+    emptyNote.style.display = 'block';
+    return;
+  } else emptyNote.style.display = 'none';
+
+  // choose up to 4 fields to show in tile (prefer Name and numeric fields)
+  // pick ordering: if visIdx includes 1 (Name), keep it as title, then pick next up to 4 for details
+  const detailIndices = visIdx.filter(i => i !== 1).slice(0,4);
+
+  rows.forEach((r, idx) => {
+    const row = Array.isArray(r) ? r : [];
+    // original code skipped rows with falsy r[1]
+    if(!row[1]) return;
+
+    const tile = document.createElement('div'); tile.className = 'tile';
+    tile.title = row.join(' | ');
+
+    // header: title (prefer headers[1] value) and small sub (index 0 or idx)
+    const head = document.createElement('div'); head.className = 'tile-head';
+    const title = document.createElement('div'); title.className = 'tile-title';
+    const nameVal = row[1] ?? '';
+    title.textContent = nameVal || ('#' + (idx+1));
+    const sub = document.createElement('div'); sub.className = 'tile-sub';
+    sub.textContent = String(row[0] ?? ''); // serial or S.No
+    head.appendChild(title); head.appendChild(sub);
+    tile.appendChild(head);
+
+    // details rows (compact)
+    detailIndices.forEach(i => {
+      const label = headers[i] ?? ('Col ' + (i+1));
+      const raw = row[i] ?? '';
+      const keyRow = document.createElement('div'); keyRow.className = 'key-row';
+      const lab = document.createElement('div'); lab.className = 'key-label'; lab.textContent = label;
+      const val = document.createElement('div'); val.className = 'key-value';
+      if(i === 4 && isNumeric(raw)){ // Achieved-like field -> badge
+        const achieved = Number(String(row[4] ?? '').replace(/,/g,'')) || 0;
+        const target = Number(String(row[5] ?? '').replace(/,/g,'')) || 0;
+        const badge = document.createElement('span'); badge.className = 'badge';
+        badge.textContent = String(raw);
+        if(achieved > target) badge.classList.add('pos');
+        else if(achieved < target) badge.classList.add('neg');
+        else badge.classList.add('eq');
+        val.appendChild(badge);
+      } else {
+        val.innerHTML = escapeHtml(String(raw));
+      }
+      keyRow.appendChild(lab); keyRow.appendChild(val);
+      tile.appendChild(keyRow);
+    });
+
+    // click to open details page
+    tile.addEventListener('click', () => {
+      const id = (row[1] ?? '') + '-' + (row[2] ?? '');
+      if((row[1] ?? '') === '') return;
+      location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
+    });
+
+    tileGrid.appendChild(tile);
   });
-  tbodyEl.innerHTML = '';
+}
+
+/* Render simple table header & rows for wide screens (kept) */
+function renderTable(headers, rows, visIdx){
+  const headerRow = document.getElementById('headerRow');
+  const tbody = document.querySelector('#motorTable tbody');
+  headerRow.innerHTML = '';
+  tbody.innerHTML = '';
+  visIdx.forEach(i => {
+    const th = document.createElement('th'); th.textContent = headers[i] ?? ''; headerRow.appendChild(th);
+  });
   rows.forEach(r => {
     const row = Array.isArray(r)? r : [];
     if(!row[1]) return;
     const tr = document.createElement('tr');
-    if(!row[0]) tr.classList.add('section-row');
-    visibleIndices.forEach(i => {
-      const td = document.createElement('td'); const raw = row[i] ?? '';
-      td.title = raw;
-      const span = document.createElement('span'); span.className = 'cell-value'; span.innerHTML = escapeHtml(raw);
-      td.appendChild(span);
-      if(isNumericVal(raw)) td.classList.add('num');
-      tr.appendChild(td);
+    visIdx.forEach(i => {
+      const td = document.createElement('td'); td.textContent = row[i] ?? ''; tr.appendChild(td);
     });
     tr.addEventListener('click', () => {
       const id = (row[1] ?? '') + '-' + (row[2] ?? '');
       if((row[1] ?? '') === '') return;
-      window.location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
+      location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
     });
-    tbodyEl.appendChild(tr);
+    tbody.appendChild(tr);
   });
 }
 
-/* Render paired cards: two drives per .card-item */
-function renderPairedCards(headers, rows, visibleIndices){
-  cardsGridEl.innerHTML = '';
-  // iterate rows in pairs (0-1, 2-3, 4-5, ...)
-  for(let i=0; i<rows.length; i += 2){
-    const rowA = Array.isArray(rows[i]) ? rows[i] : [];
-    const rowB = (i+1 < rows.length && Array.isArray(rows[i+1])) ? rows[i+1] : null;
-
-    // if both rows missing or both have falsy id (r[1]), skip
-    if(!rowA[1] && !(rowB && rowB[1])) continue;
-
-    const card = document.createElement('div'); card.className = 'card-item';
-
-    // helper to build a drive-block for a row
-    function buildDriveBlock(row){
-      const drive = document.createElement('div'); drive.className = 'drive-block';
-      if(!row || !row[1]){
-        // empty placeholder (keep space)
-        // add a faint placeholder line
-        const ph = document.createElement('div'); ph.className = 'dv-row';
-        const lab = document.createElement('div'); lab.className = 'dv-label'; lab.textContent = '';
-        const val = document.createElement('div'); val.className = 'dv-value'; val.textContent = '';
-        ph.appendChild(lab); ph.appendChild(val);
-        drive.appendChild(ph);
-        return drive;
-      }
-
-      visibleIndices.forEach(idx => {
-        const label = headers[idx] ?? ('Col ' + (idx+1));
-        const raw = row[idx] ?? '';
-        const dv = document.createElement('div'); dv.className = 'dv-row';
-        const lab = document.createElement('div'); lab.className = 'dv-label'; lab.textContent = label;
-        const val = document.createElement('div'); val.className = 'dv-value';
-
-        // Achieved column handling (index 4) as badge
-        if(idx === 4 && isNumericVal(raw)){
-          const badge = document.createElement('span'); badge.className = 'badge-num';
-          const achieved = Number(String(row[4] ?? '').replace(/,/g,'')) || 0;
-          const target = Number(String(row[5] ?? '').replace(/,/g,'')) || 0;
-          if(achieved > target) badge.classList.add('positive');
-          else if(achieved < target) badge.classList.add('negative');
-          else badge.classList.add('equal');
-          badge.textContent = String(raw);
-          val.appendChild(badge);
-        } else {
-          val.innerHTML = escapeHtml(String(raw));
-        }
-
-        dv.appendChild(lab); dv.appendChild(val);
-        drive.appendChild(dv);
-      });
-
-      // click navigates specific drive
-      drive.addEventListener('click', (e) => {
-        // prevent click bubbling to the whole card when clicking left/right
-        e.stopPropagation();
-        const id = (row[1] ?? '') + '-' + (row[2] ?? '');
-        if((row[1] ?? '') === '') return;
-        window.location.href = 'https://08electricaldata.github.io/drive-viewer/index.html?id=' + encodeURIComponent(id);
-      });
-
-      return drive;
-    }
-
-    const leftBlock = buildDriveBlock(rowA);
-    const rightBlock = buildDriveBlock(rowB);
-
-    card.appendChild(leftBlock);
-    card.appendChild(rightBlock);
-
-    cardsGridEl.appendChild(card);
-  }
-
-  // If no cards created, show placeholder
-  if(cardsGridEl.children.length === 0){
-    const msg = document.createElement('div');
-    msg.style.padding = '12px';
-    msg.style.color = '#445';
-    msg.textContent = 'No data available';
-    cardsGridEl.appendChild(msg);
-  }
-}
-
-/* compute visible indices (skip 4th and last) */
-function computeVisibleIndices(headers, rows){
-  const hdrCount = headers.length;
-  const skip = new Set();
-  if(hdrCount > 3) skip.add(3);
-  if(hdrCount > 0) skip.add(hdrCount - 1);
-  const indices = headers.map((_,i)=>i).filter(i => !skip.has(i));
-  if(indices.length === 0 && rows.length > 0){
-    const maxCols = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
-    return Array.from({length:maxCols}, (_,i)=>i).filter(i => ![3, maxCols-1].includes(i));
-  }
-  return indices;
-}
-
-/* load data and render both table + paired cards */
+/* Fetch and initialize */
 async function loadData(){
   statusEl.textContent = 'Loading…';
   let data = null;
-  try { const cache = localStorage.getItem('motorJSON'); if(cache) data = JSON.parse(cache); } catch(e){ console.warn('cache parse failed', e); }
+  try {
+    const cached = localStorage.getItem('motorJSON');
+    if(cached) data = JSON.parse(cached);
+  } catch(e){ console.warn('cache parse failed', e); }
   try {
     const res = await fetch(JSON_URL, {cache:'no-store'});
-    if(res && res.ok){ const json = await res.json(); data = json; try { localStorage.setItem('motorJSON', JSON.stringify(json)); } catch(e){} statusEl.textContent = 'Loaded remote'; }
-    else statusEl.textContent = 'Using cache';
-  } catch(err){ console.warn('fetch failed', err); statusEl.textContent = 'Offline / using cache'; }
-
+    if(res && res.ok){
+      const j = await res.json();
+      data = j;
+      try { localStorage.setItem('motorJSON', JSON.stringify(j)); } catch(e){}
+      statusEl.textContent = 'Loaded';
+    } else {
+      statusEl.textContent = 'Using cache';
+    }
+  } catch(err){
+    console.warn('fetch failed', err);
+    statusEl.textContent = 'Offline / cached data';
+  }
   if(!data) data = { headers: [], rows: [] };
-
   let headers = Array.isArray(data.headers) ? data.headers.slice() : (data.headers ? Object.values(data.headers) : []);
   const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
-
   if(headers.length === 0 && rows.length > 0){
-    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
-    headers = Array.from({length:max}, (_,i) => 'Col ' + (i+1));
+    const max = rows.reduce((m,r)=>Math.max(m, Array.isArray(r)?r.length:0), 0);
+    headers = Array.from({length:max}, (_,i)=> 'Col ' + (i+1));
   }
-
-  const visible = computeVisibleIndices(headers, rows);
-  renderTable(headers, rows, visible);
-  renderPairedCards(headers, rows, visible);
-
-  // universal filter
+  const visIdx = visibleIndices(headers, rows);
+  renderTiles(headers, rows, visIdx);
+  renderTable(headers, rows, visIdx);
+  statusEl.style.display = 'none';
+  // Setup universal filter
   universalFilter.addEventListener('input', () => {
     const q = universalFilter.value.trim().toLowerCase();
-    // filter table rows
-    document.querySelectorAll('#motorTable tbody tr').forEach(tr => {
-      if(!tr.children || tr.children.length === 0){ tr.style.display = ''; return; }
-      const text = Array.from(tr.children).map(td => td.innerText).join(' ').toLowerCase();
-      tr.style.display = text.includes(q) ? '' : 'none';
+    // tiles
+    document.querySelectorAll('.tile').forEach(tile => {
+      tile.style.display = tile.innerText.toLowerCase().includes(q) ? '' : 'none';
     });
-    // filter cards (search across card text)
-    document.querySelectorAll('.card-item').forEach(card => {
-      const text = card.innerText.toLowerCase();
-      card.style.display = text.includes(q) ? '' : 'none';
+    // table rows (if visible)
+    document.querySelectorAll('#motorTable tbody tr').forEach(tr => {
+      tr.style.display = tr.innerText.toLowerCase().includes(q) ? '' : 'none';
     });
   });
-
-  statusEl.textContent = '';
 }
 
-/* Export CSV from currently visible rows/columns */
-function exportExcel(){
-  // use headerRow to get visible headers
-  const headerCells = Array.from(document.querySelectorAll('#headerRow th')).map(th => th.innerText);
+/* Export CSV from visible tiles (or table) */
+function exportCSV(){
+  // if wide screen table visible, use it
+  const tableShown = getComputedStyle(tableWrapper).display !== 'none';
   const lines = [];
-  if(headerCells.length) lines.push(headerCells.map(h => `"${h.replace(/"/g,'""')}"`).join(','));
-  // prefer table when visible
-  const tableVisible = getComputedStyle(document.querySelector('.table-wrapper')).display !== 'none';
-  if(tableVisible){
+  if(tableShown){
+    const ths = Array.from(document.querySelectorAll('#headerRow th')).map(th => th.innerText);
+    if(ths.length) lines.push(ths.map(h=>`"${h.replace(/"/g,'""')}"`).join(','));
     document.querySelectorAll('#motorTable tbody tr').forEach(tr => {
       if(getComputedStyle(tr).display === 'none') return;
-      const vals = Array.from(tr.children).map(td => `"${td.innerText.replace(/"/g,'""')}"`);
+      const vals = Array.from(tr.children).map(td=>`"${td.innerText.replace(/"/g,'""')}"`);
       lines.push(vals.join(','));
     });
   } else {
-    // extract drive values from card grid: each card has two drive-blocks with rows
-    document.querySelectorAll('.card-item').forEach(card => {
-      if(getComputedStyle(card).display === 'none') return;
-      // gather text of both drive-blocks concatenated
-      const left = card.children[0] ? Array.from(card.children[0].querySelectorAll('.dv-row .dv-value')).map(v => v.innerText) : [];
-      const right = card.children[1] ? Array.from(card.children[1].querySelectorAll('.dv-row .dv-value')).map(v => v.innerText) : [];
-      // join left and right in a single CSV row
-      const vals = left.concat(right).map(v => `"${String(v).replace(/"/g,'""')}"`);
-      lines.push(vals.join(','));
+    // derive columns by first tile's detailIndices (best-effort)
+    document.querySelectorAll('.tile').forEach(tile => {
+      if(getComputedStyle(tile).display === 'none') return;
+      // join label/value pairs for CSV row
+      const texts = Array.from(tile.querySelectorAll('.key-row')).map(kr => kr.innerText.replace(/"/g,'""'));
+      lines.push('"' + texts.join('","') + '"');
     });
   }
-  const blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'motor_master_list.csv'; a.click();
+  if(lines.length === 0){ alert('No data to export'); return; }
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'motor_tiles.csv'; a.click();
 }
 
-/* Initialize */
+/* init */
 loadData();
 </script>
 </body>
