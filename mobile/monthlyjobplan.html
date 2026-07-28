@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8" />
 <title>Monthly Job Plan</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0052cc">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0052cc" />
 <style>
 :root{
   --app-bg: linear-gradient(135deg,#e6f0ff,#f4f9ff);
@@ -20,20 +19,18 @@
   --shadow: 0 8px 24px rgba(2,6,23,0.12);
 }
 
-/* Reset and base */
 html,body{
   height:100%;
   margin:0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: var(--app-bg);
+  font-family:Arial, Helvetica, sans-serif;
+  background:var(--app-bg);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   color:#0b2540;
-  -webkit-text-size-adjust:100%;
   overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
 }
 
-/* App shell centered */
 .app-shell{
   width:100%;
   max-width:420px;
@@ -46,7 +43,6 @@ html,body{
   box-sizing:border-box;
 }
 
-/* Card container */
 .app-card{
   background:var(--card-bg);
   border-radius:12px;
@@ -56,7 +52,6 @@ html,body{
   flex-direction:column;
 }
 
-/* Header */
 .header{
   background:linear-gradient(135deg,var(--header-start),var(--header-end));
   color:white;
@@ -74,7 +69,6 @@ html,body{
 .header h1{margin:0;font-size:16px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .credit{margin-top:3px;font-size:11px;font-weight:600;color:#cce0ff;opacity:0.95;}
 
-/* Nav buttons (touch-friendly) */
 .nav-buttons{
   display:flex;
   gap:6px;
@@ -93,18 +87,16 @@ html,body{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  box-shadow:none;
 }
 .nav-buttons button:active{transform:translateY(1px);opacity:0.95;}
 
-/* Content area */
 .container{
   padding:8px;
   overflow:auto;
   -webkit-overflow-scrolling:touch;
 }
 
-/* Table styles */
+/* Small fonts and compact spacing to avoid horizontal scrolling */
 table{
   border-collapse:collapse;
   width:100%;
@@ -114,7 +106,7 @@ table{
 }
 th, td{
   border:1px solid #e6edf6;
-  padding:8px 10px;
+  padding:6px 8px;
   text-align:left;
   white-space:nowrap;
   font-size:12px;
@@ -126,7 +118,6 @@ th{
   font-size:12px;
 }
 
-/* Section Heading */
 .section-row td{
   background:var(--accent);
   color:white;
@@ -135,125 +126,46 @@ th{
   border:none;
 }
 
-/* Item indent */
-.item-name{
-  padding-left:14px;
-}
+.item-name{padding-left:14px;}
 
-/* Highlights */
-.positive{
-  background:var(--positive);
-  color:#1b5e20;
-  font-weight:700;
-}
-.negative{
-  background:var(--negative);
-  color:#b71c1c;
-  font-weight:700;
-}
-.equal{
-  background:var(--equal);
-  color:#e65100;
-  font-weight:700;
-}
+.positive{background:var(--positive); color:#1b5e20; font-weight:700;}
+.negative{background:var(--negative); color:#b71c1c; font-weight:700;}
+.equal{background:var(--equal); color:#e65100; font-weight:700;}
 
 /* numeric alignment */
 td.num { text-align:right; }
 td.num .cell-value { text-align:right; display:block; }
 
-/* footer */
-.footer{
-  padding:10px;
+/* small debug area */
+.status {
   font-size:12px;
-  color:var(--muted);
-  text-align:center;
+  color:#223;
+  padding:8px;
+  border-radius:8px;
+  background:#f6f9ff;
+  margin-bottom:8px;
+  border:1px solid #e6eefc;
 }
 
-/* MOBILE: stacked cards, wrapping, right-aligned numeric column */
+/* MOBILE: stacked cards and wrapping to avoid left-right scroll */
 @media (max-width:600px){
-  .app-shell{padding:6px;}
-  .header{top:8px;border-radius:10px;padding:10px;}
-  .app-card{border-radius:10px;overflow:visible;}
-
   thead{display:none;}
-
-  tbody tr{
-    display:block;
-    margin:8px 0;
-    border-radius:10px;
-    overflow:hidden;
-    box-shadow:0 6px 16px rgba(2,6,23,0.06);
-    border:1px solid rgba(10,20,40,0.03);
-    background:linear-gradient(180deg,#fff,#fbfdff);
-  }
-
-  tbody tr.section-row{
-    display:block;
-    margin:0 0 8px 0;
-    border-radius:10px;
-  }
-
-  tbody td{
-    display:flex;
-    flex-direction:row;
-    justify-content:space-between;
-    padding:10px 12px;
-    border:none;
-    align-items:center;
-    gap:8px;
-    font-size:13px;
-    line-height:1.2;
-    white-space:normal;
-    word-break:break-word;
-  }
-
-  tbody td::before{
-    content: attr(data-label);
-    display:block;
-    font-weight:700;
-    color:#243b58;
-    margin-right:8px;
-    font-size:11px;
-    opacity:0.9;
-    min-width:42%;
-    flex:0 0 42%;
-    white-space:normal;
-  }
-
-  tbody td > .cell-value{
-    flex:1 1 58%;
-    word-break:break-word;
-    white-space:normal;
-    text-align:right; /* default to right for better numeric placement */
-  }
-
-  /* numeric badge compact */
-  .positive, .negative, .equal{
-    border-radius:8px;
-    padding:4px 8px;
-    font-weight:700;
-    display:inline-block;
-    font-size:12px;
-  }
-
-  @media (max-width:380px){
-    tbody td{padding:8px 10px;}
-    tbody td::before{font-size:10px;min-width:40%;flex:0 0 40%;}
-    .header h1{font-size:15px;}
-  }
+  tbody tr{display:block;margin:8px 0;border-radius:10px;overflow:hidden;box-shadow:0 6px 16px rgba(2,6,23,0.06);border:1px solid rgba(10,20,40,0.03);background:linear-gradient(180deg,#fff,#fbfdff);}
+  tbody tr.section-row{display:block;margin:0 0 8px 0;border-radius:10px;}
+  tbody td{display:flex;flex-direction:row;justify-content:space-between;padding:10px 12px;border:none;align-items:center;gap:8px;font-size:13px;line-height:1.2;white-space:normal;word-break:break-word;}
+  tbody td::before{content: attr(data-label);display:block;font-weight:700;color:#243b58;margin-right:8px;font-size:11px;opacity:0.9;min-width:42%;flex:0 0 42%;white-space:normal;}
+  tbody td > .cell-value{flex:1 1 58%;word-break:break-word;white-space:normal;text-align:right;}
+  .positive,.negative,.equal{border-radius:8px;padding:4px 8px;font-weight:700;display:inline-block;font-size:12px;}
+  @media (max-width:380px){tbody td{padding:8px 10px;}tbody td::before{font-size:10px;min-width:40%;flex:0 0 40%}.header h1{font-size:15px;}}
 }
 
-/* Medium screens: allow wrapping to avoid horizontal scroll */
-@media (min-width:601px) and (max-width:900px){
-  th, td{font-size:12px; padding:7px 8px; white-space:normal; word-break:break-word;}
-}
+/* footer */
+.footer{padding:10px;font-size:12px;color:var(--muted);text-align:center;}
 </style>
 </head>
-
 <body>
 
 <div class="app-shell">
-
   <div class="app-card">
     <div class="header">
       <div class="title-block">
@@ -268,6 +180,8 @@ td.num .cell-value { text-align:right; display:block; }
     </div>
 
     <div class="container">
+      <div id="status" class="status" aria-live="polite">Loading data…</div>
+
       <table id="table" role="table" aria-label="Monthly Job Plan">
         <thead></thead>
         <tbody></tbody>
@@ -276,9 +190,234 @@ td.num .cell-value { text-align:right; display:block; }
 
     <div class="footer">© 08 Electrical Data</div>
   </div>
-
 </div>
 
 <script>
-const JSON_URL = "https://raw.githubusercontent.com/08electricaldata*
-
+/*
+  Robust loader:
+  - tolerant of multiple JSON shapes
+  - replacement of "Schedule Maintenance"
+  - header remapping: "Year achive" -> "Yearly Target", "Target" -> "Monthly target"
+  - Achieved column (index 4) right-aligned (num)
+  - fallback sample data if fetch fails
+*/
+
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthlyjob.json";
+const statusEl = document.getElementById('status');
+const tableThead = document.querySelector('#table thead');
+const tableTbody = document.querySelector('#table tbody');
+
+const scheduleReplacements = [
+  "LT Motor",
+  "HT Motor",
+  "LT Module Maintenance",
+  "Panel Maintenance",
+  "Transformer Maintenance",
+  "Cable Check",
+  "UPS Maintenance",
+  "Generator Maintenance",
+  "Relay Testing",
+  "Control Inspection"
+];
+
+function goHome(){
+  location.href = "https://08electricaldata.github.io/index_mob.html";
+}
+
+function mapHeaderLabel(raw){
+  if(raw === null || raw === undefined) return "";
+  const s = String(raw).trim();
+  const norm = s.toLowerCase().replace(/\s+/g,' ');
+  if(norm === "year achive" || (norm.includes("year") && norm.includes("achiv"))) return "Yearly Target";
+  if(norm === "target") return "Monthly target";
+  if(norm.includes("achieve") || norm.includes("achieved")) return "Yearly Target";
+  return s;
+}
+
+function parsePossibleRows(data){
+  // Try common possible shapes: {headers:[], rows:[]}, {data:{headers:[],rows:[]}}, direct array etc.
+  if(!data) return { headers: [], rows: [] };
+
+  // If top-level is array, treat as rows with generic headers.
+  if(Array.isArray(data) && data.length && Array.isArray(data[0])){
+    return { headers: [], rows: data };
+  }
+
+  // If data has rows and headers
+  if(Array.isArray(data.rows) || Array.isArray(data.headers)){
+    return { headers: data.headers ?? [], rows: data.rows ?? [] };
+  }
+
+  // If payload contains nested object 'data' or 'result'
+  if(data.data && (Array.isArray(data.data.rows) || Array.isArray(data.data.headers))){
+    return { headers: data.data.headers ?? [], rows: data.data.rows ?? [] };
+  }
+  if(data.result && (Array.isArray(data.result.rows) || Array.isArray(data.result.headers))){
+    return { headers: data.result.headers ?? [], rows: data.result.rows ?? [] };
+  }
+
+  // If the file is a keyed object mapping row-id => row-array
+  // Convert any object-of-arrays to rows
+  if(typeof data === 'object'){
+    // gather arrays among values -> treat as rows when consistent
+    const values = Object.values(data);
+    const arrayVals = values.filter(v => Array.isArray(v) && v.length > 0);
+    if(arrayVals.length > 0 && arrayVals.length >= Object.keys(data).length/2){
+      // Maybe file where rows are values
+      const rows = arrayVals.map(v => v);
+      return { headers: [], rows };
+    }
+  }
+
+  // Unknown format
+  return { headers: [], rows: [] };
+}
+
+function buildTable(headers, rows){
+  // display columns: 0(A),1(B), skip 2(C), show 3..9 (D..J)
+  const displayColumns = [0,1,3,4,5,6,7,8,9];
+
+  // Map headers and coerce to strings
+  headers = Array.isArray(headers) ? headers : [];
+  if(headers.length === 0 && rows.length > 0){
+    const maxCols = rows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+    if(maxCols > 0) headers = Array.from({length:maxCols}, (_,i)=>`Column ${i+1}`);
+  }
+  headers = headers.map(h => mapHeaderLabel(h));
+
+  // Build thead
+  let headerHTML = '<tr>';
+  displayColumns.forEach(i => {
+    headerHTML += `<th>${headers[i] ?? ""}</th>`;
+  });
+  headerHTML += '</tr>';
+  tableThead.innerHTML = headerHTML;
+
+  // Body
+  let bodyHTML = "";
+  let repIndex = 0;
+
+  rows.forEach(rawRow => {
+    const row = Array.isArray(rawRow) ? rawRow : [];
+
+    const colA = String(row[0] ?? "").trim();
+    const colB = String(row[1] ?? "").trim();
+
+    if(colA !== "" && !isNaN(Number(colA))){
+      bodyHTML += `<tr class="section-row"><td colspan="${displayColumns.length}">${colA}. ${colB}</td></tr>`;
+    } else {
+      bodyHTML += '<tr>';
+      displayColumns.forEach(i => {
+        let val = row[i] ?? "";
+        let className = "";
+
+        // Achieved highlight and numeric alignment on column index 4
+        if(i === 4){
+          const achieved = Number(row[4]) || 0;
+          const target = Number(row[5]) || 0;
+          if(achieved > target) className += ' positive';
+          else if(achieved < target) className += ' negative';
+          else className += ' equal';
+          className += ' num';
+        }
+
+        // Replace "Schedule Maintenance" (case-insensitive exact) sequentially
+        if(typeof val === 'string' && val.trim().toLowerCase() === 'schedule maintenance'){
+          val = scheduleReplacements[repIndex % scheduleReplacements.length];
+          repIndex++;
+        }
+
+        const rawLabel = headers[i] ?? "";
+        const label = String(rawLabel).replace(/"/g,'&quot;');
+
+        const cellValue = (val === null || val === undefined) ? "" : val;
+
+        bodyHTML += `<td class="${className.trim()}" data-label="${label}"><span class="cell-value">${cellValue}</span></td>`;
+      });
+      bodyHTML += '</tr>';
+    }
+  });
+
+  // If there are no rows, show placeholder message
+  if(rows.length === 0){
+    bodyHTML = `<tr><td colspan="${displayColumns.length}" style="padding:12px;color:#445;">No rows found in the source JSON.</td></tr>`;
+  }
+
+  tableTbody.innerHTML = bodyHTML;
+}
+
+// A minimal timeout fetch helper
+function fetchWithTimeout(url, ms = 8000){
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Fetch timeout')), ms);
+    fetch(url).then(res => {
+      clearTimeout(timer);
+      resolve(res);
+    }).catch(err => {
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+
+// A fallback sample dataset (so user always sees something)
+const fallbackData = {
+  headers: ["S.No","Task","C","Achieved","Target","D","E","F","G","H"],
+  rows: [
+    [1, "Schedule Maintenance", "", 80, 100, 0,0,0,0,0],
+    [2, "Schedule Maintenance", "", 60, 60, 0,0,0,0,0],
+    ["","Pump Section", "", "", "", "", "", "", "", ""],
+    ["", "Schedule Maintenance", "", 10, 15, "", "", "", "", ""]
+  ]
+};
+
+async function loadData(){
+  statusEl.textContent = 'Loading data from remote source...';
+  try {
+    // try direct fetch first
+    const res = await fetchWithTimeout(JSON_URL, 9000);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    statusEl.textContent = 'Data loaded from remote source';
+    const parsed = parsePossibleRows(json);
+    buildTable(parsed.headers, parsed.rows);
+    console.log('Loaded JSON:', json);
+    return;
+  } catch(firstErr){
+    console.warn('Direct fetch failed:', firstErr);
+    statusEl.textContent = 'Primary load failed, retrying with fallback...';
+
+    // try to fetch via a public CORS proxy as a second attempt (only if direct failed)
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(JSON_URL);
+    try {
+      const res2 = await fetchWithTimeout(proxyUrl, 9000);
+      if(!res2.ok) throw new Error('Proxy HTTP ' + res2.status);
+      const json2 = await res2.json();
+      statusEl.textContent = 'Data loaded using proxy';
+      const parsed = parsePossibleRows(json2);
+      buildTable(parsed.headers, parsed.rows);
+      console.log('Loaded JSON via proxy:', json2);
+      return;
+    } catch(proxyErr){
+      console.warn('Proxy fetch failed:', proxyErr);
+      statusEl.textContent = 'Unable to load remote data — showing fallback sample data.';
+      // Use fallback data so something always appears
+      buildTable(fallbackData.headers, fallbackData.rows);
+      // include a small hint for the user
+      const debugHint = document.createElement('div');
+      debugHint.style.marginTop = '8px';
+      debugHint.style.fontSize = '12px';
+      debugHint.style.color = '#922';
+      debugHint.textContent = 'If your real data is not visible, open DevTools console to see fetch errors.';
+      statusEl.after(debugHint);
+      console.error('All fetch attempts failed:', firstErr, proxyErr);
+    }
+  }
+}
+
+// Start
+loadData();
+</script>
+</body>
+</html>
