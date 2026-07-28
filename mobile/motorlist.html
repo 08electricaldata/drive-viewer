@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Motor Master List — Stacked Compact Tiles</title>
+<title>Motor Master List — Stacked Compact Tiles (Main Drive)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#003f88" />
 <style>
@@ -76,7 +76,7 @@ html,body{
   align-items:start;
 }
 
-/* Compact smaller tile (≈30% reduced) */
+/* Compact smaller tile */
 .tile{
   background: linear-gradient(180deg,var(--tile-bg),#fbfdff);
   border-radius:8px;
@@ -101,7 +101,7 @@ html,body{
   justify-content:space-between;
   gap:6px;
   align-items:center;
-  padding:0 0;
+  padding:0;
   line-height:1;
   min-height:14px;
 }
@@ -170,14 +170,15 @@ html,body{
 </div>
 
 <script>
-/* Stacked compact tiles implementation:
- - skips rows where column 0 (index 0) is empty or not numeric
- - tiles stacked vertically (one per row)
- - each tile shows four rows with two short tokens each (as requested)
- - reduced sizes for compactness
- - includes fallback data so you always see tiles when testing
+/* Stacked compact tiles showing MAIN DRIVE (EQUIP NAME) in title-left spot.
+   - Tiles are generated only for rows where column 0 is numeric (skip headings)
+   - The script searches for a MainDrive/Equip header and uses it as the left title.
+   - If not present, falls back to Tag/Name (index 1) or the second column.
+   - Tile layout: top row shows EquipName (left) and model/id (right).
+     Next 3 rows show paired tokens like KW-90KW / MAKE-KEC etc.
 */
 
+// JSON source
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
 
 const tileGrid = document.getElementById('tileGrid');
@@ -185,11 +186,13 @@ const statusEl = document.getElementById('status');
 const universalFilter = document.getElementById('universalFilter');
 const emptyNote = document.getElementById('emptyNote');
 
+// nav
 function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
 function openMotorOH(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motoroh.html"; }
 function openMotorPM(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html"; }
 
+// utils
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function isNumericString(x){ if(x === null || x === undefined) return false; const t = String(x).trim(); if(t === '') return false; return !isNaN(Number(t)); }
 
@@ -204,14 +207,15 @@ function findHeaderIndex(headers, keywords){
   return -1;
 }
 
+// fallback sample data (for testing)
 const fallback = {
-  headers: ["S.No", "Tag", "Model", "C", "KW", "MAKE", "FRAME", "RPM", "FLC", "MTG"],
+  headers: ["S.No","TAG","MODEL","C","KW","MAKE","FRAME","RPM","FLC","MTG"],
   rows: [
-    [1, "BAT_A", "P-202", "", "90KW", "KEC", "280M4", "1478", "154", "B3"],
-    [2, "BAT_B", "P-203", "", "75KW", "KEC", "280M4", "1460", "120", "B3"],
-    [3, "BAT_C", "P-204", "", "45KW", "ABC", "200M4", "1500", "78", "V5"],
-    ["", "Pump Section", "", "", "", "", "", "", "", ""], // heading row to be skipped
-    [4, "BAT_D", "P-205", "", "37KW", "XYZ", "180M4", "1440", "63", "B3"]
+    [1,"BAT_A","P-202","","90","KEC","280M4","1478","154","B3"],
+    [2,"BAT_B","P-203","","75","KEC","280M4","1460","120","B3"],
+    ["","Summary Section","","","","","","","",""], // should be skipped
+    [3,"BAT_C","P-204","","45","ABC","200M4","1500","78","V5"],
+    [4,"BAT_D","P-205","","37","XYZ","180M4","1440","63","B3"]
   ]
 };
 
@@ -220,19 +224,19 @@ async function loadAndRender(){
   statusEl.textContent = 'Loading…';
   let data = null;
 
-  // try cached
+  // try cached data
   try {
     const c = localStorage.getItem('motorJSON');
     if(c) data = JSON.parse(c);
   } catch(e){ /* ignore */ }
 
-  // fetch remote
+  // fetch
   try {
     const res = await fetch(JSON_URL, { cache: 'no-store' });
     if(res && res.ok){
-      const js = await res.json();
-      data = js;
-      try { localStorage.setItem('motorJSON', JSON.stringify(js)); } catch(e){}
+      const j = await res.json();
+      data = j;
+      try { localStorage.setItem('motorJSON', JSON.stringify(j)); } catch(e){}
       statusEl.textContent = 'Loaded';
     } else {
       statusEl.textContent = 'Using cache/fallback';
@@ -248,66 +252,78 @@ async function loadAndRender(){
   const rows = Array.isArray(data.rows) ? data.rows.slice() : [];
 
   if(headers.length === 0 && rows.length > 0){
-    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r)?r.length:0), 0);
+    const max = rows.reduce((m,r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
     headers = Array.from({length:max}, (_,i) => 'Col' + (i+1));
   }
 
-  // pick fields in order: name/tag, model, KW, MAKE, FRAME, RPM, FLC, MTG (fallbacks)
-  const idxName = findHeaderIndex(headers, ['tag','name','asset','bat','id','drive']);
-  const idxModel = findHeaderIndex(headers, ['model','modelno','p-','pno','code']);
-  const idxKW = findHeaderIndex(headers, ['kw','k.w','power','kw-']) ;
-  const idxMake = findHeaderIndex(headers, ['make','manufacturer','mfr','brand']);
-  const idxFrame = findHeaderIndex(headers, ['frame']);
-  const idxRPM = findHeaderIndex(headers, ['rpm']);
-  const idxFLC = findHeaderIndex(headers, ['flc','full load','amp','amps']);
-  const idxMTG = findHeaderIndex(headers, ['mtg','mount','mounting']);
+  // Find MainDrive/Equip header first (user requested equip name = main drive)
+  // Try several keyword matches
+  const idxMainDrive = findHeaderIndex(headers, ['main drive','main_drive','main-drive','equip name','equipname','equipment','equip','main drive name','main']);
+  // Fallbacks
+  const idxTag = findHeaderIndex(headers, ['tag','name','asset','id','drive']) !== -1 ? findHeaderIndex(headers, ['tag','name','asset','id','drive']) : 1;
+  const idxModel = findHeaderIndex(headers, ['model','modelno','p-','pno','code']) !== -1 ? findHeaderIndex(headers, ['model','modelno','p-','pno','code']) : 2;
+  const idxKW = findHeaderIndex(headers, ['kw','k.w','power','kw-']) !== -1 ? findHeaderIndex(headers, ['kw','k.w','power','kw-']) : -1;
+  const idxMake = findHeaderIndex(headers, ['make','manufacturer','mfr','brand']) !== -1 ? findHeaderIndex(headers, ['make','manufacturer','mfr','brand']) : -1;
+  const idxFrame = findHeaderIndex(headers, ['frame']) !== -1 ? findHeaderIndex(headers, ['frame']) : -1;
+  const idxRPM = findHeaderIndex(headers, ['rpm']) !== -1 ? findHeaderIndex(headers, ['rpm']) : -1;
+  const idxFLC = findHeaderIndex(headers, ['flc','full load','amp','amps']) !== -1 ? findHeaderIndex(headers, ['flc','full load','amp','amps']) : -1;
+  const idxMTG = findHeaderIndex(headers, ['mtg','mount','mounting']) !== -1 ? findHeaderIndex(headers, ['mtg','mount','mounting']) : -1;
 
+  // Build picks list in desired order (unique)
   const picks = [];
-  [idxName, idxModel, idxKW, idxMake, idxFrame, idxRPM, idxFLC, idxMTG].forEach(i => { if(i !== -1 && !picks.includes(i)) picks.push(i); });
-  for(let i=0;i<headers.length && picks.length < 8; i++){
+  [idxKW, idxMake, idxFrame, idxRPM, idxFLC, idxMTG].forEach(i => { if(i !== -1 && !picks.includes(i)) picks.push(i); });
+  // Fill with other headers if needed
+  for(let i=0;i<headers.length && picks.length < 6; i++){
     if(!picks.includes(i)) picks.push(i);
   }
 
-  // render tiles (skip rows where col0 is empty/non-numeric)
+  // Render tiles: only rows where column 0 is numeric
   tileGrid.innerHTML = '';
-  let shown = false;
+  let any = false;
   for(const r of rows){
     const row = Array.isArray(r) ? r : [];
-    if(!isNumericString(row[0] ?? '')) continue; // skip section headings
+    if(!isNumericString(row[0] ?? '')) continue; // skip headings
 
-    // build tokens up to 8 -> 4 rows
-    const tokens = picks.slice(0,8).map(idx => {
-      if(idx === -1) return '';
-      const hdr = headers[idx] ?? ('Col' + (idx+1));
-      const v = row[idx] ?? '';
-      if(v === null || v === undefined || String(v).trim() === '') return '';
+    // Title for left: prefer main drive column if found, else idxTag fallback
+    const titleLeft = (idxMainDrive !== -1 && row[idxMainDrive] !== undefined && String(row[idxMainDrive]).trim() !== '') ? row[idxMainDrive] : (row[idxTag] ?? row[1] ?? '');
+
+    // Title right: show model/id (idxModel) or second column fallback
+    const titleRight = row[idxModel] ?? row[2] ?? '';
+
+    // Prepare tokens for next 3 rows (we'll show up to 6 tokens -> 3 rows)
+    const tokens = picks.slice(0,6).map(i => {
+      if(i === -1) return '';
+      const hdr = headers[i] ?? ('Col' + (i+1));
+      const val = row[i] ?? '';
+      if(val === null || val === undefined || String(val).trim() === '') return '';
       const short = String(hdr).split(/\s|[-_]/)[0].toUpperCase();
-      return `${short}-${v}`;
+      // show as "KW-90" only if header is KW; else show raw value for clarity
+      if(short === 'KW' || short === 'KW:') return `${short}-${val}`;
+      return `${short}-${val}`;
     });
-    while(tokens.length < 8) tokens.push('');
+    while(tokens.length < 6) tokens.push('');
 
+    // Build compact tile
     const tile = document.createElement('div'); tile.className = 'tile';
     tile.title = row.map(x => x ?? '').join(' | ');
 
-    // first row: name and model/id
+    // Row 1: main drive / equip name (left) and model (right)
     const r1 = document.createElement('div'); r1.className = 'tile-row';
-    const l1 = document.createElement('div'); l1.className = 'token-left';
-    l1.textContent = row[idxName] ?? row[1] ?? '';
-    const rr1 = document.createElement('div'); rr1.className = 'token-right';
-    rr1.textContent = row[idxModel] ?? row[2] ?? (tokens[1] || '');
-    r1.appendChild(l1); r1.appendChild(rr1);
+    const left1 = document.createElement('div'); left1.className = 'token-left'; left1.textContent = String(titleLeft);
+    const right1 = document.createElement('div'); right1.className = 'token-right'; right1.textContent = String(titleRight);
+    r1.appendChild(left1); r1.appendChild(right1);
     tile.appendChild(r1);
 
-    // next three rows from tokens
-    for(let t = 0; t < 3; t++){
+    // Rows 2..4: tokens in pairs (tokens[0]/[1], [2]/[3], [4]/[5])
+    for(let t=0; t<3; t++){
       const rdiv = document.createElement('div'); rdiv.className = 'tile-row';
-      const left = document.createElement('div'); left.className = 'token-left'; left.textContent = tokens[2*t + 0] || '';
-      const right = document.createElement('div'); right.className = 'token-right'; right.textContent = tokens[2*t + 1] || '';
-      rdiv.appendChild(left); rdiv.appendChild(right);
+      const l = document.createElement('div'); l.className = 'token-left'; l.textContent = tokens[2*t] || '';
+      const rr = document.createElement('div'); rr.className = 'token-right'; rr.textContent = tokens[2*t+1] || '';
+      rdiv.appendChild(l); rdiv.appendChild(rr);
       tile.appendChild(rdiv);
     }
 
-    // click behavior
+    // click to open details (r[1]-r[2])
     tile.addEventListener('click', () => {
       const id = (row[1] ?? '') + '-' + (row[2] ?? '');
       if((row[1] ?? '') === '') return;
@@ -315,13 +331,13 @@ async function loadAndRender(){
     });
 
     tileGrid.appendChild(tile);
-    shown = true;
+    any = true;
   }
 
-  emptyNote.style.display = shown ? 'none' : 'block';
+  emptyNote.style.display = any ? 'none' : 'block';
   statusEl.style.display = 'none';
 
-  // search
+  // search filter
   universalFilter.addEventListener('input', () => {
     const q = universalFilter.value.trim().toLowerCase();
     document.querySelectorAll('.tile').forEach(tile => {
@@ -330,7 +346,7 @@ async function loadAndRender(){
   });
 }
 
-// CSV export
+// CSV export of visible tiles
 function exportCSV(){
   const tiles = Array.from(document.querySelectorAll('.tile')).filter(t => getComputedStyle(t).display !== 'none');
   if(tiles.length === 0){ alert('No data to export'); return; }
@@ -342,7 +358,7 @@ function exportCSV(){
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'motor_tiles.csv'; a.click();
 }
 
-// Initialize
+// initialize
 loadAndRender();
 </script>
 </body>
