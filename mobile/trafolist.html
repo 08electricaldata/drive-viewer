@@ -35,31 +35,81 @@ html,body{
 .status{ font-size:12px; color:#223; padding:6px; border-radius:8px; background:#f6f9ff; margin-bottom:8px; border:1px solid #e6eefc; }
 
 /* Tiles: single column stacked for mobile */
-.tile-grid{ display:grid; grid-template-columns: 1fr; gap:6px; align-items:start; }
+.tile-grid{ display:grid; grid-template-columns: 1fr; gap:8px; align-items:start; }
 
-/* Compact tile */
+/* Enhanced tile with label-value layout */
 .tile{
   background: linear-gradient(180deg,var(--tile-bg),#fbfdff);
   border-radius:8px;
-  padding:5px;
+  padding:8px;
   box-shadow: var(--tile-shadow);
   border:1px solid rgba(8,15,42,0.04);
   transition: transform 120ms ease, box-shadow 120ms ease;
-  min-height:44px;
-  display:flex; flex-direction:column; gap:3px; cursor:pointer;
+  display:flex; flex-direction:column; gap:5px; cursor:pointer;
 }
 .tile:active, .tile:hover{ transform: translateY(-3px); box-shadow: 0 10px 18px rgba(8,15,42,0.08); }
 
-/* rows inside tile */
-.tile-row{ display:flex; justify-content:space-between; gap:6px; align-items:center; padding:0; line-height:1; min-height:14px; }
-.token-left, .token-right{ font-size:11px; font-weight:700; color:#163047; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:48%; }
-.token-right{ text-align:right; }
+/* Tile header section */
+.tile-header{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border-bottom: 1px solid #e6edf6;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+}
 
-/* small badge style */
-.badge{ display:inline-block; padding:3px 6px; border-radius:8px; font-weight:700; font-size:11px; white-space:nowrap; }
-.pos{ background:#e8f5e9; color:#1b5e20; }
-.neg{ background:#fff0f0; color:#a01f1f; }
-.eq{ background:#fff8e1; color:#e65100; }
+.tile-header-item{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tile-label{
+  font-size: 10px;
+  font-weight: 700;
+  color: #556;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tile-value{
+  font-size: 12px;
+  font-weight: 600;
+  color: #0b2540;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+/* Tile content rows */
+.tile-content{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tile-field{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tile-field-label{
+  font-size: 10px;
+  font-weight: 700;
+  color: #556;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tile-field-value{
+  font-size: 11px;
+  font-weight: 500;
+  color: #163047;
+  word-break: break-word;
+  line-height: 1.2;
+}
 
 /* fallback table for large screens */
 .table-wrapper{ display:none; margin-top:6px; }
@@ -70,10 +120,22 @@ html,body{
 
 /* very small screens */
 @media (max-width:360px){
-  .tile{ padding:4px; min-height:40px; }
-  .token-left, .token-right{ font-size:10px; }
+  .tile{ padding:6px; }
+  .tile-value{ font-size:11px; }
+  .tile-field-value{ font-size:10px; }
   .header-title{ font-size:14px; }
-  .controls button{ padding:6px 8px; font-size:13px; }
+  .controls button{ padding:6px 8px; font-size:12px; }
+}
+
+@media (max-width:480px){
+  .tile-grid{ gap:6px; }
+  .tile{ padding:6px; gap:4px; }
+  .tile-header{ gap:8px; }
+  .tile-content{ gap:8px; }
+  .tile-label{ font-size:9px; }
+  .tile-value{ font-size:11px; }
+  .tile-field-label{ font-size:9px; }
+  .tile-field-value{ font-size:10px; }
 }
 </style>
 </head>
@@ -93,7 +155,7 @@ html,body{
   <div class="controls">
     <button onclick="exportCSV()">📄 Export CSV</button>
     <button onclick="window.print()">🖨 Print</button>
-    <div class="filter"><input id="universalFilter" placeholder="🔍 Search tiles" /></div>
+    <div class="filter"><input id="universalFilter" placeholder="🔍 Search" /></div>
   </div>
 
   <div id="tileGrid" class="tile-grid" aria-live="polite"></div>
@@ -106,12 +168,10 @@ html,body{
 </div>
 
 <script>
-/* Transformer tiles:
- - Skip rows where column 0 is empty or not numeric (section headings)
- - Show MAIN/EQUIP name in top-left if header exists; fall back to Tag/Name (col 1)
- - Top-right shows model/id (col 2 or model header)
- - Next three rows show paired tokens: picks are KV, RATING/CAPACITY, MAKE, TYPE, OIL, SERIAL, etc.
- - Search, export, print and navigation preserved
+/* Transformer Master List - Enhanced Card Layout
+ - Each card displays: S/S, TRF-No, TR SL NO, MAKE
+ - Then: KVA, MAIN S/S, UNIT S/S, %IMP, LT SWBD, RATING
+ - Full structured layout with labels and values
 */
 
 // JSON endpoint
@@ -144,14 +204,14 @@ function findHeaderIndex(headers, keywords){
   return -1;
 }
 
-// fallback sample (so page never empty during testing)
+// fallback sample
 const fallback = {
-  headers: ["SNo","MAIN_EQUIP","TAG","MODEL","KV","RATING","MAKE","TYPE","OIL","SERIAL"],
+  headers: ["SNo","S/S","TRF_NO","TR_SL_NO","MAKE","KVA","MAIN_S/S","UNIT_S/S","IMP%","LT_SWBD","RATING","KV"],
   rows: [
-    [1,"TX-A","T-001","M-100","11","1000","ABB","ONAN","Mineral","S123"],
-    [2,"TX-B","T-002","M-200","33","2000","Siemens","ONAF","Mineral","S124"],
-    ["","Section: Low Voltage","","","","","","","",""], // heading (skipped)
-    [3,"TX-C","T-003","M-300","11","500","GE","ONAN","Synthetic","S125"]
+    [1,"US-08E","2244","JN - 4865 / 1","VOLTAMP","2000","LS04E #04","US-08E#01","6.47","PANEL-1","244","11/6.6 KV, 105/168 amp"],
+    [2,"US-08F","2245","JN - 4865 / 2","ABB","2500","LS04F #05","US-08F#02","6.50","PANEL-2","250","11/6.6 KV, 110/175 amp"],
+    ["","Section: Low Voltage","","","","","","","","","",""],
+    [3,"US-08G","2246","JN - 4865 / 3","Siemens","1500","LS04G #06","US-08G#03","6.45","PANEL-3","220","11/6.6 KV, 95/150 amp"]
   ]
 };
 
@@ -160,13 +220,11 @@ async function loadAndRender(){
   statusEl.textContent = 'Loading…';
   let data = null;
 
-  // try cached
   try {
     const c = localStorage.getItem('xfmrJSON');
     if(c) data = JSON.parse(c);
-  } catch(e){ /* ignore */ }
+  } catch(e){ }
 
-  // try fetch
   try {
     const res = await fetch(JSON_URL, { cache: 'no-store' });
     if(res && res.ok){
@@ -193,71 +251,88 @@ async function loadAndRender(){
     headers = Array.from({length:max}, (_,i) => 'Col' + (i+1));
   }
 
-  // Find Main/Equip name header (preferred), fallback to Tag/Name (col 2)
-  const idxMain = findHeaderIndex(headers, ['main','equip','equipment','equip name','main_equip','main drive']);
-  const idxTag = findHeaderIndex(headers, ['tag','name','id','asset']) !== -1 ? findHeaderIndex(headers, ['tag','name','id','asset']) : 2;
-  const idxModel = findHeaderIndex(headers, ['model','modelno','type','code']) !== -1 ? findHeaderIndex(headers, ['model','modelno','type','code']) : 3;
-
-  // tokens to show next (pick common transformer fields)
-  const idxKV = findHeaderIndex(headers, ['kv','k.v','voltage']);
-  const idxRating = findHeaderIndex(headers, ['rating','kva','capacity','rating']);
+  // Find column indices
+  const idxSS = findHeaderIndex(headers, ['s/s','substation','ss']);
+  const idxTRFNo = findHeaderIndex(headers, ['trf','trf_no','transformer','trf no']);
+  const idxTRSlNo = findHeaderIndex(headers, ['tr_sl_no','trsl','slno','serial']);
   const idxMake = findHeaderIndex(headers, ['make','manufacturer','mfr']);
-  const idxType = findHeaderIndex(headers, ['type']);
-  const idxOil = findHeaderIndex(headers, ['oil','insulant']);
-  const idxSerial = findHeaderIndex(headers, ['serial','sno','srno','slno']);
-
-  const picks = [];
-  [idxKV, idxRating, idxMake, idxType, idxOil, idxSerial].forEach(i => { if(i !== -1 && !picks.includes(i)) picks.push(i); });
-  // fill with other headers if needed
-  for(let i=0;i<headers.length && picks.length < 6; i++){
-    if(!picks.includes(i)) picks.push(i);
-  }
+  const idxKVA = findHeaderIndex(headers, ['kva','rating','capacity']);
+  const idxMainSS = findHeaderIndex(headers, ['main_s/s','main_ss','main']);
+  const idxUnitSS = findHeaderIndex(headers, ['unit_s/s','unit_ss','unit']);
+  const idxImp = findHeaderIndex(headers, ['imp','%imp','impedance']);
+  const idxLTSWBD = findHeaderIndex(headers, ['lt','swbd','lt_swbd']);
+  const idxRating = findHeaderIndex(headers, ['rating','voltage','kv']);
 
   // Render tiles (skip rows where column 0 is empty or not numeric)
   tileGrid.innerHTML = '';
   let shown = false;
+
   for(const r of rows){
     const row = Array.isArray(r) ? r : [];
     if(!isNumericString(row[0] ?? '')) continue; // skip headings
 
-    // Left title: main equip or tag
-    const titleLeft = (idxMain !== -1 && row[idxMain] !== undefined && String(row[idxMain]).trim() !== '') ? row[idxMain] : (row[idxTag] ?? row[1] ?? '');
-    const titleRight = row[idxModel] ?? row[3] ?? '';
-
-    // build tokens up to 6 (3 rows of pairs)
-    const tokens = picks.slice(0,6).map(i => {
-      if(i === -1) return '';
-      const hdr = headers[i] ?? ('Col' + (i+1));
-      const val = row[i] ?? '';
-      if(val === null || val === undefined || String(val).trim() === '') return '';
-      const short = String(hdr).split(/\s|[-_]/)[0].toUpperCase();
-      return `${short}-${val}`;
-    });
-    while(tokens.length < 6) tokens.push('');
+    // Get values
+    const ss = row[idxSS] ?? '';
+    const trfNo = row[idxTRFNo] ?? '';
+    const trSlNo = row[idxTRSlNo] ?? '';
+    const make = row[idxMake] ?? '';
+    const kva = row[idxKVA] ?? '';
+    const mainSS = row[idxMainSS] ?? '';
+    const unitSS = row[idxUnitSS] ?? '';
+    const imp = row[idxImp] ?? '';
+    const ltswbd = row[idxLTSWBD] ?? '';
+    const rating = row[idxRating] ?? '';
 
     // create tile
-    const tile = document.createElement('div'); tile.className = 'tile';
+    const tile = document.createElement('div');
+    tile.className = 'tile';
     tile.title = row.map(x => x ?? '').join(' | ');
 
-    // row 1: titleLeft and titleRight
-    const r1 = document.createElement('div'); r1.className = 'tile-row';
-    const l1 = document.createElement('div'); l1.className = 'token-left'; l1.textContent = String(titleLeft);
-    const rr1 = document.createElement('div'); rr1.className = 'token-right'; rr1.textContent = String(titleRight);
-    r1.appendChild(l1); r1.appendChild(rr1);
-    tile.appendChild(r1);
+    // Header section
+    const header = document.createElement('div');
+    header.className = 'tile-header';
 
-    // rows 2-4: token pairs
-    for(let t=0; t<3; t++){
-      const rdiv = document.createElement('div'); rdiv.className = 'tile-row';
-      const left = document.createElement('div'); left.className = 'token-left'; left.textContent = tokens[2*t] || '';
-      const right = document.createElement('div'); right.className = 'token-right'; right.textContent = tokens[2*t + 1] || '';
-      rdiv.appendChild(left); rdiv.appendChild(right);
-      tile.appendChild(rdiv);
+    const h1 = document.createElement('div');
+    h1.className = 'tile-header-item';
+    h1.innerHTML = `<div class="tile-label">S/S</div><div class="tile-value">${escapeHtml(ss)}</div>`;
+
+    const h2 = document.createElement('div');
+    h2.className = 'tile-header-item';
+    h2.innerHTML = `<div class="tile-label">TRF-No</div><div class="tile-value">${escapeHtml(trfNo)}</div>`;
+
+    header.appendChild(h1);
+    header.appendChild(h2);
+    tile.appendChild(header);
+
+    // Content section
+    const content = document.createElement('div');
+    content.className = 'tile-content';
+
+    const fields = [
+      { label: 'TR SL NO', value: trSlNo },
+      { label: 'MAKE', value: make },
+      { label: 'KVA', value: kva },
+      { label: 'MAIN S/S', value: mainSS },
+      { label: 'UNIT S/S', value: unitSS },
+      { label: '%IMP', value: imp },
+      { label: 'LT SWBD', value: ltswbd },
+      { label: 'RATING', value: rating }
+    ];
+
+    for(const field of fields){
+      if(field.value !== ''){
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'tile-field';
+        fieldDiv.innerHTML = `<div class="tile-field-label">${escapeHtml(field.label)}</div><div class="tile-field-value">${escapeHtml(field.value)}</div>`;
+        content.appendChild(fieldDiv);
+      }
     }
 
-    // click -> detail page (use transformer no at r[2] if available)
+    tile.appendChild(content);
+
+    // click -> detail page
     tile.addEventListener('click', () => {
-      const transformerNo = row[2] ?? row[1] ?? '';
+      const transformerNo = trfNo || trSlNo || '';
       if(!transformerNo) return;
       location.href = 'https://08electricaldata.github.io/drive-viewer/history.html?id=' + encodeURIComponent('Transformer-' + transformerNo);
     });
@@ -283,11 +358,14 @@ function exportCSV(){
   const tiles = Array.from(document.querySelectorAll('.tile')).filter(t => getComputedStyle(t).display !== 'none');
   if(tiles.length === 0){ alert('No data to export'); return; }
   const rows = tiles.map(tile => {
-    const parts = Array.from(tile.querySelectorAll('.tile-row')).map(r => r.innerText.replace(/"/g,'""'));
+    const parts = Array.from(tile.querySelectorAll('.tile-field-label, .tile-field-value')).map(el => el.innerText.replace(/"/g,'""'));
     return '"' + parts.join('","') + '"';
   });
   const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'transformer_tiles.csv'; a.click();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'transformer_list.csv';
+  a.click();
 }
 
 // Initialize
