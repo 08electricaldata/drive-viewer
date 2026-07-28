@@ -6,52 +6,70 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+* { box-sizing: border-box; }
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
   background: #f2f6ff;
+  font-size: 14px;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ===== HEADER ===== */
 .header {
   background: #003f88;
   color: white;
-  padding: 14px 16px;
+  padding: 12px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 .header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 .header-left {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .header-btn {
   background: white;
   color: #003f88;
   border: none;
   border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 18px;
+  padding: 8px 12px;
+  font-size: 16px;
   cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
 }
-.header-btn:hover { opacity: 0.85; }
+.header-btn:active { opacity: 0.9; transform: translateY(1px); }
 .header-center {
   text-align: center;
   flex: 1;
+  padding: 0 8px;
+  min-width: 0;
 }
 .header-center h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 20px;
+  font-weight: 800;
 }
 .header-center p {
-  margin: 4px 0 0;
-  font-size: 16px;
+  margin: 2px 0 0;
+  font-size: 13px;
+  opacity: 0.95;
 }
 
 /* ===== CONTAINER ===== */
-.container { padding: 20px; }
+.container { padding: 12px; }
 
 /* ===== CONTROLS ===== */
 .controls {
@@ -59,69 +77,125 @@ body {
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 12px;
+  align-items: center;
 }
-.controls input { padding: 8px; width: 240px; }
+.controls input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  flex: 1;
+  min-width: 180px;
+  background: white;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+}
 .controls button {
-  padding: 8px 14px;
+  padding: 9px 12px;
   background: #003f88;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
 }
+.controls button:active { opacity: 0.92; transform: translateY(1px); }
 
 /* ===== TABLE ===== */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  background: white;
+}
 table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  table-layout: fixed;
+  font-size: 14px;
+  min-width: 840px; /* keep table readable; scroll on small screens */
 }
 th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
+  border: 1px solid #e7e7e7;
+  padding: 10px 8px;
   text-align: center;
+  vertical-align: middle;
 }
 th {
   background: #003f88;
   color: white;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
   position: sticky;
   top: 0;
-  white-space: normal;
-  word-break: break-word;
-  line-height: 1.2;
+  z-index: 2;
 }
 
-/* uniform width for date columns (from 3rd column onward) */
-th:nth-child(n+3),
-td:nth-child(n+3){
-  width: 110px;
-}
+/* Column widths: Main Drive, Sub Drive, then dates */
+th:nth-child(1), td:nth-child(1) { width: 220px; } /* Main Drive */
+th:nth-child(2), td:nth-child(2) { width: 160px; } /* Sub Drive */
+th:nth-child(n+3), td:nth-child(n+3) { width: 120px; } /* date columns */
 
 /* ===== STATUS COLORS ===== */
 .ok {
   background: #c8f7c5;
   color: black;
   font-weight: bold;
+  padding: 6px 8px;
+  border-radius: 4px;
+  display: inline-block;
 }
 .overdue-cell {
-  background: red;
-  color: yellow;
+  background: #d32f2f;
+  color: #fff200; /* keep yellowish for contrast similar to original */
   font-weight: bold;
+  padding: 6px 8px;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 /* ===== DRIVE COLOR BAND ===== */
 .drive-band {
   font-weight: bold;
+  text-align: left;
+  padding-left: 8px;
+  border-radius: 4px;
 }
 
 /* ===== UX ===== */
-tbody tr { cursor: pointer; }
-tbody tr:hover { background: #eef5ff; }
+tbody tr { cursor: pointer; transition: background .12s ease; }
+tbody tr:hover { background: #f5f9ff; }
 
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .header { padding: 10px 8px; }
+  .header-btn { padding: 7px 10px; font-size: 15px; }
+  .header-center h1 { font-size: 18px; }
+  .controls input { font-size: 14px; padding: 9px; }
+  .controls button { font-size: 13px; padding: 8px 10px; }
+  table { font-size: 13px; min-width: 680px; }
+  th, td { padding: 8px 6px; }
+  th:nth-child(1), td:nth-child(1) { width: 180px; }
+  th:nth-child(2), td:nth-child(2) { width: 130px; }
+  th:nth-child(n+3), td:nth-child(n+3) { width: 110px; }
+}
+
+@media (max-width: 420px) {
+  .header-btn { padding: 6px 8px; font-size: 13px; }
+  .header-center h1 { font-size: 16px; }
+  .controls input { min-width: 100px; font-size: 13px; }
+  table { font-size: 12px; min-width: 560px; }
+  th, td { padding: 7px 5px; }
+}
+
+/* Print */
 @media print {
   .controls, .header-left { display: none; }
+  .header { background: #003f88; color: white; }
 }
 </style>
 </head>
@@ -149,27 +223,29 @@ tbody tr:hover { background: #eef5ff; }
 
 <div class="container">
 
-<div class="controls">
-  <input id="search" placeholder="Search (any column)">
-  <button onclick="exportExcel()">📥 Export Excel</button>
-  <button onclick="window.print()">🖨 Print</button>
-</div>
+  <div class="controls">
+    <input id="search" placeholder="Search (any column)">
+    <button onclick="exportExcel()">📥 Export Excel</button>
+    <button onclick="window.print()">🖨 Print</button>
+  </div>
 
-<table id="pmTable">
-  <thead>
-    <tr>
-      <th>Main Drive</th>
-      <th>Sub Drive</th>
-      <th>Before OCT-25 Module</th>
-      <th>Before OCT-25 Motor</th>
-      <th>OCT25-MAR26 Module</th>
-      <th>OCT25-MAR26 Motor</th>
-      <th>Module Due</th>
-      <th>Motor Due</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <div class="table-wrapper">
+    <table id="pmTable" role="table" aria-label="Motor and module PM status">
+      <thead>
+        <tr>
+          <th>Main Drive</th>
+          <th>Sub Drive</th>
+          <th>Before OCT-25 Module</th>
+          <th>Before OCT-25 Motor</th>
+          <th>OCT25-MAR26 Module</th>
+          <th>OCT25-MAR26 Motor</th>
+          <th>Module Due</th>
+          <th>Motor Due</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
 </div>
 
@@ -180,12 +256,8 @@ const JSON_URL =
 /* NAV */
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ history.back(); }
-function openMotorList(){
-  location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html";
-}
-function openMotorOH(){
-  location.href="https://08electricaldata.github.io/drive-viewer/motoroh.html";
-}
+function openMotorList(){ location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html"; }
+function openMotorOH(){ location.href="https://08electricaldata.github.io/drive-viewer/motoroh.html"; }
 
 /* DATE */
 function parseISO(v){
@@ -199,7 +271,7 @@ function fmt(d){
     : "";
 }
 
-/* 🎨 color generator for Main Drive */
+/* Drive color band */
 const driveColorMap={};
 const palette=[
   "#e3f2fd","#fce4ec","#e8f5e9","#fff3e0",
@@ -216,76 +288,84 @@ function getDriveColor(key){
 
 /* LOAD */
 async function loadData(){
+  try {
+    const r = await fetch(JSON_URL);
+    const j = await r.json();
 
-  const r = await fetch(JSON_URL);
-  const j = await r.json();
+    const tbody=document.querySelector("#pmTable tbody");
+    const today=new Date(); today.setHours(0,0,0,0);
 
-  const tbody=document.querySelector("#pmTable tbody");
-  const today=new Date(); today.setHours(0,0,0,0);
+    tbody.innerHTML = ""; // clear
 
-  j.rows.forEach(row=>{
+    j.rows.forEach(row=>{
+      // same filtering: column 5 (index 4) should be "S"
+      if(String(row[4]||"").toUpperCase()!=="S") return;
+      if(!row[1] || !row[2]) return;
 
-    // keep same filtering as before: only rows with S in column 5 (index 4) and non-empty drive/subdrive
-    if(String(row[4]||"").toUpperCase()!=="S") return;
-    if(!row[1] || !row[2]) return;
+      const m=parseISO(row[12]);
+      const n=parseISO(row[13]);
+      const o=parseISO(row[14]);
+      const p=parseISO(row[15]);
+      const s=parseISO(row[18]);
+      const t=parseISO(row[19]);
 
-    const m=parseISO(row[12]);
-    const n=parseISO(row[13]);
-    const o=parseISO(row[14]);
-    const p=parseISO(row[15]);
-    const s=parseISO(row[18]);
-    const t=parseISO(row[19]);
+      const sOver=!s || s<today;
+      const tOver=!t || t<today;
 
-    const sOver=!s || s<today;
-    const tOver=!t || t<today;
+      const drive=row[1]||"";
+      const bandColor=getDriveColor(drive);
 
-    const drive=row[1]||"";
-    const bandColor=getDriveColor(drive);
+      const tr=document.createElement("tr");
+      tr.dataset.moduleOver = sOver ? "1" : "0";
+      tr.dataset.motorOver  = tOver ? "1" : "0";
 
-    const tr=document.createElement("tr");
-    tr.dataset.moduleOver = sOver ? "1" : "0";
-    tr.dataset.motorOver  = tOver ? "1" : "0";
+      tr.onclick=()=> {
+        const id=`${row[1]}-${row[2]}`;
+        location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
+      };
 
-    tr.onclick=()=> {
-      const id=`${row[1]}-${row[2]}`;
-      location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
-    };
+      tr.innerHTML=`
+        <td class="drive-band" style="background:${bandColor}">${drive}</td>
+        <td>${row[2]||""}</td>
+        <td>${fmt(m)}</td>
+        <td>${fmt(n)}</td>
+        <td>${fmt(o)}</td>
+        <td>${fmt(p)}</td>
+        <td class="${sOver?'overdue-cell':'ok'}">${fmt(s)}</td>
+        <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
+      `;
 
-    tr.innerHTML=`
-      <td class="drive-band" style="background:${bandColor}">${drive}</td>
-      <td>${row[2]||""}</td>
-      <td>${fmt(m)}</td>
-      <td>${fmt(n)}</td>
-      <td>${fmt(o)}</td>
-      <td>${fmt(p)}</td>
-      <td class="${sOver?'overdue-cell':'ok'}">${fmt(s)}</td>
-      <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  // improved search: check any cell in the row
-  search.onkeyup=function(){
-    const q=this.value.toLowerCase();
-    document.querySelectorAll("#pmTable tbody tr").forEach(tr=>{
-      if(!q){
-        tr.style.display="";
-        return;
-      }
-      const matches = [...tr.children].some(td=> td.innerText.toLowerCase().includes(q));
-      tr.style.display = matches ? "" : "none";
+      tbody.appendChild(tr);
     });
-  };
+
+    // search: any cell in row
+    const search = document.getElementById("search");
+    search.onkeyup=function(){
+      const q=this.value.trim().toLowerCase();
+      document.querySelectorAll("#pmTable tbody tr").forEach(tr=>{
+        if(!q){
+          tr.style.display="";
+          return;
+        }
+        const matches = [...tr.children].some(td=> td.innerText.toLowerCase().includes(q));
+        tr.style.display = matches ? "" : "none";
+      });
+    };
+  } catch (err) {
+    console.error("Error loading JSON:", err);
+    document.querySelector("#pmTable tbody").innerHTML =
+      '<tr><td colspan="8" style="text-align:center;color:#d32f2f;">Error loading data</td></tr>';
+  }
 }
 
+/* EXPORT */
 function exportExcel(){
   let csv=[];
   document.querySelectorAll("#pmTable tr").forEach(r=>{
     csv.push([...r.children].map(td=>`"${td.innerText.replace(/"/g,'""')}"`).join(","));
   });
   const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
+  a.href=URL.createObjectURL(new Blob([csv.join("\n")], {type: "text/csv"}));
   a.download="motor_module_pm_status_list.csv";
   a.click();
 }
