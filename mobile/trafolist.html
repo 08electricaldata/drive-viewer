@@ -185,8 +185,8 @@ const emptyNote = document.getElementById('emptyNote');
 // navigation functions
 function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
-function openPM(){ location.href = "https://08electricaldata.github.io/drive-viewer/trafopm.html"; }
-function openOil(){ location.href = "https://08electricaldata.github.io/drive-viewer/transformer-oil-summary.html"; }
+function openPM(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/trafopm.html"; }
+function openOil(){ location.href = "https://08electricaldata.github.io/drive-viewer/mobile/transformer-oil-summary.html"; }
 
 // helpers
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -328,7 +328,7 @@ async function loadAndRender(){
     tile.addEventListener('click', () => {
       const transformerNo = trfNo || trSlNo || '';
       if(!transformerNo) return;
-      location.href = 'https://08electricaldata.github.io/drive-viewer/history.html?id=' + encodeURIComponent('Transformer-' + transformerNo);
+      location.href = 'https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=' + encodeURIComponent('Transformer-' + transformerNo);
     });
 
     tileGrid.appendChild(tile);
