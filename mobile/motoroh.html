@@ -358,10 +358,10 @@ function goBack() {
   history.back();
 }
 function openMotorList(){
-  window.location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html";
+  window.location.href="https://08electricaldata.github.io/drive-viewer/mobile/motorlist.html";
 }
 function openMotorPM(){
-  window.location.href="https://08electricaldata.github.io/drive-viewer/motorpm.html";
+  window.location.href="https://08electricaldata.github.io/drive-viewer/mobile/motorpm.html";
 }
 
 /* DATE */
@@ -421,7 +421,7 @@ async function loadData() {
         if (!battery || !eqptNo) return;
         const id = `${battery}-${eqptNo}`;
         window.location.href =
-          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+          "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" +
           encodeURIComponent(id);
       };
 
