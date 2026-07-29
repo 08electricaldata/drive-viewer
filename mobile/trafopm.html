@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Transformer Maintenance Status — Mobile / App View</title>
+<title>Transformer Maintenance Status — Mobile / App View (fixed)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -83,12 +83,21 @@
     thead { display:none; }
     table, tbody, tr, td { display:block; width:100%; }
     tr { margin-bottom:12px; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); background:#fff; }
+    /* make each cell a flex row with label (::before) and value (.val) */
     td {
-      padding:10px 12px; border:none; display:flex; justify-content:space-between; align-items:center;
-      border-bottom:1px solid #f1f5f9;
-      font-size:14px;
+      padding:10px 12px; border:none; display:flex; align-items:center;
+      border-bottom:1px solid #f1f5f9; font-size:14px; flex-wrap:wrap;
+      white-space:normal; overflow:visible;
     }
-    td::before { content:attr(data-label); font-weight:600; color:var(--muted); margin-right:8px; width:45%; display:inline-block; }
+    /* label on left (pseudo-element) */
+    td::before {
+      content:attr(data-label); font-weight:700; color:var(--muted); margin-right:8px;
+      flex:0 0 36%; max-width:36%; box-sizing:border-box;
+    }
+    /* value on right, allowed to wrap and take remaining space */
+    td > .val {
+      flex:1 1 60%; text-align:right; display:inline-block; word-break:break-word;
+    }
     td:last-child { border-bottom:none; }
   }
 
@@ -97,10 +106,11 @@
   body.app-view table, body.app-view tbody, body.app-view tr, body.app-view td { display:block; width:100%; }
   body.app-view tr { margin-bottom:12px; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); background:#fff; }
   body.app-view td {
-    padding:10px 12px; border:none; display:flex; justify-content:space-between; align-items:center;
-    border-bottom:1px solid #f1f5f9; font-size:14px;
+    padding:10px 12px; border:none; display:flex; align-items:center; border-bottom:1px solid #f1f5f9;
+    font-size:14px; flex-wrap:wrap; white-space:normal; overflow:visible;
   }
-  body.app-view td::before { content:attr(data-label); font-weight:600; color:var(--muted); margin-right:8px; width:45%; display:inline-block; }
+  body.app-view td::before { content:attr(data-label); font-weight:700; color:var(--muted); margin-right:8px; flex:0 0 36%; max-width:36%; box-sizing:border-box; }
+  body.app-view td > .val { flex:1 1 60%; text-align:right; display:inline-block; word-break:break-word; }
   body.app-view td:last-child { border-bottom:none; }
 
   @media print {
@@ -250,17 +260,18 @@ async function load(){
           encodeURIComponent("TRANSFORMER-"+String(r[2]||"").trim());
       };
 
+      /* wrap each cell value in .val so CSS can flex label and value */
       tr.innerHTML = `
-        <td data-label="S/S">${escapeHtml(r[0]||"")}</td>
-        <td data-label="TRF NO">${escapeHtml(r[2]||"")}</td>
-        <td data-label="MAKE">${escapeHtml(r[4]||"")}</td>
-        <td data-label="RATING">${escapeHtml(r[5]||"")}</td>
-        <td data-label="OIL LEAKAGE" class="col-oil">${fmt(parseDate(r[6]))}</td>
-        <td data-label="O/H DATE" class="col-oh">${fmt(parseDate(r[7]))}</td>
-        <td data-label="PM DATE" class="col-pm">${fmt(pm)}</td>
-        <td data-label="O/H FREQ">${escapeHtml(r[9]||"")}</td>
-        <td data-label="LAST DATE">${fmt(parseDate(r[10]))}</td>
-        <td data-label="NEXT DUE" class="${cls}">${fmt(next)}</td>
+        <td data-label="S/S"><span class="val">${escapeHtml(r[0]||"")}</span></td>
+        <td data-label="TRF NO"><span class="val">${escapeHtml(r[2]||"")}</span></td>
+        <td data-label="MAKE"><span class="val">${escapeHtml(r[4]||"")}</span></td>
+        <td data-label="RATING"><span class="val">${escapeHtml(r[5]||"")}</span></td>
+        <td data-label="OIL LEAKAGE" class="col-oil"><span class="val">${fmt(parseDate(r[6]))}</span></td>
+        <td data-label="O/H DATE" class="col-oh"><span class="val">${fmt(parseDate(r[7]))}</span></td>
+        <td data-label="PM DATE" class="col-pm"><span class="val">${fmt(pm)}</span></td>
+        <td data-label="O/H FREQ"><span class="val">${escapeHtml(r[9]||"")}</span></td>
+        <td data-label="LAST DATE"><span class="val">${fmt(parseDate(r[10]))}</span></td>
+        <td data-label="NEXT DUE" class="${cls}"><span class="val">${fmt(next)}</span></td>
       `;
       tbody.appendChild(tr);
     });
@@ -290,8 +301,8 @@ function sendWhatsApp(){
   let msg="🔔 Transformer PM Overdue List:%0A";
   document.querySelectorAll("td.overdue").forEach(td=>{
     const tr=td.parentElement;
-    const ss = tr.querySelector('td[data-label="S/S"]').innerText;
-    const trf = tr.querySelector('td[data-label="TRF NO"]').innerText;
+    const ss = tr.querySelector('td[data-label="S/S"] .val').innerText;
+    const trf = tr.querySelector('td[data-label="TRF NO"] .val').innerText;
     msg+=`S/S ${ss} TRF ${trf} → ${td.innerText}%0A`;
   });
   if(msg.endsWith(":%0A")){ alert("No overdue transformers"); return; }
