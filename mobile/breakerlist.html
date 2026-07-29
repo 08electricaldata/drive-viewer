@@ -2,138 +2,117 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Breaker Master — Mobile App View</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover">
+<title>Breaker Master List — Responsive</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root{
-  --brand: #003f88;
-  --bg: #f2f6ff;
-  --card: #fff;
-  --muted: #6b7280;
-  --accent: #0b3b74;
+  --brand:#003f88;
+  --bg:#f2f6ff;
+  --card:#fff;
+  --muted:#6b7280;
 }
-
+/* Base */
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Roboto, sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
+body{font-family:Arial, sans-serif;margin:0;background:var(--bg);color:#111}
 
-/* APP BAR */
-.appbar{
-  position:sticky;top:0;z-index:200;
-  background:var(--brand);color:white;display:flex;align-items:center;gap:8px;padding:10px 12px;
+/* App header */
+.header-bar{
+  position:sticky;top:0;z-index:1000;background:var(--brand);color:#fff;display:flex;align-items:center;gap:10px;padding:10px;
 }
-.appbar .left{display:flex;gap:8px}
-.icon-btn{
-  background:white;color:var(--brand);border:0;border-radius:8px;padding:8px 10px;font-weight:800;font-size:13px;cursor:pointer;
-}
-.title{flex:1;text-align:center}
-.title h1{margin:0;font-size:16px;font-weight:800}
-.title p{margin:2px 0 0;font-size:11px;opacity:.95}
+.header-bar button{background:#fff;color:var(--brand);border:0;border-radius:6px;padding:8px 12px;font-size:14px;cursor:pointer}
+.header-title{flex:1;text-align:center;font-size:18px;font-weight:700}
 
-/* CONTROLS */
-.controls{
-  display:flex;gap:8px;padding:8px 12px;align-items:center;
-  position:sticky;top:56px;background:transparent;z-index:150;
-}
-.search{
-  flex:1;padding:8px 10px;border-radius:10px;border:1px solid #e6e9ef;background:#fff;font-size:14px;
-}
-.btn{
-  background:var(--brand);color:white;border:none;padding:8px 10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;
-}
+/* Container & card */
+.container{padding:12px;max-width:1100px;margin:0 auto}
+.card{background:var(--card);border-radius:10px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 
-/* container & cards */
-.container{padding:10px;max-width:980px;margin:0 auto}
-.cards{display:flex;flex-direction:column;gap:8px;padding-bottom:120px}
-.card{
-  background:var(--card);
-  border-radius:10px;
-  box-shadow:0 3px 10px rgba(0,0,0,0.06);
-  padding:10px;
-  display:flex;
-  gap:10px;
-  align-items:flex-start;
-  transition:transform .08s ease;
-  min-height:56px;
-}
-.card:active{transform:translateY(1px)}
-.card-left{min-width:70px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
-.rcs{background:#eef6ff;color:var(--brand);padding:6px 8px;border-radius:8px;font-weight:800;font-size:12px}
-.board{font-size:11px;color:var(--muted)}
-.card-mid{flex:1;display:flex;flex-direction:column;gap:6px}
-.card-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
-.name{font-weight:800;color:var(--accent);font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.meta{font-size:12px;color:var(--muted)}
-.card-bottom{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.kv{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center}
-.kv .v{font-weight:800;color:#0b3b74;font-size:13px}
+/* Controls row */
+.controls{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.search{flex:1;min-width:140px;padding:8px;border-radius:8px;border:1px solid #e6e9ef}
+.btn{background:var(--brand);color:#fff;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700}
 
-/* color band & filter panel */
-.color-band{width:8px;border-radius:6px;margin-right:6px;flex-shrink:0}
-.filter-panel{
-  position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top-left-radius:12px;border-top-right-radius:12px;
-  box-shadow:0 -6px 30px rgba(0,0,0,0.18);padding:12px;transform:translateY(110%);transition:transform .18s ease;z-index:260;
-  max-height:72vh;overflow:auto;
-}
-.filter-panel.open{transform:translateY(0%)}
-.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.filter-row select{flex:1;padding:8px;border-radius:8px;border:1px solid #e6e9ef;background:#fff}
+/* Table */
+.table-wrap{overflow:auto;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card)}
+thead th{background:var(--brand);color:#fff;position:sticky;top:56px;padding:8px;border:1px solid rgba(255,255,255,.06)}
+tbody td{padding:8px;border:1px solid #e7e7e7}
 
-/* floating export */
-.fab{
-  position:fixed;right:12px;bottom:12px;background:var(--brand);color:white;border:none;padding:12px;border-radius:50%;width:52px;height:52px;box-shadow:0 10px 30px rgba(0,0,0,0.18);font-weight:900;z-index:250;cursor:pointer;
-}
+/* filter row selects */
+.filter-row select{width:100%;padding:6px;border-radius:6px;border:1px solid #ddd;font-size:13px}
 
-/* empty */
-.empty{padding:24px;text-align:center;color:var(--muted)}
+/* hover */
+tbody tr:hover{background:#eef5ff;cursor:pointer}
+
+/* mobile stacked style */
+@media (max-width:720px){
+  table, thead, tbody, th, td, tr { display:block; }
+  thead { display:none; } /* hide table headers */
+  tbody tr { margin-bottom:10px; border-radius:8px; background:var(--card); box-shadow:0 2px 8px rgba(0,0,0,.04); padding:8px; }
+  tbody td {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 10px;
+    border:0;
+    border-bottom:1px solid #f0f0f0;
+  }
+  tbody td:last-child{border-bottom:0}
+  /* label on left: uses data-label attribute */
+  tbody td::before{
+    content: attr(data-label);
+    flex: 0 0 46%;
+    color:var(--muted);
+    font-weight:700;
+    font-size:12px;
+  }
+}
 
 /* print */
-@media print{ .appbar,.controls,.filter-panel,.fab{display:none} }
-
-/* responsive */
-@media(min-width:900px){
-  .container{padding:16px}
-  .card{padding:12px}
-  .name{font-size:15px}
+@media print{
+  .controls, .header-bar { display:none; }
 }
 </style>
 </head>
 <body>
 
-<div class="appbar">
-  <div class="left">
-    <button class="icon-btn" onclick="history.back()">⬅</button>
-    <button class="icon-btn" onclick="goHome()">🏠</button>
-  </div>
-  <div class="title">
-    <h1>Breaker Master</h1>
-    <p>Mobile / App view</p>
-  </div>
-  <div style="width:56px"></div>
-</div>
-
-<div class="controls">
-  <input id="search" class="search" placeholder="Search S/S, Breaker, Make..." aria-label="Search">
-  <button id="filterToggle" class="btn" onclick="toggleFilter()">Filter</button>
-  <button class="btn" onclick="printPage()">Print</button>
+<div class="header-bar">
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goBack()">⬅ Back</button>
+  <div class="header-title">BREAKER MASTER LIST</div>
+  <div style="width:74px"></div>
 </div>
 
 <div class="container">
-  <div id="cards" class="cards" aria-live="polite"></div>
-  <div id="empty" class="empty" style="display:none">No items found.</div>
+  <div class="card">
+    <div class="controls">
+      <input id="search" class="search" placeholder="Search all columns...">
+      <button class="btn" id="openFiltersBtn" onclick="toggleFilterPanel()">Filters</button>
+      <button class="btn" onclick="exportCSV()">📄 Export CSV</button>
+      <button class="btn" onclick="window.print()">🖨 Print</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="breakerTable" role="table" aria-label="Breaker master">
+        <thead>
+          <tr id="headerRow"></tr>
+          <tr class="filter-row" id="filterRow"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-<button class="fab" title="Export CSV" onclick="exportCSV()">CSV</button>
-
-<div id="filterPanel" class="filter-panel" role="dialog" aria-modal="true" aria-hidden="true">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <strong>Filters</strong>
-    <button onclick="toggleFilter()" style="background:#eee;border:0;padding:6px 10px;border-radius:8px;cursor:pointer">Close</button>
-  </div>
-  <div id="filterContainer" class="filter-row"></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end">
-    <button onclick="clearFilters()" style="padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:white">Clear</button>
-    <button onclick="applyFilterPanel()" style="padding:8px 12px;border-radius:8px;background:var(--brand);color:white">Apply</button>
+<!-- Filter panel (simple modal) -->
+<div id="filterPanel" style="position:fixed;left:0;right:0;bottom:0;top:0;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);z-index:999">
+  <div style="background:#fff;border-top-left-radius:12px;border-top-right-radius:12px;padding:12px;width:100%;max-width:980px;max-height:70vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong>Column Filters</strong>
+      <div>
+        <button onclick="clearAllFilters()" style="margin-right:8px;padding:6px 10px">Clear</button>
+        <button onclick="closeFilterPanel()" style="padding:6px 10px;background:var(--brand);color:#fff;border:0;border-radius:6px">Close</button>
+      </div>
+    </div>
+    <div id="filterPanelContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px"></div>
   </div>
 </div>
 
@@ -142,261 +121,240 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1Auvcnu3kbyTIUWZ3fB6si-gA78EERK979gkRyzU62rY/gviz/tq" +
   "?gid=1077252914&tqx=out:json";
 
-/* show these columns (0..9) */
+/* Show columns A..J by default, but we'll drop columns with header "1" or containing "type" */
 const COLS = [0,1,2,3,4,5,6,7,8,9];
 
-let rawRows = [];
-let headers = [];
-let uniques = [];
-let colorMap = {};
-let filterSelects = [];
-let activeFilters = {};
+let headers = [];          // header strings for visible columns
+let visibleCols = [];      // array of {colIndex, header}
+let uniqueValues = {};     // keyed by colIndex -> Set of unique values
+let rows = [];             // raw rows array of arrays
+let activeFilters = {};    // colIndex -> selected value
 
-const cardsEl = document.getElementById("cards");
-const emptyEl = document.getElementById("empty");
-const filterPanel = document.getElementById("filterPanel");
+const headerRow = document.getElementById('headerRow');
+const filterRow = document.getElementById('filterRow');
+const tableBody = document.getElementById('tableBody');
+const searchInput = document.getElementById('search');
+const filterPanel = document.getElementById('filterPanel');
+const filterPanelContent = document.getElementById('filterPanelContent');
 
-function goHome(){ window.location.href = "https://08electricaldata.github.io/"; }
-function printPage(){ window.print(); }
-function toggleFilter(){ const open = filterPanel.classList.toggle("open"); filterPanel.setAttribute("aria-hidden", !open); }
+function goHome(){ location.href = 'https://08electricaldata.github.io/'; }
+function goBack(){ history.back(); }
 
-/* utility to get pastel color per key */
-function getColorForKey(key){
-  if(!key) return "#ffffff";
-  if(!colorMap[key]) colorMap[key] = `hsl(${Math.floor(Math.random()*360)},70%,88%)`;
-  return colorMap[key];
-}
+function closeFilterPanel(){ filterPanel.style.display = 'none'; }
+function toggleFilterPanel(){ filterPanel.style.display = filterPanel.style.display === 'flex' ? 'none' : 'flex'; }
 
-/* load sheet */
-async function loadData(){
-  try{
-    const res = await fetch(SHEET_URL);
-    const txt = await res.text();
-    const j = JSON.parse(txt.substring(47, txt.length - 2));
-    const rows = j.table.rows || [];
+/* utility: parse gviz JSON text */
+async function loadSheet(){
+  const res = await fetch(SHEET_URL);
+  const txt = await res.text();
+  const j = JSON.parse(txt.substring(47, txt.length - 2));
+  const gRows = j.table.rows || [];
 
-    // header row (first)
-    const headerC = rows[0]?.c || [];
-    headers = COLS.map(i => headerC[i]?.v || `Col ${i+1}`);
+  // header cells
+  const headerCells = gRows[0]?.c || [];
 
-    // build rawRows (array of arrays) and uniques
-    uniques = COLS.map(()=> new Set());
-    rawRows = rows.slice(1).map(r => (r.c || []).map(cell => cell?.v ?? ""));
-
-    rawRows.forEach(r => {
-      COLS.forEach((col, idx) => {
-        const v = r[col];
-        if(v !== "" && v !== null && v !== undefined) uniques[idx].add(String(v));
-      });
+  // Build initial visibleCols: all COLS except ones to remove
+  visibleCols = COLS.map(i => ({colIndex: i, header: headerCells[i]?.v ?? `Col ${i+1}`}))
+    .filter(col => {
+      const h = String(col.header||"").trim();
+      if(!h) return true; // keep blank header columns
+      // Remove columns whose header is exactly "1" OR contains "type" (case-insensitive)
+      if(h === "1") return false;
+      if(/type/i.test(h)) return false;
+      return true;
     });
 
-    buildFilterPanel();
-    renderCards();
-  }catch(err){
-    console.error("Failed loading sheet", err);
-    cardsEl.innerHTML = '<div class="empty">Error loading data</div>';
-  }
+  // build rows (array of arrays)
+  rows = gRows.slice(1).map(r => (r.c || []).map(cell => cell?.v ?? ""));
+
+  // compute unique values for each visible column
+  uniqueValues = {};
+  visibleCols.forEach(vc => uniqueValues[vc.colIndex] = new Set());
+  rows.forEach(r => {
+    visibleCols.forEach(vc => {
+      const v = r[vc.colIndex];
+      if(v !== undefined && v !== null && String(v).trim() !== "") uniqueValues[vc.colIndex].add(String(v));
+    });
+  });
+
+  buildTableHeader();
+  buildFilterRow();
+  buildFilterPanelContent();
+  renderTable();
 }
 
-/* build filter selects in panel */
-function buildFilterPanel(){
-  const container = document.getElementById("filterContainer");
-  container.innerHTML = "";
-  filterSelects = [];
+/* Build the table header row from visibleCols */
+function buildTableHeader(){
+  headerRow.innerHTML = "";
+  visibleCols.forEach(vc => {
+    const th = document.createElement('th');
+    th.textContent = vc.header || '';
+    headerRow.appendChild(th);
+  });
+}
 
-  COLS.forEach((col, idx) => {
-    const sel = document.createElement("select");
-
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = headers[idx] || `Col ${col+1}`;
-    sel.appendChild(placeholder);
-
-    const vals = Array.from(uniques[idx]).sort((a,b)=> String(a).localeCompare(String(b)));
+/* Build the tiny filter selects inline below headers (desktop/table) */
+function buildFilterRow(){
+  filterRow.innerHTML = "";
+  visibleCols.forEach(vc => {
+    const th = document.createElement('th');
+    const sel = document.createElement('select');
+    sel.innerHTML = '<option value="">All</option>';
+    // populate sorted values
+    const vals = Array.from(uniqueValues[vc.colIndex] || []).sort((a,b)=> String(a).localeCompare(String(b)));
     vals.forEach(v => {
-      const o = document.createElement("option");
+      const o = document.createElement('option');
       o.value = v;
       o.textContent = v;
       sel.appendChild(o);
     });
-
-    sel.style.minWidth = "140px";
-    sel.style.flex = "1 1 40%";
-    container.appendChild(sel);
-    filterSelects.push({select: sel, colIndex: col});
+    sel.onchange = () => {
+      if(sel.value) activeFilters[vc.colIndex] = sel.value;
+      else delete activeFilters[vc.colIndex];
+      renderTable();
+    };
+    th.appendChild(sel);
+    filterRow.appendChild(th);
   });
-  activeFilters = {};
 }
 
-/* apply/clear filter panel */
-function applyFilterPanel(){
-  activeFilters = {};
-  filterSelects.forEach((sObj, idx) => {
-    const v = sObj.select.value;
-    if(v) activeFilters[idx] = v;
+/* Build filter panel content (bigger selects) */
+function buildFilterPanelContent(){
+  filterPanelContent.innerHTML = "";
+  visibleCols.forEach(vc => {
+    const wrap = document.createElement('div');
+    const label = document.createElement('div');
+    label.style.fontWeight = '700';
+    label.style.marginBottom = '6px';
+    label.textContent = vc.header || '';
+    const sel = document.createElement('select');
+    sel.style.width = '100%';
+    sel.innerHTML = '<option value="">All</option>';
+    const vals = Array.from(uniqueValues[vc.colIndex] || []).sort((a,b)=> String(a).localeCompare(String(b)));
+    vals.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = v;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => {
+      if(sel.value) activeFilters[vc.colIndex] = sel.value;
+      else delete activeFilters[vc.colIndex];
+    };
+    wrap.appendChild(label);
+    wrap.appendChild(sel);
+    filterPanelContent.appendChild(wrap);
   });
-  toggleFilter();
-  renderCards();
-}
-function clearFilters(){
-  filterSelects.forEach(sObj => sObj.select.selectedIndex = 0);
-  activeFilters = {};
-  renderCards();
 }
 
-/* check if a raw row matches activeFilters */
-function matchesFilters(row){
-  for(const [filterIdx, val] of Object.entries(activeFilters)){
-    const col = COLS[filterIdx];
-    const v = row[col] ?? "";
-    if(String(v) !== String(val)) return false;
+/* Clear filters */
+function clearAllFilters(){
+  activeFilters = {};
+  // clear selects both in header filterRow and filterPanel
+  filterRow.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  filterPanelContent.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  renderTable();
+}
+
+/* Returns true if row passes all activeFilters */
+function passesFilters(row){
+  for(const colIdxStr of Object.keys(activeFilters)){
+    const colIdx = Number(colIdxStr);
+    const want = activeFilters[colIdx];
+    const val = row[colIdx] ?? "";
+    if(String(val) !== String(want)) return false;
   }
   return true;
 }
 
-/* render compact cards */
-function renderCards(){
-  const q = (document.getElementById("search").value || "").trim().toLowerCase();
-  cardsEl.innerHTML = "";
+/* Search + filters + rendering */
+function renderTable(){
+  const q = (searchInput.value || "").trim().toLowerCase();
+  tableBody.innerHTML = "";
 
-  let countVisible = 0;
-  rawRows.forEach(row => {
-    if(!row || row.every(c=>c === "")) return;
+  // Prepare index of column used for id/navigation: prefer headers containing uid|breaker|brkr
+  const idCol = (function(){
+    for(let vc of visibleCols){
+      if(/(uid|breaker|brkr)/i.test(String(vc.header||""))) return vc.colIndex;
+    }
+    return visibleCols.length ? visibleCols[0].colIndex : null;
+  })();
 
-    if(!matchesFilters(row)) return;
+  rows.forEach(r => {
+    // skip entirely empty rows
+    if(!r || r.every(c => c === "" || c === null || c === undefined)) return;
 
+    if(!passesFilters(r)) return;
+
+    // global search across visible columns
     if(q){
-      const hay = row.join(" ").toLowerCase();
+      const hay = visibleCols.map(vc => String(r[vc.colIndex] ?? "")).join(" ").toLowerCase();
       if(!hay.includes(q)) return;
     }
 
-    countVisible++;
+    // create table row (either normal table row or stacked mobile will use same TDs)
+    const tr = document.createElement('tr');
 
-    // pick fields (using the same indices as original sheet)
-    const rcs = row[0] || "";        // col 0
-    const board = row[1] || "";      // col 1 (used for grouping color)
-    const zone = row[2] || "";       // col 2 (not specifically used)
-    const breakerNo = row[3] || "";  // col 3
-    const breakerUID = row[4] || ""; // col 4
-    const comptNo = row[5] || "";    // col 5
-    const maybeCol6 = row[6] || "";
-    const make = row[7] || "";       // col 7
-    const maybeCol8 = row[8] || "";
-    const maybeCol9 = row[9] || "";
-    const pmDateRaw = row[12] || ""; // pm date (if present)
-    const nextDueRaw = row[13] || ""; // next due (if present)
+    // attach click navigation: use idCol value
+    tr.onclick = () => {
+      const idVal = idCol !== null ? (r[idCol] || "") : "";
+      if(!idVal) return;
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(String(idVal));
+    };
 
-    const color = getColorForKey(board);
-
-    const card = document.createElement("article");
-    card.className = "card";
-
-    // color band
-    const band = document.createElement("div");
-    band.className = "color-band";
-    band.style.background = color;
-
-    // left
-    const left = document.createElement("div");
-    left.className = "card-left";
-    const rcsEl = document.createElement("div");
-    rcsEl.className = "rcs";
-    rcsEl.textContent = rcs;
-    const boardEl = document.createElement("div");
-    boardEl.className = "board";
-    boardEl.textContent = board;
-    left.appendChild(rcsEl);
-    left.appendChild(boardEl);
-
-    // middle
-    const mid = document.createElement("div");
-    mid.className = "card-mid";
-    const top = document.createElement("div");
-    top.className = "card-top";
-    const name = document.createElement("div");
-    name.className = "name";
-    name.textContent = breakerNo || breakerUID || "";
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.textContent = (make ? make : "") + (comptNo ? (" • Comp: " + comptNo) : "");
-    top.appendChild(name);
-    mid.appendChild(top);
-    mid.appendChild(meta);
-
-    // bottom kvs - show PM DATE and NEXT DUE compactly
-    const bottom = document.createElement("div");
-    bottom.className = "card-bottom";
-
-    function kv(label, value){
-      const d = document.createElement("div");
-      d.className = "kv";
-      const l = document.createElement("span");
-      l.style.opacity = 0.85;
-      l.style.fontSize = "11px";
-      l.textContent = label + ":";
-      const v = document.createElement("span");
-      v.className = "v";
-      v.textContent = value || "—";
-      d.appendChild(l);
-      d.appendChild(v);
-      return d;
-    }
-
-    bottom.appendChild(kv("PM DATE", pmDateRaw));
-    bottom.appendChild(kv("NEXT DUE", nextDueRaw));
-
-    mid.appendChild(bottom);
-
-    // assemble
-    card.appendChild(band);
-    card.appendChild(left);
-    card.appendChild(mid);
-
-    // click -> history page using breakerUID if available else breakerNo
-    card.addEventListener("click", () => {
-      const id = (breakerUID || breakerNo || "").toString();
-      if(!id) return;
-      window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent("Breaker-" + id);
+    // append visible columns as TDs. For mobile stacked layout we put data-label attribute with header text
+    visibleCols.forEach(vc => {
+      const td = document.createElement('td');
+      const cellText = r[vc.colIndex] ?? "";
+      td.textContent = cellText;
+      td.setAttribute('data-label', vc.header || '');
+      tr.appendChild(td);
     });
 
-    cardsEl.appendChild(card);
+    tableBody.appendChild(tr);
   });
-
-  emptyEl.style.display = countVisible ? "none" : "";
 }
 
-/* CSV export for visible cards (match by breakerNo or UID) */
+/* CSV export of currently visible rows & columns */
 function exportCSV(){
-  const rows = [];
-  const headerRow = COLS.map((c, idx) => `Col${c+1}`);
-  rows.push(headerRow.map(h => `"${h.replace(/"/g,'""')}"`).join(","));
+  // header row: visible headers
+  const hdr = visibleCols.map(vc => `"${String(vc.header||'').replace(/"/g,'""')}"`).join(',');
+  const lines = [hdr];
 
-  const visibleCards = Array.from(document.querySelectorAll(".card"));
-  visibleCards.forEach(card => {
-    const nameText = card.querySelector(".name")?.innerText || "";
-    const raw = rawRows.find(r => String(r[3]||"") === nameText || String(r[4]||"") === nameText);
-    if(!raw) return;
-    const csvLine = COLS.map(c => `"${String(raw[c] ?? "").replace(/"/g,'""')}"`).join(",");
-    rows.push(csvLine);
+  // iterate current visible table tbody rows and map back to raw rows by matching cells
+  const trs = Array.from(tableBody.querySelectorAll('tr'));
+  trs.forEach(tr => {
+    const tds = Array.from(tr.children);
+    // extract cell texts in order
+    const vals = tds.map(td => td.innerText ?? "");
+    // no need to find original raw row; just export these values
+    lines.push(vals.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   });
 
-  if(rows.length === 1){
-    alert("No visible rows to export.");
+  if(lines.length === 1){
+    alert('No rows to export.');
     return;
   }
 
-  const blob = new Blob([rows.join("\n")], {type: "text/csv"});
-  const a = document.createElement("a");
+  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = "breaker_master_mobile.csv";
+  a.download = 'breaker_master_list_visible.csv';
   a.click();
 }
 
-/* search debounce */
-document.getElementById("search").addEventListener("input", debounce(()=>renderCards(), 200));
-function debounce(fn, delay){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), delay); }; }
+/* hook search with debounce */
+let searchTimer = null;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderTable, 200);
+});
 
-loadData();
+/* initial load */
+loadSheet().catch(err => {
+  console.error(err);
+  document.getElementById('tableBody').innerHTML = '<tr><td colspan="99" style="padding:16px;color:#d00">Error loading sheet</td></tr>';
+});
 </script>
 </body>
 </html>
