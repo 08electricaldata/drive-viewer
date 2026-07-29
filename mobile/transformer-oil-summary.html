@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Transformer Oil — Mobile App View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --brand:#003f88;
+  --bg:#f2f6ff;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --overdue:#d32f2f;
+  --ok:#33cc33;
+  --warn:#ff9900;
+  --ok-bg:#e6f7e9;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Roboto, sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
+.header{
+  background:var(--brand);color:#fff;padding:12px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:120;
+}
+.header-left{display:flex;gap:8px;align-items:center}
+.header-btn{background:#fff;color:var(--brand);border:none;border-radius:8px;padding:8px 10px;font-weight:700;cursor:pointer}
+.header-center{flex:1;text-align:center}
+.header-center h1{margin:0;font-size:16px;font-weight:800}
+.header-center p{margin:3px 0 0;font-size:11px;opacity:0.95}
+
+/* container */
+.container{padding:10px;max-width:980px;margin:0 auto}
+
+/* summary and controls */
+.summary{display:flex;gap:8px;margin:10px 0 8px;align-items:center}
+.sum-card{flex:1;background:var(--card);padding:8px;border-radius:8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.sum-card h4{margin:0;color:var(--brand);font-size:12px}
+.sum-card p{margin:6px 0 0;font-size:16px;font-weight:800}
+
+.controls{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.search{flex:1;padding:8px 10px;border-radius:10px;border:1px solid #e6e9ef;background:white;font-size:14px}
+.select, .small-btn{padding:8px 10px;border-radius:10px;border:none;background:var(--brand);color:#fff;font-weight:700;cursor:pointer;font-size:13px}
+
+/* main chart box */
+.chart-box{background:var(--card);padding:10px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-bottom:10px}
+
+/* cards list */
+.cards{display:flex;flex-direction:column;gap:8px;margin-bottom:60px}
+.card{background:var(--card);border-radius:10px;padding:8px;box-shadow:0 3px 8px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:8px;cursor:pointer}
+.card-top{display:flex;align-items:center;gap:10px}
+.drive{min-width:64px;border-radius:8px;padding:8px 10px;font-weight:800;color:#022a59;background:#f1f8ff;text-align:center}
+.card-title{flex:1;display:flex;flex-direction:column}
+.name{font-weight:800;color:var(--brand);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* compact rows for dates & consumption */
+.row-compact{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.left-group{display:flex;flex-direction:column;gap:6px}
+.right-group{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+
+/* labels and values */
+.lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:capitalize}
+.val{font-size:14px;font-weight:800;color:#0b3b74}
+
+/* percentage badge */
+.percent-badge{padding:6px 8px;border-radius:8px;font-weight:800;font-size:13px}
+.percent-low{background:var(--overdue);color:#fff}
+.percent-mid{background:var(--warn);color:#111}
+.percent-high{background:var(--ok-bg);color:#0b3b74}
+.percent-excel{background:var(--ok);color:#fff}
+
+/* small year chips row */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{background:#f4f6fb;padding:6px 8px;border-radius:8px;font-size:12px;color:#0b3b74;font-weight:700}
+
+/* popup */
+.popup{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:200}
+.popup-content{background:#fff;width:92%;max-width:760px;padding:12px;border-radius:10px;position:relative;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.close-btn{position:absolute;right:12px;top:8px;font-size:18px;cursor:pointer}
+
+/* empty */
+.empty{padding:20px;text-align:center;color:var(--muted)}
+
+/* floating CSV button */
+.fab{position:fixed;right:12px;bottom:12px;background:var(--brand);color:#fff;border:none;padding:12px;border-radius:50%;box-shadow:0 8px 20px rgba(0,0,0,.2);font-weight:800;cursor:pointer;z-index:150}
+
+/* responsiveness */
+@media (min-width:900px){
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .container{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <button class="header-btn" onclick="history.back()">⬅</button>
+    <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/'">🏠</button>
+  </div>
+  <div class="header-center">
+    <h1>Transformer Oil — Mobile</h1>
+    <p>By Rakesh Chandra Sethy</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="summary" aria-hidden="true">
+    <div class="sum-card"><h4>Critical &lt;30%</h4><p id="countCritical">0</p></div>
+    <div class="sum-card"><h4>30–50%</h4><p id="countAvg">0</p></div>
+    <div class="sum-card"><h4>50–70%</h4><p id="countMedium">0</p></div>
+    <div class="sum-card"><h4>Safe &gt;70%</h4><p id="countSafe">0</p></div>
+  </div>
+
+  <div class="controls" role="search">
+    <input id="search" class="search" placeholder="Search transformer name or any text" aria-label="Search">
+    <select id="yearSelect" class="select" aria-label="Select year"></select>
+  </div>
+
+  <div class="chart-box">
+    <canvas id="mainChart" height="120"></canvas>
+  </div>
+
+  <div id="cards" class="cards" aria-live="polite"></div>
+  <div id="empty" class="empty" style="display:none">No transformers found.</div>
+
+</div>
+
+<button class="fab" onclick="exportCSV()" title="Export CSV">CSV</button>
+
+<div class="popup" id="trendPopup" role="dialog" aria-modal="true">
+  <div class="popup-content">
+    <span class="close-btn" onclick="closePopup()">✖</span>
+    <canvas id="trendChart" height="160"></canvas>
+  </div>
+</div>
+
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformeroil.json";
+let fullData = [], headers = [], mainChart = null, trendChart = null;
+
+// Nav helpers (retain original links)
+function openTrafoList(){ location.href="https://08electricaldata.github.io/drive-viewer/trafolist.html"; }
+function openTrafoPM(){ location.href="https://08electricaldata.github.io/drive-viewer/trafopm.html"; }
+
+async function load(){
+  try{
+    const res = await fetch(JSON_URL);
+    const data = await res.json();
+    headers = data.headers || [];
+    fullData = data.rows || [];
+    populateYearSelect();
+    renderSummary();
+    renderMainChart(document.getElementById('yearSelect').value);
+    renderCards();
+    attachSearch();
+  }catch(e){
+    console.error(e);
+    document.getElementById("cards").innerHTML = '<div class="empty">Error loading data</div>';
+  }
+}
+
+/* Year dropdown */
+function populateYearSelect(){
+  const sel = document.getElementById('yearSelect');
+  sel.innerHTML = '';
+  for(let y=2018;y<=2026;y++){
+    const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o);
+  }
+  sel.value = new Date().getFullYear();
+  sel.addEventListener('change', ()=> {
+    renderMainChart(sel.value);
+    // update cards small year chips
+    renderCards(); 
+  });
+}
+
+/* Main chart (top 10 for year) */
+function renderMainChart(year){
+  const colIndexMap={2026:6,2025:8,2024:10,2023:12,2022:14,2021:16,2020:18,2019:20,2018:22};
+  const col = colIndexMap[year] || 6;
+  const list = fullData.map(r=>({name:r[2],value:parseFloat(r[col])||0})).sort((a,b)=>b.value-a.value).slice(0,10);
+  const labels = list.map(i=>i.name);
+  const values = list.map(i=>i.value);
+  if(mainChart) mainChart.destroy();
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  mainChart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Oil (ltrs) '+year, data:values, backgroundColor:'#003f88' }]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}
+  });
+}
+
+/* Summary counts */
+function renderSummary(){
+  let c=0,a=0,m=0,s=0;
+  fullData.forEach(r=>{
+    const v = parseFloat(r[4]) || 0;
+    if(v < 30) c++;
+    else if(v < 50) a++;
+    else if(v < 70) m++;
+    else s++;
+  });
+  animate('countCritical',c);
+  animate('countAvg',a);
+  animate('countMedium',m);
+  animate('countSafe',s);
+}
+function animate(id,to){
+  const el = document.getElementById(id); let i=0;
+  el.textContent = '0';
+  if(to<=0) { el.textContent = '0'; return; }
+  const step = Math.max(1, Math.round(to/20));
+  const t = setInterval(()=>{ i+=step; if(i>=to){ i=to; clearInterval(t);} el.textContent = i; }, 30);
+}
+
+/* Render cards list (mobile) */
+function renderCards(){
+  const cardsEl = document.getElementById('cards');
+  cardsEl.innerHTML = '';
+  const selectedYear = parseInt(document.getElementById('yearSelect').value,10);
+  const colMap={2018:22,2019:20,2020:18,2021:16,2022:14,2023:12,2024:10,2025:8,2026:6};
+  const colIdx = colMap[selectedYear] || 6;
+
+  fullData.forEach(r=>{
+    // same filtering as original table is not applied for trafo; include all rows
+    const name = r[2] || '';
+    const recDate = r[3] ? formatDate(r[3]) : '';
+    const percent = parseFloat(r[4]) || 0;
+    const valueYear = parseFloat(r[colIdx]) || 0;
+    const prevYearIdx = colMap[selectedYear-1] || null;
+    const prevVal = prevYearIdx ? (parseFloat(r[prevYearIdx])||0) : null;
+
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="drive">${r[0]||''}</div>
+        <div class="card-title">
+          <div class="name">${name}</div>
+          <div class="sub">${recDate || '—'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="${percentBadgeClass(percent)} percent-badge">${percent}%</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:700">${valueYear>0?valueYear+' ltrs':''}</div>
+        </div>
+      </div>
+
+      <div class="row-compact">
+        <div class="left-group">
+          <div class="row"><div class="lbl">latest</div><div class="val">${valueYear>0?valueYear+' ltrs':'—'}</div></div>
+          <div class="row"><div class="lbl">read date</div><div class="val">${recDate || '—'}</div></div>
+        </div>
+
+        <div class="right-group" style="min-width:110px;align-items:flex-end">
+          <div class="row"><div class="lbl">Module</div><div class="val">${r[6]||'—'}</div></div>
+          <div class="row"><div class="lbl">Motor</div><div class="val">${r[8]||'—'}</div></div>
+        </div>
+      </div>
+
+      <div class="chips" aria-hidden="true">
+        <div class="chip">${selectedYear-2}</div>
+        <div class="chip">${selectedYear-1}</div>
+        <div class="chip">${selectedYear}</div>
+      </div>
+    `;
+
+    // open trend popup on click (same data as desktop)
+    card.addEventListener('click', (e)=> { e.stopPropagation(); openTrendPopup(r); });
+
+    cardsEl.appendChild(card);
+  });
+
+  document.getElementById('empty').style.display = fullData.length ? 'none' : 'block';
+}
+
+/* helper formatting */
+function formatDate(v){
+  const d = new Date(v);
+  if(isNaN(d)) return String(v).slice(0,16);
+  const options = { day:'2-digit', month:'short', year:'numeric' };
+  return d.toLocaleDateString('en-GB', options).replace(/ /g,'-');
+}
+function percentBadgeClass(p){
+  if(p < 30) return 'percent-low';
+  if(p < 50) return 'percent-mid';
+  if(p < 70) return 'percent-high';
+  return 'percent-excel';
+}
+
+/* Search */
+function attachSearch(){
+  const s = document.getElementById('search');
+  s.addEventListener('input', ()=> {
+    const q = s.value.trim().toLowerCase();
+    document.querySelectorAll('.cards .card').forEach(card=>{
+      if(!q){ card.style.display = ''; return; }
+      const text = card.innerText.toLowerCase();
+      card.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+}
+
+/* Trend popup */
+function openTrendPopup(row){
+  const years = ["2018","2019","2020","2021","2022","2023","2024","2025","2026"];
+  const values = [row[22],row[20],row[18],row[16],row[14],row[12],row[10],row[8],row[6]].map(v=>parseFloat(v)||0);
+
+  document.getElementById('trendPopup').style.display = 'flex';
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels: years, datasets:[{ label: row[2] || 'Trend', data: values, borderColor: '#003f88', backgroundColor:'rgba(0,63,136,0.08)', fill:true }]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}
+  });
+}
+function closePopup(){ document.getElementById('trendPopup').style.display = 'none'; if(trendChart) trendChart.destroy(); }
+
+/* CSV export of visible cards */
+function exportCSV(){
+  const header = ["RCS","Plant","Transformer","ReadDate","Percent"].concat(["2018","2019","2020","2021","2022","2023","2024","2025","2026"]);
+  const rows = [header.join(',')];
+
+  document.querySelectorAll('.cards .card').forEach(card=>{
+    if(card.style.display==='none') return;
+    const idName = card.querySelector('.name')?.innerText || '';
+    const row = fullData.find(r => (r[2]||'') === idName);
+    if(!row) return;
+    // pick values indices used earlier
+    const vals = [
+      row[0]||'', row[1]||'', row[2]||'', row[3]||'', row[4]||'',
+      row[22]||'', row[20]||'', row[18]||'', row[16]||'', row[14]||'', row[12]||'', row[10]||'', row[8]||'', row[6]||''
+    ];
+    rows.push(vals.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  });
+
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'transformer_oil_mobile.csv';
+  a.click();
+}
+
+/* initial load */
+load();
+</script>
+</body>
+</html>
