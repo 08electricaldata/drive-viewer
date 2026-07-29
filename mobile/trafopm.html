@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Transformer Maintenance Status — Mobile / App View (fixed)</title>
+<title>Transformer Maintenance Status — Mobile / App View (mobile-fit)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -10,66 +10,42 @@
     --brand:#003f88;
     --bg:#f2f6ff;
     --muted:#6b7280;
+    --label-width:30%; /* adjust this to make label column narrower (e.g. 28% or 25%) */
   }
-  body { font-family: Arial, sans-serif; margin:0; background:var(--bg); color:#0b1220; }
+
+  /* General */
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; margin:0; background:var(--bg); color:#0b1220; -webkit-font-smoothing:antialiased; }
 
   /* HEADER */
-  .header {
-    background:var(--brand); color:#fff; padding:12px 14px;
-    display:flex; align-items:center; gap:12px; justify-content:space-between;
-  }
+  .header { background:var(--brand); color:#fff; padding:10px 12px; display:flex; align-items:center; gap:8px; justify-content:space-between;}
   .header-left { display:flex; gap:8px; align-items:center; }
-  .header-btn {
-    background:#fff; color:var(--brand); border:none;
-    padding:6px 10px; border-radius:6px; font-size:14px; cursor:pointer;
-  }
-  .title {
-    text-align:center; flex:1;
-  }
-  .title h1{ margin:0; font-size:18px; letter-spacing:0.2px; }
-  .title p{ margin:4px 0 0; font-size:12px; opacity:0.95; }
+  .header-btn { background:#fff; color:var(--brand); border:none; padding:6px 10px; border-radius:6px; font-size:14px; cursor:pointer; }
+  .title { text-align:center; flex:1; }
+  .title h1{ margin:0; font-size:16px; }
+  .title p{ margin:4px 0 0; font-size:11px; opacity:0.95; }
 
-  /* SUMMARY (compact row) */
-  .summary-row {
-    display:flex; gap:12px; padding:10px 14px; align-items:center;
-    justify-content:flex-start; flex-wrap:wrap; background:transparent;
-  }
-  .summary-row .item {
-    background:#fff; padding:8px 10px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.08);
-    min-width:110px; text-align:center;
-  }
+  /* SUMMARY */
+  .summary-row { display:flex; gap:10px; padding:8px 10px; flex-wrap:wrap; }
+  .summary-row .item { background:#fff; padding:8px 10px; border-radius:8px; min-width:100px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .summary-row h4{ margin:0; font-size:12px; color:var(--brand); }
   .summary-row p{ margin:6px 0 0; font-size:18px; font-weight:700; }
 
   /* CONTROLS */
-  .controls {
-    display:flex; gap:8px; padding:10px 14px; align-items:center; flex-wrap:wrap;
-  }
-  .controls input, .controls select {
-    padding:8px; font-size:14px; border-radius:6px; border:1px solid #d1d5db;
-  }
-  .controls button {
-    padding:8px 12px; background:var(--brand); color:#fff; border:none; border-radius:6px; cursor:pointer;
-    font-size:14px;
-  }
-  .controls .muted-btn {
-    background:#fff; color:var(--brand); border:1px solid #d1d5db;
-  }
+  .controls { display:flex; gap:8px; padding:8px 10px; align-items:center; flex-wrap:wrap; }
+  .controls input, .controls select { padding:8px; font-size:14px; border-radius:6px; border:1px solid #d1d5db; }
+  .controls button { padding:8px 10px; background:var(--brand); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+  .controls .muted-btn { background:#fff; color:var(--brand); border:1px solid #d1d5db; }
 
   /* TABLE - desktop */
-  .table-wrap { padding:14px; }
-  table {
-    width:100%; border-collapse:collapse; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.08);
-    border-radius:8px; overflow:hidden;
-  }
-  thead th {
-    background:var(--brand); color:#fff; padding:10px; font-size:13px; position:sticky; top:0;
-  }
-  th,td { border-bottom:1px solid #eef2f7; padding:10px; text-align:left; font-size:13px; }
+  .table-wrap { padding:10px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.06); }
+  thead th { background:var(--brand); color:#fff; padding:10px; font-size:13px; position:sticky; top:0; text-align:left; }
+  th,td { border-bottom:1px solid #eef2f7; padding:10px; text-align:left; font-size:13px; vertical-align:middle; }
   tbody tr { cursor:pointer; transition:background .12s ease; }
   tbody tr:hover { background:#f3f8ff; }
 
-  /* column highlight colors */
+  /* highlight columns */
   td.col-oil { background:#fff4cc; }
   td.col-oh  { background:#e8f4ff; }
   td.col-pm  { background:#e9ffe8; }
@@ -78,43 +54,45 @@
   .warn { background:orange; color:#000; font-weight:bold; display:inline-block; padding:4px 6px; border-radius:4px; }
   .overdue { background:red; color:yellow; font-weight:bold; display:inline-block; padding:4px 6px; border-radius:4px; }
 
-  /* MOBILE / APP VIEW - stacked rows */
+  /* MOBILE / APP VIEW - stacked rows (improved fit) */
   @media (max-width:760px){
+    .table-wrap { padding:8px; }
     thead { display:none; }
     table, tbody, tr, td { display:block; width:100%; }
-    tr { margin-bottom:12px; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); background:#fff; }
-    /* make each cell a flex row with label (::before) and value (.val) */
+    tr { margin-bottom:10px; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); background:#fff; }
     td {
-      padding:10px 12px; border:none; display:flex; align-items:center;
-      border-bottom:1px solid #f1f5f9; font-size:14px; flex-wrap:wrap;
+      padding:10px 10px; border:none; display:flex; align-items:flex-start;
+      border-bottom:1px solid #f1f5f9; font-size:14px; flex-wrap:nowrap;
       white-space:normal; overflow:visible;
     }
-    /* label on left (pseudo-element) */
+    /* label on left (pseudo-element) - use CSS variable for easy tweak */
     td::before {
       content:attr(data-label); font-weight:700; color:var(--muted); margin-right:8px;
-      flex:0 0 36%; max-width:36%; box-sizing:border-box;
+      flex:0 0 var(--label-width); max-width:var(--label-width); box-sizing:border-box;
+      text-overflow:ellipsis; overflow:hidden; white-space:nowrap;
     }
-    /* value on right, allowed to wrap and take remaining space */
+    /* value on right - left-aligned and allowed to wrap, closer to center */
     td > .val {
-      flex:1 1 60%; text-align:right; display:inline-block; word-break:break-word;
+      flex:1 1 calc(100% - var(--label-width)); text-align:left; display:inline-block;
+      overflow-wrap:anywhere; word-break:break-word; padding-left:6px;
     }
     td:last-child { border-bottom:none; }
   }
 
-  /* App view toggle for desktop to force stacked rows */
+  /* Desktop "force app view" */
   body.app-view thead { display:none; }
   body.app-view table, body.app-view tbody, body.app-view tr, body.app-view td { display:block; width:100%; }
-  body.app-view tr { margin-bottom:12px; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); background:#fff; }
+  body.app-view tr { margin-bottom:10px; border-radius:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.04); background:#fff; }
   body.app-view td {
-    padding:10px 12px; border:none; display:flex; align-items:center; border-bottom:1px solid #f1f5f9;
-    font-size:14px; flex-wrap:wrap; white-space:normal; overflow:visible;
+    padding:10px 10px; border:none; display:flex; align-items:flex-start; border-bottom:1px solid #f1f5f9;
+    font-size:14px; flex-wrap:nowrap; white-space:normal; overflow:visible;
   }
-  body.app-view td::before { content:attr(data-label); font-weight:700; color:var(--muted); margin-right:8px; flex:0 0 36%; max-width:36%; box-sizing:border-box; }
-  body.app-view td > .val { flex:1 1 60%; text-align:right; display:inline-block; word-break:break-word; }
+  body.app-view td::before { content:attr(data-label); font-weight:700; color:var(--muted); margin-right:8px; flex:0 0 var(--label-width); max-width:var(--label-width); box-sizing:border-box; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
+  body.app-view td > .val { flex:1 1 calc(100% - var(--label-width)); text-align:left; display:inline-block; overflow-wrap:anywhere; word-break:break-word; padding-left:6px; }
   body.app-view td:last-child { border-bottom:none; }
 
   @media print {
-    .controls,.header-left{display:none;}
+    .controls,.header-left,.controls { display:none; }
     thead { display:table-header-group; }
     td::before{ content: ""; }
   }
@@ -134,7 +112,7 @@
       <p>Designed & maintained by Rakesh Chandra Sethy</p>
     </div>
 
-    <div style="width:80px"></div>
+    <div style="width:70px"></div>
   </div>
 
   <div class="summary-row" id="summaryRow">
@@ -144,7 +122,7 @@
   </div>
 
   <div class="controls">
-    <input id="search" placeholder="Search S/S / TRF / Make" style="min-width:160px;">
+    <input id="search" placeholder="Search S/S / TRF / Make" style="min-width:140px;">
     <select id="yearFilter"></select>
     <button onclick="toggleAppView()" class="muted-btn" id="appViewBtn">📱 App View</button>
     <button onclick="sendWhatsApp()">🔔 WhatsApp Alert</button>
@@ -166,8 +144,7 @@
   </div>
 
 <script>
-const JSON_URL =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformer_pm.json";
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformer_pm.json";
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 
@@ -233,7 +210,6 @@ async function load(){
       const pm = parseDate(r[8]); // PM DATE
       if(ysel && (!pm || pm.getFullYear() != ysel)) return;
 
-      // build text to search (selected fields)
       const rowText = [
         r[0]||"", // S/S
         r[2]||"", // TRF NO
@@ -260,7 +236,6 @@ async function load(){
           encodeURIComponent("TRANSFORMER-"+String(r[2]||"").trim());
       };
 
-      /* wrap each cell value in .val so CSS can flex label and value */
       tr.innerHTML = `
         <td data-label="S/S"><span class="val">${escapeHtml(r[0]||"")}</span></td>
         <td data-label="TRF NO"><span class="val">${escapeHtml(r[2]||"")}</span></td>
@@ -312,16 +287,12 @@ function sendWhatsApp(){
 /* EXPORT */
 function exportExcel(){
   let csv=[];
-
-  // header row (matching visible columns)
   const headers = ["S/S","TRF NO","MAKE","RATING","OIL LEAKAGE","O/H DATE","PM DATE","O/H FREQ","LAST DATE","NEXT DUE"];
   csv.push(headers.map(h=>`"${h}"`).join(","));
-
   document.querySelectorAll("#tbl tbody tr").forEach(tr=>{
     const cells = [...tr.children].map(td=>`"${td.innerText.replace(/"/g,'""')}"`);
     csv.push(cells.join(","));
   });
-
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([csv.join("\n")], {type: 'text/csv'}));
   a.download="transformer_pm_status.csv";
