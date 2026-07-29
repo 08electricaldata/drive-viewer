@@ -17,7 +17,7 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Roboto, sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
 
-/* HEADER / APP BAR */
+/* APP BAR */
 .appbar{
   position:sticky;top:0;z-index:200;
   background:var(--brand);color:white;display:flex;align-items:center;gap:8px;padding:10px 12px;
@@ -30,7 +30,7 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 .title h1{margin:0;font-size:16px;font-weight:800}
 .title p{margin:2px 0 0;font-size:11px;opacity:.95}
 
-/* TOP CONTROLS */
+/* CONTROLS */
 .controls{
   display:flex;gap:8px;padding:8px 12px;align-items:center;
   position:sticky;top:56px;background:transparent;z-index:150;
@@ -42,11 +42,9 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
   background:var(--brand);color:white;border:none;padding:8px 10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;
 }
 
-/* card list container */
+/* container & cards */
 .container{padding:10px;max-width:980px;margin:0 auto}
 .cards{display:flex;flex-direction:column;gap:8px;padding-bottom:120px}
-
-/* compact card */
 .card{
   background:var(--card);
   border-radius:10px;
@@ -70,20 +68,18 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 .kv{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .kv .v{font-weight:800;color:#0b3b74;font-size:13px}
 
-/* pastel color band at left inside card */
+/* color band & filter panel */
 .color-band{width:8px;border-radius:6px;margin-right:6px;flex-shrink:0}
-
-/* filter panel (modal) */
 .filter-panel{
   position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top-left-radius:12px;border-top-right-radius:12px;
   box-shadow:0 -6px 30px rgba(0,0,0,0.18);padding:12px;transform:translateY(110%);transition:transform .18s ease;z-index:260;
   max-height:72vh;overflow:auto;
 }
-.filter-panel.open{transform:translateY(0%);}
+.filter-panel.open{transform:translateY(0%)}
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .filter-row select{flex:1;padding:8px;border-radius:8px;border:1px solid #e6e9ef;background:#fff}
 
-/* floating export button */
+/* floating export */
 .fab{
   position:fixed;right:12px;bottom:12px;background:var(--brand);color:white;border:none;padding:12px;border-radius:50%;width:52px;height:52px;box-shadow:0 10px 30px rgba(0,0,0,0.18);font-weight:900;z-index:250;cursor:pointer;
 }
@@ -92,12 +88,9 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 .empty{padding:24px;text-align:center;color:var(--muted)}
 
 /* print */
-@media print{
-  .appbar,.controls,.filter-panel,.fab{display:none}
-  body{background:white}
-}
+@media print{ .appbar,.controls,.filter-panel,.fab{display:none} }
 
-/* responsive tweaks */
+/* responsive */
 @media(min-width:900px){
   .container{padding:16px}
   .card{padding:12px}
@@ -119,23 +112,19 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
   <div style="width:56px"></div>
 </div>
 
-<!-- top controls -->
 <div class="controls">
   <input id="search" class="search" placeholder="Search S/S, Breaker, Make..." aria-label="Search">
   <button id="filterToggle" class="btn" onclick="toggleFilter()">Filter</button>
   <button class="btn" onclick="printPage()">Print</button>
 </div>
 
-<!-- list -->
 <div class="container">
   <div id="cards" class="cards" aria-live="polite"></div>
   <div id="empty" class="empty" style="display:none">No items found.</div>
 </div>
 
-<!-- floating export -->
 <button class="fab" title="Export CSV" onclick="exportCSV()">CSV</button>
 
-<!-- filter panel -->
 <div id="filterPanel" class="filter-panel" role="dialog" aria-modal="true" aria-hidden="true">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
     <strong>Filters</strong>
@@ -153,55 +142,63 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1Auvcnu3kbyTIUWZ3fB6si-gA78EERK979gkRyzU62rY/gviz/tq" +
   "?gid=1077252914&tqx=out:json";
 
-/* columns to show (same as original COLS: 0..9) */
+/* show these columns (0..9) */
 const COLS = [0,1,2,3,4,5,6,7,8,9];
 
-let rawRows = [];        // rows from sheet
-let headers = [];        // header names
-let uniques = [];        // unique sets for each column
-let activeFilters = {};  // selected filters
+let rawRows = [];
+let headers = [];
+let uniques = [];
+let colorMap = {};
+let filterSelects = [];
+let activeFilters = {};
 
-let colorMap = {};       // pastel color map for column B groups
 const cardsEl = document.getElementById("cards");
 const emptyEl = document.getElementById("empty");
 const filterPanel = document.getElementById("filterPanel");
-let filterSelects = [];  // DOM selects for filters
 
 function goHome(){ window.location.href = "https://08electricaldata.github.io/"; }
 function printPage(){ window.print(); }
+function toggleFilter(){ const open = filterPanel.classList.toggle("open"); filterPanel.setAttribute("aria-hidden", !open); }
 
-function toggleFilter(){
-  const open = filterPanel.classList.toggle("open");
-  filterPanel.setAttribute("aria-hidden", !open);
+/* utility to get pastel color per key */
+function getColorForKey(key){
+  if(!key) return "#ffffff";
+  if(!colorMap[key]) colorMap[key] = `hsl(${Math.floor(Math.random()*360)},70%,88%)`;
+  return colorMap[key];
 }
 
-/* load sheet via gviz JSON and prepare data */
+/* load sheet */
 async function loadData(){
-  const res = await fetch(SHEET_URL);
-  const txt = await res.text();
-  const j = JSON.parse(txt.substring(47, txt.length - 2));
-  const rows = j.table.rows || [];
+  try{
+    const res = await fetch(SHEET_URL);
+    const txt = await res.text();
+    const j = JSON.parse(txt.substring(47, txt.length - 2));
+    const rows = j.table.rows || [];
 
-  // header is first row's c array
-  const headerC = rows[0]?.c || [];
-  headers = COLS.map(i => headerC[i]?.v || `Col ${i+1}`);
+    // header row (first)
+    const headerC = rows[0]?.c || [];
+    headers = COLS.map(i => headerC[i]?.v || `Col ${i+1}`);
 
-  // unique sets for each column
-  uniques = COLS.map(()=> new Set());
+    // build rawRows (array of arrays) and uniques
+    uniques = COLS.map(()=> new Set());
+    rawRows = rows.slice(1).map(r => (r.c || []).map(cell => cell?.v ?? ""));
 
-  rawRows = rows.slice(1).map(r => (r.c || []).map(cell => cell?.v ?? ""));
-
-  rawRows.forEach(r => {
-    COLS.forEach((col, idx) => {
-      if(r[col] !== "" && r[col] !== null && r[col] !== undefined) uniques[idx].add(String(r[col]));
+    rawRows.forEach(r => {
+      COLS.forEach((col, idx) => {
+        const v = r[col];
+        if(v !== "" && v !== null && v !== undefined) uniques[idx].add(String(v));
+      });
     });
-  });
 
-  buildFilterPanel();
-  renderCards();
+    buildFilterPanel();
+    renderCards();
+  }catch(err){
+    console.error("Failed loading sheet", err);
+    cardsEl.innerHTML = '<div class="empty">Error loading data</div>';
+  }
 }
 
-/* build filter selects inside panel */
+/* build filter selects in panel */
 function buildFilterPanel(){
   const container = document.getElementById("filterContainer");
   container.innerHTML = "";
@@ -209,12 +206,12 @@ function buildFilterPanel(){
 
   COLS.forEach((col, idx) => {
     const sel = document.createElement("select");
+
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = headers[idx] || `Column ${col+1}`;
+    placeholder.textContent = headers[idx] || `Col ${col+1}`;
     sel.appendChild(placeholder);
 
-    // sort unique values
     const vals = Array.from(uniques[idx]).sort((a,b)=> String(a).localeCompare(String(b)));
     vals.forEach(v => {
       const o = document.createElement("option");
@@ -223,18 +220,15 @@ function buildFilterPanel(){
       sel.appendChild(o);
     });
 
-    // small styling wrapper
     sel.style.minWidth = "140px";
     sel.style.flex = "1 1 40%";
     container.appendChild(sel);
     filterSelects.push({select: sel, colIndex: col});
   });
-
-  // initialize activeFilters empty
   activeFilters = {};
 }
 
-/* apply filters from panel to activeFilters and re-render */
+/* apply/clear filter panel */
 function applyFilterPanel(){
   activeFilters = {};
   filterSelects.forEach((sObj, idx) => {
@@ -244,25 +238,13 @@ function applyFilterPanel(){
   toggleFilter();
   renderCards();
 }
-
-/* clear filters */
 function clearFilters(){
   filterSelects.forEach(sObj => sObj.select.selectedIndex = 0);
   activeFilters = {};
   renderCards();
 }
 
-/* build pastel color per group (column B value) */
-function getColorForKey(key){
-  if(!key) return "#ffffff";
-  if(!colorMap[key]) colorMap[key] = randomPastel();
-  return colorMap[key];
-}
-function randomPastel(){
-  return `hsl(${Math.floor(Math.random()*360)},70%,90%)`;
-}
-
-/* search & filter logic */
+/* check if a raw row matches activeFilters */
 function matchesFilters(row){
   for(const [filterIdx, val] of Object.entries(activeFilters)){
     const col = COLS[filterIdx];
@@ -272,18 +254,17 @@ function matchesFilters(row){
   return true;
 }
 
+/* render compact cards */
 function renderCards(){
   const q = (document.getElementById("search").value || "").trim().toLowerCase();
   cardsEl.innerHTML = "";
 
   let countVisible = 0;
   rawRows.forEach(row => {
-    // skip completely empty rows
     if(!row || row.every(c=>c === "")) return;
 
     if(!matchesFilters(row)) return;
 
-    // search across row fields
     if(q){
       const hay = row.join(" ").toLowerCase();
       if(!hay.includes(q)) return;
@@ -291,50 +272,58 @@ function renderCards(){
 
     countVisible++;
 
-    // build card (compact)
-    const colValues = COLS.map(c => (row[c] ?? ""));
-    const [rcs, boardNo, ???, breakerNo, breakerUID, comptNo, col7, make, col9, col10] = colValues;
+    // pick fields (using the same indices as original sheet)
+    const rcs = row[0] || "";        // col 0
+    const board = row[1] || "";      // col 1 (used for grouping color)
+    const zone = row[2] || "";       // col 2 (not specifically used)
+    const breakerNo = row[3] || "";  // col 3
+    const breakerUID = row[4] || ""; // col 4
+    const comptNo = row[5] || "";    // col 5
+    const maybeCol6 = row[6] || "";
+    const make = row[7] || "";       // col 7
+    const maybeCol8 = row[8] || "";
+    const maybeCol9 = row[9] || "";
+    const pmDateRaw = row[12] || ""; // pm date (if present)
+    const nextDueRaw = row[13] || ""; // next due (if present)
 
-    // Use column-1 (index 1) as the grouping key for color (same as original)
-    const key = row[1] || "";
-    const color = getColorForKey(key);
+    const color = getColorForKey(board);
 
     const card = document.createElement("article");
     card.className = "card";
-    card.style.display = "flex";
 
-    // small color band
+    // color band
     const band = document.createElement("div");
     band.className = "color-band";
     band.style.background = color;
 
-    // left column: RCS and board
+    // left
     const left = document.createElement("div");
     left.className = "card-left";
     const rcsEl = document.createElement("div");
     rcsEl.className = "rcs";
-    rcsEl.textContent = row[0] || "";
+    rcsEl.textContent = rcs;
     const boardEl = document.createElement("div");
     boardEl.className = "board";
-    boardEl.textContent = row[1] || "";
+    boardEl.textContent = board;
     left.appendChild(rcsEl);
     left.appendChild(boardEl);
 
-    // middle column: breaker identity and meta
+    // middle
     const mid = document.createElement("div");
     mid.className = "card-mid";
     const top = document.createElement("div");
     top.className = "card-top";
     const name = document.createElement("div");
     name.className = "name";
-    // Prefer breaker no then breaker UID
-    name.textContent = row[3] || row[4] || "";
+    name.textContent = breakerNo || breakerUID || "";
     const meta = document.createElement("div");
     meta.className = "meta";
-    meta.textContent = `${row[7] || ""} • Comp: ${row[5] || ""}`;
+    meta.textContent = (make ? make : "") + (comptNo ? (" • Comp: " + comptNo) : "");
     top.appendChild(name);
+    mid.appendChild(top);
+    mid.appendChild(meta);
 
-    // bottom area with a few key kvs (compact)
+    // bottom kvs - show PM DATE and NEXT DUE compactly
     const bottom = document.createElement("div");
     bottom.className = "card-bottom";
 
@@ -342,10 +331,9 @@ function renderCards(){
       const d = document.createElement("div");
       d.className = "kv";
       const l = document.createElement("span");
-      l.className = "k";
-      l.textContent = label + ":";
       l.style.opacity = 0.85;
       l.style.fontSize = "11px";
+      l.textContent = label + ":";
       const v = document.createElement("span");
       v.className = "v";
       v.textContent = value || "—";
@@ -354,51 +342,42 @@ function renderCards(){
       return d;
     }
 
-    bottom.appendChild(kv(headers[3] || "Breaker", row[3] || ""));
-    bottom.appendChild(kv(headers[4] || "UID", row[4] || ""));
-    bottom.appendChild(kv(headers[12] || "PM Date", row[12] || ""));
-    bottom.appendChild(kv(headers[13] || "Next Due", row[13] || ""));
+    bottom.appendChild(kv("PM DATE", pmDateRaw));
+    bottom.appendChild(kv("NEXT DUE", nextDueRaw));
 
-    mid.appendChild(top);
-    mid.appendChild(meta);
     mid.appendChild(bottom);
 
-    // assemble card
+    // assemble
     card.appendChild(band);
     card.appendChild(left);
     card.appendChild(mid);
 
-    // click behavior: same history link but using breaker UID (col 4) if available, fallback to breaker no (col 3)
-    card.onclick = () => {
-      const uid = row[4] || row[3] || "";
-      if(!uid) return;
-      window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent("Breaker-" + uid);
-    };
+    // click -> history page using breakerUID if available else breakerNo
+    card.addEventListener("click", () => {
+      const id = (breakerUID || breakerNo || "").toString();
+      if(!id) return;
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent("Breaker-" + id);
+    });
 
     cardsEl.appendChild(card);
   });
 
   emptyEl.style.display = countVisible ? "none" : "";
-
-  // update counts (simple)
-  // (Optionally add summary counters if you want)
 }
 
-/* export CSV of visible cards */
+/* CSV export for visible cards (match by breakerNo or UID) */
 function exportCSV(){
   const rows = [];
-  const header = COLS.map((c, idx)=> headers[idx] || `Col${c+1}`);
-  rows.push(header.map(h => `"${String(h).replace(/"/g,'""')}"`).join(","));
+  const headerRow = COLS.map((c, idx) => `Col${c+1}`);
+  rows.push(headerRow.map(h => `"${h.replace(/"/g,'""')}"`).join(","));
 
-  // iterate rendered cards and match with rawRows by breaker UID or breaker no
   const visibleCards = Array.from(document.querySelectorAll(".card"));
   visibleCards.forEach(card => {
     const nameText = card.querySelector(".name")?.innerText || "";
-    // find raw row by matching column 3 or 4
-    const raw = rawRows.find(r => (String(r[3]||"") === nameText) || (String(r[4]||"") === nameText) );
+    const raw = rawRows.find(r => String(r[3]||"") === nameText || String(r[4]||"") === nameText);
     if(!raw) return;
-    const row = COLS.map(c => `"${String(raw[c] ?? "").replace(/"/g,'""')}"`).join(",");
-    rows.push(row);
+    const csvLine = COLS.map(c => `"${String(raw[c] ?? "").replace(/"/g,'""')}"`).join(",");
+    rows.push(csvLine);
   });
 
   if(rows.length === 1){
@@ -413,15 +392,10 @@ function exportCSV(){
   a.click();
 }
 
-/* search input handling */
-document.getElementById("search").addEventListener("input", debounce(() => {
-  renderCards();
-}, 200));
-
-/* simple debounce */
+/* search debounce */
+document.getElementById("search").addEventListener("input", debounce(()=>renderCards(), 200));
 function debounce(fn, delay){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), delay); }; }
 
-/* init */
 loadData();
 </script>
 </body>
