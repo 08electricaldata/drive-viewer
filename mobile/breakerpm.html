@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Breaker PM — Mobile App View</title>
+<title>Breaker PM — Mobile Compact</title>
 
 <style>
 :root{
@@ -13,82 +13,67 @@
   --muted:#6b7280;
   --overdue:#d32f2f;
   --warn:#ff9900;
-  --ok:#33cc33;
 }
 
 /* Reset & base */
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Roboto, sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
-.container{max-width:960px;margin:0 auto;padding:10px}
+.container{max-width:960px;margin:0 auto;padding:8px}
 
-/* Compact header like an app */
+/* App header */
 .header{
-  background:var(--brand);
-  color:white;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:10px;
-  position:sticky;
-  top:0;
-  z-index:120;
+  background:var(--brand);color:white;display:flex;align-items:center;gap:8px;padding:10px;position:sticky;top:0;z-index:120;
 }
-.icon-btn{
-  background:white;color:var(--brand);
-  border:none;border-radius:8px;padding:8px 10px;font-weight:800;font-size:13px;
-  cursor:pointer;
-}
+.icon-btn{background:white;color:var(--brand);border:none;border-radius:8px;padding:7px 9px;font-weight:800;font-size:13px;cursor:pointer}
 .title{flex:1;text-align:center}
 .title h1{margin:0;font-size:16px;font-weight:800}
 .title p{margin:2px 0 0;font-size:11px;opacity:.95}
 
 /* summary row (compact) */
-.summary{display:flex;gap:8px;margin:10px 0;align-items:center}
-.sum-card{flex:1;background:var(--card);padding:8px;border-radius:8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.summary{display:flex;gap:8px;margin:8px 0;align-items:center}
+.sum-card{flex:1;background:var(--card);padding:6px;border-radius:8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .sum-card h4{margin:0;color:var(--brand);font-size:11px}
 .sum-card p{margin:6px 0 0;font-size:14px;font-weight:800}
 
-/* controls stacked on mobile */
-.controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+/* controls */
+.controls{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .search{flex:1;padding:8px;border-radius:10px;border:1px solid #e6e9ef;font-size:13px;background:#fff}
 .select{padding:8px;border-radius:10px;border:1px solid #e6e9ef;background:#fff;font-size:13px}
 .small-btn{background:var(--brand);color:#fff;border:none;padding:8px 10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer}
 
-/* cards list */
-.cards{display:flex;flex-direction:column;gap:8px;margin-bottom:80px}
-.card{background:var(--card);border-radius:10px;padding:8px;box-shadow:0 3px 10px rgba(0,0,0,.06);cursor:pointer;display:flex;flex-direction:row;gap:8px;align-items:flex-start}
-.card-left{min-width:72px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+/* cards list - very compact */
+.cards{display:flex;flex-direction:column;gap:6px;margin-bottom:80px}
+.card{background:var(--card);border-radius:8px;padding:8px 8px;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer;display:flex;gap:10px;align-items:center}
+.card-left{min-width:64px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 .rcs{background:#eef6ff;color:var(--brand);padding:6px 8px;border-radius:8px;font-weight:800;font-size:12px}
+.board{font-size:11px;color:var(--muted)}
 .card-mid{flex:1;display:flex;flex-direction:column;gap:4px}
 .name{font-size:13px;font-weight:800;color:var(--brand);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .meta{font-size:11px;color:var(--muted)}
-.card-right{display:flex;flex-direction:column;gap:6px;align-items:flex-end;min-width:96px}
 
-.row-compact{display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px}
-.label{font-size:11px;color:var(--muted);font-weight:700;text-transform:lowercase}
-.value{font-size:13px;font-weight:800;color:#0b3b74;white-space:nowrap}
+/* compact two-line PM/NEXT display */
+.pair-row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:6px}
+.pair-left{font-size:11px;color:var(--muted);font-weight:700}
+.pair-right{font-size:13px;font-weight:800;color:#0b3b74}
 
-/* small badges */
-.badge{padding:5px 8px;border-radius:8px;font-weight:800;font-size:12px}
-.badge.overdue{background:var(--overdue);color:white}
-.badge.warn{background:var(--warn);color:#111}
-.badge.ok{background:#e6f7e9;color:var(--ok)}
+/* small footer text inside card */
+.card-foot{font-size:11px;color:var(--muted);margin-top:4px}
 
 /* floating actions */
 .fab-row{position:fixed;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px;z-index:140}
 .fab{background:var(--brand);color:#fff;border:none;padding:12px;border-radius:50%;width:48px;height:48px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.18)}
 
-/* empty state */
+/* empty */
 .empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
 
 /* print */
 @media print{ .controls,.fab-row,.header{display:none} }
 
-/* tablet/desktop slightly larger */
+/* slightly larger on tablet */
 @media(min-width:700px){
-  .title h1{font-size:18px}
-  .sum-card p{font-size:16px}
+  .container{padding:10px}
   .card{padding:10px}
+  .name{font-size:14px}
 }
 </style>
 </head>
@@ -101,7 +86,7 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
   </div>
   <div class="title">
     <h1>Breaker PM</h1>
-    <p>Designed & maintained by Rakesh Chandra Sethy</p>
+    <p>By Rakesh Chandra Sethy</p>
   </div>
   <div style="width:56px"></div>
 </div>
@@ -137,7 +122,7 @@ const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electrica
 /* navigation */
 function goHome(){ location.href = "https://08electricaldata.github.io/"; }
 
-/* date parser (robust) */
+/* robust date parser */
 function parseDate(v){
   if(!v && v !== 0) return null;
   if(v instanceof Date) return isNaN(v)?null:v;
@@ -151,7 +136,6 @@ function parseDate(v){
         if(nums.length>=3){ const y=parseInt(nums[0],10), m=parseInt(nums[1],10), day=parseInt(nums[2],10); const d=new Date(y,m,day); if(!isNaN(d)) return d; }
       }
     }
-    // ISO or dd-mm-yyyy
     if(/^\d{2}-\d{2}-\d{4}$/.test(s)){
       const [d,m,y] = s.split("-"); return new Date(y, +m-1, +d);
     }
@@ -166,18 +150,16 @@ function parseDate(v){
 function fmt(d){ if(!d) return "—"; const dd = new Date(d); if(isNaN(dd)) return String(d).slice(0,16); return `${String(dd.getDate()).padStart(2,"0")}-${String(dd.getMonth()+1).padStart(2,"0")}-${dd.getFullYear()}`; }
 
 let allRows = [];
-async function load(){
+async function init(){
   try{
     const res = await fetch(JSON_URL);
     const j = await res.json();
     allRows = j.rows || [];
-
     populateYearFilter();
     renderCards();
-    updateCounts();
     attachSearch();
-  }catch(e){
-    console.error(e);
+  }catch(err){
+    console.error(err);
     document.getElementById('cards').innerHTML = '<div class="empty">Error loading data</div>';
   }
 }
@@ -191,13 +173,13 @@ function populateYearFilter(){
   });
   const sel = document.getElementById('yearFilter');
   sel.innerHTML = '<option value="">All</option>';
-  Array.from(years).sort().forEach(y => {
-    const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o);
+  Array.from(years).sort().forEach(y=>{
+    const o = document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o);
   });
-  sel.onchange = () => { renderCards(); updateCounts(); };
+  sel.onchange = () => renderCards();
 }
 
-/* render compact cards */
+/* render compact cards with PM DATE and NEXT DUE shown as requested */
 function renderCards(){
   const cardsEl = document.getElementById('cards');
   cardsEl.innerHTML = '';
@@ -207,72 +189,62 @@ function renderCards(){
 
   let visible = 0;
   allRows.forEach(r => {
-    if(!r || !r[0]) return; // skip blanks
+    if(!r || !r[0]) return;
 
-    // r mapping (same as original):
-    // r[1]=S/S, r[2]=BOARD NO, r[3]=BREAKER NO, r[4]=BREAKER UID, r[5]=COMPT NO, r[7]=MAKE, r[12]=PM DATE, r[13]=NEXT DUE
-    const ss = r[1] || '';
-    const board = r[2] || '';
-    const bkrNo = r[3] || '';
-    const uid = r[4] || '';
-    const compt = r[5] || '';
-    const make = r[7] || '';
-    const pmDateRaw = r[12];
-    const nextRaw = r[13];
+    // column mapping
+    const ss = r[1] || '';          // S/S
+    const board = r[2] || '';       // BOARD NO
+    const bkrNo = r[3] || '';       // BREAKER NO
+    const uid = r[4] || '';         // BREAKER UID
+    const compt = r[5] || '';       // COMPT. NO
+    const make = r[7] || '';        // MAKE
+    const pmRaw = r[12];            // PM DATE
+    const nextRaw = r[13];          // NEXT DUE
 
-    const pmDate = parseDate(pmDateRaw);
+    const pmDate = parseDate(pmRaw);
     const nextDue = parseDate(nextRaw);
 
     if(year){
       if(!pmDate || String(pmDate.getFullYear()) !== String(year)) return;
     }
 
-    const combined = [ss, board, bkrNo, uid, compt, make, pmDateRaw, nextRaw].join(' ').toLowerCase();
+    const combined = [ss, board, bkrNo, uid, compt, make, pmRaw, nextRaw].join(' ').toLowerCase();
     if(q && !combined.includes(q)) return;
 
     visible++;
 
-    const diffDays = nextDue ? Math.round((nextDue - today)/86400000) : null;
-    let badgeClass = 'badge ok';
-    if(diffDays !== null){
-      if(diffDays < 0) badgeClass = 'badge overdue';
-      else if(diffDays <= 30) badgeClass = 'badge warn';
-      else badgeClass = 'badge ok';
-    }
-
     const card = document.createElement('article');
     card.className = 'card';
-    card.dataset.overdue = diffDays !== null && diffDays < 0 ? '1' : '0';
-    card.dataset.soon = diffDays !== null && diffDays <= 30 && diffDays >= 0 ? '1' : '0';
+    card.dataset.overdue = (nextDue && ((nextDue - today)/86400000) < 0) ? '1' : '0';
+    card.dataset.soon = (nextDue && ((nextDue - today)/86400000) <= 30 && ((nextDue - today)/86400000) >= 0) ? '1' : '0';
 
+    // Compact layout: first line name, second line meta, third line shows PM DATE --DD-MM-YYYY and NEXT DUE --DD-MM-YYYY
     card.innerHTML = `
       <div class="card-left">
         <div class="rcs">${ss}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">${board}</div>
+        <div class="board">${board}</div>
       </div>
 
       <div class="card-mid">
         <div class="name">${bkrNo || uid}</div>
         <div class="meta">${make} • Comp: ${compt}</div>
 
-        <div class="row-compact" style="margin-top:8px">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            <div class="label">module done</div>
-            <div class="value">${fmt(pmDate)}</div>
-            <div class="label" style="margin-top:4px">motor done</div>
-            <div class="value">${fmt(nextDue)}</div>
+        <div class="pair-row">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div class="pair-left">PM DATE</div>
+            <div class="pair-right">--${fmt(pmDate)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <div class="pair-left">NEXT DUE</div>
+            <div class="pair-right">--${fmt(nextDue)}</div>
           </div>
         </div>
-      </div>
-
-      <div class="card-right">
-        <div class="${badgeClass}">${nextDue ? diffDays + 'd' : '—'}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">${fmt(nextDue)}</div>
       </div>
     `;
 
     card.addEventListener('click', ()=> {
       const id = "BREAKER-" + String(uid).trim();
+      // mobile history URL as before
       location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
     });
 
@@ -280,11 +252,10 @@ function renderCards(){
   });
 
   document.getElementById('empty').style.display = visible ? 'none' : 'block';
-  // update counts after rendering
   updateCounts();
 }
 
-/* update summary counts */
+/* counts update */
 function updateCounts(){
   const today = new Date(); today.setHours(0,0,0,0);
   let tot=0, over=0, soon=0;
@@ -295,9 +266,11 @@ function updateCounts(){
     if(!r || !r[0]) return;
     const pmDate = parseDate(r[12]);
     const nextDue = parseDate(r[13]);
+
     if(year){
       if(!pmDate || String(pmDate.getFullYear()) !== String(year)) return;
     }
+
     const combined = [r[1], r[2], r[3], r[4], r[5], r[7]].join(' ').toLowerCase();
     if(q && !combined.includes(q)) return;
 
@@ -329,37 +302,41 @@ function filterShow(type){
   });
 }
 
-/* WhatsApp alert - list UID and next due */
+/* WhatsApp alert lists overdue UIDs and next due (if needed) */
 function sendWhatsApp(){
   const lines = [];
   document.querySelectorAll('.cards .card').forEach(card => {
     if(card.style.display === 'none') return;
     if(card.dataset.overdue === '1'){
       const uidText = card.querySelector('.name')?.innerText || '';
-      const dueText = card.querySelector('.card-right div:nth-child(2)')?.innerText || '';
-      lines.push(`${uidText} → ${dueText}`);
+      const nextText = card.querySelector('.card-mid .pair-row .pair-right:last-child')?.innerText || '';
+      lines.push(`${uidText} → ${nextText}`);
     }
   });
-  if(lines.length === 0){
-    alert('No overdue breakers.');
-    return;
-  }
+  if(lines.length === 0){ alert('No overdue breakers.'); return; }
   const msg = '🔔 Breaker PM Overdue:%0A' + lines.join('%0A');
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
-/* CSV export: export currently visible cards rows with original fields */
+/* CSV export for visible cards */
 function exportCSV(){
-  const visibleIds = Array.from(document.querySelectorAll('.cards .card'))
-    .filter(c=> c.style.display !== 'none')
-    .map(c => c.querySelector('.name')?.innerText || '');
+  const visibleCards = Array.from(document.querySelectorAll('.cards .card')).filter(c => c.style.display !== 'none');
   const header = ['S/S','BOARD NO','BREAKER NO','BREAKER UID','COMPT NO','MAKE','PM DATE','NEXT DUE'];
   const rows = [ header.join(',') ];
 
-  visibleIds.forEach(nameText => {
-    // nameText matched to either breaker no or uid; find first matching row
-    const row = allRows.find(r => (r[3]===nameText) || (r[4]===nameText) || ( (r[3]||'') + '' === nameText ) );
-    if(!row) return;
+  visibleCards.forEach(card => {
+    const ss = card.querySelector('.rcs')?.innerText || '';
+    const board = card.querySelector('.board')?.innerText || '';
+    const name = card.querySelector('.name')?.innerText || '';
+    // find matching original row (match by breaker no or uid)
+    const row = allRows.find(r => (r[3] === name) || (r[4] === name) || ( (r[3]||'') + '' === name ) );
+    if(!row) {
+      // fallback: try to construct from card DOM
+      const pmText = card.querySelector('.pair-row .pair-right')?.innerText.replace(/^--/,'') || '';
+      const nextText = card.querySelector('.pair-row .pair-right:last-child')?.innerText.replace(/^--/,'') || '';
+      rows.push([ss, board, name, '', '', '', pmText, nextText].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+      return;
+    }
     const vals = [ row[1]||'', row[2]||'', row[3]||'', row[4]||'', row[5]||'', row[7]||'', row[12]||'', row[13]||'' ];
     rows.push(vals.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   });
@@ -367,15 +344,15 @@ function exportCSV(){
   const blob = new Blob([rows.join('\n')], {type:'text/csv'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'breaker_pm_mobile.csv';
+  a.download = 'breaker_pm_mobile_compact.csv';
   a.click();
 }
 
-/* initialize */
+/* init */
 async function init(){
   try{
-    const r = await fetch(JSON_URL);
-    const j = await r.json();
+    const res = await fetch(JSON_URL);
+    const j = await res.json();
     allRows = j.rows || [];
     populateYearFilter();
     renderCards();
@@ -386,7 +363,6 @@ async function init(){
   }
 }
 
-/* populate year filter (based on PM dates) */
 function populateYearFilter(){
   const years = new Set();
   allRows.forEach(r => {
@@ -396,10 +372,10 @@ function populateYearFilter(){
   });
   const sel = document.getElementById('yearFilter');
   sel.innerHTML = '<option value="">All</option>';
-  Array.from(years).sort().forEach(y => {
-    const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o);
+  Array.from(years).sort().forEach(y=>{
+    const o = document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o);
   });
-  sel.onchange = () => { renderCards(); };
+  sel.onchange = () => renderCards();
 }
 
 init();
