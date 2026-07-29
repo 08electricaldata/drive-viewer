@@ -43,7 +43,7 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 
 /* cards list - very compact */
 .cards{display:flex;flex-direction:column;gap:6px;margin-bottom:80px}
-.card{background:var(--card);border-radius:8px;padding:8px 8px;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer;display:flex;gap:10px;align-items:center}
+.card{background:var(--card);border-radius:8px;padding:8px 8px;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer;display:flex;gap:10px;align-items:center;transition:background .12s ease, border-left .12s ease;}
 .card-left{min-width:64px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 .rcs{background:#eef6ff;color:var(--brand);padding:6px 8px;border-radius:8px;font-weight:800;font-size:12px}
 .board{font-size:11px;color:var(--muted)}
@@ -54,7 +54,17 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 /* compact two-line PM/NEXT display */
 .pair-row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:6px}
 .pair-left{font-size:11px;color:var(--muted);font-weight:700}
-.pair-right{font-size:13px;font-weight:800;color:#0b3b74}
+.pair-right{font-size:13px;font-weight:800;color:#0b3b74;padding:2px 6px;border-radius:6px}
+
+/* overdue visuals */
+.overdue-card{
+  background: #fff2f2;
+  border-left: 4px solid var(--overdue);
+}
+.pair-right.overdue-date{
+  background: var(--overdue);
+  color: white;
+}
 
 /* small footer text inside card */
 .card-foot{font-size:11px;color:var(--muted);margin-top:4px}
@@ -179,7 +189,7 @@ function populateYearFilter(){
   sel.onchange = () => renderCards();
 }
 
-/* render compact cards with PM DATE and NEXT DUE shown as requested */
+/* render compact cards with PM DATE and NEXT DUE shown, and red highlight if NEXT DUE < today */
 function renderCards(){
   const cardsEl = document.getElementById('cards');
   cardsEl.innerHTML = '';
@@ -191,15 +201,15 @@ function renderCards(){
   allRows.forEach(r => {
     if(!r || !r[0]) return;
 
-    // column mapping
-    const ss = r[1] || '';          // S/S
-    const board = r[2] || '';       // BOARD NO
-    const bkrNo = r[3] || '';       // BREAKER NO
-    const uid = r[4] || '';         // BREAKER UID
-    const compt = r[5] || '';       // COMPT. NO
-    const make = r[7] || '';        // MAKE
-    const pmRaw = r[12];            // PM DATE
-    const nextRaw = r[13];          // NEXT DUE
+    // mapping
+    const ss = r[1] || '';
+    const board = r[2] || '';
+    const bkrNo = r[3] || '';
+    const uid = r[4] || '';
+    const compt = r[5] || '';
+    const make = r[7] || '';
+    const pmRaw = r[12];
+    const nextRaw = r[13];
 
     const pmDate = parseDate(pmRaw);
     const nextDue = parseDate(nextRaw);
@@ -213,12 +223,15 @@ function renderCards(){
 
     visible++;
 
+    const isOverdue = nextDue ? nextDue < today : false;
+
     const card = document.createElement('article');
-    card.className = 'card';
-    card.dataset.overdue = (nextDue && ((nextDue - today)/86400000) < 0) ? '1' : '0';
+    card.className = 'card' + (isOverdue ? ' overdue-card' : '');
+    card.dataset.overdue = isOverdue ? '1' : '0';
     card.dataset.soon = (nextDue && ((nextDue - today)/86400000) <= 30 && ((nextDue - today)/86400000) >= 0) ? '1' : '0';
 
-    // Compact layout: first line name, second line meta, third line shows PM DATE --DD-MM-YYYY and NEXT DUE --DD-MM-YYYY
+    const nextClass = 'pair-right' + (isOverdue ? ' overdue-date' : '');
+
     card.innerHTML = `
       <div class="card-left">
         <div class="rcs">${ss}</div>
@@ -236,7 +249,7 @@ function renderCards(){
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
             <div class="pair-left">NEXT DUE</div>
-            <div class="pair-right">--${fmt(nextDue)}</div>
+            <div class="${nextClass}">--${fmt(nextDue)}</div>
           </div>
         </div>
       </div>
@@ -244,7 +257,6 @@ function renderCards(){
 
     card.addEventListener('click', ()=> {
       const id = "BREAKER-" + String(uid).trim();
-      // mobile history URL as before
       location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
     });
 
@@ -287,7 +299,7 @@ function updateCounts(){
   document.getElementById('soon').textContent = soon;
 }
 
-/* search handler */
+/* search */
 function attachSearch(){
   const s = document.getElementById('search');
   s.addEventListener('input', ()=> { renderCards(); });
@@ -302,14 +314,14 @@ function filterShow(type){
   });
 }
 
-/* WhatsApp alert lists overdue UIDs and next due (if needed) */
+/* WhatsApp */
 function sendWhatsApp(){
   const lines = [];
   document.querySelectorAll('.cards .card').forEach(card => {
     if(card.style.display === 'none') return;
     if(card.dataset.overdue === '1'){
       const uidText = card.querySelector('.name')?.innerText || '';
-      const nextText = card.querySelector('.card-mid .pair-row .pair-right:last-child')?.innerText || '';
+      const nextText = card.querySelector('.pair-row .pair-right.overdue-date')?.innerText || '';
       lines.push(`${uidText} → ${nextText}`);
     }
   });
@@ -318,7 +330,7 @@ function sendWhatsApp(){
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
-/* CSV export for visible cards */
+/* CSV */
 function exportCSV(){
   const visibleCards = Array.from(document.querySelectorAll('.cards .card')).filter(c => c.style.display !== 'none');
   const header = ['S/S','BOARD NO','BREAKER NO','BREAKER UID','COMPT NO','MAKE','PM DATE','NEXT DUE'];
@@ -328,12 +340,10 @@ function exportCSV(){
     const ss = card.querySelector('.rcs')?.innerText || '';
     const board = card.querySelector('.board')?.innerText || '';
     const name = card.querySelector('.name')?.innerText || '';
-    // find matching original row (match by breaker no or uid)
-    const row = allRows.find(r => (r[3] === name) || (r[4] === name) || ( (r[3]||'') + '' === name ) );
+    const row = allRows.find(r => (r[3] === name) || (r[4] === name) || ((r[3]||'') + '' === name));
     if(!row) {
-      // fallback: try to construct from card DOM
       const pmText = card.querySelector('.pair-row .pair-right')?.innerText.replace(/^--/,'') || '';
-      const nextText = card.querySelector('.pair-row .pair-right:last-child')?.innerText.replace(/^--/,'') || '';
+      const nextText = card.querySelector('.pair-row .pair-right.overdue-date')?.innerText.replace(/^--/,'') || card.querySelector('.pair-row .pair-right:last-child')?.innerText.replace(/^--/,'') || '';
       rows.push([ss, board, name, '', '', '', pmText, nextText].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
       return;
     }
@@ -361,21 +371,6 @@ async function init(){
     console.error(err);
     document.getElementById('cards').innerHTML = '<div class="empty">Error loading data</div>';
   }
-}
-
-function populateYearFilter(){
-  const years = new Set();
-  allRows.forEach(r => {
-    if(!r || !r[0]) return;
-    const pm = parseDate(r[12]);
-    if(pm) years.add(pm.getFullYear());
-  });
-  const sel = document.getElementById('yearFilter');
-  sel.innerHTML = '<option value="">All</option>';
-  Array.from(years).sort().forEach(y=>{
-    const o = document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o);
-  });
-  sel.onchange = () => renderCards();
 }
 
 init();
