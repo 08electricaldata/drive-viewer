@@ -121,14 +121,14 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1Auvcnu3kbyTIUWZ3fB6si-gA78EERK979gkRyzU62rY/gviz/tq" +
   "?gid=1077252914&tqx=out:json";
 
-/* Show columns A..J by default, but we'll drop columns with header "1" or containing "type" */
+/* Show columns A..J by default, but we will remove col 0 (serial) and any header '1' or containing 'type' */
 const COLS = [0,1,2,3,4,5,6,7,8,9];
 
-let headers = [];          // header strings for visible columns
-let visibleCols = [];      // array of {colIndex, header}
-let uniqueValues = {};     // keyed by colIndex -> Set of unique values
-let rows = [];             // raw rows array of arrays
-let activeFilters = {};    // colIndex -> selected value
+let headers = [];
+let visibleCols = [];      // {colIndex, header}
+let uniqueValues = {};     // colIndex -> Set
+let rows = [];
+let activeFilters = {};
 
 const headerRow = document.getElementById('headerRow');
 const filterRow = document.getElementById('filterRow');
@@ -139,35 +139,38 @@ const filterPanelContent = document.getElementById('filterPanelContent');
 
 function goHome(){ location.href = 'https://08electricaldata.github.io/'; }
 function goBack(){ history.back(); }
-
 function closeFilterPanel(){ filterPanel.style.display = 'none'; }
 function toggleFilterPanel(){ filterPanel.style.display = filterPanel.style.display === 'flex' ? 'none' : 'flex'; }
 
-/* utility: parse gviz JSON text */
+/* Load sheet (gviz JSON), prepare headers/rows */
 async function loadSheet(){
   const res = await fetch(SHEET_URL);
   const txt = await res.text();
   const j = JSON.parse(txt.substring(47, txt.length - 2));
   const gRows = j.table.rows || [];
 
-  // header cells
   const headerCells = gRows[0]?.c || [];
 
-  // Build initial visibleCols: all COLS except ones to remove
+  // Build visibleCols but exclude column index 0 (serial numbers) and those with header '1' or containing 'type'
   visibleCols = COLS.map(i => ({colIndex: i, header: headerCells[i]?.v ?? `Col ${i+1}`}))
-    .filter(col => {
-      const h = String(col.header||"").trim();
-      if(!h) return true; // keep blank header columns
-      // Remove columns whose header is exactly "1" OR contains "type" (case-insensitive)
+    .filter(vc => {
+      // Remove serial column index 0
+      if(vc.colIndex === 0) return false;
+      const h = String(vc.header || "").trim();
       if(h === "1") return false;
       if(/type/i.test(h)) return false;
       return true;
     });
 
-  // build rows (array of arrays)
+  // override header for column 6 (1-based) => index 5 to "Rating"
+  visibleCols.forEach(vc => {
+    if(vc.colIndex === 5) vc.header = "Rating";
+  });
+
+  // Build rows
   rows = gRows.slice(1).map(r => (r.c || []).map(cell => cell?.v ?? ""));
 
-  // compute unique values for each visible column
+  // compute unique values for visible columns
   uniqueValues = {};
   visibleCols.forEach(vc => uniqueValues[vc.colIndex] = new Set());
   rows.forEach(r => {
@@ -183,7 +186,7 @@ async function loadSheet(){
   renderTable();
 }
 
-/* Build the table header row from visibleCols */
+/* Build table header */
 function buildTableHeader(){
   headerRow.innerHTML = "";
   visibleCols.forEach(vc => {
@@ -193,14 +196,13 @@ function buildTableHeader(){
   });
 }
 
-/* Build the tiny filter selects inline below headers (desktop/table) */
+/* Build filter selects inline */
 function buildFilterRow(){
   filterRow.innerHTML = "";
   visibleCols.forEach(vc => {
     const th = document.createElement('th');
     const sel = document.createElement('select');
     sel.innerHTML = '<option value="">All</option>';
-    // populate sorted values
     const vals = Array.from(uniqueValues[vc.colIndex] || []).sort((a,b)=> String(a).localeCompare(String(b)));
     vals.forEach(v => {
       const o = document.createElement('option');
@@ -218,7 +220,7 @@ function buildFilterRow(){
   });
 }
 
-/* Build filter panel content (bigger selects) */
+/* Build filter panel content */
 function buildFilterPanelContent(){
   filterPanelContent.innerHTML = "";
   visibleCols.forEach(vc => {
@@ -250,13 +252,12 @@ function buildFilterPanelContent(){
 /* Clear filters */
 function clearAllFilters(){
   activeFilters = {};
-  // clear selects both in header filterRow and filterPanel
   filterRow.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
   filterPanelContent.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
   renderTable();
 }
 
-/* Returns true if row passes all activeFilters */
+/* Check filters */
 function passesFilters(row){
   for(const colIdxStr of Object.keys(activeFilters)){
     const colIdx = Number(colIdxStr);
@@ -267,12 +268,12 @@ function passesFilters(row){
   return true;
 }
 
-/* Search + filters + rendering */
+/* Render table with search + filters */
 function renderTable(){
   const q = (searchInput.value || "").trim().toLowerCase();
   tableBody.innerHTML = "";
 
-  // Prepare index of column used for id/navigation: prefer headers containing uid|breaker|brkr
+  // pick id column for navigation: prefer header containing uid|breaker|brkr, else first visible
   const idCol = (function(){
     for(let vc of visibleCols){
       if(/(uid|breaker|brkr)/i.test(String(vc.header||""))) return vc.colIndex;
@@ -281,28 +282,20 @@ function renderTable(){
   })();
 
   rows.forEach(r => {
-    // skip entirely empty rows
     if(!r || r.every(c => c === "" || c === null || c === undefined)) return;
-
     if(!passesFilters(r)) return;
-
-    // global search across visible columns
     if(q){
       const hay = visibleCols.map(vc => String(r[vc.colIndex] ?? "")).join(" ").toLowerCase();
       if(!hay.includes(q)) return;
     }
 
-    // create table row (either normal table row or stacked mobile will use same TDs)
     const tr = document.createElement('tr');
-
-    // attach click navigation: use idCol value
     tr.onclick = () => {
       const idVal = idCol !== null ? (r[idCol] || "") : "";
       if(!idVal) return;
       window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(String(idVal));
     };
 
-    // append visible columns as TDs. For mobile stacked layout we put data-label attribute with header text
     visibleCols.forEach(vc => {
       const td = document.createElement('td');
       const cellText = r[vc.colIndex] ?? "";
@@ -315,19 +308,16 @@ function renderTable(){
   });
 }
 
-/* CSV export of currently visible rows & columns */
+/* Export CSV of visible rows & columns */
 function exportCSV(){
-  // header row: visible headers
-  const hdr = visibleCols.map(vc => `"${String(vc.header||'').replace(/"/g,'""')}"`).join(',');
+  // header row
+  const hdr = visibleCols.map(vc => `"${String(vc.header || '').replace(/"/g,'""')}"`).join(',');
   const lines = [hdr];
 
-  // iterate current visible table tbody rows and map back to raw rows by matching cells
   const trs = Array.from(tableBody.querySelectorAll('tr'));
   trs.forEach(tr => {
     const tds = Array.from(tr.children);
-    // extract cell texts in order
     const vals = tds.map(td => td.innerText ?? "");
-    // no need to find original raw row; just export these values
     lines.push(vals.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   });
 
@@ -343,17 +333,17 @@ function exportCSV(){
   a.click();
 }
 
-/* hook search with debounce */
+/* search debounce */
 let searchTimer = null;
 searchInput.addEventListener('input', () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(renderTable, 200);
 });
 
-/* initial load */
+/* init */
 loadSheet().catch(err => {
   console.error(err);
-  document.getElementById('tableBody').innerHTML = '<tr><td colspan="99" style="padding:16px;color:#d00">Error loading sheet</td></tr>';
+  tableBody.innerHTML = '<tr><td colspan="99" style="padding:16px;color:#d00">Error loading sheet</td></tr>';
 });
 </script>
 </body>
