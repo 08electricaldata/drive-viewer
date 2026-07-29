@@ -137,7 +137,7 @@ const searchInput = document.getElementById('search');
 const filterPanel = document.getElementById('filterPanel');
 const filterPanelContent = document.getElementById('filterPanelContent');
 
-function goHome(){ location.href = 'https://08electricaldata.github.io/'; }
+function goHome(){ location.href = 'https://08electricaldata.github.io/index_mob.html'; }
 function goBack(){ history.back(); }
 function closeFilterPanel(){ filterPanel.style.display = 'none'; }
 function toggleFilterPanel(){ filterPanel.style.display = filterPanel.style.display === 'flex' ? 'none' : 'flex'; }
@@ -162,9 +162,12 @@ async function loadSheet(){
       return true;
     });
 
-  // override header for column 6 (1-based) => index 5 to "Rating"
+  // Apply header replacements per request:
+  // - Column index 9 -> "Rating"
+  // - Column index 5 -> "Compt."
   visibleCols.forEach(vc => {
-    if(vc.colIndex === 5) vc.header = "Rating";
+    if(vc.colIndex === 9) vc.header = "Rating";
+    if(vc.colIndex === 5) vc.header = "Compt.";
   });
 
   // Build rows
