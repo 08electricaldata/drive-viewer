@@ -2,20 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Breaker Master List — Responsive (3D Cards)</title>
+<title>Breaker Master List — Responsive</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root{
   --brand:#003f88;
   --bg:#f2f6ff;
-  --card:#ffffff;
+  --card:#fff;
   --muted:#6b7280;
-  --card-edge: rgba(3,63,136,0.06);
-  --shadow-1: 0 6px 18px rgba(3,63,136,0.10);
-  --shadow-2: 0 18px 40px rgba(3,63,136,0.12);
 }
-
 /* Base */
 *{box-sizing:border-box}
 body{font-family:Arial, sans-serif;margin:0;background:var(--bg);color:#111}
@@ -29,7 +25,7 @@ body{font-family:Arial, sans-serif;margin:0;background:var(--bg);color:#111}
 
 /* Container & card */
 .container{padding:12px;max-width:1100px;margin:0 auto}
-.card-wrapper{background:transparent;padding:10px;border-radius:12px}
+.card{background:var(--card);border-radius:10px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 
 /* Controls row */
 .controls{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
@@ -37,95 +33,38 @@ body{font-family:Arial, sans-serif;margin:0;background:var(--bg);color:#111}
 .btn{background:var(--brand);color:#fff;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700}
 
 /* Table */
-.table-wrap{overflow:auto;border-radius:12px}
-table{width:100%;border-collapse:collapse;font-size:13px;background:transparent}
+.table-wrap{overflow:auto;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card)}
 thead th{background:var(--brand);color:#fff;position:sticky;top:56px;padding:8px;border:1px solid rgba(255,255,255,.06)}
-tbody td{padding:0;border:0} /* cells will be inside cards now */
+tbody td{padding:8px;border:1px solid #e7e7e7}
+
+/* filter row selects */
+.filter-row select{width:100%;padding:6px;border-radius:6px;border:1px solid #ddd;font-size:13px}
 
 /* hover */
-tbody tr:hover{cursor:pointer}
+tbody tr:hover{background:#eef5ff;cursor:pointer}
 
-/* mobile stacked style (cards) */
-@media (max-width:920px){
+/* mobile stacked style */
+@media (max-width:720px){
   table, thead, tbody, th, td, tr { display:block; }
   thead { display:none; } /* hide table headers */
-  tbody tr { margin-bottom:16px; border-radius:12px; background:transparent; padding:0; }
-  tbody td { display:block; padding:0; border:0; background:transparent; }
+  tbody tr { margin-bottom:10px; border-radius:8px; background:var(--card); box-shadow:0 2px 8px rgba(0,0,0,.04); padding:8px; }
+  tbody td {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 10px;
+    border:0;
+    border-bottom:1px solid #f0f0f0;
+  }
+  tbody td:last-child{border-bottom:0}
+  /* label on left: uses data-label attribute */
+  tbody td::before{
+    content: attr(data-label);
+    flex: 0 0 46%;
+    color:var(--muted);
+    font-weight:700;
+    font-size:12px;
+  }
 }
-
-/* Card visuals (applies in stacked/mobile and also used in table cells on desktop) */
-.card {
-  position: relative;
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-  box-shadow: var(--shadow-1);
-  transition: transform .20s cubic-bezier(.2,.9,.2,1), box-shadow .20s ease;
-  transform-origin: center;
-  overflow: visible;
-  border: 1px solid var(--card-edge);
-}
-
-/* layered "3D" effect: subtle offset duplicate below card */
-.card::before,
-.card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  pointer-events: none;
-  z-index: -2;
-}
-
-/* faint larger shadow layer */
-.card::before {
-  transform: translateY(6px) scale(0.99);
-  background: linear-gradient(180deg, rgba(3,63,136,0.02), rgba(3,63,136,0.01));
-  filter: blur(8px);
-  z-index: -2;
-}
-
-/* slightly colored edge layer to give a lifted paper stack look */
-.card::after {
-  transform: translateY(10px) scale(0.985);
-  background: linear-gradient(90deg, rgba(3,63,136,0.02), rgba(3,63,136,0.0));
-  opacity: 0.9;
-  z-index: -3;
-}
-
-/* hover/focus lift: stronger shadow & tiny tilt */
-.card:hover, .card:focus-within {
-  transform: translateY(-8px) rotateX(1.2deg);
-  box-shadow: var(--shadow-2);
-}
-
-/* card content layout */
-.card-left{min-width:72px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
-.rcs{background:#eef6ff;color:var(--brand);padding:6px 8px;border-radius:8px;font-weight:800;font-size:12px}
-.board{font-size:11px;color:var(--muted)}
-.card-mid{flex:1;display:flex;flex-direction:column;gap:6px}
-.card-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
-.name{font-weight:800;color:#0b3b74;font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.meta{font-size:12px;color:var(--muted)}
-.card-bottom{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.kv{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
-.kv .v{font-weight:800;color:#0b3b74}
-
-/* subtle accent bar (left) to further distinguish cards */
-.card-accent {
-  width:6px;border-radius:4px;background:linear-gradient(180deg, rgba(0,63,136,0.12), rgba(0,63,136,0.06));margin-right:8px;flex-shrink:0;
-}
-
-/* desktop/tablet: keep cards inside table cells for larger screens */
-@media (min-width:921px){
-  /* we'll wrap each table row's only td with a card container */
-  tbody tr td > .card { margin:8px 6px; }
-}
-
-/* empty */
-.empty{padding:24px;text-align:center;color:var(--muted)}
 
 /* print */
 @media print{
@@ -143,29 +82,27 @@ tbody tr:hover{cursor:pointer}
 </div>
 
 <div class="container">
-  <div class="card-wrapper card">
-    <div class="controls" style="width:100%;padding:0;border:none;background:transparent">
+  <div class="card">
+    <div class="controls">
       <input id="search" class="search" placeholder="Search all columns...">
       <button class="btn" id="openFiltersBtn" onclick="toggleFilterPanel()">Filters</button>
       <button class="btn" onclick="exportCSV()">📄 Export CSV</button>
       <button class="btn" onclick="window.print()">🖨 Print</button>
     </div>
-  </div>
 
-  <div class="table-wrap">
-    <table id="breakerTable" role="table" aria-label="Breaker master">
-      <thead>
-        <tr id="headerRow"></tr>
-        <tr class="filter-row" id="filterRow"></tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+    <div class="table-wrap">
+      <table id="breakerTable" role="table" aria-label="Breaker master">
+        <thead>
+          <tr id="headerRow"></tr>
+          <tr class="filter-row" id="filterRow"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
   </div>
-
-  <div id="empty" class="empty" style="display:none">No items found.</div>
 </div>
 
-<!-- Filter panel -->
+<!-- Filter panel (simple modal) -->
 <div id="filterPanel" style="position:fixed;left:0;right:0;bottom:0;top:0;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);z-index:999">
   <div style="background:#fff;border-top-left-radius:12px;border-top-right-radius:12px;padding:12px;width:100%;max-width:980px;max-height:70vh;overflow:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -178,8 +115,6 @@ tbody tr:hover{cursor:pointer}
     <div id="filterPanelContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px"></div>
   </div>
 </div>
-
-<button class="btn" style="position:fixed;right:12px;bottom:12px;border-radius:50%;width:56px;height:56px;z-index:999" onclick="exportCSV()">CSV</button>
 
 <script>
 const SHEET_URL =
@@ -227,7 +162,7 @@ async function loadSheet(){
       return true;
     });
 
-  // Apply header replacements per previous requests:
+  // Apply header replacements per request:
   // - Column index 9 -> "Rating"
   // - Column index 5 -> "Compt."
   visibleCols.forEach(vc => {
@@ -358,324 +293,47 @@ function renderTable(){
     }
 
     const tr = document.createElement('tr');
-    // We'll create one td that holds the visually rich card for mobile & desktop
-    const td = document.createElement('td');
-    // build card DOM
-    const card = document.createElement('div');
-    card.className = 'card';
-
-    // small color accent (derive from board value if present)
-    const accent = document.createElement('div');
-    accent.className = 'card-accent';
-    const boardKey = r[1] || "";
-    const hue = Math.floor((Array.from(boardKey).reduce((s,ch)=> s + ch.charCodeAt(0),0) % 360));
-    accent.style.background = `linear-gradient(180deg, hsl(${hue},70%,86%), hsl(${hue},60%,92%))`;
-
-    // left column
-    const left = document.createElement('div');
-    left.className = 'card-left';
-    const rcsEl = document.createElement('div'); rcsEl.className = 'rcs'; rcsEl.textContent = r[0] || '';
-    const boardEl = document.createElement('div'); boardEl.className = 'board'; boardEl.textContent = r[1] || '';
-    left.appendChild(rcsEl); left.appendChild(boardEl);
-
-    // middle
-    const mid = document.createElement('div'); mid.className = 'card-mid';
-    const top = document.createElement('div'); top.className = 'card-top';
-    const name = document.createElement('div'); name.className = 'name';
-    name.textContent = r[3] || r[4] || '';
-    const meta = document.createElement('div'); meta.className = 'meta';
-    meta.textContent = `${r[7] || ''}${r[5] ? (' • Compt.: ' + r[5]) : ''}`;
-    top.appendChild(name);
-    mid.appendChild(top);
-    mid.appendChild(meta);
-
-    // bottom kvs (show visibleCols but compact)
-    const bottom = document.createElement('div'); bottom.className = 'card-bottom';
-    visibleCols.forEach(vc => {
-      // show only a few small kvs to keep card compact (we'll include all values for accessibility in the table TD attributes)
-      const label = vc.header || '';
-      const val = r[vc.colIndex] ?? '';
-      // Pick selective short display for bottom (PM Date, Next Due, Rating, Compt.)
-      if(/(pm|next|due|rating|compt)/i.test(label.toLowerCase())){
-        const kv = document.createElement('div'); kv.className = 'kv';
-        const kspan = document.createElement('span'); kspan.style.opacity = .85; kspan.style.fontSize = '11px'; kspan.textContent = label + ':';
-        const vspan = document.createElement('span'); vspan.className = 'v'; vspan.textContent = val || '—';
-        kv.appendChild(kspan); kv.appendChild(vspan);
-        bottom.appendChild(kv);
-      }
-    });
-    mid.appendChild(bottom);
-
-    // assemble card: accent + left + mid
-    card.appendChild(accent);
-    card.appendChild(left);
-    card.appendChild(mid);
-
-    // add card into td and tr
-    td.appendChild(card);
-    tr.appendChild(td);
-
-    // set data-label attributes for each visible column in computed cells for mobile stacked view:
-    // We'll insert hidden spans inside td that map to each visible column to enable stacked labels when CSS uses data-label
-    // But simpler: we add additional hidden rows inside tr for screen readers & mobile stacking: create a hidden area with row values
-    // For mobile stacked CSS, each 'td' uses data-label; in our approach we keep single td per tr, but we still want stacked labels.
-    // So we will create an additional hidden element inside card that contains a small table of label/value pairs for accessibility and small screens.
-    const stacked = document.createElement('div');
-    stacked.style.display = 'none'; // hidden on desktop via CSS, mobile uses table->display:block which shows real tds; for our card approach we show this only on small screens with CSS fallback omitted for brevity.
-    // Append accessible list
-    const list = document.createElement('div');
-    list.style.marginTop = '8px';
-    visibleCols.forEach(vc => {
-      const rowItem = document.createElement('div');
-      rowItem.style.display = 'flex';
-      rowItem.style.justifyContent = 'space-between';
-      rowItem.style.gap = '8px';
-      rowItem.style.fontSize = '12px';
-      rowItem.style.color = 'var(--muted)';
-      const k = document.createElement('div'); k.textContent = vc.header || '';
-      k.style.fontWeight = 700;
-      const v = document.createElement('div'); v.textContent = r[vc.colIndex] ?? '';
-      v.style.fontWeight = 800;
-      v.style.color = '#0b3b74';
-      rowItem.appendChild(k); rowItem.appendChild(v);
-      list.appendChild(rowItem);
-    });
-    stacked.appendChild(list);
-    card.appendChild(stacked);
-
-    // click behavior: use id column (prefer uid/breaker fields), if none used fallback to first visible column
-    const idCol = (function(){
-      for(let vc of visibleCols){
-        if(/(uid|breaker|brkr)/i.test(String(vc.header||""))) return vc.colIndex;
-      }
-      return visibleCols.length ? visibleCols[0].colIndex : null;
-    })();
-    tr.addEventListener('click', () => {
+    tr.onclick = () => {
       const idVal = idCol !== null ? (r[idCol] || "") : "";
       if(!idVal) return;
       window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(String(idVal));
+    };
+
+    visibleCols.forEach(vc => {
+      const td = document.createElement('td');
+      const cellText = r[vc.colIndex] ?? "";
+      td.textContent = cellText;
+      td.setAttribute('data-label', vc.header || '');
+      tr.appendChild(td);
     });
 
     tableBody.appendChild(tr);
   });
 }
 
-/* CSV export of visible rows & columns */
+/* Export CSV of visible rows & columns */
 function exportCSV(){
+  // header row
   const hdr = visibleCols.map(vc => `"${String(vc.header || '').replace(/"/g,'""')}"`).join(',');
   const lines = [hdr];
 
   const trs = Array.from(tableBody.querySelectorAll('tr'));
   trs.forEach(tr => {
-    // the original row data is not directly available on tr; we can match by the name displayed
-    const nameText = tr.querySelector('.name')?.innerText || '';
-    // find raw row
-    const raw = rows.find(r => (r[3] === nameText) || (r[4] === nameText) || (String(r[3] || '') === nameText));
-    if(!raw) return;
-    const vals = visibleCols.map(vc => `"${String(raw[vc.colIndex] ?? '').replace(/"/g,'""')}"`).join(',');
-    lines.push(vals);
+    const tds = Array.from(tr.children);
+    const vals = tds.map(td => td.innerText ?? "");
+    lines.push(vals.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
   });
 
-  if(lines.length === 1){ alert('No rows to export.'); return; }
+  if(lines.length === 1){
+    alert('No rows to export.');
+    return;
+  }
 
   const blob = new Blob([lines.join('\n')], {type:'text/csv'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'breaker_master_list_visible.csv';
   a.click();
-}
-
-/* interactive functions: filters, search */
-function buildFilterRow(){
-  filterRow.innerHTML = "";
-  visibleCols.forEach(vc => {
-    const th = document.createElement('th');
-    const sel = document.createElement('select');
-    sel.innerHTML = '<option value="">All</option>';
-    const vals = Array.from(uniqueValues[vc.colIndex] || []).sort((a,b)=> String(a).localeCompare(String(b)));
-    vals.forEach(v => {
-      const o = document.createElement('option');
-      o.value = v;
-      o.textContent = v;
-      sel.appendChild(o);
-    });
-    sel.onchange = () => {
-      if(sel.value) activeFilters[vc.colIndex] = sel.value;
-      else delete activeFilters[vc.colIndex];
-      renderTable();
-    };
-    th.appendChild(sel);
-    filterRow.appendChild(th);
-  });
-}
-function buildFilterPanelContent(){
-  filterPanelContent.innerHTML = "";
-  visibleCols.forEach(vc => {
-    const wrap = document.createElement('div');
-    const label = document.createElement('div');
-    label.style.fontWeight = '700';
-    label.style.marginBottom = '6px';
-    label.textContent = vc.header || '';
-    const sel = document.createElement('select');
-    sel.style.width = '100%';
-    sel.innerHTML = '<option value="">All</option>';
-    const vals = Array.from(uniqueValues[vc.colIndex] || []).sort((a,b)=> String(a).localeCompare(String(b)));
-    vals.forEach(v => {
-      const o = document.createElement('option');
-      o.value = v;
-      o.textContent = v;
-      sel.appendChild(o);
-    });
-    sel.onchange = () => {
-      if(sel.value) activeFilters[vc.colIndex] = sel.value;
-      else delete activeFilters[vc.colIndex];
-    };
-    wrap.appendChild(label);
-    wrap.appendChild(sel);
-    filterPanelContent.appendChild(wrap);
-  });
-}
-
-/* initial load function */
-async function loadSheet() {
-  const res = await fetch(SHEET_URL);
-  const txt = await res.text();
-  const j = JSON.parse(txt.substring(47, txt.length - 2));
-  const gRows = j.table.rows || [];
-  const headerCells = gRows[0]?.c || [];
-
-  // Build visible columns, exclude serial (index 0) and header "1" or containing "type"
-  visibleCols = COLS.map(i => ({colIndex: i, header: headerCells[i]?.v ?? `Col ${i+1}`}))
-    .filter(vc => {
-      if(vc.colIndex === 0) return false;
-      const h = String(vc.header || "").trim();
-      if(h === "1") return false;
-      if(/type/i.test(h)) return false;
-      return true;
-    });
-
-  // header replacements
-  visibleCols.forEach(vc => {
-    if(vc.colIndex === 9) vc.header = "Rating";
-    if(vc.colIndex === 5) vc.header = "Compt.";
-  });
-
-  rows = gRows.slice(1).map(r => (r.c || []).map(cell => cell?.v ?? ""));
-
-  // unique values
-  uniqueValues = {};
-  visibleCols.forEach(vc => uniqueValues[vc.colIndex] = new Set());
-  rows.forEach(r => {
-    visibleCols.forEach(vc => {
-      const v = r[vc.colIndex];
-      if(v !== undefined && v !== null && String(v).trim() !== "") uniqueValues[vc.colIndex].add(String(v));
-    });
-  });
-
-  buildTableHeader();
-  buildFilterRow();
-  buildFilterPanelContent();
-  renderTable();
-}
-
-/* Build table header */
-function buildTableHeader(){
-  headerRow.innerHTML = "";
-  visibleCols.forEach(vc => {
-    const th = document.createElement('th');
-    th.textContent = vc.header || '';
-    headerRow.appendChild(th);
-  });
-}
-
-/* filter helpers */
-function clearAllFilters(){
-  activeFilters = {};
-  filterRow.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
-  filterPanelContent.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
-  renderTable();
-}
-
-/* Render table wrapper - uses earlier renderTable but updated to rely on card-building block */
-function renderTable(){
-  const q = (searchInput.value || "").trim().toLowerCase();
-  tableBody.innerHTML = "";
-
-  // idCol detection for navigation
-  const idCol = (function(){
-    for(let vc of visibleCols){
-      if(/(uid|breaker|brkr)/i.test(String(vc.header||""))) return vc.colIndex;
-    }
-    return visibleCols.length ? visibleCols[0].colIndex : null;
-  })();
-
-  rows.forEach(r => {
-    if(!r || r.every(c => c === "" || c === null || c === undefined)) return;
-    // filters
-    let pass = true;
-    for(const colIdxStr of Object.keys(activeFilters)){
-      const colIdx = Number(colIdxStr);
-      const want = activeFilters[colIdx];
-      const val = r[colIdx] ?? "";
-      if(String(val) !== String(want)){ pass = false; break; }
-    }
-    if(!pass) return;
-    if(q){
-      const hay = visibleCols.map(vc => String(r[vc.colIndex] ?? "")).join(" ").toLowerCase();
-      if(!hay.includes(q)) return;
-    }
-
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-
-    // build the 3D card content (same as in previous function)
-    const card = document.createElement('div'); card.className = 'card';
-    const accent = document.createElement('div'); accent.className = 'card-accent';
-    const boardKey = r[1] || "";
-    const hue = Math.floor((Array.from(boardKey).reduce((s,ch)=> s + ch.charCodeAt(0),0) % 360));
-    accent.style.background = `linear-gradient(180deg, hsl(${hue},70%,86%), hsl(${hue},60%,92%))`;
-
-    const left = document.createElement('div'); left.className = 'card-left';
-    const rcsEl = document.createElement('div'); rcsEl.className = 'rcs'; rcsEl.textContent = r[0] || '';
-    const boardEl = document.createElement('div'); boardEl.className = 'board'; boardEl.textContent = r[1] || '';
-    left.appendChild(rcsEl); left.appendChild(boardEl);
-
-    const mid = document.createElement('div'); mid.className = 'card-mid';
-    const top = document.createElement('div'); top.className = 'card-top';
-    const name = document.createElement('div'); name.className = 'name'; name.textContent = r[3] || r[4] || '';
-    const meta = document.createElement('div'); meta.className = 'meta';
-    meta.textContent = `${r[7] || ''}${r[5] ? (' • Compt.: ' + r[5]) : ''}`;
-    top.appendChild(name); mid.appendChild(top); mid.appendChild(meta);
-
-    const bottom = document.createElement('div'); bottom.className = 'card-bottom';
-    visibleCols.forEach(vc => {
-      const label = vc.header || '';
-      const val = r[vc.colIndex] ?? '';
-      if(/(pm|next|due|rating|compt)/i.test(label.toLowerCase())){
-        const kv = document.createElement('div'); kv.className = 'kv';
-        const kspan = document.createElement('span'); kspan.style.opacity = .85; kspan.style.fontSize = '11px'; kspan.textContent = label + ':';
-        const vspan = document.createElement('span'); vspan.className = 'v'; vspan.textContent = val || '—';
-        kv.appendChild(kspan); kv.appendChild(vspan);
-        bottom.appendChild(kv);
-      }
-    });
-    mid.appendChild(bottom);
-
-    card.appendChild(accent);
-    card.appendChild(left);
-    card.appendChild(mid);
-
-    td.appendChild(card);
-    tr.appendChild(td);
-
-    tr.addEventListener('click', () => {
-      const idVal = idCol !== null ? (r[idCol] || "") : "";
-      if(!idVal) return;
-      window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(String(idVal));
-    });
-
-    tableBody.appendChild(tr);
-  });
 }
 
 /* search debounce */
@@ -685,7 +343,7 @@ searchInput.addEventListener('input', () => {
   searchTimer = setTimeout(renderTable, 200);
 });
 
-/* initial load */
+/* init */
 loadSheet().catch(err => {
   console.error(err);
   tableBody.innerHTML = '<tr><td colspan="99" style="padding:16px;color:#d00">Error loading sheet</td></tr>';
