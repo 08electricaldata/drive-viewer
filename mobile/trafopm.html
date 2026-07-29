@@ -169,7 +169,7 @@
 <script>
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformer_pm.json";
 
-function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goHome(){ location.href="https://08electricaldata.github.io/index_mob.html"; }
 
 /* App-view toggle */
 function toggleAppView(){
@@ -259,7 +259,7 @@ async function load(){
       tr.className = `card ${depthClass}`;
       tr.onclick = ()=> {
         location.href =
-          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+          "https://08electricaldata.github.io/mobile/drive-viewer/history.html?id=" +
           encodeURIComponent("TRANSFORMER-"+String(r[2]||"").trim());
       };
 
