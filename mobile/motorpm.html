@@ -2,12 +2,10 @@
 <html>
 <head>
 <meta charset="UTF-8" />
-<title>Motor & Module PM — Mobile View</title>
+<title>Motor & Module PM — Mobile Compact</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 
 <style>
-/* Mobile-first app-like style */
-
 :root{
   --brand:#003f88;
   --bg:#f2f6ff;
@@ -15,108 +13,82 @@
   --muted:#6b7280;
   --overdue:#d32f2f;
   --ok-bg:#e6f7e9;
-  --drive-text-padding:10px;
+  --drive-padding:8px;
 }
 
+/* Reset & base */
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Roboto, sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
 .header{
-  background:var(--brand);
-  color:white;
-  padding:14px 12px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  position:sticky;
-  top:0;
-  z-index:100;
+  background:var(--brand);color:white;padding:12px 10px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;
 }
 .header-left{display:flex;gap:8px;align-items:center}
-.header-btn{
-  background:white;color:var(--brand);border:none;border-radius:8px;padding:8px 10px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.06)
-}
+.header-btn{background:white;color:var(--brand);border:none;border-radius:8px;padding:7px 9px;font-weight:700;font-size:14px;cursor:pointer}
 .header-center{flex:1;text-align:center}
-.header-center h1{margin:0;font-size:18px;font-weight:800}
+.header-center h1{margin:0;font-size:17px;font-weight:800}
 .header-center p{margin:2px 0 0;font-size:12px;opacity:.95}
 
 /* container */
-.container{padding:12px;max-width:960px;margin:0 auto}
+.container{padding:10px;max-width:960px;margin:0 auto}
 
-/* summary strip */
-.summary-strip{display:flex;gap:10px;margin-bottom:12px;align-items:center}
-.summary-card{flex:1;background:var(--card);padding:10px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);text-align:center}
+/* summary & controls */
+.summary-strip{display:flex;gap:8px;margin-bottom:10px}
+.summary-card{flex:1;background:var(--card);padding:8px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);text-align:center}
 .summary-card h4{margin:0;color:var(--brand);font-size:12px}
-.summary-card p{margin:6px 0 0;font-size:18px;font-weight:800}
+.summary-card p{margin:6px 0 0;font-size:16px;font-weight:800}
+.controls{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.search{flex:1;padding:8px 10px;border-radius:10px;border:1px solid #e6e9ef;background:white;font-size:14px}
+.small-btn{background:var(--brand);color:white;border:none;padding:8px 10px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer}
 
-/* controls */
-.controls{display:flex;gap:8px;margin-bottom:12px;align-items:center}
-.search{
-  flex:1;min-width:80px;padding:10px 12px;border-radius:10px;border:1px solid #e6e9ef;background:white;font-size:15px;
-  box-shadow:0 1px 0 rgba(0,0,0,.03)
-}
-.small-btn{background:var(--brand);color:white;border:none;padding:10px 12px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap}
-
-/* cards list */
-.cards{display:flex;flex-direction:column;gap:10px}
-.card{
-  background:var(--card);
-  border-radius:12px;
-  box-shadow:0 4px 14px rgba(0,0,0,0.06);
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  cursor:pointer;
-  transition:transform .12s ease,box-shadow .12s ease;
-}
+/* cards - compact */
+.cards{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--card);border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,0.06);overflow:hidden;cursor:pointer;transition:transform .08s ease;display:flex;flex-direction:column}
 .card:active{transform:translateY(1px)}
-.card-top{display:flex;align-items:center;padding:10px 12px;gap:10px}
-.drive-band{
-  min-width:48px;border-radius:8px;padding:8px var(--drive-text-padding);font-weight:800;color:#022a59;flex-shrink:0;
-  word-break:break-word;
-}
-.card-main{flex:1;display:flex;flex-direction:column;gap:4px}
-.card-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.subdrive{font-weight:700;color:#0b3b74;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.meta{font-size:13px;color:var(--muted);}
+.card-top{display:flex;align-items:center;padding:8px 10px;gap:10px}
+.drive-band{min-width:56px;border-radius:8px;padding:8px var(--drive-padding);font-weight:800;color:#022a59;flex-shrink:0;font-size:13px;text-align:center}
+.card-main{flex:1;display:flex;flex-direction:column;gap:2px}
+.subdrive{font-weight:700;color:#0b3b74;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{font-size:12px;color:var(--muted);line-height:1.15}
 
-/* details grid (smaller: removed OCT25-MAR26 fields) */
-.card-grid{display:flex;flex-wrap:wrap;padding:10px 12px 14px;gap:8px;border-top:1px solid rgba(0,0,0,0.04)}
-.grid-item{flex:1 1 45%;min-width:120px;background:transparent;border-radius:8px;padding:6px 8px}
-.grid-item strong{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px}
-.grid-item span{font-size:14px;font-weight:800;color:#0b3b74}
+/* compact grid: two columns, two rows */
+.card-grid{display:flex;padding:8px 10px 10px;gap:8px;border-top:1px solid rgba(0,0,0,0.04);align-items:flex-start}
+.left-col{flex:1;display:flex;flex-direction:column;gap:6px}
+.right-col{width:42%;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
 
-/* due badges (full width) */
-.badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.badge{
-  padding:6px 10px;border-radius:999px;font-weight:800;font-size:13px;
-  display:inline-block;
-}
+/* rows inside cols */
+.row{display:flex;justify-content:space-between;align-items:center}
+.label{font-size:12px;color:var(--muted);font-weight:700;text-transform:capitalize}
+.value{font-size:14px;font-weight:800;color:#0b3b74;margin-left:8px;white-space:nowrap}
+
+/* due badges smaller */
+.badge{padding:6px 8px;border-radius:8px;font-weight:800;font-size:13px;display:inline-block}
 .badge.ok{background:var(--ok-bg);color:#0b3b74}
 .badge.overdue{background:var(--overdue);color:white}
 
 /* empty state */
-.empty{padding:24px;text-align:center;color:var(--muted)}
+.empty{padding:18px;text-align:center;color:var(--muted)}
 
-/* Floating filter FAB row */
-.fab-row{position:fixed;right:12px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:120}
-.fab{background:var(--brand);color:white;border:none;padding:12px;border-radius:50%;width:52px;height:52px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer}
+/* FABs */
+.fab-row{position:fixed;right:12px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:120}
+.fab{background:var(--brand);color:white;border:none;padding:10px;border-radius:50%;width:48px;height:48px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer;font-size:13px}
 
-/* small screens: emphasize card content, bigger touch targets */
+/* small screens tuning */
 @media (max-width:420px){
-  .header-btn{padding:8px 10px;font-size:14px}
+  .header-btn{padding:7px 8px;font-size:13px}
   .header-center h1{font-size:16px}
-  .search{font-size:14px;padding:10px}
-  .card-top{padding:12px}
-  .drive-band{padding:10px 12px;font-size:14px;min-width:64px}
-  .subdrive{font-size:17px}
-  .grid-item{flex-basis:100%}
+  .summary-card p{font-size:15px}
+  .card-top{padding:10px}
+  .drive-band{min-width:68px;padding:8px 10px;font-size:14px}
+  .subdrive{font-size:16px}
+  .label{font-size:12px}
+  .value{font-size:14px}
+  .right-col{width:45%}
 }
 
-/* desktop: allow 2-column grid for cards */
+/* desktop grid for cards if needed */
 @media (min-width:900px){
   .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-  .container{padding:18px}
-  .card-grid{gap:10px}
+  .container{padding:14px}
 }
 </style>
 </head>
@@ -130,7 +102,7 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 
   <div class="header-center">
     <h1>Motor & Module PM</h1>
-    <p style="margin:0;font-size:12px">Mobile app view — Rakesh Chandra Sethy</p>
+    <p style="margin:0;font-size:12px">Mobile compact view — Rakesh Chandra Sethy</p>
   </div>
 </div>
 
@@ -152,7 +124,6 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
   </div>
 
   <div id="cards" class="cards" aria-live="polite"></div>
-
   <div id="empty" class="empty" style="display:none">No motors found.</div>
 </div>
 
@@ -166,17 +137,15 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 <script>
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/2026_oct_mar.json";
 
-/* Navigation helpers */
+/* navigation */
 function goHome(){ location.href="https://08electricaldata.github.io/index_mob.html"; }
 function goBack(){ history.back(); }
 
-/* Robust date parser */
+/* parsing helpers (robust) */
 function parseISO(v){
   if (v == null || v === "") return null;
   if (v instanceof Date) return isNaN(v)?null:v;
-  if (typeof v === "number" && isFinite(v)) {
-    const d=new Date(v); return isNaN(d)?null:d;
-  }
+  if (typeof v === "number" && isFinite(v)) { const d=new Date(v); return isNaN(d)?null:d; }
   if (typeof v === "string"){
     const s=v.trim();
     if (s.startsWith("Date(") || s.startsWith("/Date(")){
@@ -212,23 +181,16 @@ function parseISO(v){
   }
   return null;
 }
-function fmt(d){
-  if(!d) return "";
-  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
-}
+function fmt(d){ if(!d) return ""; return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`; }
 
-/* Drive color assignment */
+/* drive color assignment */
 const driveColorMap={};
 const palette=["#e3f2fd","#fce4ec","#e8f5e9","#fff3e0","#ede7f6","#e0f7fa","#f1f8e9","#fbe9e7"];
 let colorIndex=0;
-function getDriveColor(k){
-  if(!k) return "#fff";
-  if(!driveColorMap[k]) driveColorMap[k]=palette[(colorIndex++)%palette.length];
-  return driveColorMap[k];
-}
+function getDriveColor(k){ if(!k) return "#fff"; if(!driveColorMap[k]) driveColorMap[k]=palette[(colorIndex++)%palette.length]; return driveColorMap[k]; }
 
-/* Data load & render */
-let allRows = []; // raw rows for filtering/export
+/* data & render */
+let allRows = [];
 async function loadData(){
   try{
     const res = await fetch(JSON_URL);
@@ -242,32 +204,30 @@ async function loadData(){
     let total = 0, overdueCount = 0;
 
     rows.forEach(row=>{
-      // keep only S in col index 4 (as before) and require drive/subdrive
       if(String(row[4]||"").toUpperCase()!=="S") return;
       if(!row[1] || !row[2]) return;
 
-      // preserve raw for export
       allRows.push(row);
 
-      const mRaw = row[12], nRaw = row[13], /* oRaw = row[14], pRaw = row[15], */ sRaw = row[18], tRaw = row[19];
-      const m = parseISO(mRaw), n = parseISO(nRaw), /* o = parseISO(oRaw), p = parseISO(pRaw), */ s = parseISO(sRaw), t = parseISO(tRaw);
+      const mRaw = row[12], nRaw = row[13], sRaw = row[18], tRaw = row[19];
+      const m = parseISO(mRaw), n = parseISO(nRaw), s = parseISO(sRaw), t = parseISO(tRaw);
       const sOver = !s || s < today;
       const tOver = !t || t < today;
 
       if (sOver) overdueCount++;
-      if (tOver) overdueCount++; // counting both for summary (same as previous approach)
-
+      if (tOver) overdueCount++;
       total++;
 
-      // build card
       const drive = row[1]||"";
       const sub = row[2]||"";
       const bandColor = getDriveColor(drive);
-      const moduleDueText = s ? fmt(s) : (sRaw ? String(sRaw).trim() : "");
-      const motorDueText  = t ? fmt(t) : (tRaw ? String(tRaw).trim() : "");
+      const moduleDone = m ? fmt(m) : (mRaw ? String(mRaw).trim() : "—");
+      const motorDone  = n ? fmt(n) : (nRaw ? String(nRaw).trim() : "—");
+      const moduleDueText = s ? fmt(s) : (sRaw ? String(sRaw).trim() : "—");
+      const motorDueText  = t ? fmt(t) : (tRaw ? String(tRaw).trim() : "—");
 
       const card = document.createElement("article");
-      card.className="card";
+      card.className = "card";
       card.tabIndex = 0;
       card.dataset.moduleOver = sOver ? "1":"0";
       card.dataset.motorOver = tOver ? "1":"0";
@@ -277,49 +237,37 @@ async function loadData(){
         <div class="card-top">
           <div class="drive-band" style="background:${bandColor}">${drive}</div>
           <div class="card-main">
-            <div class="card-title">
-              <div class="subdrive">${sub}</div>
-              <div class="meta">LT/HT: ${row[5]||""}</div>
-            </div>
-            <div class="meta">${row[3]||""}</div>
+            <div class="subdrive">${sub}</div>
+            <div class="meta">${row[3]||""} • LT/HT: ${row[5]||""}</div>
           </div>
         </div>
 
         <div class="card-grid">
-          <div class="grid-item"><strong>Before OCT-25 Module</strong><span>${m ? fmt(m) : (mRaw||"")}</span></div>
-          <div class="grid-item"><strong>Before OCT-25 Motor</strong><span>${n ? fmt(n) : (nRaw||"")}</span></div>
-
-          <div class="grid-item" style="flex-basis:60%"><strong>Module Due</strong>
-            <div style="margin-top:6px" class="badges">
-              <span class="badge ${sOver ? 'overdue':'ok'}">${moduleDueText||'—'}</span>
-            </div>
+          <div class="left-col">
+            <div class="row"><div class="label">module done</div><div class="value">${moduleDone}</div></div>
+            <div class="row"><div class="label">motor done</div><div class="value">${motorDone}</div></div>
           </div>
 
-          <div class="grid-item" style="flex-basis:40%"><strong>Motor Due</strong>
-            <div style="margin-top:6px" class="badges">
-              <span class="badge ${tOver ? 'overdue':'ok'}">${motorDueText||'—'}</span>
-            </div>
+          <div class="right-col">
+            <div class="row"><div class="label">Module Due</div><div class="value"><span class="badge ${sOver ? 'overdue' : 'ok'}">${moduleDueText}</span></div></div>
+            <div class="row"><div class="label">Motor Due</div><div class="value"><span class="badge ${tOver ? 'overdue' : 'ok'}">${motorDueText}</span></div></div>
           </div>
         </div>
       `;
 
-      // click / keyboard enter opens history
-      card.addEventListener("click", ()=> navigateToHistory(row));
-      card.addEventListener("keydown", (e)=>{ if(e.key==='Enter') navigateToHistory(row); });
+      card.addEventListener("click", () => navigateToHistory(row));
+      card.addEventListener("keydown", (e) => { if (e.key === 'Enter') navigateToHistory(row); });
 
       cardsEl.appendChild(card);
     });
 
     document.getElementById("totalCount").innerText = total;
     document.getElementById("overdueCount").innerText = overdueCount;
-
     document.getElementById("empty").style.display = total ? "none" : "block";
 
-    // attach search handler
     const search = document.getElementById("search");
     search.addEventListener("input", onSearch);
 
-    // initial show all
     filterShow('all');
 
   }catch(err){
@@ -334,7 +282,6 @@ function navigateToHistory(row){
   location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
 }
 
-/* search across all visible card text */
 function onSearch(e){
   const q = e.target.value.trim().toLowerCase();
   document.querySelectorAll(".cards .card").forEach(card=>{
@@ -344,22 +291,15 @@ function onSearch(e){
   });
 }
 
-/* filter by overdue flags */
 function filterShow(type){
   document.querySelectorAll(".cards .card").forEach(card=>{
     if(type === 'all'){ card.style.display = ''; return; }
-    if(type === 'module'){
-      card.style.display = card.dataset.moduleOver === '1' ? '' : 'none';
-      return;
-    }
-    if(type === 'motor'){
-      card.style.display = card.dataset.motorOver === '1' ? '' : 'none';
-      return;
-    }
+    if(type === 'module'){ card.style.display = card.dataset.moduleOver === '1' ? '' : 'none'; return; }
+    if(type === 'motor'){ card.style.display = card.dataset.motorOver === '1' ? '' : 'none'; return; }
   });
 }
 
-/* CSV export uses original raw rows (keeps all columns even if hidden from card) */
+/* CSV export uses original raw rows to keep full data */
 function exportCSV(){
   const header = ["Main Drive","Sub Drive","LT/HT","EQPT NAME","Before OCT-25 Module","Before OCT-25 Motor","OCT25-MAR26 Module","OCT25-MAR26 Motor","Module Due","Motor Due"];
   const visibleCards = Array.from(document.querySelectorAll(".cards .card")).filter(c=> c.style.display!=='none');
@@ -369,7 +309,6 @@ function exportCSV(){
     const id = card.dataset.id;
     const row = allRows.find(r => `${r[1]}-${r[2]}` === id);
     if(!row) return;
-    // map original indices used earlier
     const drive = row[1] || "";
     const sub = row[2] || "";
     const ltht = row[5] || "";
@@ -380,7 +319,6 @@ function exportCSV(){
     const pRaw = row[15] || "";
     const sRaw = row[18] || "";
     const tRaw = row[19] || "";
-
     const values = [drive, sub, ltht, eqptName, mRaw, nRaw, oRaw, pRaw, sRaw, tRaw];
     csvRows.push( values.map(v=> `"${String(v).replace(/"/g,'""')}"` ).join(",") );
   });
@@ -388,11 +326,11 @@ function exportCSV(){
   const blob = new Blob([csvRows.join("\n")], {type:"text/csv"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "motor_module_pm_mobile.csv";
+  a.download = "motor_module_pm_mobile_compact.csv";
   a.click();
 }
 
-/* initial load */
+/* start */
 loadData();
 </script>
 </body>
