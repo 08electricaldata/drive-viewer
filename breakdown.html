@@ -88,7 +88,8 @@
         <tr>
           <th style="width:60px;text-align:center">TR NO</th>
           <th style="width:110px;text-align:center">DATE</th>
-          <th>DRIVE DETAILS</th>
+          <th style="width:220px">DRIVE DETAILS</th>
+          <th>DETAILS</th>
           <th style="width:160px">CATEGORY</th>
           <th style="width:70px;text-align:center">LINK</th>
         </tr>
@@ -111,7 +112,6 @@ function normalize(v){
 }
 function parseDateKey(v){
   if(!v) return null;
-  // Accept dd-mm-yyyy or ISO etc.
   if(typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
     const [d,m,y] = v.split('/').map(Number);
     return new Date(y,m-1,d);
@@ -242,7 +242,7 @@ function renderTable(){
       const yr = document.createElement("tr");
       yr.className = "year-row";
       const td = document.createElement("td");
-      td.colSpan = 5; // updated to 5 columns
+      td.colSpan = 6; // updated to 6 columns
       td.textContent = y || "Unknown year";
       yr.appendChild(td);
       tbody.appendChild(yr);
@@ -251,17 +251,16 @@ function renderTable(){
     const tr = document.createElement("tr");
     const trno = r[0] || "-";
     const dateText = d ? formatDateDDMMYYYY(d) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "-");
+    const driveKey = item.driveKey || "-";
     const details = r[5] || r[6] || "-";
     const category = r[7] || r[8] || "-";
     const link = r[10] || "";
-    const driveKey = item.driveKey || "";
-
-    const driveDetails = driveKey ? `${driveKey} — ${details}` : details;
 
     tr.innerHTML = `
       <td style="text-align:center">${escapeHtml(trno)}</td>
       <td style="text-align:center">${escapeHtml(dateText)}</td>
-      <td>${escapeHtml(driveDetails)}</td>
+      <td>${escapeHtml(driveKey)}</td>
+      <td>${escapeHtml(details)}</td>
       <td>${escapeHtml(category)}</td>
       <td style="text-align:center">${link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener">📎</a>` : '-'}</td>
     `;
@@ -272,17 +271,17 @@ function renderTable(){
 /* Export visible CSV */
 function exportCSV(){
   if(filteredRows.length === 0){ alert("No rows to export"); return; }
-  const header = ["TR NO","DATE","DRIVE DETAILS","CATEGORY","LINK"];
+  const header = ["TR NO","DATE","DRIVE DETAILS","DETAILS","CATEGORY","LINK"];
   const rows = [ header.join(",") ];
   filteredRows.forEach(item=>{
     const r = item.row;
     const d = item.date ? formatDateDDMMYYYY(item.date) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "");
+    const driveKey = item.driveKey || "";
     const details = r[5] || r[6] || "";
     const category = r[7] || r[8] || "";
     const link = r[10] || "";
-    const driveDetails = item.driveKey ? `${item.driveKey} — ${details}` : details;
     const trno = r[0] || "";
-    const line = [trno,escapeCSV(d),escapeCSV(driveDetails),escapeCSV(category),escapeCSV(link)].join(",");
+    const line = [trno,escapeCSV(d),escapeCSV(driveKey),escapeCSV(details),escapeCSV(category),escapeCSV(link)].join(",");
     rows.push(line);
   });
   const blob = new Blob([rows.join("\n")], {type:'text/csv'});
