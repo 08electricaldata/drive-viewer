@@ -214,7 +214,8 @@ function animate(id,to){
   const t = setInterval(()=>{ i+=step; if(i>=to){ i=to; clearInterval(t);} el.textContent = i; }, 30);
 }
 
-/* Render cards list (mobile) — removed the latest/module/motor rows as requested */
+/* Render cards list (mobile) — removed the latest/module/motor rows as requested
+   and DO NOT show chips for years 2024, 2025 or 2026 */
 function renderCards(){
   const cardsEl = document.getElementById('cards');
   cardsEl.innerHTML = '';
@@ -228,6 +229,11 @@ function renderCards(){
     const recDate = r[3] ? formatDate(r[3]) : '';
     const percent = parseFloat(r[4]) || 0;
     const valueYear = parseFloat(r[colIdx]) || 0;
+
+    // build chips but exclude 2024,2025,2026
+    const rawChips = [selectedYear-2, selectedYear-1, selectedYear];
+    const chipsFiltered = rawChips.filter(y => !(y === 2024 || y === 2025 || y === 2026));
+    const chipsHtml = chipsFiltered.map(y => `<div class="chip">${y}</div>`).join("");
 
     const card = document.createElement('article');
     card.className = 'card';
@@ -245,9 +251,7 @@ function renderCards(){
       </div>
 
       <div class="chips" aria-hidden="true">
-        <div class="chip">${selectedYear-2}</div>
-        <div class="chip">${selectedYear-1}</div>
-        <div class="chip">${selectedYear}</div>
+        ${chipsHtml}
       </div>
     `;
 
