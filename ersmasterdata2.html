@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending Dashboard — Problems column & flexible widths</title>
+<title>Pending Dashboard — Problems column & nowrap other columns</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -99,15 +99,26 @@ table{
 th,td{
   border:1px solid #ccc;
   padding:8px 10px;
-  /* allow wrap so cells size to content */
-  white-space:normal;
+  /* default: do NOT wrap - keep all columns single-line */
+  white-space:nowrap;
   text-align:left;
   font-size:13px;
   vertical-align:top;
-  word-break:break-word;
-  overflow-wrap:anywhere;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
+/* Allow Problems column to wrap */
+th[data-col="Problems"],
+td[data-col="Problems"]{
+  white-space:normal;           /* allow wrapping only here */
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+  max-width:360px;              /* optional maximum width so wrapping happens; adjust as needed */
+}
+
+/* header style */
 th{
   background:#003f88;
   color:#fff;
@@ -132,13 +143,13 @@ th{
 
 .completed{background:#28a745;}
 
-/* remove any fixed-width rules — columns freely size to content */
-
-/* optionally reduce padding on small screens to fit more */
+/* Responsive tweaks */
 @media (max-width:720px){
   th, td { padding:6px 8px; font-size:13px; }
   .controls{padding:8px;}
   .summary{padding:8px;}
+  /* keep Problems wrapping the only column that can expand vertically */
+  th[data-col="Problems"], td[data-col="Problems"] { max-width:260px; }
 }
 </style>
 </head>
@@ -213,8 +224,7 @@ const select=document.getElementById("typeSelect");
 const searchBox=document.getElementById("searchBox");
 
 /* Desired visible columns (display order)
-   "Problems" will display but the script will try to match data using "Motor Location Update On"
-   (keeps backward-compatible matching with your JSON keys). */
+   "Problems" will display but the script will try to match data using "Motor Location Update On" */
 const desiredDisplayCols = [
   "PRIORITY",
   "W.O No",
@@ -226,7 +236,7 @@ const desiredDisplayCols = [
   "Sl No",
   "Equipment details",
   "Problems",                 /* visible caption - maps to JSON key for Motor Location Update On */
-  "Job Completion Dat"        /* if your JSON uses "Job Completion Date" adjust or it's matched fuzzy */
+  "Job Completion Dat"        /* keep as in previous code to match your JSON */
 ];
 
 /* Columns to explicitly exclude if present */
