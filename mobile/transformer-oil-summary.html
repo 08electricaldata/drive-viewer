@@ -52,7 +52,7 @@ html,body{height:100%;margin:0;font-family:Arial, -apple-system, "Segoe UI", Rob
 .name{font-weight:800;color:var(--brand);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sub{font-size:12px;color:var(--muted);margin-top:2px}
 
-/* compact rows for dates & consumption */
+/* compact rows for dates & consumption (removed per request) */
 .row-compact{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .left-group{display:flex;flex-direction:column;gap:6px}
 .right-group{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -165,7 +165,7 @@ function populateYearSelect(){
   const sel = document.getElementById('yearSelect');
   sel.innerHTML = '';
   for(let y=2018;y<=2026;y++){
-    const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o);
+    const o = document.createElement("option"); o.value = y; o.textContent = y; sel.appendChild(o);
   }
   sel.value = new Date().getFullYear();
   sel.addEventListener('change', ()=> {
@@ -214,7 +214,7 @@ function animate(id,to){
   const t = setInterval(()=>{ i+=step; if(i>=to){ i=to; clearInterval(t);} el.textContent = i; }, 30);
 }
 
-/* Render cards list (mobile) */
+/* Render cards list (mobile) — removed the latest/module/motor rows as requested */
 function renderCards(){
   const cardsEl = document.getElementById('cards');
   cardsEl.innerHTML = '';
@@ -223,13 +223,11 @@ function renderCards(){
   const colIdx = colMap[selectedYear] || 6;
 
   fullData.forEach(r=>{
-    // same filtering as original table is not applied for trafo; include all rows
+    // include all rows (no additional filtering here)
     const name = r[2] || '';
     const recDate = r[3] ? formatDate(r[3]) : '';
     const percent = parseFloat(r[4]) || 0;
     const valueYear = parseFloat(r[colIdx]) || 0;
-    const prevYearIdx = colMap[selectedYear-1] || null;
-    const prevVal = prevYearIdx ? (parseFloat(r[prevYearIdx])||0) : null;
 
     const card = document.createElement('article');
     card.className = 'card';
@@ -246,18 +244,6 @@ function renderCards(){
         </div>
       </div>
 
-      <div class="row-compact">
-        <div class="left-group">
-          <div class="row"><div class="lbl">latest</div><div class="val">${valueYear>0?valueYear+' ltrs':'—'}</div></div>
-          <div class="row"><div class="lbl">read date</div><div class="val">${recDate || '—'}</div></div>
-        </div>
-
-        <div class="right-group" style="min-width:110px;align-items:flex-end">
-          <div class="row"><div class="lbl">Module</div><div class="val">${r[6]||'—'}</div></div>
-          <div class="row"><div class="lbl">Motor</div><div class="val">${r[8]||'—'}</div></div>
-        </div>
-      </div>
-
       <div class="chips" aria-hidden="true">
         <div class="chip">${selectedYear-2}</div>
         <div class="chip">${selectedYear-1}</div>
@@ -265,7 +251,7 @@ function renderCards(){
       </div>
     `;
 
-    // open trend popup on click (same data as desktop)
+    // open trend popup on click
     card.addEventListener('click', (e)=> { e.stopPropagation(); openTrendPopup(r); });
 
     cardsEl.appendChild(card);
