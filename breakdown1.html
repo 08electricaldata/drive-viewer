@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Drive History — JOB TYPE BD (Desktop)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  *{box-sizing:border-box}
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    margin:0;background:#f2f6ff;color:#0b1220;
+  }
+  .header-bar{
+    position:sticky;top:0;background:#003f88;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;z-index:1000;
+  }
+  .header-left{display:flex;gap:8px;align-items:center}
+  .hb-btn{background:#fff;color:#003f88;border:0;padding:8px 10px;border-radius:6px;cursor:pointer;font-weight:600}
+  .title{flex:1;text-align:center;font-size:16px;font-weight:700}
+  .page{max-width:1200px;margin:14px auto;padding:0 14px}
+  h2{color:#003f88;margin:6px 0 12px 0;text-align:left}
+  .controls{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .controls .group{display:flex;gap:8px;align-items:center}
+  select,input{padding:8px 10px;border-radius:6px;border:1px solid #d6dbe6;font-size:14px}
+  .btn{background:#003f88;color:#fff;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:700}
+  .btn.ghost{background:#fff;color:#003f88;border:1px solid #cfd8e3}
+  .table-wrap{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(3,63,136,0.06);overflow:auto;padding:8px}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+  th,td{padding:8px 10px;border:1px solid #e8edf6;text-align:left;vertical-align:top}
+  th{background:#003f88;color:#fff;font-weight:700;font-size:12px}
+  td a{color:#003f88;text-decoration:none;font-weight:600}
+  .year-row td{background:#e9f2ff;color:#003f88;font-weight:700;text-align:center}
+  .no-data{padding:16px;text-align:center;color:#666}
+  tr.clickable:hover{background:#eef6ff;cursor:pointer}
+  .drive-link{color:#003f88;font-weight:700;text-decoration:underline}
+  @media (max-width:900px){
+    .page{padding:0 10px}
+    table{min-width:700px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="header-left">
+    <button class="hb-btn" onclick="goHome()">🏠 Home</button>
+    <button class="hb-btn" onclick="goBack()">⬅ Back</button>
+  </div>
+  <div class="title">Break down History </div>
+  <div style="width:120px"></div>
+</div>
+
+<div class="page">
+  <h2>JOB TYPE "Break Down" only , select month then year if monthwise search Required</h2>
+
+  <div class="controls" role="region" aria-label="filters">
+    <div class="group">
+      <label for="driveSelect">Drive</label>
+      <select id="driveSelect"><option value="">All drives</option></select>
+    </div>
+
+    <div class="group">
+      <label for="yearSelect">Year</label>
+      <select id="yearSelect"><option value="">All years</option></select>
+    </div>
+
+    <div class="group">
+      <label for="monthSelect">Month</label>
+      <select id="monthSelect">
+        <option value="">All months</option>
+        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+    </div>
+
+    <div class="group" style="flex:1;min-width:220px;">
+      <input id="search" placeholder="Search details / category / link..." />
+    </div>
+
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn" id="exportBtn">📥 Export CSV</button>
+      <button class="btn ghost" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+
+  <div class="table-wrap" id="tableWrap">
+    <table id="historyTable" aria-label="history table">
+      <thead>
+        <tr>
+          <th style="width:60px;text-align:center">TR NO</th>
+          <th style="width:110px;text-align:center">DATE</th>
+          <th style="width:220px">DRIVE DETAILS</th>
+          <th>DETAILS</th>
+          <th style="width:160px">CATEGORY</th>
+          <th style="width:70px;text-align:center">LINK</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="noData" class="no-data" style="display:none">No entries found.</div>
+  </div>
+</div>
+
+<script>
+/* Config */
+const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* Utilities */
+function normalize(v){ return String(v||"").trim().toUpperCase(); }
+function parseDateKey(v){
+  if(!v) return null;
+  if(typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+    const [d,m,y] = v.split('/').map(Number); return new Date(y,m-1,d);
+  }
+  if(typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v)) {
+    const [d,m,y] = v.split('-').map(Number); return new Date(y,m-1,d);
+  }
+  const d = new Date(v); return isNaN(d) ? null : d;
+}
+function formatDateDDMMYYYY(d){ if(!d) return ""; return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; }
+function getDriveKey(row){ const a = row[2] || ""; const b = row[3] || ""; return `${a}-${b}`.trim(); }
+
+/* Normalize links: add https:// if missing */
+function normalizeLink(u){
+  if(!u) return "";
+  let s = String(u).trim();
+  if(!s) return "";
+  // if already has protocol or is mailto or javascript, return as-is
+  if(/^(https?:\/\/|mailto:|javascript:)/i.test(s)) return s;
+  // If it starts with 'www.' or domain, add https://
+  return 'https://' + s.replace(/^\/+/, ''); // strip leading slashes then prefix
+}
+
+/* State */
+let allRows = [], filteredRows = [], driveSet = new Set(), yearSet = new Set();
+
+/* Fetch all history files and aggregate rows */
+async function loadAllHistory(){
+  allRows = []; driveSet.clear(); yearSet.clear();
+  for(const y of HISTORY_YEARS){
+    const url = HISTORY_BASE + y + ".json";
+    try{
+      const res = await fetch(url);
+      if(!res.ok) continue;
+      const j = await res.json();
+      const rows = j.rows || [];
+      rows.forEach(r=>{
+        const hasBD = (r || []).some(cell => normalize(cell) === "BD");
+        if(!hasBD) return;
+        const date = parseDateKey(r[4]);
+        const driveKey = getDriveKey(r);
+        if(driveKey) driveSet.add(driveKey);
+        if(date) yearSet.add(date.getFullYear());
+        allRows.push({ row: r, date, driveKey });
+      });
+    }catch(err){
+      console.warn("Failed to load", url, err);
+    }
+  }
+  // sort desc
+  allRows.sort((a,b)=> (b.date||0) - (a.date||0) );
+  populateFilters();
+  applyFilters();
+}
+
+/* Populate filters */
+function populateFilters(){
+  const driveSel = document.getElementById("driveSelect");
+  driveSel.innerHTML = '<option value="">All drives</option>';
+  Array.from(driveSet).sort().forEach(k=>{
+    const o = document.createElement("option"); o.value = k; o.textContent = k; driveSel.appendChild(o);
+  });
+  const yearSel = document.getElementById("yearSelect");
+  yearSel.innerHTML = '<option value="">All years</option>';
+  Array.from(yearSet).sort((a,b)=>b-a).forEach(y=>{
+    const o = document.createElement("option"); o.value = y; o.textContent = y; yearSel.appendChild(o);
+  });
+}
+
+/* Apply filters */
+function applyFilters(){
+  const drive = document.getElementById("driveSelect").value;
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect") ? document.getElementById("monthSelect").value : "";
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  filteredRows = allRows.filter(item=>{
+    if(drive && item.driveKey !== drive) return false;
+    if(year && (!item.date || String(item.date.getFullYear()) !== String(year))) return false;
+    if(month && item.date){ if(String(item.date.getMonth()+1) !== String(month)) return false; }
+    if(q){
+      const hay = (item.row||[]).join(" ").toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderTable();
+}
+
+/* Render table: use DOM creation for anchors and stopPropagation on anchor clicks */
+function renderTable(){
+  const tbody = document.querySelector("#historyTable tbody");
+  const noData = document.getElementById("noData");
+  tbody.innerHTML = "";
+  if(filteredRows.length === 0){ noData.style.display = "block"; return; }
+  noData.style.display = "none";
+
+  let currentYear = null;
+  filteredRows.forEach(item=>{
+    const r = item.row;
+    const d = item.date;
+    const y = d ? d.getFullYear() : "";
+    if(String(y) !== String(currentYear)){
+      currentYear = y;
+      const yr = document.createElement("tr"); yr.className = "year-row";
+      const td = document.createElement("td"); td.colSpan = 6; td.textContent = y || "Unknown year";
+      yr.appendChild(td); tbody.appendChild(yr);
+    }
+
+    const tr = document.createElement("tr");
+    const trno = r[0] || "-";
+    const dateText = d ? formatDateDDMMYYYY(d) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "-");
+    const driveKey = item.driveKey || "-";
+    const details = r[5] || r[6] || "-";
+    const category = r[7] || r[8] || "-";
+    const rawLink = (r[10] || "").toString().trim();
+    const link = normalizeLink(rawLink);
+
+    // td0 TR NO
+    const td0 = document.createElement("td"); td0.style.textAlign = "center"; td0.textContent = trno; tr.appendChild(td0);
+    // td1 DATE
+    const td1 = document.createElement("td"); td1.style.textAlign = "center"; td1.textContent = dateText; tr.appendChild(td1);
+    // td2 DRIVE DETAILS (anchor)
+    const td2 = document.createElement("td");
+    if(driveKey && driveKey !== "-"){
+      const a = document.createElement("a");
+      a.href = `https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(driveKey)}`;
+      a.className = "drive-link";
+      a.textContent = driveKey;
+      a.addEventListener('click', e => { e.stopPropagation(); /* allow anchor default navigation */ });
+      td2.appendChild(a);
+    } else {
+      td2.textContent = driveKey;
+    }
+    tr.appendChild(td2);
+    // td3 DETAILS
+    const td3 = document.createElement("td"); td3.style.whiteSpace = "normal"; td3.style.wordBreak = "break-word"; td3.textContent = details; tr.appendChild(td3);
+    // td4 CATEGORY
+    const td4 = document.createElement("td"); td4.textContent = category; tr.appendChild(td4);
+    // td5 LINK (anchor opens PDF in new tab)
+    const td5 = document.createElement("td"); td5.style.textAlign = "center";
+    if(link){
+      const a2 = document.createElement("a");
+      a2.href = link;
+      a2.target = "_blank";
+      a2.rel = "noopener noreferrer";
+      a2.textContent = "📎";
+      a2.addEventListener('click', function(e){ e.stopPropagation(); });
+      td5.appendChild(a2);
+    } else {
+      td5.textContent = "-";
+    }
+    tr.appendChild(td5);
+
+    // make row clickable (open history page) but avoid if no driveKey
+    if(driveKey && driveKey !== "-"){
+      tr.classList.add('clickable');
+      tr.addEventListener('click', () => {
+        window.location.href = `https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(driveKey)}`;
+      });
+    }
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* Export visible CSV */
+function exportCSV(){
+  if(filteredRows.length === 0){ alert("No rows to export"); return; }
+  const header = ["TR NO","DATE","DRIVE DETAILS","DETAILS","CATEGORY","LINK"];
+  const rows = [ header.join(",") ];
+  filteredRows.forEach(item=>{
+    const r = item.row;
+    const d = item.date ? formatDateDDMMYYYY(item.date) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "");
+    const driveKey = item.driveKey || "";
+    const details = r[5] || r[6] || "";
+    const category = r[7] || r[8] || "";
+    const link = r[10] || "";
+    const trno = r[0] || "";
+    rows.push([trno, `"${d}"`, `"${driveKey.replace(/"/g,'""')}"`, `"${details.replace(/"/g,'""')}"`, `"${category.replace(/"/g,'""')}"`, `"${link.replace(/"/g,'""')}"`].join(","));
+  });
+  const blob = new Blob([rows.join("\n")], {type:'text/csv'});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `history-BD-export-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+/* helpers */
+function escapeHtml(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function parseDateKey(v){
+  if(!v) return null;
+  if(typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const [d,m,y] = v.split('/').map(Number); return new Date(y,m-1,d);
+  }
+  if(typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const [d,m,y] = v.split('-').map(Number); return new Date(y,m-1,d);
+  }
+  const d = new Date(v); return isNaN(d) ? null : d;
+}
+function formatDateDDMMYYYY(d){ if(!d) return ""; return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; }
+
+/* nav */
+function goHome(){ location.href = "https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
+
+/* events */
+document.getElementById("driveSelect").addEventListener("change", applyFilters);
+document.getElementById("yearSelect").addEventListener("change", applyFilters);
+document.getElementById("search").addEventListener("input", applyFilters);
+document.getElementById("exportBtn").addEventListener("click", exportCSV);
+
+/* Initialize */
+(async function init(){
+  const monthSelect = document.getElementById("monthSelect");
+  if(!monthSelect){
+    const sel = document.createElement("select"); sel.id = "monthSelect";
+    const wrap = document.querySelector(".controls");
+    const group = document.createElement("div"); group.className = "group";
+    const label = document.createElement("label"); label.htmlFor = "monthSelect"; label.textContent = "Month";
+    group.appendChild(label); group.appendChild(sel);
+    wrap.insertBefore(group, document.getElementById("search").parentElement);
+    sel.innerHTML = '<option value="">All months</option>';
+    for(let i=1;i<=12;i++){ const o=document.createElement("option"); o.value=i; o.textContent=monthNames[i-1]; sel.appendChild(o); }
+    sel.addEventListener("change", applyFilters);
+  }
+  await loadAllHistory();
+})();
+
+/* loadAllHistory implementation reused */
+async function loadAllHistory(){
+  allRows = []; driveSet.clear(); yearSet.clear();
+  for(const y of HISTORY_YEARS){
+    const url = HISTORY_BASE + y + ".json";
+    try{
+      const res = await fetch(url);
+      if(!res.ok) continue;
+      const j = await res.json();
+      (j.rows || []).forEach(r=>{
+        if(!(r || []).some(cell => normalize(cell) === "BD")) return;
+        const date = parseDateKey(r[4]);
+        const driveKey = getDriveKey(r);
+        if(driveKey) driveSet.add(driveKey);
+        if(date) yearSet.add(date.getFullYear());
+        allRows.push({ row: r, date, driveKey });
+      });
+    }catch(e){ console.warn("load fail", e); }
+  }
+  allRows.sort((a,b)=> (b.date||0) - (a.date||0));
+  // populate filters
+  const driveSel = document.getElementById("driveSelect");
+  driveSel.innerHTML = '<option value="">All drives</option>';
+  Array.from(driveSet).sort().forEach(k => { const o=document.createElement('option'); o.value=k; o.textContent=k; driveSel.appendChild(o); });
+  const yearSel = document.getElementById("yearSelect"); yearSel.innerHTML = '<option value="">All years</option>';
+  Array.from(yearSet).sort((a,b)=>b-a).forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o); });
+  applyFilters();
+}
+</script>
+</body>
+</html>
