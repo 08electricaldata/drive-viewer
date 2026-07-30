@@ -52,17 +52,33 @@
   .subtitle{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   .meta-row{display:flex;gap:10px;justify-content:space-between;align-items:center}
-  .meta{font-size:13px;color:#0b3b74;font-weight:700}
+  .meta{font-size:13px;color:#0b1220;font-weight:700}
   .cat{font-size:12px;color:var(--muted)}
 
   .chips{display:flex;gap:6px;flex-wrap:wrap}
   .chip-sm{background:#f4f6fb;padding:6px 8px;border-radius:8px;font-size:12px;color:#0b3b74}
 
+  /* DETAILS wrapping */
+  .details{
+    white-space:normal;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+    color:#333;
+    font-size:13px;
+    line-height:1.3;
+  }
+
   /* TABLE fallback on larger screens */
   .table-wrap{display:none;padding:10px}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
-  th,td{padding:10px;border-bottom:1px solid #eef2fb;font-size:13px;text-align:left}
+  th,td{padding:10px;border-bottom:1px solid #eef2fb;font-size:13px;text-align:left;vertical-align:top}
   thead th{background:var(--brand);color:#fff;font-weight:700}
+  /* ensure details column wraps */
+  table td:nth-child(4), table th:nth-child(4) {
+    white-space:normal;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
 
   /* floating CSV */
   .fab{position:fixed;right:12px;bottom:12px;background:var(--brand);color:#fff;border:none;padding:12px;border-radius:50%;box-shadow:0 8px 20px rgba(0,0,0,.2);font-weight:800;cursor:pointer;z-index:210}
@@ -165,8 +181,7 @@ function parseDateKey(v){
   if(typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v)){
     const [d,m,y] = v.split('-').map(Number); return new Date(y,m-1,d);
   }
-  const d = new Date(v);
-  return isNaN(d) ? null : d;
+  const d = new Date(v); return isNaN(d) ? null : d;
 }
 function formatDDMMYYYY(d){
   if(!d) return "";
@@ -182,20 +197,19 @@ async function loadAllHistory(){
   allRows=[], driveSet.clear(), yearSet.clear();
   for(const y of HISTORY_YEARS){
     try{
-      const res = await fetch(HISTORY_BASE + y + ".json");
+      const res = await fetch(HISTORY_BASE + y + '.json');
       if(!res.ok) continue;
       const j = await res.json();
       (j.rows||[]).forEach(r=>{
-        if(!(r || []).some(cell => normalize(cell) === "BD")) return;
+        if(!(r||[]).some(cell => normalize(cell) === 'BD')) return;
         const date = parseDateKey(r[4]);
         const driveKey = getDriveKey(r);
         if(driveKey) driveSet.add(driveKey);
         if(date) yearSet.add(date.getFullYear());
-        allRows.push({row:r, date, driveKey});
+        allRows.push({row:r,date,driveKey});
       });
-    }catch(e){ console.warn("load fail", e); }
+    }catch(e){ console.warn(e); }
   }
-  // newest first
   allRows.sort((a,b)=> (b.date||0) - (a.date||0));
   populateFilters();
   applyFilters();
@@ -268,27 +282,27 @@ function renderList(){
         <div class="left">
           <div class="badge">${trNo}</div>
           <div class="title-col">
-            <div class="title">${driveKey}</div>
-            <div class="subtitle">${dateText}</div>
+            <div class="title">${escapeHtml(driveKey)}</div>
+            <div class="subtitle">${escapeHtml(dateText)}</div>
           </div>
         </div>
         <div style="text-align:right">
-          <div class="meta">${category}</div>
-          <div style="margin-top:6px">${ link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener">📎</a>` : '-' }</div>
+          <div class="meta">${escapeHtml(category)}</div>
+          <div style="margin-top:6px">${ link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎</a>` : '-' }</div>
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div style="flex:1">
-          <div style="font-size:13px;color:#0b1220;font-weight:700">Details</div>
-          <div style="font-size:13px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(details)}</div>
-        </div>
+      <div>
+        <div style="font-size:13px;color:#0b1220;font-weight:700">Details</div>
+        <div class="details">${escapeHtml(details)}</div>
       </div>
     `;
 
-    // Click opens link if present else nothing
+    // navigate to mobile history for the driveKey on click
     card.addEventListener('click', (e)=>{
-      if(link) window.open(link, '_blank');
+      if(!driveKey || driveKey === '-') return;
+      const url = 'https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=' + encodeURIComponent(driveKey);
+      window.location.href = url;
     });
 
     el.appendChild(card);
@@ -325,15 +339,23 @@ function renderTable(){
       <td style="text-align:center">${escapeHtml(trNo)}</td>
       <td style="text-align:center">${escapeHtml(dateText)}</td>
       <td>${escapeHtml(driveKey)}</td>
-      <td>${escapeHtml(details)}</td>
+      <td class="details">${escapeHtml(details)}</td>
       <td>${escapeHtml(category)}</td>
-      <td style="text-align:center">${link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener">📎</a>` : '-'}</td>
+      <td style="text-align:center">${link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎</a>` : '-'}</td>
     `;
+
+    // row click navigates to mobile history for driveKey
+    tr.addEventListener('click', ()=>{
+      if(!driveKey || driveKey === '-') return;
+      const url = 'https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=' + encodeURIComponent(driveKey);
+      window.location.href = url;
+    });
+
     wrap.appendChild(tr);
   });
 }
 
-/* Export CSV of visible items (mobile or desktop) */
+/* Export CSV of visible items */
 function exportCSV(){
   if(filteredRows.length === 0){ alert('No rows to export'); return; }
   const header = ['TR NO','DATE','DRIVE DETAILS','DETAILS','CATEGORY','LINK'];
@@ -369,17 +391,6 @@ document.getElementById('yearSelect').addEventListener('change', applyFilters);
 document.getElementById('monthSelect')?.addEventListener('change', applyFilters);
 document.getElementById('search').addEventListener('input', applyFilters);
 
-/* init: add month select if missing (keeps layout consistent) */
-(function ensureMonth(){
-  if(!document.getElementById('monthSelect')){
-    const sel = document.createElement('select'); sel.id='monthSelect';
-    sel.innerHTML = '<option value="">All months</option>';
-    for(let i=1;i<=12;i++){ const o=document.createElement('option'); o.value=i; o.textContent=monthNames[i-1]; sel.appendChild(o); }
-    document.querySelector('.controls').insertBefore(sel, document.getElementById('search'));
-    sel.addEventListener('change', applyFilters);
-  }
-})();
-
 /* nav helpers */
 function goHome(){ location.href = 'https://08electricaldata.github.io/index_mob.html'; }
 function goBack(){ history.back(); }
@@ -389,7 +400,7 @@ function goBack(){ history.back(); }
   await loadAllHistory();
 })();
 
-/* loadAllHistory reused (same as desktop code) */
+/* loadAllHistory implementation */
 async function loadAllHistory(){
   allRows=[], driveSet.clear(), yearSet.clear();
   for(const y of HISTORY_YEARS){
@@ -408,17 +419,7 @@ async function loadAllHistory(){
     }catch(e){ console.warn(e); }
   }
   allRows.sort((a,b)=> (b.date||0) - (a.date||0));
-  // populate selects
-  const driveSel = document.getElementById('driveSelect');
-  driveSel.innerHTML = '<option value="">All drives</option>';
-  Array.from(driveSet).sort().forEach(k=>{
-    const o=document.createElement('option'); o.value=k; o.textContent=k; driveSel.appendChild(o);
-  });
-  const yearSel = document.getElementById('yearSelect');
-  yearSel.innerHTML = '<option value="">All years</option>';
-  Array.from(yearSet).sort((a,b)=>b-a).forEach(y=>{
-    const o=document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o);
-  });
+  populateFilters();
   applyFilters();
 }
 </script>
