@@ -18,7 +18,7 @@
   --card-gap: 12px;
 }
 *{box-sizing:border-box}
-body{font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;background:var(--bg);-webkit-font-smoothing:antialiased;color:var(--value-color);}
+body{font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;background:var(--bg);-webkit-font-smoothing:antialiased;color:var(--value-color);font-size:var(--font-size);}
 
 /* header/controls/summary (kept minimal styling) */
 .header{background:var(--brand);color:#fff;padding:14px 12px}
@@ -64,6 +64,65 @@ th[data-col="Problems"], td[data-col="Problems"]{white-space:normal;overflow-wra
 .kv {font-weight:700;margin-right:8px}
 .center {text-align:center}
 .btn-ghost {background:#fff;border:1px solid #cfd8e3;padding:6px 10px;border-radius:6px;cursor:pointer;margin-left:6px}
+
+/* --- APP VIEW compact overrides --- */
+body.app-view {
+  --font-size: 12px;           /* smaller base font */
+  --card-gap: 8px;             /* smaller gaps */
+  --card-radius: 8px;
+}
+body.app-view .summary { gap:8px; padding:6px 8px; }
+body.app-view .summary .card {
+  padding:6px 8px;
+  min-width:76px;
+  box-shadow:0 4px 10px rgba(7,18,42,0.05);
+}
+body.app-view .summary .card h3 {
+  font-size:14px;
+  line-height:1;
+  margin-bottom:2px;
+}
+body.app-view .summary .card span {
+  display:block;
+  font-size:11px;
+  color:var(--muted);
+}
+
+/* make stacked cards (table rows) tighter */
+body.app-view @media (max-width:760px) { /* no-op to assist variable scope */ }
+@media (max-width:760px){
+  body.app-view tbody tr {
+    padding:6px;                      /* reduce row padding */
+    margin-bottom:8px;
+    box-shadow:0 8px 18px rgba(7,18,42,0.05);
+  }
+  body.app-view td {
+    padding:6px 6px;
+  }
+  body.app-view td::before { font-size:11px; width:36%; flex-basis:36%; max-width:36%; }
+  body.app-view td>.val { font-size:12px; }
+}
+
+/* reduce header/control sizes in app view */
+body.app-view .header { padding:10px 8px; }
+body.app-view .header-center h1 { font-size:16px; }
+body.app-view .controls select,
+body.app-view .controls input,
+body.app-view .controls button { padding:6px 8px; font-size:13px; }
+body.app-view .btn { padding:6px 8px; font-size:13px; }
+
+/* reduce table cell font-weight/size */
+body.app-view th, body.app-view td { font-size:12px; padding:8px; }
+
+/* reduce debug font */
+body.app-view .debug { font-size:12px; }
+
+/* tweak summary card min-width on very small screens */
+@media(max-width:420px){
+  body.app-view .summary .card { min-width:64px; padding:5px 6px; }
+  body.app-view .summary .card h3 { font-size:13px; }
+  body.app-view .summary .card span { font-size:10px; }
+}
 </style>
 </head>
 <body>
@@ -330,7 +389,6 @@ function buildTable(id, data, orderedKeys){
   });
 }
 
-/* FIXED: use the parameter name withoutP here (was withoutPriority causing ReferenceError) */
 function updateCards(withP, withoutP){
   let high=0,med=0,low=0;
   withP.forEach(r=>{
