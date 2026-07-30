@@ -106,85 +106,121 @@
 /* Config */
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+const JOBBOOK_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/jobbook.json";
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 /* Utilities */
-function normalize(v){
-  return String(v||"").trim().toUpperCase();
-}
-function parseDateKey(v){
+function normalize(v){ return String(v||"").trim().toUpperCase(); }
+
+/* Parse different date representations into Date or null */
+function parseDateKeyToDate(v){
   if(!v) return null;
-  if(typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
-    const [d,m,y] = v.split('/').map(Number);
-    return new Date(y,m-1,d);
+  if(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)){ // ISO like 2020-01-18T...
+    const d = new Date(v);
+    return isNaN(d) ? null : d;
   }
-  if(typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v)) {
-    const [d,m,y] = v.split('-').map(Number);
-    return new Date(y,m-1,d);
+  if(typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const [d,m,y] = v.split('/').map(Number); return new Date(y,m-1,d);
+  }
+  if(typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const [d,m,y] = v.split('-').map(Number); return new Date(y,m-1,d);
   }
   const d = new Date(v);
   return isNaN(d) ? null : d;
 }
-function formatDateDDMMYYYY(d){
+
+/* Normalize date key to DD/MM/YYYY for lookup in jobBookMap (same as your jobbook sample uses) */
+function normalizeDateKey(v){
+  const d = parseDateKeyToDate(v);
+  if(!d) return "";
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+/* format for display: DD-MM-YYYY */
+function formatDateDisplay(v){
+  const d = parseDateKeyToDate(v);
   if(!d) return "";
   const dd = String(d.getDate()).padStart(2,'0');
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const yyyy = d.getFullYear();
   return `${dd}-${mm}-${yyyy}`;
 }
-function getDriveKey(row){
+
+/* Ensure link is absolute (add https:// if missing) */
+function normalizeLink(u){
+  if(!u) return "";
+  let s = String(u).trim();
+  if(!s) return "";
+  // If it's already an absolute URL or mailto/javascript, return as-is
+  if(/^(https?:\/\/|mailto:|javascript:)/i.test(s)) return s;
+  // Some sheet values may be raw drive.google.com/... or starting with "www." — prefix https://
+  return 'https://' + s.replace(/^\/+/, '');
+}
+
+/* Map from dateKey (DD/MM/YYYY) -> link */
+let jobBookMap = {};
+
+/* Load jobbook.json to fill jobBookMap */
+async function loadJobBook(){
+  try{
+    const res = await fetch(JOBBOOK_JSON);
+    if(!res.ok) return;
+    const j = await res.json();
+    (j.rows || []).forEach(r=>{
+      // Expect first column is date, second is link as in your sample
+      const key = normalizeDateKey(r[0]);
+      const link = (r[1]||"").toString().trim();
+      if(key && link) jobBookMap[key] = link;
+    });
+    // optional: debug
+    // console.log('jobBookMap loaded', Object.keys(jobBookMap).length);
+  }catch(e){
+    console.warn('jobbook load failed', e);
+  }
+}
+
+/* Helper: get drive key like "BAT_A-P-201" from the row (row[2]-row[3] or as used) */
+function getDriveKeyFromRow(row){
   const a = row[2] || "";
   const b = row[3] || "";
   return `${a}-${b}`.trim();
 }
 
 /* State */
-let allRows = []; // aggregated rows from history files
-let filteredRows = [];
-let driveSet = new Set();
-let yearSet = new Set();
+let allRows = [], filteredRows = [], driveSet = new Set(), yearSet = new Set();
 
-/* Fetch all history files and aggregate rows */
+/* Load all history files and keep only BD rows */
 async function loadAllHistory(){
-  allRows = [];
-  driveSet.clear();
-  yearSet.clear();
-
+  allRows = []; driveSet.clear(); yearSet.clear();
   for(const y of HISTORY_YEARS){
     const url = HISTORY_BASE + y + ".json";
     try{
       const res = await fetch(url);
       if(!res.ok) continue;
       const j = await res.json();
-      const rows = j.rows || [];
-      rows.forEach(r=>{
-        // filter to JOB TYPE 'BD' only: check any cell equals 'BD' (case-insensitive)
-        const hasBD = (r || []).some(cell => normalize(cell) === "BD");
-        if(!hasBD) return;
-
-        const date = parseDateKey(r[4]);
-        const driveKey = getDriveKey(r);
+      (j.rows || []).forEach(r=>{
+        if(!(r || []).some(cell => normalize(cell) === "BD")) return;
+        const dateVal = r[4]; // date is usually at index 4 per your format
+        const dateObj = parseDateKeyToDate(dateVal);
+        const driveKey = getDriveKeyFromRow(r);
         if(driveKey) driveSet.add(driveKey);
-        if(date) yearSet.add(date.getFullYear());
-        allRows.push({ row: r, date, driveKey });
+        if(dateObj) yearSet.add(dateObj.getFullYear());
+        allRows.push({ row: r, dateObj, driveKey });
       });
-    }catch(err){
-      console.warn("Failed to load", url, err);
+    }catch(e){
+      console.warn("Failed to load", url, e);
     }
   }
-
-  // sort by date desc
-  allRows.sort((a,b) => {
-    const da = a.date || new Date(0);
-    const db = b.date || new Date(0);
-    return db - da;
-  });
-
+  // sort descending by date
+  allRows.sort((a,b) => (b.dateObj||0) - (a.dateObj||0));
   populateFilters();
-  applyFilters(); // initial render
+  applyFilters();
 }
 
-/* Populate selects */
+/* Populate filter selects */
 function populateFilters(){
   const driveSel = document.getElementById("driveSelect");
   driveSel.innerHTML = '<option value="">All drives</option>';
@@ -199,7 +235,7 @@ function populateFilters(){
   });
 }
 
-/* Apply current filters and render */
+/* Apply current UI filters */
 function applyFilters(){
   const drive = document.getElementById("driveSelect").value;
   const year = document.getElementById("yearSelect").value;
@@ -208,9 +244,9 @@ function applyFilters(){
 
   filteredRows = allRows.filter(item => {
     if(drive && item.driveKey !== drive) return false;
-    if(year && (!item.date || String(item.date.getFullYear()) !== String(year))) return false;
-    if(month && item.date){
-      if(String(item.date.getMonth()+1) !== String(month)) return false;
+    if(year && (!item.dateObj || String(item.dateObj.getFullYear()) !== String(year))) return false;
+    if(month && item.dateObj){
+      if(String(item.dateObj.getMonth()+1) !== String(month)) return false;
     }
     if(q){
       const hay = (item.row || []).join(" ").toLowerCase();
@@ -222,7 +258,7 @@ function applyFilters(){
   renderTable();
 }
 
-/* Render table rows (with clickable drive and link behavior) */
+/* Render table rows; use jobBookMap mapping first, then fallback to row[10] */
 function renderTable(){
   const tbody = document.querySelector("#historyTable tbody");
   const noData = document.getElementById("noData");
@@ -237,43 +273,70 @@ function renderTable(){
   let currentYear = null;
   filteredRows.forEach(item=>{
     const r = item.row;
-    const d = item.date;
-    const y = d ? d.getFullYear() : "";
-    if(String(y) !== String(currentYear)){
-      currentYear = y;
+    const dObj = item.dateObj;
+    const year = dObj ? dObj.getFullYear() : "";
+    if(String(year) !== String(currentYear)){
+      currentYear = year;
       const yr = document.createElement("tr");
       yr.className = "year-row";
       const td = document.createElement("td");
       td.colSpan = 6;
-      td.textContent = y || "Unknown year";
+      td.textContent = year ? `YEAR ${year}` : "Unknown year";
       yr.appendChild(td);
       tbody.appendChild(yr);
     }
 
     const tr = document.createElement("tr");
-    const trno = r[0] || "-";
-    const dateText = d ? formatDateDDMMYYYY(d) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "-");
-    const driveKey = item.driveKey || "-";
-    const details = r[5] || r[6] || "-";
-    const category = r[7] || r[8] || "-";
-    const link = r[10] || "";
 
-    // Drive cell as a clickable anchor to history page
-    const driveHref = driveKey && driveKey !== "-" ? 
-      `https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(driveKey)}` : "";
+    const trno = r[0] || "";
+    const dateDisplay = formatDateDisplay(r[4]);
+    const driveKey = getDriveKeyFromRow(r) || "";
+    const details = r[5] || r[6] || "";
+    const category = r[7] || r[8] || "";
 
-    // Build row HTML
-    tr.innerHTML = `
-      <td style="text-align:center">${escapeHtml(trno)}</td>
-      <td style="text-align:center">${escapeHtml(dateText)}</td>
-      <td>${ driveHref ? `<a href="${driveHref}" class="drive-link">${escapeHtml(driveKey)}</a>` : escapeHtml(driveKey) }</td>
-      <td style="white-space:normal;word-break:break-word;">${escapeHtml(details)}</td>
-      <td>${escapeHtml(category)}</td>
-      <td style="text-align:center">${ link ? `<a href="${escapeHtmlAttr(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎</a>` : '-'}</td>
-    `;
+    // link: priority -> jobBookMap by date key -> row[10] fallback
+    const dateKey = normalizeDateKey(r[4]); // dd/mm/yyyy
+    const jobbookLinkRaw = jobBookMap[dateKey] || "";
+    const rowLinkRaw = (r[10] || "").toString().trim();
+    const chosenLinkRaw = jobbookLinkRaw || rowLinkRaw;
+    const chosenLink = normalizeLink(chosenLinkRaw);
 
-    // Make row clickable — go to history page for driveKey (if present)
-    if(driveKey && driveKey !== "-"){
+    // build cells
+    const td0 = document.createElement('td'); td0.style.textAlign = 'center'; td0.textContent = trno; tr.appendChild(td0);
+    const td1 = document.createElement('td'); td1.style.textAlign = 'center'; td1.textContent = dateDisplay; tr.appendChild(td1);
+
+    const td2 = document.createElement('td');
+    if(driveKey){
+      const a = document.createElement('a');
+      a.href = `https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(driveKey)}`;
+      a.className = 'drive-link';
+      a.textContent = driveKey;
+      a.addEventListener('click', (e) => { e.stopPropagation(); /* allow normal navigation */ });
+      td2.appendChild(a);
+    } else {
+      td2.textContent = driveKey;
+    }
+    tr.appendChild(td2);
+
+    const td3 = document.createElement('td'); td3.style.whiteSpace='normal'; td3.style.wordBreak='break-word'; td3.textContent = details; tr.appendChild(td3);
+    const td4 = document.createElement('td'); td4.textContent = category; tr.appendChild(td4);
+
+    const td5 = document.createElement('td'); td5.style.textAlign = 'center';
+    if(chosenLink){
+      const a2 = document.createElement('a');
+      a2.href = chosenLink;
+      a2.target = '_blank';
+      a2.rel = 'noopener noreferrer';
+      a2.textContent = 'Open';
+      a2.addEventListener('click', function(e){ e.stopPropagation(); });
+      td5.appendChild(a2);
+    } else {
+      td5.textContent = '';
+    }
+    tr.appendChild(td5);
+
+    // make row clickable -> open drive history page
+    if(driveKey){
       tr.classList.add('clickable');
       tr.addEventListener('click', () => {
         window.location.href = `https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(driveKey)}`;
@@ -284,105 +347,60 @@ function renderTable(){
   });
 }
 
-/* Export visible CSV */
+/* Export CSV for visible filteredRows */
 function exportCSV(){
   if(filteredRows.length === 0){ alert("No rows to export"); return; }
   const header = ["TR NO","DATE","DRIVE DETAILS","DETAILS","CATEGORY","LINK"];
   const rows = [ header.join(",") ];
   filteredRows.forEach(item=>{
     const r = item.row;
-    const d = item.date ? formatDateDDMMYYYY(item.date) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "");
-    const driveKey = item.driveKey || "";
-    const details = r[5] || r[6] || "";
-    const category = r[7] || r[8] || "";
-    const link = r[10] || "";
-    const trno = r[0] || "";
-    const line = [trno,escapeCSV(d),escapeCSV(driveKey),escapeCSV(details),escapeCSV(category),escapeCSV(link)].join(",");
-    rows.push(line);
+    const d = item.dateObj ? formatDateDisplay(r[4]) : "";
+    const driveKey = getDriveKeyFromRow(r) || "";
+    const details = (r[5] || r[6] || "").toString().replace(/"/g,'""');
+    const category = (r[7] || r[8] || "").toString().replace(/"/g,'""');
+    const dateKey = normalizeDateKey(r[4]);
+    const jobbookLinkRaw = jobBookMap[dateKey] || "";
+    const rowLinkRaw = (r[10] || "").toString().trim();
+    const chosenLinkRaw = jobbookLinkRaw || rowLinkRaw;
+    rows.push([`"${(r[0]||"").toString().replace(/"/g,'""')}"`,`"${d}"`,`"${driveKey.replace(/"/g,'""')}"`,`"${details}"`,`"${category}"`,`"${chosenLinkRaw.replace(/"/g,'""')}"`].join(","));
   });
   const blob = new Blob([rows.join("\n")], {type:'text/csv'});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `history-BD-export-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `breakdown-history-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
-/* helpers */
-function escapeHtml(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function escapeHtmlAttr(s){ return String(s||"").replace(/&/g,"&amp;").replace(/"/g,'&quot;').replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function escapeHtmlAttrForHref(s){ return String(s||"").replace(/"/g,'%22'); }
-function escapeAttr(s){ return String(s||"").replace(/"/g,"%22"); }
-function escapeCSV(s){ return `"${String(s||"").replace(/"/g,'""')}"`; }
-function escapeHtmlAttr(a){ return String(a||"").replace(/"/g,'%22'); } // lightweight
+/* Init: load jobbook then history */
+async function init(){
+  await loadJobBook();
+  await loadAllHistory();
+}
 
-/* nav */
-function goHome(){ location.href = "https://08electricaldata.github.io/"; }
-function goBack(){ history.back(); }
-
-/* events */
+/* Wire UI events */
 document.getElementById("driveSelect").addEventListener("change", applyFilters);
 document.getElementById("yearSelect").addEventListener("change", applyFilters);
 document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("exportBtn").addEventListener("click", exportCSV);
 
-/* Initialize - add month select if not present and load all history */
-(async function init(){
+/* Navigation helpers */
+function goHome(){ location.href = "https://08electricaldata.github.io/"; }
+function goBack(){ history.back(); }
+
+/* build month select if missing and start */
+(async function boot(){
   const monthSelect = document.getElementById("monthSelect");
   if(!monthSelect){
-    const sel = document.createElement("select");
-    sel.id = "monthSelect";
+    const sel = document.createElement("select"); sel.id = "monthSelect";
     const wrap = document.querySelector(".controls");
-    const group = document.createElement("div");
-    group.className = "group";
-    const label = document.createElement("label");
-    label.htmlFor = "monthSelect";
-    label.textContent = "Month";
-    group.appendChild(label);
-    group.appendChild(sel);
+    const group = document.createElement("div"); group.className = "group";
+    const label = document.createElement("label"); label.htmlFor = "monthSelect"; label.textContent = "Month";
+    group.appendChild(label); group.appendChild(sel);
     wrap.insertBefore(group, document.getElementById("search").parentElement);
     sel.innerHTML = '<option value="">All months</option>';
     for(let i=1;i<=12;i++){ const o=document.createElement("option"); o.value=i; o.textContent=monthNames[i-1]; sel.appendChild(o); }
     sel.addEventListener("change", applyFilters);
   }
-  await loadAllHistory();
+  await init();
 })();
 
-/* Load function reused from earlier */
-async function loadAllHistory(){
-  allRows = [];
-  driveSet.clear();
-  yearSet.clear();
-
-  for(const y of HISTORY_YEARS){
-    const url = HISTORY_BASE + y + ".json";
-    try{
-      const res = await fetch(url);
-      if(!res.ok) continue;
-      const j = await res.json();
-      const rows = j.rows || [];
-      rows.forEach(r=>{
-        const hasBD = (r || []).some(cell => normalize(cell) === "BD");
-        if(!hasBD) return;
-        const date = parseDateKey(r[4]);
-        const driveKey = getDriveKey(r);
-        if(driveKey) driveSet.add(driveKey);
-        if(date) yearSet.add(date.getFullYear());
-        allRows.push({ row: r, date, driveKey });
-      });
-    }catch(err){
-      console.warn("Failed to load", url, err);
-    }
-  }
-
-  allRows.sort((a,b) => {
-    const da = a.date || new Date(0);
-    const db = b.date || new Date(0);
-    return db - da;
-  });
-
-  populateFilters();
-  applyFilters();
-}
 </script>
 </body>
 </html>
