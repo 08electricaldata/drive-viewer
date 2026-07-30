@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Drive History — Mobile App View (JOB TYPE BD)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{
+    --brand:#003f88;
+    --bg:#f2f6ff;
+    --card:#ffffff;
+    --muted:#6b7280;
+    --shadow: 0 6px 18px rgba(3,63,136,0.08);
+    --small:12px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family: system-ui,-apple-system,"Segoe UI",Roboto,Arial; background:var(--bg); color:#0b1220;
+  }
+
+  /* APP BAR */
+  .appbar{
+    position:sticky;top:0;z-index:200;background:var(--brand);color:#fff;display:flex;align-items:center;gap:8px;padding:10px;
+  }
+  .btn-icon{background:#fff;color:var(--brand);border:0;padding:8px;border-radius:8px;font-weight:700;cursor:pointer}
+  .app-title{flex:1;text-align:center;font-weight:800;font-size:16px}
+  .app-sub{font-size:11px;opacity:.9}
+
+  /* CONTROLS (compact) */
+  .controls{
+    display:flex;gap:8px;padding:10px;align-items:center;overflow:auto;
+  }
+  .controls select, .controls input{
+    padding:8px 10px;border-radius:10px;border:1px solid #e3e7f0;background:#fff;font-size:14px;
+  }
+  .controls .flex1{flex:1;min-width:120px}
+
+  /* small filter row (chips) */
+  .chip-row{display:flex;gap:8px;padding:6px 10px;overflow:auto}
+  .chip{background:#fff;padding:8px 10px;border-radius:999px;box-shadow:0 4px 12px rgba(3,63,136,.06);font-weight:700;font-size:13px;white-space:nowrap}
+
+  /* CARDS (mobile-first) */
+  .list{padding:10px;display:flex;flex-direction:column;gap:10px}
+  .card{
+    background:var(--card);border-radius:12px;padding:10px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;gap:8px;
+  }
+  .card-row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .left{display:flex;gap:8px;align-items:center;min-width:0}
+  .badge{background:#eef6ff;color:var(--brand);padding:6px 8px;border-radius:8px;font-weight:800;font-size:13px;flex-shrink:0}
+  .title-col{overflow:hidden}
+  .title{font-weight:800;color:var(--brand);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .subtitle{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .meta-row{display:flex;gap:10px;justify-content:space-between;align-items:center}
+  .meta{font-size:13px;color:#0b3b74;font-weight:700}
+  .cat{font-size:12px;color:var(--muted)}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip-sm{background:#f4f6fb;padding:6px 8px;border-radius:8px;font-size:12px;color:#0b3b74}
+
+  /* TABLE fallback on larger screens */
+  .table-wrap{display:none;padding:10px}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+  th,td{padding:10px;border-bottom:1px solid #eef2fb;font-size:13px;text-align:left}
+  thead th{background:var(--brand);color:#fff;font-weight:700}
+
+  /* floating CSV */
+  .fab{position:fixed;right:12px;bottom:12px;background:var(--brand);color:#fff;border:none;padding:12px;border-radius:50%;box-shadow:0 8px 20px rgba(0,0,0,.2);font-weight:800;cursor:pointer;z-index:210}
+
+  /* no-data */
+  .no-data{padding:18px;text-align:center;color:#666}
+
+  /* responsive break */
+  @media(min-width:900px){
+    .list{display:none}
+    .table-wrap{display:block}
+    .controls{padding:14px}
+  }
+
+  /* print hide UI */
+  @media print{
+    .appbar,.controls,.chip-row,.fab{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn-icon" onclick="goHome()">🏠</button>
+    <button class="btn-icon" onclick="history.back()">⬅</button>
+  </div>
+  <div class="app-title">
+    Break down History
+    <div class="app-sub">JOB TYPE = BD (Mobile App View)</div>
+  </div>
+  <div style="width:40px"></div>
+</div>
+
+<!-- Controls -->
+<div class="controls" role="toolbar" aria-label="filters">
+  <select id="driveSelect" class="flex1" aria-label="Drive">
+    <option value="">All drives</option>
+  </select>
+
+  <select id="yearSelect" aria-label="Year">
+    <option value="">All years</option>
+  </select>
+
+  <select id="monthSelect" aria-label="Month">
+    <option value="">All months</option>
+    <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+    <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+    <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+    <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+  </select>
+
+  <input id="search" class="flex1" placeholder="Search details / category / link..." aria-label="Search" />
+</div>
+
+<div class="chip-row" aria-hidden="true">
+  <div class="chip">Filter by month then year as needed</div>
+  <div class="chip" id="countsChip">Loading…</div>
+</div>
+
+<!-- Mobile cards list -->
+<div id="list" class="list" role="list"></div>
+<div id="noDataMobile" class="no-data" style="display:none">No entries found.</div>
+
+<!-- Table for larger screens -->
+<div class="table-wrap">
+  <table id="historyTable" aria-label="history table">
+    <thead>
+      <tr>
+        <th style="width:70px;text-align:center">TR NO</th>
+        <th style="width:110px;text-align:center">DATE</th>
+        <th style="width:220px">DRIVE DETAILS</th>
+        <th>DETAILS</th>
+        <th style="width:160px">CATEGORY</th>
+        <th style="width:70px;text-align:center">LINK</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div id="noDataDesktop" class="no-data" style="display:none">No entries found.</div>
+</div>
+
+<button class="fab" title="Export CSV" onclick="exportCSV()">CSV</button>
+
+<script>
+/* Mobile-first app view using same data sources and logic */
+const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+let allRows = [], filteredRows = [], driveSet = new Set(), yearSet = new Set();
+
+/* Utilities (same as desktop) */
+function normalize(v){ return String(v||"").trim().toUpperCase(); }
+function parseDateKey(v){
+  if(!v) return null;
+  if(typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+    const [d,m,y] = v.split('/').map(Number); return new Date(y,m-1,d);
+  }
+  if(typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v)){
+    const [d,m,y] = v.split('-').map(Number); return new Date(y,m-1,d);
+  }
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+function formatDDMMYYYY(d){
+  if(!d) return "";
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+function getDriveKey(row){ const a=row[2]||""; const b=row[3]||""; return `${a}-${b}`.trim(); }
+
+/* Fetch & aggregate BD rows */
+async function loadAllHistory(){
+  allRows=[], driveSet.clear(), yearSet.clear();
+  for(const y of HISTORY_YEARS){
+    try{
+      const res = await fetch(HISTORY_BASE + y + ".json");
+      if(!res.ok) continue;
+      const j = await res.json();
+      (j.rows||[]).forEach(r=>{
+        if(!(r || []).some(cell => normalize(cell) === "BD")) return;
+        const date = parseDateKey(r[4]);
+        const driveKey = getDriveKey(r);
+        if(driveKey) driveSet.add(driveKey);
+        if(date) yearSet.add(date.getFullYear());
+        allRows.push({row:r, date, driveKey});
+      });
+    }catch(e){ console.warn("load fail", e); }
+  }
+  // newest first
+  allRows.sort((a,b)=> (b.date||0) - (a.date||0));
+  populateFilters();
+  applyFilters();
+}
+
+/* Populate filter controls */
+function populateFilters(){
+  const driveSel = document.getElementById("driveSelect");
+  driveSel.innerHTML = '<option value="">All drives</option>';
+  Array.from(driveSet).sort().forEach(k => {
+    const o = document.createElement('option'); o.value = k; o.textContent = k; driveSel.appendChild(o);
+  });
+
+  const yearSel = document.getElementById("yearSelect");
+  yearSel.innerHTML = '<option value="">All years</option>';
+  Array.from(yearSet).sort((a,b)=>b-a).forEach(y => {
+    const o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o);
+  });
+
+  updateCountsChip();
+}
+
+/* filter application */
+function applyFilters(){
+  const drive = document.getElementById("driveSelect").value;
+  const year = document.getElementById("yearSelect").value;
+  const month = document.getElementById("monthSelect") ? document.getElementById("monthSelect").value : "";
+  const q = document.getElementById("search").value.trim().toLowerCase();
+
+  filteredRows = allRows.filter(item => {
+    if(drive && item.driveKey !== drive) return false;
+    if(year && (!item.date || String(item.date.getFullYear()) !== String(year))) return false;
+    if(month && item.date){
+      if(String(item.date.getMonth()+1) !== String(month)) return false;
+    }
+    if(q){
+      const hay = (item.row||[]).join(" ").toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  renderList();
+  renderTable();
+  updateCountsChip();
+}
+
+/* Render mobile cards */
+function renderList(){
+  const el = document.getElementById('list');
+  el.innerHTML = '';
+  const noDataMobile = document.getElementById('noDataMobile');
+  if(filteredRows.length === 0){ noDataMobile.style.display='block'; return; }
+  noDataMobile.style.display='none';
+
+  filteredRows.forEach(item=>{
+    const r = item.row;
+    const d = item.date;
+    const trNo = r[0]||'-';
+    const dateText = d ? formatDDMMYYYY(d) : (r[4] ? formatDDMMYYYY(parseDateKey(r[4])) : '-');
+    const driveKey = item.driveKey || '-';
+    const details = r[5] || r[6] || '-';
+    const category = r[7] || r[8] || '-';
+    const link = r[10] || '';
+
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-row">
+        <div class="left">
+          <div class="badge">${trNo}</div>
+          <div class="title-col">
+            <div class="title">${driveKey}</div>
+            <div class="subtitle">${dateText}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="meta">${category}</div>
+          <div style="margin-top:6px">${ link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener">📎</a>` : '-' }</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;color:#0b1220;font-weight:700">Details</div>
+          <div style="font-size:13px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(details)}</div>
+        </div>
+      </div>
+    `;
+
+    // Click opens link if present else nothing
+    card.addEventListener('click', (e)=>{
+      if(link) window.open(link, '_blank');
+    });
+
+    el.appendChild(card);
+  });
+}
+
+/* Render desktop table (grouped by year) */
+function renderTable(){
+  const wrap = document.querySelector("#historyTable tbody");
+  const noDataDesktop = document.getElementById('noDataDesktop');
+  wrap.innerHTML = '';
+  if(filteredRows.length === 0){ noDataDesktop.style.display='block'; return; }
+  noDataDesktop.style.display='none';
+
+  let currentYear = null;
+  filteredRows.forEach(item=>{
+    const r = item.row, d = item.date;
+    const y = d ? d.getFullYear() : '';
+    if(String(y) !== String(currentYear)){
+      currentYear = y;
+      const yr = document.createElement('tr'); yr.className='year-row';
+      const td = document.createElement('td'); td.colSpan = 6; td.textContent = y || 'Unknown year'; yr.appendChild(td);
+      wrap.appendChild(yr);
+    }
+    const tr = document.createElement('tr');
+    const trNo = r[0]||'-';
+    const dateText = d ? formatDDMMYYYY(d) : (r[4] ? formatDDMMYYYY(parseDateKey(r[4])) : '-');
+    const driveKey = item.driveKey || '-';
+    const details = r[5]||r[6]||'-';
+    const category = r[7]||r[8]||'-';
+    const link = r[10]||'';
+
+    tr.innerHTML = `
+      <td style="text-align:center">${escapeHtml(trNo)}</td>
+      <td style="text-align:center">${escapeHtml(dateText)}</td>
+      <td>${escapeHtml(driveKey)}</td>
+      <td>${escapeHtml(details)}</td>
+      <td>${escapeHtml(category)}</td>
+      <td style="text-align:center">${link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener">📎</a>` : '-'}</td>
+    `;
+    wrap.appendChild(tr);
+  });
+}
+
+/* Export CSV of visible items (mobile or desktop) */
+function exportCSV(){
+  if(filteredRows.length === 0){ alert('No rows to export'); return; }
+  const header = ['TR NO','DATE','DRIVE DETAILS','DETAILS','CATEGORY','LINK'];
+  const rows = [header.join(',')];
+  filteredRows.forEach(item=>{
+    const r = item.row;
+    const d = item.date ? formatDDMMYYYY(item.date) : (r[4] ? formatDDMMYYYY(parseDateKey(r[4])) : '');
+    const driveKey = item.driveKey || '';
+    const details = r[5] || r[6] || '';
+    const category = r[7] || r[8] || '';
+    const link = r[10] || '';
+    const trno = r[0]||'';
+    rows.push([trno, d, `"${driveKey.replace(/"/g,'""')}"`, `"${details.replace(/"/g,'""')}"`, `"${category.replace(/"/g,'""')}"`, `"${link.replace(/"/g,'""')}"`].join(','));
+  });
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `history-BD-mobile-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+/* small helpers */
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeAttr(s){ return String(s||'').replace(/"/g,'%22'); }
+
+/* counts summary */
+function updateCountsChip(){
+  const total = filteredRows.length;
+  const countsChip = document.getElementById('countsChip');
+  countsChip.textContent = `${total} record${total===1?'':'s'}`;
+}
+
+/* wire controls */
+document.getElementById('driveSelect').addEventListener('change', applyFilters);
+document.getElementById('yearSelect').addEventListener('change', applyFilters);
+document.getElementById('monthSelect')?.addEventListener('change', applyFilters);
+document.getElementById('search').addEventListener('input', applyFilters);
+
+/* init: add month select if missing (keeps layout consistent) */
+(function ensureMonth(){
+  if(!document.getElementById('monthSelect')){
+    const sel = document.createElement('select'); sel.id='monthSelect';
+    sel.innerHTML = '<option value="">All months</option>';
+    for(let i=1;i<=12;i++){ const o=document.createElement('option'); o.value=i; o.textContent=monthNames[i-1]; sel.appendChild(o); }
+    document.querySelector('.controls').insertBefore(sel, document.getElementById('search'));
+    sel.addEventListener('change', applyFilters);
+  }
+})();
+
+/* nav helpers */
+function goHome(){ location.href = 'https://08electricaldata.github.io/index_mob.html'; }
+function goBack(){ history.back(); }
+
+/* startup */
+(async function init(){
+  await loadAllHistory();
+})();
+
+/* loadAllHistory reused (same as desktop code) */
+async function loadAllHistory(){
+  allRows=[], driveSet.clear(), yearSet.clear();
+  for(const y of HISTORY_YEARS){
+    try{
+      const res = await fetch(HISTORY_BASE + y + '.json');
+      if(!res.ok) continue;
+      const j = await res.json();
+      (j.rows||[]).forEach(r=>{
+        if(!(r||[]).some(cell => normalize(cell) === 'BD')) return;
+        const date = parseDateKey(r[4]);
+        const driveKey = getDriveKey(r);
+        if(driveKey) driveSet.add(driveKey);
+        if(date) yearSet.add(date.getFullYear());
+        allRows.push({row:r,date,driveKey});
+      });
+    }catch(e){ console.warn(e); }
+  }
+  allRows.sort((a,b)=> (b.date||0) - (a.date||0));
+  // populate selects
+  const driveSel = document.getElementById('driveSelect');
+  driveSel.innerHTML = '<option value="">All drives</option>';
+  Array.from(driveSet).sort().forEach(k=>{
+    const o=document.createElement('option'); o.value=k; o.textContent=k; driveSel.appendChild(o);
+  });
+  const yearSel = document.getElementById('yearSelect');
+  yearSel.innerHTML = '<option value="">All years</option>';
+  Array.from(yearSet).sort((a,b)=>b-a).forEach(y=>{
+    const o=document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o);
+  });
+  applyFilters();
+}
+</script>
+</body>
+</html>
