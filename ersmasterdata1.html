@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending Dashboard</title>
+<title>Pending Dashboard — Problems column & nowrap other columns</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -85,38 +84,51 @@ select,input,button{
 .table-wrapper{
   padding:10px;
   overflow:auto;
-  max-height:40vh;
+  max-height:60vh;
 }
 
-.section-title{
-  padding-left:15px;
-  font-weight:bold;
-  margin-top:10px;
-}
-
+/* table */
 table{
   border-collapse:collapse;
-  width:max-content;
-  min-width:100%;
+  width:100%;
   background:#fff;
+  table-layout: auto; /* let columns size to content */
+  min-width:100%;
 }
 
 th,td{
   border:1px solid #ccc;
   padding:8px 10px;
+  /* default: do NOT wrap - keep all columns single-line */
   white-space:nowrap;
-  text-align:center;
+  text-align:left;
   font-size:13px;
+  vertical-align:top;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
+/* Allow Problems column to wrap */
+th[data-col="Problems"],
+td[data-col="Problems"]{
+  white-space:normal;           /* allow wrapping only here */
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+  max-width:360px;              /* optional maximum width so wrapping happens; adjust as needed */
+}
+
+/* header style */
 th{
   background:#003f88;
   color:#fff;
   position:sticky;
   top:0;
   z-index:2;
+  text-align:left;
 }
 
+/* Priority styles (keep from original) */
 .priority-1{background:#ff4d4d;color:#fff;}
 .priority-2{background:#ff9933;color:#fff;}
 .priority-3{background:#ffcc00;color:#000;}
@@ -131,6 +143,14 @@ th{
 
 .completed{background:#28a745;}
 
+/* Responsive tweaks */
+@media (max-width:720px){
+  th, td { padding:6px 8px; font-size:13px; }
+  .controls{padding:8px;}
+  .summary{padding:8px;}
+  /* keep Problems wrapping the only column that can expand vertically */
+  th[data-col="Problems"], td[data-col="Problems"] { max-width:260px; }
+}
 </style>
 </head>
 <body>
@@ -191,9 +211,6 @@ th{
 </div>
 
 <script>
-// 🔵 Your previous full working JS remains unchanged below this line
-// (Keeping your priority logic exactly same)
-
 const JSON_FILES={
   rewinding:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
   overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
@@ -201,109 +218,236 @@ const JSON_FILES={
 
 let currentData=[];
 let headers=[];
-let priorityKey="";
+let priorityKey=""; // actual JSON key used for priority
 
 const select=document.getElementById("typeSelect");
 const searchBox=document.getElementById("searchBox");
+
+/* Desired visible columns (display order)
+   "Problems" will display but the script will try to match data using "Motor Location Update On" */
+const desiredDisplayCols = [
+  "PRIORITY",
+  "W.O No",
+  "kW",
+  "Make",
+  "Frame Size",
+  "Mounting",
+  "RPM",
+  "Sl No",
+  "Equipment details",
+  "Problems",                 /* visible caption - maps to JSON key for Motor Location Update On */
+  "Job Completion Dat"        /* keep as in previous code to match your JSON */
+];
+
+/* Columns to explicitly exclude if present */
+const excludedNames = ["voltage","area","storage","remarks"];
+
+/* helper to normalize header strings for matching */
+function normalize(s){
+  return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,"");
+}
 
 async function loadData(type){
   const res=await fetch(JSON_FILES[type]);
   const json=await res.json();
   currentData=json.data||[];
-  if(currentData.length===0) return;
-  headers=Object.keys(currentData[0]);
-  priorityKey=headers[14];
+  if(currentData.length===0){
+    headers=[];
+    priorityKey="";
+    render();
+    return;
+  }
+  headers=Object.keys(currentData[0]||{});
+  // find priority key by matching desired 'PRIORITY'
+  priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
   render();
+}
+
+/* find the actual header key from headers by matching a display label */
+function findKeyMatch(displayName){
+  const n = normalize(displayName);
+  // exact normalized match
+  for(const h of headers){
+    if(normalize(h) === n) return h;
+  }
+  // contains match (normalized)
+  for(const h of headers){
+    if(normalize(h).includes(n) || n.includes(normalize(h))) return h;
+  }
+  // fuzzy: match word-by-word
+  const tokens = n.split(/[^a-z0-9]+/).filter(Boolean);
+  for(const h of headers){
+    const hn = normalize(h);
+    if(tokens.every(t=>hn.includes(t))) return h;
+  }
+  return null;
+}
+
+/* Build the ordered list of actual JSON keys to render (matching desiredDisplayCols)
+   For the "Problems" display label we attempt to match JSON keys related to Motor Location Update On. */
+function buildOrderedKeys(){
+  const orderedKeys = [];
+  for(const display of desiredDisplayCols){
+    let matchName = display;
+    if(display.toLowerCase() === "problems"){
+      // try to match original MOTOR LOCATION key variants if present in JSON
+      const candidateNames = [
+        "Motor Location Update On",
+        "Motor Location Update",
+        "Motor Location",
+        "Motor Location Updated On",
+        "motorlocationupdateon"
+      ];
+      let found = null;
+      for(const c of candidateNames){
+        found = findKeyMatch(c);
+        if(found) break;
+      }
+      // fallback to matching "Problems" itself
+      orderedKeys.push(found || findKeyMatch(display) || null);
+      continue;
+    }
+    orderedKeys.push(findKeyMatch(display) || null);
+  }
+  // remove any keys that match excludedNames
+  return orderedKeys.map(k => {
+    if(!k) return k;
+    const kn = normalize(k);
+    for(const ex of excludedNames){
+      if(kn.includes(ex)) return null;
+    }
+    return k;
+  });
 }
 
 function render(){
   const q=searchBox.value.toLowerCase();
-  const filtered=currentData.filter(r=>{
+  const filtered = currentData.filter(r=>{
     return Object.values(r).join(" ").toLowerCase().includes(q);
   });
 
+  const orderedKeys = buildOrderedKeys();
   const withPriority=[];
   const withoutPriority=[];
 
   filtered.forEach(r=>{
-    if(r[priorityKey]) withPriority.push(r);
-    else withoutPriority.push(r);
+    const pVal = priorityKey ? (r[priorityKey] ?? "") : "";
+    if(pVal || pVal === 0 || pVal === "0" || pVal === "0.0") {
+      if(String(pVal).trim() !== "") withPriority.push(r);
+      else withoutPriority.push(r);
+    } else {
+      withoutPriority.push(r);
+    }
   });
 
-  withPriority.sort((a,b)=>Number(a[priorityKey])-Number(b[priorityKey]));
+  // if priorityKey exists, try numeric sort
+  if(priorityKey){
+    withPriority.sort((a,b)=>{
+      const aa = Number(a[priorityKey]) || 9999;
+      const bb = Number(b[priorityKey]) || 9999;
+      return aa - bb;
+    });
+  }
 
-  buildTable("priorityTable",withPriority);
-  buildTable("noPriorityTable",withoutPriority);
-  updateCards(withPriority,withoutPriority);
+  buildTable("priorityTable", withPriority, orderedKeys);
+  buildTable("noPriorityTable", withoutPriority, orderedKeys);
+  updateCards(withPriority, withoutPriority);
 }
 
-function buildTable(id,data){
-  const table=document.getElementById(id);
-  const thead=table.querySelector("thead");
-  const tbody=table.querySelector("tbody");
+function buildTable(id, data, orderedKeys){
+  const table = document.getElementById(id);
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
 
-  if(data.length===0){
-    thead.innerHTML="";
-    tbody.innerHTML="<tr><td>No Data</td></tr>";
+  if(!data || data.length===0){
+    thead.innerHTML = "";
+    tbody.innerHTML = "<tr><td style='padding:12px'>No Data</td></tr>";
     return;
   }
 
-  const ordered=[priorityKey].concat(headers.slice(0,14));
+  // Build header row using desiredDisplayCols but keep matching to orderedKeys
+  let head = "<tr>";
+  for(let i=0;i<desiredDisplayCols.length;i++){
+    const display = desiredDisplayCols[i];
+    const key = orderedKeys[i];
+    if(key === null) continue; // skip excluded/missing
+    head += `<th data-col="${escapeHtml(display)}">${escapeHtml(display)}</th>`;
+  }
+  head += "</tr>";
+  thead.innerHTML = head;
 
-  let head="<tr>";
-  ordered.forEach(h=>head+=`<th>${h}</th>`);
-  head+="</tr>";
-  thead.innerHTML=head;
-
-  tbody.innerHTML="";
-  data.forEach(r=>{
-    let tr="<tr>";
-    ordered.forEach(h=>{
-      let val=r[h]??"";
-      if(h===priorityKey){
-        tr+=`<td class="priority-${val}">${val}</td>`;
+  // build rows
+  tbody.innerHTML = "";
+  data.forEach(row=>{
+    let tr = "<tr>";
+    for(let i=0;i<desiredDisplayCols.length;i++){
+      const display = desiredDisplayCols[i];
+      const key = orderedKeys[i];
+      if(key === null) continue; // skip excluded/missing
+      let val = row[key] ?? "";
+      if(priorityKey && key === priorityKey){
+        let cls = "";
+        const num = Number(val);
+        if(!isNaN(num) && num >= 1 && num <= 4) cls = `priority-${num}`;
+        tr += `<td data-col="${escapeHtml(display)}" class="${cls}">${escapeHtml(val)}</td>`;
+      } else if(String(val).toUpperCase().includes("COMPLETED")){
+        tr += `<td data-col="${escapeHtml(display)}"><span class="badge completed">${escapeHtml(val)}</span></td>`;
+      } else {
+        tr += `<td data-col="${escapeHtml(display)}">${escapeHtml(val)}</td>`;
       }
-      else if(String(val).toUpperCase().includes("COMPLETED")){
-        tr+=`<td><span class="badge completed">${val}</span></td>`;
-      }
-      else{
-        tr+=`<td>${val}</td>`;
-      }
-    });
-    tr+="</tr>";
-    tbody.innerHTML+=tr;
+    }
+    tr += "</tr>";
+    tbody.insertAdjacentHTML("beforeend", tr);
   });
 }
 
-function updateCards(withP,withoutP){
-  let high=0,med=0,low=0;
+function updateCards(withP, withoutP){
+  let high=0, med=0, low=0;
   withP.forEach(r=>{
-    let p=Number(r[priorityKey]);
-    if(p===1) high++;
-    if(p===2) med++;
-    if(p>=3) low++;
+    const p = priorityKey ? Number(r[priorityKey]) : NaN;
+    if(p === 1) high++;
+    else if(p === 2) med++;
+    else if(!isNaN(p)) low++;
   });
 
-  document.getElementById("totalCount").innerText=withP.length+withoutP.length;
-  document.getElementById("highCount").innerText=high;
-  document.getElementById("mediumCount").innerText=med;
-  document.getElementById("lowCount").innerText=low;
-  document.getElementById("noPriorityCount").innerText=withoutP.length;
+  document.getElementById("totalCount").innerText = withP.length + withoutP.length;
+  document.getElementById("highCount").innerText = high;
+  document.getElementById("mediumCount").innerText = med;
+  document.getElementById("lowCount").innerText = low;
+  document.getElementById("noPriorityCount").innerText = withoutP.length;
 }
 
 function exportCSV(){
-  let csv="";
-  const ordered=[priorityKey].concat(headers.slice(0,14));
-  csv+=ordered.join(",")+"\n";
+  const orderedKeys = buildOrderedKeys();
+  // header row - only include visible cols
+  const visibleDisplays = [];
+  const visibleKeys = [];
+  for(let i=0;i<desiredDisplayCols.length;i++){
+    if(orderedKeys[i] === null) continue;
+    visibleDisplays.push(desiredDisplayCols[i]);
+    visibleKeys.push(orderedKeys[i]);
+  }
+
+  let csv = visibleDisplays.join(",") + "\n";
   currentData.forEach(r=>{
-    csv+=ordered.map(h=>`"${r[h]??""}"`).join(",")+"\n";
+    const row = visibleKeys.map(k => `"${escapeCSV(String(r[k] ?? ""))}"`).join(",");
+    csv += row + "\n";
   });
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="pending_data.csv";
+
+  const blob = new Blob([csv], {type: "text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "pending_data_filtered.csv";
   a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+function escapeCSV(s){
+  return s.replace(/"/g,'""');
 }
 
 select.addEventListener("change",()=>loadData(select.value));
