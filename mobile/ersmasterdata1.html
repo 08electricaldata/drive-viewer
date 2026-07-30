@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pending Dashboard — Mobile / App View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;margin:0;background:#f4f7ff;}
+
+/* HEADER */
+.header{
+  background:#003f88;
+  color:#fff;
+  padding:15px 10px;
+}
+
+.header-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.header-center{
+  text-align:center;
+  flex:1;
+}
+
+.header-center h1{
+  margin:0;
+  font-size:22px;
+}
+
+.header-center p{
+  margin:3px 0 0;
+  font-size:13px;
+  font-weight:normal;
+}
+
+.header-btn{
+  background:#fff;
+  color:#003f88;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  font-size:13px;
+  cursor:pointer;
+  margin:3px;
+}
+
+.controls{
+  padding:12px;
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+select,input,button{
+  padding:7px 10px;
+  font-size:14px;
+}
+
+/* SUMMARY */
+.summary{
+  display:flex;
+  gap:15px;
+  justify-content:center;
+  padding:10px;
+  flex-wrap:wrap;
+}
+
+.card{
+  background:#fff;
+  padding:12px 18px;
+  border-radius:6px;
+  box-shadow:0 2px 5px rgba(0,0,0,.12);
+  text-align:center;
+  min-width:120px;
+}
+
+.card h3{margin:0;font-size:18px;}
+
+/* TABLE WRAPPER */
+.table-wrapper{
+  padding:8px 10px;
+  overflow:auto;
+  max-height:60vh;
+}
+
+/* table */
+table{
+  border-collapse:collapse;
+  width:100%;
+  background:#fff;
+  table-layout:auto;
+  min-width:100%;
+}
+
+th,td{
+  border:1px solid #ccc;
+  padding:8px 10px;
+  text-align:left;
+  font-size:13px;
+  vertical-align:top;
+}
+
+/* Default: NO wrap for all columns (user requested) */
+th, td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Allow Problems column to wrap */
+th[data-col="Problems"],
+td[data-col="Problems"]{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  text-overflow:clip;
+}
+
+/* header style */
+th{
+  background:#003f88;
+  color:#fff;
+  position:sticky;
+  top:0;
+  z-index:2;
+  text-align:left;
+}
+
+/* Priority styles (keep from original) */
+.priority-1{background:#ff4d4d;color:#fff;}
+.priority-2{background:#ff9933;color:#fff;}
+.priority-3{background:#ffcc00;color:#000;}
+.priority-4{background:#66cc66;color:#000;}
+
+.badge{
+  padding:4px 8px;
+  border-radius:4px;
+  color:#fff;
+  font-weight:bold;
+}
+
+.completed{background:#28a745;}
+
+/* MOBILE / APP VIEW (stacked rows) */
+/* triggers automatically on small screens or when body has .app-view */
+@media (max-width:760px){
+  body:not(.no-auto-app) table, body:not(.no-auto-app) table tbody, body:not(.no-auto-app) table tr, body:not(.no-auto-app) table td {
+    display:block; width:100%;
+  }
+  /* hide header in stacked mode */
+  body:not(.no-auto-app) thead { display:none; }
+  body:not(.no-auto-app) table { border:0; background:transparent; }
+  body:not(.no-auto-app) tbody tr { display:block; margin-bottom:12px; border-radius:8px; background:#fff; padding:10px; box-shadow:0 6px 18px rgba(7,18,42,0.06); border:1px solid rgba(0,0,0,0.04); }
+  body:not(.no-auto-app) td {
+    display:flex; align-items:flex-start; gap:8px; padding:6px 4px; border:none;
+    white-space:nowrap; overflow:visible; text-overflow:clip;
+  }
+  body:not(.no-auto-app) td::before{ content:attr(data-col); font-weight:700; color:#374151; width:36%; flex:0 0 36%; max-width:36%; box-sizing:border-box; }
+  body:not(.no-auto-app) td > .val{ flex:1 1 64%; text-align:left; display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* Problems column value allowed to wrap */
+  body:not(.no-auto-app) td[data-col="Problems"] > .val{ white-space:normal; overflow-wrap:anywhere; word-break:break-word; }
+}
+
+/* App view toggle (force stacked) */
+body.app-view table, body.app-view table tbody, body.app-view table tr, body.app-view table td {
+  display:block; width:100%;
+}
+body.app-view thead { display:none; }
+body.app-view table { border:0; background:transparent; }
+body.app-view tbody tr { display:block; margin-bottom:12px; border-radius:8px; background:#fff; padding:10px; box-shadow:0 6px 18px rgba(7,18,42,0.06); border:1px solid rgba(0,0,0,0.04); }
+body.app-view td {
+  display:flex; align-items:flex-start; gap:8px; padding:6px 4px; border:none;
+  white-space:nowrap; overflow:visible; text-overflow:clip;
+}
+body.app-view td::before{ content:attr(data-col); font-weight:700; color:#374151; width:36%; flex:0 0 36%; max-width:36%; box-sizing:border-box; }
+body.app-view td > .val{ flex:1 1 64%; text-align:left; display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.app-view td[data-col="Problems"] > .val{ white-space:normal; overflow-wrap:anywhere; word-break:break-word; }
+
+/* Small screen tweaks */
+@media (max-width:420px){
+  body.app-view td::before, body:not(.no-auto-app) td::before{ width:40%; flex:0 0 40%; max-width:40%; }
+  body.app-view td > .val, body:not(.no-auto-app) td > .val{ flex:1 1 60%; }
+}
+
+/* print */
+@media print{
+  .controls { display:none; }
+  thead { display:table-header-group; }
+  td::before{ content: ""; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-bar">
+
+    <div>
+      <button class="header-btn" onclick="history.back()">⬅ Back</button>
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/drive-viewer/ersmasterdata.html'">🗂️ ERS Master</button>
+    </div>
+
+    <div class="header-center">
+      <h1>Rewinding / Overhauling Dashboard</h1>
+      <p>Designed and maintained by Rakesh Chandra Sethi</p>
+    </div>
+
+    <div></div>
+
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <select id="typeSelect">
+    <option value="rewinding">Rewinding</option>
+    <option value="overhauling">Overhauling</option>
+  </select>
+  <input type="text" id="searchBox" placeholder="Search...">
+  <button id="appViewBtn" class="header-btn muted" onclick="toggleAppView()">📱 App View</button>
+  <button onclick="exportCSV()">Export Excel</button>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="card"><h3 id="totalCount">0</h3><span>Total</span></div>
+  <div class="card"><h3 id="highCount">0</h3><span>High Priority</span></div>
+  <div class="card"><h3 id="mediumCount">0</h3><span>Medium</span></div>
+  <div class="card"><h3 id="lowCount">0</h3><span>Low</span></div>
+  <div class="card"><h3 id="noPriorityCount">0</h3><span>No Priority</span></div>
+</div>
+
+<div class="section-title">Priority Assigned</div>
+<div class="table-wrapper">
+  <table id="priorityTable" aria-label="Priority assigned">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section-title">No Priority Assigned</div>
+<div class="table-wrapper">
+  <table id="noPriorityTable" aria-label="No priority assigned">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+const JSON_FILES={
+  rewinding:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
+  overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
+};
+
+let currentData=[];
+let headers=[];
+let priorityKey=""; // actual JSON key used for priority
+
+const select=document.getElementById("typeSelect");
+const searchBox=document.getElementById("searchBox");
+const appViewBtn=document.getElementById("appViewBtn");
+
+/* Desired visible columns (display order) */
+const desiredDisplayCols = [
+  "PRIORITY",
+  "W.O No",
+  "kW",
+  "Make",
+  "Frame Size",
+  "Mounting",
+  "RPM",
+  "Sl No",
+  "Equipment details",
+  "Problems",                 /* maps to Motor Location Update On variants */
+  "Job Completion Dat"
+];
+
+const excludedNames = ["voltage","area","storage","remarks"];
+
+function normalize(s){
+  return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,"");
+}
+
+async function loadData(type){
+  const res=await fetch(JSON_FILES[type]);
+  const json=await res.json();
+  currentData=json.data||[];
+  headers = (currentData[0]) ? Object.keys(currentData[0]) : [];
+  priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
+  render();
+}
+
+function findKeyMatch(displayName){
+  const n = normalize(displayName);
+  for(const h of headers){
+    if(normalize(h) === n) return h;
+  }
+  for(const h of headers){
+    if(normalize(h).includes(n) || n.includes(normalize(h))) return h;
+  }
+  const tokens = n.split(/[^a-z0-9]+/).filter(Boolean);
+  for(const h of headers){
+    const hn = normalize(h);
+    if(tokens.every(t=>hn.includes(t))) return h;
+  }
+  return null;
+}
+
+function buildOrderedKeys(){
+  const orderedKeys=[];
+  for(const display of desiredDisplayCols){
+    if(display.toLowerCase() === "problems"){
+      const candidateNames = [
+        "Motor Location Update On",
+        "Motor Location Update",
+        "Motor Location",
+        "Motor Location Updated On",
+        "Problems",
+        "problem",
+        "motorlocationupdateon"
+      ];
+      let found=null;
+      for(const c of candidateNames){
+        found = findKeyMatch(c);
+        if(found) break;
+      }
+      orderedKeys.push(found || findKeyMatch(display) || null);
+      continue;
+    }
+    orderedKeys.push(findKeyMatch(display) || null);
+  }
+  return orderedKeys.map(k=>{
+    if(!k) return k;
+    const kn = normalize(k);
+    for(const ex of excludedNames){
+      if(kn.includes(ex)) return null;
+    }
+    return k;
+  });
+}
+
+function render(){
+  const q=searchBox.value.toLowerCase();
+  const filtered = currentData.filter(r=>{
+    return Object.values(r||{}).join(" ").toLowerCase().includes(q);
+  });
+
+  const orderedKeys = buildOrderedKeys();
+  const withPriority=[];
+  const withoutPriority=[];
+
+  filtered.forEach(r=>{
+    const pVal = priorityKey ? (r[priorityKey] ?? "") : "";
+    if(pVal || pVal === 0 || pVal === "0" || pVal === "0.0"){
+      if(String(pVal).trim() !== "") withPriority.push(r);
+      else withoutPriority.push(r);
+    } else {
+      withoutPriority.push(r);
+    }
+  });
+
+  if(priorityKey){
+    withPriority.sort((a,b)=>{
+      const aa = Number(a[priorityKey]) || 9999;
+      const bb = Number(b[priorityKey]) || 9999;
+      return aa - bb;
+    });
+  }
+
+  buildTable("priorityTable", withPriority, orderedKeys);
+  buildTable("noPriorityTable", withoutPriority, orderedKeys);
+  updateCards(withPriority, withoutPriority);
+}
+
+function buildTable(id, data, orderedKeys){
+  const table=document.getElementById(id);
+  const thead=table.querySelector("thead");
+  const tbody=table.querySelector("tbody");
+
+  if(!data || data.length===0){
+    thead.innerHTML="";
+    tbody.innerHTML="<tr><td style='padding:12px'>No Data</td></tr>";
+    return;
+  }
+
+  // headers
+  let head="<tr>";
+  for(let i=0;i<desiredDisplayCols.length;i++){
+    const display=desiredDisplayCols[i];
+    const key=orderedKeys[i];
+    if(key===null) continue;
+    head+=`<th data-col="${escapeHtml(display)}">${escapeHtml(display)}</th>`;
+  }
+  head+="</tr>";
+  thead.innerHTML=head;
+
+  // rows: wrap each cell value in .val so mobile CSS aligns label & value
+  tbody.innerHTML="";
+  data.forEach(row=>{
+    let tr="<tr>";
+    for(let i=0;i<desiredDisplayCols.length;i++){
+      const display=desiredDisplayCols[i];
+      const key=orderedKeys[i];
+      if(key===null) continue;
+      const raw = row[key] ?? "";
+      const valEsc = escapeHtml(raw);
+      if(priorityKey && key === priorityKey){
+        let cls="";
+        const num = Number(raw);
+        if(!isNaN(num) && num>=1 && num<=4) cls = `priority-${num}`;
+        tr+=`<td data-col="${escapeHtml(display)}" class="${cls}"><span class="val">${valEsc}</span></td>`;
+      } else if(String(raw).toUpperCase().includes("COMPLETED")){
+        tr+=`<td data-col="${escapeHtml(display)}"><span class="badge completed">${valEsc}</span></td>`;
+      } else {
+        tr+=`<td data-col="${escapeHtml(display)}"><span class="val">${valEsc}</span></td>`;
+      }
+    }
+    tr+="</tr>";
+    tbody.insertAdjacentHTML("beforeend", tr);
+  });
+}
+
+function updateCards(withP, withoutP){
+  let high=0,med=0,low=0;
+  withP.forEach(r=>{
+    const p = priorityKey ? Number(r[priorityKey]) : NaN;
+    if(p===1) high++;
+    else if(p===2) med++;
+    else if(!isNaN(p)) low++;
+  });
+  document.getElementById("totalCount").innerText = withP.length + withoutP.length;
+  document.getElementById("highCount").innerText = high;
+  document.getElementById("mediumCount").innerText = med;
+  document.getElementById("lowCount").innerText = low;
+  document.getElementById("noPriorityCount").innerText = withoutP.length;
+}
+
+function exportCSV(){
+  const orderedKeys = buildOrderedKeys();
+  const visibleDisplays=[];
+  const visibleKeys=[];
+  for(let i=0;i<desiredDisplayCols.length;i++){
+    if(orderedKeys[i]===null) continue;
+    visibleDisplays.push(desiredDisplayCols[i]);
+    visibleKeys.push(orderedKeys[i]);
+  }
+  let csv = visibleDisplays.join(",") + "\n";
+  currentData.forEach(r=>{
+    const row = visibleKeys.map(k=>`"${escapeCSV(String(r[k] ?? ""))}"`).join(",");
+    csv += row + "\n";
+  });
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "pending_data_filtered.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+function escapeCSV(s){ return String(s).replace(/"/g,'""'); }
+
+/* App view toggle */
+function toggleAppView(){
+  const enabled = document.body.classList.toggle("app-view");
+  // disable auto mobile-app when user forced app view so not to double-apply class
+  if(enabled) document.body.classList.remove("no-auto-app");
+  localStorage.setItem("appView", enabled ? "1" : "0");
+  appViewBtn.innerText = enabled ? "🧭 Desktop View" : "📱 App View";
+}
+
+/* initialize app view state from localStorage */
+(function initAppView(){
+  const v = localStorage.getItem("appView");
+  if(v === "1"){
+    document.body.classList.add("app-view");
+    appViewBtn.innerText = "🧭 Desktop View";
+  } else {
+    appViewBtn.innerText = "📱 App View";
+  }
+})();
+
+select.addEventListener("change",()=>loadData(select.value));
+searchBox.addEventListener("keyup",render);
+
+/* load default */
+loadData(select.value);
+</script>
+
+</body>
+</html>
