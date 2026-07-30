@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending Dashboard — Filtered Columns</title>
+<title>Pending Dashboard — Problems column & flexible widths</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -92,17 +92,20 @@ table{
   border-collapse:collapse;
   width:100%;
   background:#fff;
-  table-layout: auto;
+  table-layout: auto; /* let columns size to content */
   min-width:100%;
 }
 
 th,td{
   border:1px solid #ccc;
   padding:8px 10px;
-  white-space:nowrap;
+  /* allow wrap so cells size to content */
+  white-space:normal;
   text-align:left;
   font-size:13px;
   vertical-align:top;
+  word-break:break-word;
+  overflow-wrap:anywhere;
 }
 
 th{
@@ -129,15 +132,7 @@ th{
 
 .completed{background:#28a745;}
 
-/* Motor Location column styling: fixed width and wrap */
-th[data-col="Motor Location Update On"],
-td[data-col="Motor Location Update On"]{
-  width:220px;       /* fixed width - adjust as you like */
-  max-width:220px;
-  white-space:normal;
-  word-break:break-word;
-  overflow-wrap:anywhere;
-}
+/* remove any fixed-width rules — columns freely size to content */
 
 /* optionally reduce padding on small screens to fit more */
 @media (max-width:720px){
@@ -218,7 +213,8 @@ const select=document.getElementById("typeSelect");
 const searchBox=document.getElementById("searchBox");
 
 /* Desired visible columns (display order)
-   If keys in JSON differ in whitespace/case, script will try to match them. */
+   "Problems" will display but the script will try to match data using "Motor Location Update On"
+   (keeps backward-compatible matching with your JSON keys). */
 const desiredDisplayCols = [
   "PRIORITY",
   "W.O No",
@@ -229,8 +225,8 @@ const desiredDisplayCols = [
   "RPM",
   "Sl No",
   "Equipment details",
-  "Motor Location Update On",
-  "Job Completion Dat" /* if your JSON uses "Job Completion Date" adjust the string accordingly */
+  "Problems",                 /* visible caption - maps to JSON key for Motor Location Update On */
+  "Job Completion Dat"        /* if your JSON uses "Job Completion Date" adjust or it's matched fuzzy */
 ];
 
 /* Columns to explicitly exclude if present */
@@ -277,12 +273,31 @@ function findKeyMatch(displayName){
   return null;
 }
 
-/* Build the ordered list of actual JSON keys to render (matching desiredDisplayCols) */
+/* Build the ordered list of actual JSON keys to render (matching desiredDisplayCols)
+   For the "Problems" display label we attempt to match JSON keys related to Motor Location Update On. */
 function buildOrderedKeys(){
   const orderedKeys = [];
   for(const display of desiredDisplayCols){
-    const k = findKeyMatch(display);
-    orderedKeys.push(k || null); // keep null if not found so header still shows
+    let matchName = display;
+    if(display.toLowerCase() === "problems"){
+      // try to match original MOTOR LOCATION key variants if present in JSON
+      const candidateNames = [
+        "Motor Location Update On",
+        "Motor Location Update",
+        "Motor Location",
+        "Motor Location Updated On",
+        "motorlocationupdateon"
+      ];
+      let found = null;
+      for(const c of candidateNames){
+        found = findKeyMatch(c);
+        if(found) break;
+      }
+      // fallback to matching "Problems" itself
+      orderedKeys.push(found || findKeyMatch(display) || null);
+      continue;
+    }
+    orderedKeys.push(findKeyMatch(display) || null);
   }
   // remove any keys that match excludedNames
   return orderedKeys.map(k => {
@@ -308,7 +323,6 @@ function render(){
   filtered.forEach(r=>{
     const pVal = priorityKey ? (r[priorityKey] ?? "") : "";
     if(pVal || pVal === 0 || pVal === "0" || pVal === "0.0") {
-      // treat explicit zero/empty differently? For safety consider non-empty as priority
       if(String(pVal).trim() !== "") withPriority.push(r);
       else withoutPriority.push(r);
     } else {
@@ -346,12 +360,7 @@ function buildTable(id, data, orderedKeys){
   for(let i=0;i<desiredDisplayCols.length;i++){
     const display = desiredDisplayCols[i];
     const key = orderedKeys[i];
-    // skip excluded columns (key === null)
-    if(key === null){
-      // do not render this column at all
-      continue;
-    }
-    // add th with data-col attr (used to target Motor Location column)
+    if(key === null) continue; // skip excluded/missing
     head += `<th data-col="${escapeHtml(display)}">${escapeHtml(display)}</th>`;
   }
   head += "</tr>";
@@ -366,9 +375,7 @@ function buildTable(id, data, orderedKeys){
       const key = orderedKeys[i];
       if(key === null) continue; // skip excluded/missing
       let val = row[key] ?? "";
-      // styling for priority cell
       if(priorityKey && key === priorityKey){
-        // show numeric priority cell class if numeric
         let cls = "";
         const num = Number(val);
         if(!isNaN(num) && num >= 1 && num <= 4) cls = `priority-${num}`;
@@ -376,7 +383,6 @@ function buildTable(id, data, orderedKeys){
       } else if(String(val).toUpperCase().includes("COMPLETED")){
         tr += `<td data-col="${escapeHtml(display)}"><span class="badge completed">${escapeHtml(val)}</span></td>`;
       } else {
-        // for Motor Location column we want wrapped, but that is controlled by CSS on data-col attr
         tr += `<td data-col="${escapeHtml(display)}">${escapeHtml(val)}</td>`;
       }
     }
