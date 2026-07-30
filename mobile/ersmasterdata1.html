@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending Dashboard — Diagnostic & Retry</title>
+<title>Pending Dashboard — Diagnostic & Retry (fixed)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -147,7 +147,6 @@ const debugInfo = document.getElementById("debugInfo");
 
 function setStatus(text, type){
   statusMsg.innerText = text;
-  // type may be 'info','error','warn' - style later if needed
 }
 
 /* --- improved loadData with diagnostics & retry --- */
@@ -168,13 +167,11 @@ async function loadData(type){
       return;
     }
     const json = await res.json();
-    // JSON might be an object with 'data' or might be an array
     let data = [];
     if(Array.isArray(json)) data = json;
     else if(Array.isArray(json.data)) data = json.data;
     else if(json.rows && Array.isArray(json.rows)) data = json.rows;
     else {
-      // No recognizable array - report and show JSON link
       debugInfo.innerHTML += `<br><span class="kv">JSON preview:</span> ${escapeHtml(JSON.stringify(Object.keys(json)).slice(0,200))}`;
       setStatus("Loaded JSON but no array found (check JSON structure).");
       currentData = [];
@@ -205,10 +202,8 @@ function showFetchError(url, details){
   debugInfo.innerHTML += `<br><span class="kv">Error:</span> ${escapeHtml(String(details))}`;
 }
 
-/* retry button */
 function retryFetch(){ loadData(select.value); }
 
-/* sample data (small set to test UI) */
 function loadSampleData(){
   currentData = [
     {
@@ -245,7 +240,6 @@ function loadSampleData(){
   render();
 }
 
-/* helpers for matching/display */
 function normalize(s){ return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,""); }
 function findKeyMatch(displayName){
   const n = normalize(displayName);
@@ -260,7 +254,6 @@ function buildOrderedKeys(){
   const ordered = [];
   for(const display of desiredDisplayCols){
     if(display.toLowerCase() === "problems"){
-      // try various motor-location / problems key names
       const candidates = ["Motor Location Update On","Motor Location Update","Motor Location","Motor Location Updated On","Problems","problem","motorlocationupdateon"];
       let found = null;
       for(const c of candidates){ found = findKeyMatch(c); if(found) break; }
@@ -277,7 +270,6 @@ function buildOrderedKeys(){
   });
 }
 
-/* render tables */
 function render(){
   const q = (searchBox.value || "").toLowerCase();
   const filtered = currentData.filter(r => Object.values(r||{}).join(" ").toLowerCase().includes(q));
@@ -304,8 +296,6 @@ function buildTable(id, data, orderedKeys){
     tbody.innerHTML = "<tr><td style='padding:12px'>No Data</td></tr>";
     return;
   }
-
-  // build header row using desiredDisplayCols & orderedKeys
   let head = "<tr>";
   for(let i=0;i<desiredDisplayCols.length;i++){
     const display = desiredDisplayCols[i];
@@ -340,6 +330,7 @@ function buildTable(id, data, orderedKeys){
   });
 }
 
+/* FIXED: use the parameter name withoutP here (was withoutPriority causing ReferenceError) */
 function updateCards(withP, withoutP){
   let high=0,med=0,low=0;
   withP.forEach(r=>{
@@ -350,7 +341,7 @@ function updateCards(withP, withoutP){
   document.getElementById("highCount").innerText = high;
   document.getElementById("mediumCount").innerText = med;
   document.getElementById("lowCount").innerText = low;
-  document.getElementById("noPriorityCount").innerText = withoutPriority.length;
+  document.getElementById("noPriorityCount").innerText = withoutP.length;
 }
 
 function exportCSV(){
@@ -373,11 +364,10 @@ function exportCSV(){
   URL.revokeObjectURL(url);
 }
 
-/* small helpers */
 function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 function escapeCSV(s){ return String(s).replace(/"/g,'""'); }
 
-/* App view toggle (keeps parity with previous code) */
+/* App view toggle */
 function toggleAppView(){
   const enabled = document.body.classList.toggle("app-view");
   if(enabled) document.body.classList.remove("no-auto-app");
@@ -385,14 +375,13 @@ function toggleAppView(){
   document.getElementById("appViewBtn").innerText = enabled ? "🧭 Desktop View" : "📱 App View";
 }
 
-/* init app view from localStorage */
+/* init app view */
 (function initAppView(){
   const v = localStorage.getItem("appView");
   if(v === "1"){ document.body.classList.add("app-view"); document.getElementById("appViewBtn").innerText = "🧭 Desktop View"; }
   else document.getElementById("appViewBtn").innerText = "📱 App View";
 })();
 
-/* listeners */
 select.addEventListener("change", ()=> loadData(select.value));
 searchBox.addEventListener("keyup", render);
 
