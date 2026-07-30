@@ -88,11 +88,9 @@
         <tr>
           <th style="width:60px;text-align:center">TR NO</th>
           <th style="width:110px;text-align:center">DATE</th>
-          <th>DETAILS</th>
+          <th>DRIVE DETAILS</th>
           <th style="width:160px">CATEGORY</th>
-          <th style="width:70px;text-align:center">JOB TYPE</th>
-          <th style="width:60px;text-align:center">LINK</th>
-          <th style="width:160px">DRIVE</th>
+          <th style="width:70px;text-align:center">LINK</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -114,6 +112,10 @@ function normalize(v){
 function parseDateKey(v){
   if(!v) return null;
   // Accept dd-mm-yyyy or ISO etc.
+  if(typeof v === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+    const [d,m,y] = v.split('/').map(Number);
+    return new Date(y,m-1,d);
+  }
   if(typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v)) {
     const [d,m,y] = v.split('-').map(Number);
     return new Date(y,m-1,d);
@@ -121,12 +123,14 @@ function parseDateKey(v){
   const d = new Date(v);
   return isNaN(d) ? null : d;
 }
-function formatDateISO(d){
+function formatDateDDMMYYYY(d){
   if(!d) return "";
-  return d.toISOString().slice(0,10);
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
 }
 function getDriveKey(row){
-  // row[2]-row[3] used previously
   const a = row[2] || "";
   const b = row[3] || "";
   return `${a}-${b}`.trim();
@@ -156,7 +160,6 @@ async function loadAllHistory(){
         const hasBD = (r || []).some(cell => normalize(cell) === "BD");
         if(!hasBD) return;
 
-        // keep row as-is; attach metadata
         const date = parseDateKey(r[4]);
         const driveKey = getDriveKey(r);
         if(driveKey) driveSet.add(driveKey);
@@ -229,7 +232,6 @@ function renderTable(){
   }
   noData.style.display = "none";
 
-  // We will group by year header (from row.date)
   let currentYear = null;
   filteredRows.forEach(item=>{
     const r = item.row;
@@ -240,7 +242,7 @@ function renderTable(){
       const yr = document.createElement("tr");
       yr.className = "year-row";
       const td = document.createElement("td");
-      td.colSpan = 7;
+      td.colSpan = 5; // updated to 5 columns
       td.textContent = y || "Unknown year";
       yr.appendChild(td);
       tbody.appendChild(yr);
@@ -248,21 +250,20 @@ function renderTable(){
 
     const tr = document.createElement("tr");
     const trno = r[0] || "-";
-    const dateText = d ? formatDateISO(d) : (r[4] || "-");
+    const dateText = d ? formatDateDDMMYYYY(d) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "-");
     const details = r[5] || r[6] || "-";
     const category = r[7] || r[8] || "-";
-    // job type detection: find first exact BD cell or show '-'
-    const jobTypeCell = (r.find(c => normalize(c) === "BD") || "-");
-    const link = r[10] || ""; // original code used r[10] as a link fallback to jobbookMap
+    const link = r[10] || "";
+    const driveKey = item.driveKey || "";
+
+    const driveDetails = driveKey ? `${driveKey} — ${details}` : details;
 
     tr.innerHTML = `
       <td style="text-align:center">${escapeHtml(trno)}</td>
       <td style="text-align:center">${escapeHtml(dateText)}</td>
-      <td>${escapeHtml(details)}</td>
+      <td>${escapeHtml(driveDetails)}</td>
       <td>${escapeHtml(category)}</td>
-      <td style="text-align:center">${escapeHtml(jobTypeCell)}</td>
       <td style="text-align:center">${link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener">📎</a>` : '-'}</td>
-      <td>${escapeHtml(item.driveKey)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -271,18 +272,17 @@ function renderTable(){
 /* Export visible CSV */
 function exportCSV(){
   if(filteredRows.length === 0){ alert("No rows to export"); return; }
-  const header = ["TR NO","DATE","DETAILS","CATEGORY","JOB TYPE","LINK","DRIVE"];
+  const header = ["TR NO","DATE","DRIVE DETAILS","CATEGORY","LINK"];
   const rows = [ header.join(",") ];
   filteredRows.forEach(item=>{
     const r = item.row;
-    const d = item.date ? formatDateISO(item.date) : (r[4]||"");
-    const jobType = (r.find(c=>normalize(c)==="BD") || "");
+    const d = item.date ? formatDateDDMMYYYY(item.date) : (r[4] ? formatDateDDMMYYYY(parseDateKey(r[4])) : "");
+    const details = r[5] || r[6] || "";
+    const category = r[7] || r[8] || "";
     const link = r[10] || "";
-    const details = (r[5]||r[6]||"");
-    const category = (r[7]||r[8]||"");
+    const driveDetails = item.driveKey ? `${item.driveKey} — ${details}` : details;
     const trno = r[0] || "";
-    const drive = item.driveKey || "";
-    const line = [trno,d,escapeCSV(details),escapeCSV(category),jobType,escapeCSV(link),escapeCSV(drive)].join(",");
+    const line = [trno,escapeCSV(d),escapeCSV(driveDetails),escapeCSV(category),escapeCSV(link)].join(",");
     rows.push(line);
   });
   const blob = new Blob([rows.join("\n")], {type:'text/csv'});
@@ -307,9 +307,8 @@ document.getElementById("yearSelect").addEventListener("change", applyFilters);
 document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("exportBtn").addEventListener("click", exportCSV);
 
-/* Initialize - load all history */
+/* Initialize - add month select if not present and load all history */
 (async function init(){
-  // Insert an optional month select dynamically (so UI matches request)
   const monthSelect = document.getElementById("monthSelect");
   if(!monthSelect){
     const sel = document.createElement("select");
@@ -322,14 +321,11 @@ document.getElementById("exportBtn").addEventListener("click", exportCSV);
     label.textContent = "Month";
     group.appendChild(label);
     group.appendChild(sel);
-    // insert before search input
     wrap.insertBefore(group, document.getElementById("search").parentElement);
-    // fill months
     sel.innerHTML = '<option value="">All months</option>';
     for(let i=1;i<=12;i++){ const o=document.createElement("option"); o.value=i; o.textContent=monthNames[i-1]; sel.appendChild(o); }
     sel.addEventListener("change", applyFilters);
   }
-
   await loadAllHistory();
 })();
 </script>
