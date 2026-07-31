@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Board Master List — App View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --brand:#0f3057;
+    --accent:#1f4e79;
+    --bg:#f2f4f8;
+    --card:#ffffff;
+    --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family: "Segoe UI", Roboto, Arial, sans-serif;background:var(--bg);color:#0b1220;
+  }
+
+  /* APP HEADER (mobile first) */
+  .app-header{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--brand);color:#fff;position:sticky;top:0;z-index:200;
+  }
+  .app-header .left{display:flex;gap:8px;align-items:center}
+  .app-title{flex:1;text-align:center;font-weight:800;font-size:18px}
+  .app-sub{font-size:12px;opacity:.95}
+
+  .btn{
+    background:#fff;color:var(--brand);border:none;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,.08);
+  }
+  .btn.small{padding:8px 10px;font-size:13px;border-radius:8px}
+  .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.2)}
+
+  /* Container */
+  .page{padding:12px;max-width:1000px;margin:0 auto}
+
+  /* Controls (mobile stacked) */
+  .controls{
+    display:flex;flex-direction:column;gap:10px;margin-bottom:12px;
+  }
+  .controls-row{display:flex;gap:8px;align-items:center}
+  .controls input, .controls select{
+    padding:12px;border-radius:10px;border:1px solid #dfe6ef;background:#fff;font-size:15px;flex:1;
+  }
+  .control-actions{display:flex;gap:8px;justify-content:flex-end}
+
+  /* Stats card */
+  .stats{
+    background:var(--card);padding:10px;border-radius:12px;margin-bottom:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);
+    font-size:14px;
+  }
+
+  /* Table (scrollable horizontally) */
+  .table-wrap{background:var(--card);border-radius:12px;padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.04);overflow:auto}
+  table{width:100%;border-collapse:collapse;min-width:900px;font-size:13px}
+  th,td{padding:10px;border:1px solid #e6edf6;text-align:left;vertical-align:top}
+  thead th{background:var(--accent);color:#fff;position:sticky;top:0;z-index:1}
+  tr:hover{background:#f6fbff}
+  .clickable{color:#0066cc;cursor:pointer;font-weight:700}
+
+  /* small screens: keep everything single-column and increase hit targets */
+  @media (max-width: 900px){
+    .app-title{font-size:16px}
+    .controls-row{flex-direction:column;align-items:stretch}
+    .controls input, .controls select{font-size:15px;padding:12px}
+    .btn{padding:12px 14px;border-radius:10px}
+    table{min-width:720px;font-size:13px}
+  }
+
+  @media (max-width:480px){
+    .app-title{font-size:15px}
+    .controls input, .controls select{padding:10px;font-size:14px}
+    th,td{padding:8px;font-size:12px}
+  }
+
+  /* Floating home button for quick access */
+  .fab-home{
+    position:fixed;right:12px;bottom:12px;background:var(--brand);color:#fff;border:none;padding:12px;border-radius:50%;box-shadow:0 12px 30px rgba(0,0,0,.18);cursor:pointer;z-index:300;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="app-header" role="banner">
+  <div class="left">
+    <button class="btn small" onclick="goBack()">⬅</button>
+  </div>
+  <div class="app-title">
+    Board Master List
+    <div class="app-sub">Designed & maintained by Rakesh Chandra Sethy</div>
+  </div>
+  <div>
+    <button class="btn small" onclick="goHome()">🏠</button>
+  </div>
+</div>
+
+<!-- Page -->
+<div class="page">
+  <!-- Controls -->
+  <div class="controls" role="region" aria-label="filters">
+    <div class="controls-row">
+      <input id="searchBox" type="text" placeholder="🔎 Search all columns..." aria-label="Search">
+    </div>
+
+    <div class="controls-row">
+      <select id="substationFilter" aria-label="Filter by Substation">
+        <option value="">📊 Filter by Substation</option>
+      </select>
+
+      <div class="control-actions">
+        <button id="refreshBtn" class="btn small" onclick="refresh()">⤻ Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div id="statsBox" class="stats">Loading statistics...</div>
+
+  <!-- Table -->
+  <div class="table-wrap" role="region" aria-label="Board table">
+    <table id="boardTable" aria-live="polite">
+      <thead>
+        <tr>
+          <th>Sl. No</th>
+          <th>Substation</th>
+          <th>Voltage Level</th>
+          <th>Board Type</th>
+          <th>Board No</th>
+          <th>Board UID</th>
+          <th>Primary Source IC1</th>
+          <th>Secondary Source IC2</th>
+          <th>Tertiary Source IC3</th>
+          <th>Emergency Source</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Floating Home quick access -->
+<button class="fab-home" onclick="goHome()" aria-label="Home">🏠</button>
+
+<script>
+// Data sources (same as yours)
+const BOARD_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/board.json";
+const SLD_JSON   = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+const LT_JSON    = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
+
+let masterData = [];
+
+// Load from session cache or fetch
+async function loadBoardData(){
+  const cache = sessionStorage.getItem("boardCache");
+  if(cache){
+    try{
+      masterData = JSON.parse(cache);
+      initializePage();
+      return;
+    } catch(e){
+      sessionStorage.removeItem("boardCache");
+    }
+  }
+
+  try{
+    const res = await fetch(BOARD_JSON);
+    if(!res.ok) throw new Error("Board fetch failed");
+    const json = await res.json();
+    // keep compatibility: your JSON had .data
+    masterData = json.data || json.rows || [];
+    sessionStorage.setItem("boardCache", JSON.stringify(masterData));
+    initializePage();
+  }catch(err){
+    console.error("Failed to load board data", err);
+    document.getElementById("statsBox").textContent = "Failed to load data.";
+  }
+}
+
+function initializePage(){
+  buildTable(masterData);
+  populateSubstation();
+  updateStats(masterData);
+}
+
+// Build table rows
+function buildTable(data){
+  const tbody = document.querySelector("#boardTable tbody");
+  tbody.innerHTML = "";
+  data.forEach(row=>{
+    const tr = document.createElement("tr");
+
+    // create cells in safe manner
+    const cells = [
+      row["Sl. No"] || "",
+      row["Substation"] || "",
+      row["Voltage Level"] || "",
+      row["Board Type"] || "",
+      row["Board No"] || "",
+      row["Board UID"] || "",
+      row["Primary Source IC1  (Trf/Board No.)"] || "",
+      row["Secondary Source IC2 (Trf/Board No.)"] || "",
+      row["Tertiary Source IC3 (If Any)"] || "",
+      row["Emergency Source (If Any)"] || "",
+      row["Remarks"] || ""
+    ];
+
+    cells.forEach((c, i)=>{
+      const td = document.createElement("td");
+      td.textContent = c;
+      // add classes for clickable columns
+      if(i === 5) td.classList.add("clickable","uid"); // Board UID column
+      if(i >= 6 && i <= 9) td.classList.add("clickable","source");
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  addClickEvents(); // wire up after rendering
+}
+
+// populate substation select options
+function populateSubstation(){
+  const select = document.getElementById("substationFilter");
+  select.innerHTML = '<option value="">📊 Filter by Substation</option>';
+  const subs = Array.from(new Set(masterData.map(d => d["Substation"] || "").filter(Boolean))).sort();
+  subs.forEach(s => {
+    const o = document.createElement("option"); o.value = s; o.textContent = s; select.appendChild(o);
+  });
+}
+
+// stats summary
+function updateStats(data){
+  const total = data.length;
+  const voltageCount = {};
+  data.forEach(d => {
+    const v = d["Voltage Level"] || "Unknown";
+    voltageCount[v] = (voltageCount[v] || 0) + 1;
+  });
+  let html = `<strong>Total Boards:</strong> ${total} &nbsp; `;
+  Object.keys(voltageCount).forEach(v => html += `<strong>${v}:</strong> ${voltageCount[v]} &nbsp;`);
+  document.getElementById("statsBox").innerHTML = html;
+}
+
+// filter logic
+function filterData(){
+  const text = (document.getElementById("searchBox").value || "").toLowerCase();
+  const sub = document.getElementById("substationFilter").value || "";
+
+  const filtered = masterData.filter(row => {
+    const values = Object.values(row).join(" ").toLowerCase();
+    const matchesText = !text || values.includes(text);
+    const matchesSub = !sub || row["Substation"] === sub;
+    return matchesText && matchesSub;
+  });
+
+  buildTable(filtered);
+  updateStats(filtered);
+}
+
+// events
+document.getElementById("searchBox").addEventListener("input", () => filterData());
+document.getElementById("substationFilter").addEventListener("change", () => filterData());
+
+// click handlers on specific columns
+function addClickEvents(){
+  // Board UID clicks -> search in SLD or LT JSONs and redirect
+  document.querySelectorAll(".uid").forEach(cell=>{
+    cell.onclick = () => searchAndRedirect(cell.innerText.trim());
+  });
+
+  // Source columns -> open drive-viewer/index.html with breaker id
+  document.querySelectorAll(".source").forEach(cell=>{
+    cell.onclick = () => {
+      const val = cell.innerText.trim();
+      if(!val || val.toLowerCase() === "nil") return;
+      // open breaker id page
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=BREAKER-" + encodeURIComponent(val);
+    };
+  });
+}
+
+// search SLD and LT JSONs for board and redirect
+async function searchAndRedirect(boardId){
+  try{
+    const [sldRes, ltRes] = await Promise.all([fetch(SLD_JSON), fetch(LT_JSON)]);
+    const sld = await sldRes.json();
+    const lt = await ltRes.json();
+
+    // check sld.boards and lt.boards presence as in your original code
+    if(sld.boards && sld.boards[boardId]){
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/sld.html?id=" + encodeURIComponent(boardId);
+      return;
+    }
+    if(lt.boards && lt.boards[boardId]){
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/sld3.html?id=" + encodeURIComponent(boardId);
+      return;
+    }
+    alert("Board not found in SLD database");
+  }catch(e){
+    console.error(e);
+    alert("Error searching board data");
+  }
+}
+
+// refresh action
+function refresh(){
+  sessionStorage.removeItem("boardCache");
+  loadBoardData();
+}
+
+// navigation helpers (Home opens mobile index as requested)
+function goHome(){
+  location.href = "https://08electricaldata.github.io/index_mob.html";
+}
+function goBack(){ history.back(); }
+
+// initialize
+loadBoardData();
+
+</script>
+</body>
+</html>
