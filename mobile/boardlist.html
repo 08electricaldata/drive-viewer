@@ -278,7 +278,7 @@ function addClickEvents(){
       const val = cell.innerText.trim();
       if(!val || val.toLowerCase() === "nil") return;
       // open breaker id page
-      window.location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=BREAKER-" + encodeURIComponent(val);
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/index.html?id=BREAKER-" + encodeURIComponent(val);
     };
   });
 }
@@ -292,11 +292,11 @@ async function searchAndRedirect(boardId){
 
     // check sld.boards and lt.boards presence as in your original code
     if(sld.boards && sld.boards[boardId]){
-      window.location.href = "https://08electricaldata.github.io/drive-viewer/sld.html?id=" + encodeURIComponent(boardId);
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/sld.html?id=" + encodeURIComponent(boardId);
       return;
     }
     if(lt.boards && lt.boards[boardId]){
-      window.location.href = "https://08electricaldata.github.io/drive-viewer/sld3.html?id=" + encodeURIComponent(boardId);
+      window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/sld3.html?id=" + encodeURIComponent(boardId);
       return;
     }
     alert("Board not found in SLD database");
