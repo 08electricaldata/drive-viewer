@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ERS MASTER DATA — App View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --brand:#003f88;
+    --accent:#1f4e79;
+    --bg:#f2f6ff;
+    --card:#ffffff;
+    --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial, Helvetica, sans-serif;background:var(--bg);color:#0b1220}
+
+  /* APP HEADER */
+  .app-header{display:flex;align-items:center;gap:12px;padding:12px;background:var(--brand);color:#fff;position:sticky;top:0;z-index:300}
+  .app-left{display:flex;gap:8px;align-items:center}
+  .app-title{flex:1;text-align:center;font-weight:800;font-size:18px}
+  .app-sub{font-size:12px;opacity:.9}
+
+  .btn{background:#fff;color:var(--brand);border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.2)}
+
+  /* Page */
+  .page{padding:12px;max-width:1100px;margin:0 auto}
+
+  /* Controls (stacked on mobile) */
+  .controls{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .controls-row{display:flex;gap:8px;align-items:center}
+  .controls input, .controls select{padding:10px;border-radius:10px;border:1px solid #dfe6ef;background:#fff;font-size:15px;flex:1}
+  .controls .actions{display:flex;gap:8px}
+
+  /* Stats */
+  .stats{background:var(--card);padding:10px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:12px;font-size:14px}
+
+  /* Card list (mobile) */
+  .card-list{display:flex;flex-direction:column;gap:10px}
+  .card{
+    background:var(--card);padding:12px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.04);
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .card-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .card-left{display:flex;gap:10px;align-items:center;min-width:0}
+  .badge{background:#eef6ff;color:var(--brand);padding:6px 8px;border-radius:8px;font-weight:800}
+  .card-title{font-weight:800;color:var(--brand);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-sub{font-size:13px;color:var(--muted)}
+  .card-meta{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:#f4f6fb;padding:6px 8px;border-radius:8px;font-size:12px;color:#0b3b74;font-weight:700}
+
+  /* Table (desktop) */
+  .table-wrap{display:none;background:var(--card);border-radius:12px;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,.04);overflow:auto}
+  table{width:100%;border-collapse:collapse;min-width:900px}
+  th,td{padding:10px;border:1px solid #e6edf6;text-align:center;font-size:13px}
+  thead th{background:var(--accent);color:#fff;position:sticky;top:0}
+  tr:hover{background:#f6fbff}
+  .clickable{color:#0066cc;cursor:pointer;font-weight:700}
+
+  /* Responsive: show table on larger screens */
+  @media(min-width:900px){
+    .card-list{display:none}
+    .table-wrap{display:block}
+    .controls{flex-direction:row;align-items:center}
+    .controls-row{flex:1}
+  }
+
+  /* small adjustments */
+  @media(max-width:480px){
+    .app-title{font-size:16px}
+    .card-title{font-size:14px}
+    .controls input, .controls select{font-size:14px;padding:10px}
+    .btn{padding:8px 10px}
+  }
+
+  /* floating home button */
+  .fab-home{position:fixed;right:12px;bottom:12px;background:var(--brand);color:#fff;border:none;padding:12px;border-radius:50%;box-shadow:0 12px 30px rgba(0,0,0,.18);cursor:pointer;z-index:400}
+</style>
+</head>
+<body>
+
+<!-- header -->
+<div class="app-header" role="banner">
+  <div class="app-left">
+    <button class="btn" onclick="goBack()">⬅</button>
+  </div>
+  <div class="app-title">
+    ERS MASTER DATA
+    <div class="app-sub">Designed and maintained by Rakesh Chandra Sethy</div>
+  </div>
+  <div>
+    <button class="btn" onclick="goHome()">🏠</button>
+  </div>
+</div>
+
+<!-- page -->
+<div class="page" role="main">
+  <!-- controls -->
+  <div class="controls" role="region" aria-label="filters">
+    <div class="controls-row">
+      <input id="search" placeholder="🔎 Search any field">
+    </div>
+    <div class="controls-row">
+      <select id="areaFilter"><option value="">All Areas</option></select>
+      <select id="statusFilter"><option value="">All Status</option></select>
+      <select id="ersFilter"><option value="">All ERS Status</option></select>
+      <div class="actions">
+        <button id="refreshBtn" class="btn" onclick="refresh()">⤻ Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="statsBox" class="stats">Loading statistics…</div>
+
+  <!-- mobile card list -->
+  <div id="cardList" class="card-list" aria-live="polite"></div>
+
+  <!-- desktop table -->
+  <div class="table-wrap" id="tableWrap" aria-hidden="true">
+    <table id="tbl" aria-label="ERS master table">
+      <thead>
+        <tr>
+          <th>SL</th><th>DATE</th><th>W.O NO</th><th>ERS STATUS</th>
+          <th>STATUS</th><th>SHIFTED TO</th><th>USE STATUS</th>
+          <th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th>
+          <th>MOUNT</th><th>MOTOR SL</th><th>AREA</th>
+          <th>EQPT DETAILS</th><th>TYPE</th><th>DRIVE1</th><th>DRIVE2</th>
+          <th>DATE2</th><th>W.O2</th><th>KW2</th><th>MAKE2</th>
+          <th>MOUNT2</th><th>M/C NO</th><th>AREA2</th>
+          <th>LAST MOTORTR</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<button class="fab-home" title="Home" onclick="goHome()">🏠</button>
+
+<script>
+/* Data and URLs */
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
+
+/* Helpers */
+function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
+function goBack(){ history.back(); }
+function refresh(){ sessionStorage.removeItem('ersCache'); load(); }
+
+function parseDate(v){
+  if(!v) return null;
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+function fmt(d){
+  if(!d) return "";
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+/* State */
+let rows = [];
+let shiftedColors = {}, statusColors = {};
+let areas = new Set(), statuses = new Set(), ersStatuses = new Set();
+
+/* Load data (with cache) */
+async function load(){
+  const cached = sessionStorage.getItem('ersCache');
+  if(cached){
+    try{
+      rows = JSON.parse(cached);
+      prepareAndRender();
+      return;
+    }catch(e){ sessionStorage.removeItem('ersCache'); }
+  }
+
+  try{
+    const res = await fetch(JSON_URL);
+    const j = await res.json();
+    rows = j.rows || [];
+    // Sort by Column A descending (column 0)
+    rows.sort((a,b) => (b[0]||0) - (a[0]||0));
+    sessionStorage.setItem('ersCache', JSON.stringify(rows));
+    prepareAndRender();
+  }catch(e){
+    console.error("Failed to load ERS data", e);
+    document.getElementById('statsBox').textContent = "Failed to load data.";
+  }
+}
+
+/* Prepare colors & filter sets then render */
+function prepareAndRender(){
+  shiftedColors = {}; statusColors = {};
+  areas = new Set(); statuses = new Set(); ersStatuses = new Set();
+  let h1 = 0, h2 = 180;
+
+  rows.forEach(r=>{
+    if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]] = `hsl(${(h1+=35)%360},68%,40%)`;
+    if(r[4] && !statusColors[r[4]]) statusColors[r[4]] = `hsl(${(h2+=35)%360},60%,45%)`;
+    if(r[13]) areas.add(r[13]);
+    if(r[4]) statuses.add(r[4]);
+    if(r[3]) ersStatuses.add(r[3]);
+  });
+
+  populateFilters();
+  updateStats(rows);
+  render();
+}
+
+/* Populate filter selects */
+function populateFilters(){
+  const areaSel = document.getElementById('areaFilter');
+  areaSel.innerHTML = '<option value="">All Areas</option>';
+  Array.from(areas).sort().forEach(v => {
+    const o = document.createElement('option'); o.value = v; o.textContent = v; areaSel.appendChild(o);
+  });
+
+  const statusSel = document.getElementById('statusFilter');
+  statusSel.innerHTML = '<option value="">All Status</option>';
+  Array.from(statuses).sort().forEach(v => {
+    const o = document.createElement('option'); o.value = v; o.textContent = v; statusSel.appendChild(o);
+  });
+
+  const ersSel = document.getElementById('ersFilter');
+  ersSel.innerHTML = '<option value="">All ERS Status</option>';
+  Array.from(ersStatuses).sort().forEach(v => {
+    const o = document.createElement('option'); o.value = v; o.textContent = v; ersSel.appendChild(o);
+  });
+}
+
+/* Update stats */
+function updateStats(data){
+  const total = data.length;
+  const counts = {};
+  data.forEach(r => {
+    const v = r[13] || 'Unknown';
+    counts[v] = (counts[v]||0)+1;
+  });
+  let html = `<strong>Total:</strong> ${total} &nbsp;&nbsp;`;
+  Object.keys(counts).slice(0,8).forEach(k => html += `<strong>${k}:</strong> ${counts[k]} &nbsp;`);
+  document.getElementById('statsBox').innerHTML = html;
+}
+
+/* Render both cards (mobile) and table (desktop) */
+function render(){
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  const areaVal = document.getElementById('areaFilter').value;
+  const statusVal = document.getElementById('statusFilter').value;
+  const ersVal = document.getElementById('ersFilter').value;
+
+  const filtered = rows.filter(r => {
+    // hide if both C and T blank as original
+    if(!r[2] && !r[19]) return false;
+    if(q && !r.join(' ').toLowerCase().includes(q)) return false;
+    if(areaVal && r[13] !== areaVal) return false;
+    if(statusVal && r[4] !== statusVal) return false;
+    if(ersVal && r[3] !== ersVal) return false;
+    return true;
+  });
+
+  updateStats(filtered);
+  renderCards(filtered);
+  renderTable(filtered);
+}
+
+/* Cards (mobile) */
+function renderCards(data){
+  const list = document.getElementById('cardList');
+  list.innerHTML = '';
+  data.forEach(r=>{
+    const trNo = r[0] || '';
+    const date = fmt(parseDate(r[1]));
+    const wo = r[2] || '';
+    const ers = r[3] || '';
+    const status = r[4] || '';
+    const shiftedTo = r[5] || '';
+    const area = r[13] || '';
+    const details = r[14] || '';
+
+    const ersColor = ers ? (String(ers).toUpperCase().includes('COMPLETED') ? '#28a745' : '#007bff') : '';
+    const statusColor = statusColors[status] || '';
+    const shiftedColor = shiftedColors[shiftedTo] || '';
+
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-left">
+          <div class="badge">${trNo}</div>
+          <div style="min-width:0">
+            <div class="card-title">${wo || '(WO)'}</div>
+            <div class="card-sub">${date} • ${area}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800;color:#0b1220">${status}</div>
+          <div style="margin-top:6px;font-size:12px">${shiftedTo}</div>
+        </div>
+      </div>
+
+      <div class="card-meta">
+        <div class="chip" style="background:${ersColor||'#eef6ff'};color:${ersColor?'#fff':'#0b3b74'}">${ers || 'ERS'}</div>
+        <div class="chip">${r[6]||''} / ${r[7]||''} kW</div>
+        <div class="chip">Make: ${r[8]||''}</div>
+      </div>
+
+      <div style="margin-top:6px;color:#333;font-size:13px">${details}</div>
+    `;
+
+    // clicking card opens drive viewer history for drive1 if present (use same logic as previous pages)
+    const driveKey = (r[16] || '').toString().trim();
+    if(driveKey){
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', ()=> {
+        window.location.href = 'https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=' + encodeURIComponent(driveKey);
+      });
+    }
+
+    list.appendChild(card);
+  });
+}
+
+/* Table (desktop) */
+function renderTable(data){
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  data.forEach(r=>{
+    const tr = document.createElement('tr');
+
+    // color badges for ers, status and shifted
+    const ersColor = r[3] ? (String(r[3]).toUpperCase().includes('COMPLETED') ? '#28a745' : '#007bff') : '';
+    const statusColor = statusColors[r[4]] || '';
+    const shiftedColor = shiftedColors[r[5]] || '';
+
+    tr.innerHTML = `
+<td>${r[0]||''}</td>
+<td>${fmt(parseDate(r[1]))}</td>
+<td>${r[2]||''}</td>
+<td style="background:${ersColor};color:${ersColor?'#fff':''}">${r[3]||''}</td>
+<td style="background:${statusColor};color:${statusColor?'#fff':''}">${r[4]||''}</td>
+<td style="background:${shiftedColor};color:${shiftedColor?'#fff':''}">${r[5]||''}</td>
+<td>${r[6]||''}</td>
+<td>${r[7]||''}</td>
+<td>${r[8]||''}</td>
+<td>${r[9]||''}</td>
+<td>${r[10]||''}</td>
+<td>${r[11]||''}</td>
+<td>${r[12]||''}</td>
+<td>${r[13]||''}</td>
+<td>${r[14]||''}</td>
+<td>${r[15]||''}</td>
+<td class="clickable">${r[16]||''}</td>
+<td>${r[17]||''}</td>
+<td>${fmt(parseDate(r[18]))}</td>
+<td>${r[19]||''}</td>
+<td>${r[20]||''}</td>
+<td>${r[21]||''}</td>
+<td>${r[22]||''}</td>
+<td>${r[23]||''}</td>
+<td>${r[24]||''}</td>
+<td>${r[25]||''}</td>
+    `;
+    // clicking on drive1 column should open drive history (cell index 16)
+    const driveCell = tr.querySelector('td.clickable');
+    if(driveCell && driveCell.textContent.trim()){
+      driveCell.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const driveKey = driveCell.textContent.trim();
+        window.location.href = 'https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=' + encodeURIComponent(driveKey);
+      });
+    }
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* Wire controls */
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('areaFilter').addEventListener('change', render);
+document.getElementById('statusFilter').addEventListener('change', render);
+document.getElementById('ersFilter').addEventListener('change', render);
+
+/* Kick off load */
+load();
+</script>
+</body>
+</html>
