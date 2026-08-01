@@ -159,19 +159,19 @@ function goHome(){ window.location.href = "https://08electricaldata.github.io/in
 function goDriveInfo(){
   const id = getDriveFromURL();
   if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id);
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
 }
 
 function goHistory(){
   const id = getDriveFromURL();
   if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(id);
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
 }
 
 function goDrawing(){
   const id = getDriveFromURL();
   if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" + encodeURIComponent(id);
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/drawing.html?id=" + encodeURIComponent(id);
 }
 
 /* Check drawing availability (non-blocking) */
