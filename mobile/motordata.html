@@ -66,7 +66,7 @@ const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electrica
 function qId(){ return new URLSearchParams(location.search).get("id") || ""; }
 function goBack(){ history.back(); }
 function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
-function goDrive(){ const id=qId(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id); }
+function goDrive(){ const id=qId(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id); }
 function goPLC(){ const id=qId(); if(!id) return; location.href = "plc.html?id=" + encodeURIComponent(id); }
 function safe(v){ return v===undefined||v===null ? "" : String(v); }
 function esc(s){ return safe(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
