@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Motor Details — App View</title>
+<title>Motor Details — Compact App View</title>
 
 <style>
   /* Reset & base */
@@ -12,58 +12,58 @@
   a{color:inherit}
 
   /* Top credit */
-  .top-credit{
-    background:#0b3b74;color:#fff;text-align:center;padding:10px 8px;font-weight:700;font-size:13px;
-  }
+  .top-credit{background:#0b3b74;color:#fff;text-align:center;padding:10px 8px;font-weight:700;font-size:13px}
 
   /* Container */
   .wrap{max-width:1100px;margin:10px auto;padding:12px}
 
   /* Header */
-  .header{
-    text-align:center;padding:10px 6px 6px;
-  }
+  .header{text-align:center;padding:8px 6px}
   .header h1{color:#0b3b74;font-size:18px;margin-bottom:4px;font-weight:800}
   .header h2{color:#444;font-size:13px;font-weight:600;margin-bottom:4px}
   .meta{font-size:12px;color:#556;margin-bottom:6px}
 
   /* Buttons */
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
-  .btn{background:#fff;color:#0b3b74;border:1px solid rgba(11,59,116,0.12);padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(11,59,116,0.06);}
-  .btn.small{padding:8px 10px;font-size:13px;border-radius:8px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+  .btn{background:#fff;color:#0b3b74;border:1px solid rgba(11,59,116,0.12);padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(11,59,116,0.06)}
+  .btn.small{padding:7px 9px;font-size:13px;border-radius:8px}
   .btn.primary{background:linear-gradient(90deg,#0b3b74,#0050aa);color:#fff;border:none}
   .btn.full{width:100%}
 
-  /* Info grid - compact */
+  /* Compact info block */
   .info-card{background:#fff;padding:10px;border-radius:10px;box-shadow:0 8px 20px rgba(3,63,136,0.04);margin-bottom:10px}
-  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}
-  .info-item{padding:6px;border-radius:8px;background:linear-gradient(180deg,#fbfdff,#fff);display:flex;flex-direction:column}
-  .info-label{font-size:11px;color:#3a5a7a;font-weight:800;margin-bottom:4px}
-  .info-value{font-size:14px;color:#0c2333;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .compact-lines{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#0b2333}
+  .compact-line{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .compact-item{font-weight:700;background:#f1f7ff;padding:6px 8px;border-radius:8px;font-size:13px;color:#0b3b74}
+  .compact-item.small{font-weight:600;background:transparent;padding:0;color:#233}
 
-  /* compact small tables inside collapsible sections */
+  /* details (collapsible) */
   details{background:transparent;border-radius:8px;margin-bottom:10px}
   summary{cursor:pointer;list-style:none;outline:none;padding:10px;border-radius:8px;background:#fff;display:flex;justify-content:space-between;align-items:center;box-shadow:0 6px 20px rgba(3,63,136,0.04)}
   summary .title{font-weight:800;color:#0b3b74;font-size:14px}
-  summary .count{font-size:12px;color:#556}
+  summary .count{font-size:12px;color:#666}
   .detail-body{padding:8px;background:#fff;border-radius:0 0 10px 10px;margin-top:0;box-shadow:0 6px 20px rgba(3,63,136,0.04)}
-  .small-table{width:100%;border-collapse:collapse;font-size:12px}
-  .small-table th, .small-table td{padding:6px;border:1px solid #e9f0ff;text-align:left}
-  .small-table th{background:#eef6ff;color:#0b3b74;font-weight:700}
-  .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* dense table for spare/pending with small font */
+  .dense-table{width:100%;border-collapse:collapse;font-size:12px}
+  .dense-table th, .dense-table td{padding:6px;border:1px solid #eef6ff;text-align:left}
+  .dense-table th{background:#eef6ff;color:#0b3b74;font-weight:700}
+  .dense-row td{padding:6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   /* message and loader */
-  .loader,.no-data{text-align:center;padding:18px;font-weight:700;color:#556}
+  .loader,.no-data{text-align:center;padding:14px;font-weight:700;color:#556}
 
   /* Responsive adjustments */
   @media(max-width:700px){
-    .info-grid{grid-template-columns:1fr 1fr}
-    .toolbar{gap:6px}
-    .btn{padding:8px 10px;font-size:13px}
+    .compact-item{font-size:12px;padding:5px 7px}
+    .dense-table th, .dense-table td{padding:5px;font-size:11px}
+    .btn{padding:8px 10px}
     .header h1{font-size:16px}
   }
   @media(max-width:420px){
-    .info-grid{grid-template-columns:1fr}
+    .compact-lines{font-size:12px}
+    .compact-item{font-size:12px}
+    .dense-table th, .dense-table td{font-size:10.5px;padding:4px}
   }
 </style>
 </head>
@@ -78,48 +78,38 @@
 <script>
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
 
-/* helper to get id param */
 function getID(){ return new URLSearchParams(location.search).get("id") || ""; }
 function goBack(){ history.back(); }
 function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
-/* use index2 for drive info for mobile consistency */
-function goDrive(){ const id=getID(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id); }
+function goDrive(){ const id=getID(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id); }
 function goPLC(){ const id=getID(); if(!id) return; location.href = "plc.html?id=" + encodeURIComponent(id); }
 
-function formatDate(v){
-  if(!v) return "N/A";
-  const d=new Date(v);
-  if(isNaN(d)) return v;
-  return d.toLocaleDateString('en-GB');
-}
+function safe(v){ return (v===undefined||v===null) ? "" : String(v); }
+function formatDate(v){ if(!v) return "N/A"; const d=new Date(v); if(isNaN(d)) return v; return d.toLocaleDateString('en-GB'); }
 
 async function loadMotor(){
   const app = document.getElementById('app');
   const id = getID().trim();
-  if(!id){
-    app.innerHTML = `<div class="no-data">No Drive ID supplied.</div>`;
-    return;
-  }
+  if(!id){ app.innerHTML = `<div class="no-data">No Drive ID supplied.</div>`; return; }
 
   try{
     const res = await fetch(JSON_URL);
     if(!res.ok) throw new Error('Failed to fetch JSON');
     const data = await res.json();
 
-    // find row where column D (index 3) matches id (case-insensitive)
+    // locate row by equipment number (column index 3)
     let row = null;
     for(const r of (data.rows || [])){
-      if(String(r[3] || "").trim().toUpperCase() === id.toUpperCase()){
+      if(String(r[3]||"").trim().toUpperCase() === id.toUpperCase()){
         row = r; break;
       }
     }
 
-    // build header + toolbar
     let html = `
       <div class="header">
         <h1>MOTOR DETAILS</h1>
-        <h2>${id}</h2>
-        <div class="meta">Last Updated : ${data.updated ? new Date(data.updated).toLocaleString('en-GB') : 'Unknown'}</div>
+        <h2>${escapeHtml(id)}</h2>
+        <div class="meta">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString('en-GB') : 'Unknown'}</div>
       </div>
 
       <div class="toolbar" role="toolbar" aria-label="actions">
@@ -131,104 +121,84 @@ async function loadMotor(){
     `;
 
     if(!row){
-      html += `<div class="no-data">Motor details not found for <b>${id}</b></div>`;
-      app.innerHTML = html;
-      return;
+      html += `<div class="no-data">Motor details not found for <b>${escapeHtml(id)}</b></div>`;
+      app.innerHTML = html; return;
     }
 
-    // info grid: use smaller labels and values
+    // Compact info lines
+    const KW = safe(row[5]);
+    const MAKE = safe(row[7]);
+    const FRAME = safe(row[8]);
+    const RPM = safe(row[9]);
+    const FLC = safe(row[10]);
+    const MTG = safe(row[11]);
+
     html += `<div class="info-card">
-      <div class="info-grid">
-        <div class="info-item"><div class="info-label">KW</div><div class="info-value">${row[5]||''}</div></div>
-        <div class="info-item"><div class="info-label">MAKE</div><div class="info-value">${row[7]||''}</div></div>
-        <div class="info-item"><div class="info-label">FRAME SIZE</div><div class="info-value">${row[8]||''}</div></div>
-        <div class="info-item"><div class="info-label">RPM</div><div class="info-value">${row[9]||''}</div></div>
-        <div class="info-item"><div class="info-label">FLC</div><div class="info-value">${row[10]||''}</div></div>
-        <div class="info-item"><div class="info-label">MTG</div><div class="info-value">${row[11]||''}</div></div>
+      <div class="compact-lines">
+        <div class="compact-line">
+          <div class="compact-item">${'KW-'+KW}</div>
+          <div class="compact-item">${'FRAME SIZE-'+FRAME}</div>
+          <div class="compact-item">${'MAKE-'+MAKE}</div>
+        </div>
+        <div class="compact-line">
+          <div class="compact-item">${'RPM-'+RPM}</div>
+          <div class="compact-item">${'FLC-'+FLC}</div>
+          <div class="compact-item">${'MTG-'+MTG}</div>
+        </div>
       </div>
     </div>`;
 
-    // last motor replacement / last PM
-    html += `<div style="margin-top:10px;background:#fff;padding:10px;border-radius:10px;box-shadow:0 6px 20px rgba(3,63,136,0.04);">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <div style="flex:1;"><div style="font-size:12px;color:#3a5a7a;font-weight:800">Last Motor Replacement</div>
-          <div style="font-size:14px;font-weight:700">${formatDate(row[37])}</div></div>
-        <div style="flex:1;"><div style="font-size:12px;color:#3a5a7a;font-weight:800">Last Motor PM</div>
-          <div style="font-size:14px;font-weight:700">${formatDate(row[38])}</div></div>
-      </div>
-    </div>`;
-
-    // Spare Motor Details (collapsible)
-    const spareData = (row[24]||"").trim();
+    // Spare Motor Details (compact)
+    const spareData = safe(row[24]).trim();
     let spareHtml = '';
     if(spareData){
-      const spareList = spareData.split("@").map(s=>s.trim()).filter(Boolean);
-      spareHtml += `<table class="small-table">`;
-      spareHtml += `<thead><tr><th style="width:32px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOCATION</th></tr></thead><tbody>`;
+      const spareList = spareData.split('@').map(s=>s.trim()).filter(Boolean);
+      spareHtml += `<table class="dense-table"><thead><tr><th style="width:28px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOC</th></tr></thead><tbody>`;
       spareList.forEach((it, idx)=>{
-        const parts = it.split("!").map(p=>p? p.trim() : "");
-        spareHtml += `<tr>
-          <td style="text-align:center">${idx+1}</td>
-          <td>${parts[0]||''}</td>
-          <td>${parts[1]||''}</td>
-          <td>${parts[2]||''}</td>
-          <td>${parts[3]||''}</td>
-          <td>${parts[4]||''}</td>
-          <td>${parts[5]||''}</td>
-          <td>${parts[6]||''}</td>
-          <td>${parts[7]||''}</td>
-        </tr>`;
+        const parts = it.split('!').map(p=>p? p.trim() : '');
+        spareHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${escapeHtml(parts[0]||'')}</td><td>${escapeHtml(parts[1]||'')}</td><td>${escapeHtml(parts[2]||'')}</td><td>${escapeHtml(parts[3]||'')}</td><td>${escapeHtml(parts[4]||'')}</td><td>${escapeHtml(parts[5]||'')}</td><td>${escapeHtml(parts[6]||'')}</td><td>${escapeHtml(parts[7]||'')}</td></tr>`;
       });
-      spareHtml += `</tbody></table>`;
+      spareHtml += '</tbody></table>';
     } else {
-      spareHtml = `<div style="padding:10px;color:#666">No Spare Motor Details Available</div>`;
+      spareHtml = `<div style="padding:8px;color:#666">No Spare Motor Details Available</div>`;
     }
 
-    html += `<details open style="margin-top:10px">
-      <summary><span style="font-weight:800;color:#0b3b74">Spare Motor Details</span><span style="font-size:12px;color:#666;margin-left:8px">${spareData ? '' : '(empty)'}</span></summary>
-      <div class="detail-body" style="padding:8px 0">${spareHtml}</div>
+    html += `<details open>
+      <summary><span class="title">Spare Motor Details</span><span class="count">${spareData ? '' : '(empty)'}</span></summary>
+      <div class="detail-body">${spareHtml}</div>
     </details>`;
 
-    // Pending Motors at ERS (collapsible)
-    const pendingData = (row[26]||"").trim();
+    // Pending Motors at ERS (compact)
+    const pendingData = safe(row[26]).trim();
     let pendingHtml = '';
     if(pendingData){
-      const pendingList = pendingData.split("@").map(s=>s.trim()).filter(Boolean);
-      pendingHtml += `<table class="small-table">`;
-      pendingHtml += `<thead><tr><th style="width:32px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOCATION</th></tr></thead><tbody>`;
+      const pendingList = pendingData.split('@').map(s=>s.trim()).filter(Boolean);
+      pendingHtml += `<table class="dense-table"><thead><tr><th style="width:28px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOC</th></tr></thead><tbody>`;
       pendingList.forEach((it, idx)=>{
-        const parts = it.split("!").map(p=>p? p.trim() : "");
-        pendingHtml += `<tr>
-          <td style="text-align:center">${idx+1}</td>
-          <td>${parts[0]||''}</td>
-          <td>${parts[1]||''}</td>
-          <td>${parts[2]||''}</td>
-          <td>${parts[3]||''}</td>
-          <td>${parts[4]||''}</td>
-          <td>${parts[5]||''}</td>
-          <td>${parts[6]||''}</td>
-          <td>${parts[7]||''}</td>
-        </tr>`;
+        const parts = it.split('!').map(p=>p? p.trim() : '');
+        pendingHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${escapeHtml(parts[0]||'')}</td><td>${escapeHtml(parts[1]||'')}</td><td>${escapeHtml(parts[2]||'')}</td><td>${escapeHtml(parts[3]||'')}</td><td>${escapeHtml(parts[4]||'')}</td><td>${escapeHtml(parts[5]||'')}</td><td>${escapeHtml(parts[6]||'')}</td><td>${escapeHtml(parts[7]||'')}</td></tr>`;
       });
-      pendingHtml += `</tbody></table>`;
+      pendingHtml += '</tbody></table>';
     } else {
-      pendingHtml = `<div style="padding:10px;color:#666">No Pending Motors Available</div>`;
+      pendingHtml = `<div style="padding:8px;color:#666">No Pending Motors Available</div>`;
     }
 
-    html += `<details style="margin-top:10px">
-      <summary><span style="font-weight:800;color:#0b3b74">Pending Motors at ERS</span><span style="font-size:12px;color:#666;margin-left:8px">${pendingData ? '' : '(empty)'}</span></summary>
-      <div class="detail-body" style="padding:8px 0">${pendingHtml}</div>
+    html += `<details>
+      <summary><span class="title">Pending Motors at ERS</span><span class="count">${pendingData ? '' : '(empty)'}</span></summary>
+      <div class="detail-body">${pendingHtml}</div>
     </details>`;
 
     app.innerHTML = html;
 
   } catch(err){
     console.error(err);
-    app.innerHTML = `<div class="no-data">Unable to load Motor Details.<br><br>${err.message || ''}</div>`;
+    app.innerHTML = `<div class="no-data">Unable to load Motor Details.<br><br>${escapeHtml(err.message || '')}</div>`;
   }
 }
 
-/* start */
+/* small helper */
+function escapeHtml(s){ if(s===undefined||s===null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 loadMotor();
 </script>
 </body>
