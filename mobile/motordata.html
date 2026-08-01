@@ -129,15 +129,15 @@ function goHome(){ location.href = "https://08electricaldata.github.io/index_mob
 
 function goDriveInfo(){
   const id = getDriveFromURL(); if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id);
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
 }
 function goHistory(){
   const id = getDriveFromURL(); if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(id);
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
 }
 function goDrawing(){
   const id = getDriveFromURL(); if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" + encodeURIComponent(id);
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/drawing.html?id=" + encodeURIComponent(id);
 }
 
 async function checkDrawingAvailability(id){
@@ -160,9 +160,9 @@ function buildCompactHTML(title, data){
   data.forEach(row=>{
     html += `<div class="compact-row" role="listitem" tabindex="0">
       <div class="row-line">
-        <div class="col-small"><div class="card-field">Signal</div><div class="value">${escapeHtml(row.signal)}</div></div>
-        <div class="col-small"><div class="card-field">Tag</div><div class="value">${escapeHtml(row.tag)}</div></div>
-        <div class="col-small"><div class="card-field">Address</div><div class="value">${escapeHtml(row.address)}</div></div>
+        <div class="col-small"><div>Signal</div><div class="value">${escapeHtml(row.signal)}</div></div>
+        <div class="col-small"><div>Tag</div><div class="value">${escapeHtml(row.tag)}</div></div>
+        <div class="col-small"><div>Address</div><div class="value">${escapeHtml(row.address)}</div></div>
       </div>
       <div class="desc">${escapeHtml(row.description)}</div>
       <div class="meta-line">
@@ -238,11 +238,7 @@ async function loadPLC(){
     }
 
     // updated timestamp
-    if(data.updated){
-      const dt = new Date(data.updated);
-      out += `<script>document.getElementById('updatedEl')?.remove();</script>`;
-      // We'll append it below instead to keep content building
-    }
+    const updatedHtml = `<div class="updated">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString() : 'Unknown'}</div>`;
 
     // build compact lists
     let content = '';
@@ -267,9 +263,6 @@ async function loadPLC(){
       desktopTables += buildTableHTML('OUTPUT SIGNALS', drive.outputs);
     }
     desktopTables += `</div>`;
-
-    // updated timestamp element
-    const updatedHtml = `<div class="updated">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString() : 'Unknown'}</div>`;
 
     app.innerHTML = out + updatedHtml + content + desktopTables;
 
