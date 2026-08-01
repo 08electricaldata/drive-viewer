@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLC Address Viewer — App View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  :root{
+    --brand:#1f3c88;
+    --brand-2:#0050aa;
+    --bg:#f4f7ff;
+    --card:#ffffff;
+    --muted:#6b7280;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    margin:0;
+    background:linear-gradient(180deg,#f7fbff, #f4f7ff);
+    color:#0b1220;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* APP HEADER */
+  .app-header{
+    position:sticky;
+    top:0;
+    z-index:400;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px;
+    background:linear-gradient(90deg, var(--brand), var(--brand-2));
+    color:#fff;
+    box-shadow:0 6px 22px rgba(0,0,0,0.12);
+  }
+  .app-left{display:flex;gap:8px;align-items:center}
+  .app-title{flex:1;text-align:center;font-weight:800;font-size:16px}
+  .app-sub{font-size:12px;opacity:.95}
+
+  .btn{
+    background:#fff;color:var(--brand);border:0;padding:8px 12px;border-radius:10px;font-weight:800;cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,0.12);
+  }
+  .btn.icon{padding:8px;border-radius:10px;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+  .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.16)}
+
+  /* Container */
+  .container{max-width:1100px;margin:12px auto;padding:12px}
+
+  /* Info bar */
+  .top-credit{
+    text-align:center;padding:8px;border-radius:10px;margin-bottom:12px;background:linear-gradient(180deg, rgba(31,60,136,0.08), rgba(31,60,136,0.04));
+    color:var(--brand);
+    font-weight:700;
+  }
+
+  /* Buttons row */
+  .button-bar{
+    display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;
+  }
+  .button-bar .btn{min-width:44px}
+
+  /* Updated timestamp */
+  .updated{
+    text-align:center;margin-bottom:12px;color:var(--muted);
+    font-size:13px;
+  }
+
+  /* Cards layout for mobile */
+  .section{
+    margin-bottom:14px;
+  }
+  .section-title{
+    font-weight:800;color:var(--brand);margin:6px 0 10px 0;font-size:15px;
+  }
+  .card-list{display:flex;flex-direction:column;gap:8px}
+  .card{
+    background:var(--card);border-radius:10px;padding:12px;box-shadow:0 8px 20px rgba(3,63,136,0.04);
+  }
+  .card-row{display:flex;gap:8px;align-items:flex-start}
+  .card-col{flex:1;min-width:0}
+  .card-field{font-weight:700;color:#123; font-size:13px}
+  .card-value{color:#093; font-size:14px;margin-top:4px; word-break:break-word; color:#222}
+  .card-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+
+  .chip{background:#eef6ff;padding:6px 8px;border-radius:8px;font-weight:700;color:var(--brand);font-size:12px}
+
+  /* Table layout for desktop */
+  .table-wrap{display:none;background:var(--card);border-radius:10px;padding:8px;box-shadow:0 6px 20px rgba(3,63,136,0.03);overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px;border:1px solid #e6edf6;text-align:left;vertical-align:top}
+  thead th{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#fff;font-weight:700}
+  tr:hover{background:#f1f7ff;cursor:default}
+
+  /* No-data / loader */
+  .no-data{padding:18px;text-align:center;color:#b91c1c;font-weight:700}
+  .loader{padding:24px;text-align:center;font-weight:700;color:var(--muted)}
+
+  /* Responsive: show table on wide screens */
+  @media(min-width:900px){
+    .card-list{display:none}
+    .table-wrap{display:block}
+  }
+
+  /* small screens tweaks */
+  @media(max-width:420px){
+    .app-title{font-size:15px}
+    .card{padding:10px}
+    .card-field{font-size:12px}
+    .card-value{font-size:13px}
+  }
+</style>
+</head>
+
+<body>
+
+<!-- header -->
+<header class="app-header" role="banner">
+  <div class="app-left">
+    <button class="btn icon" onclick="goBack()" title="Back">⬅</button>
+  </div>
+  <div class="app-title">
+    PLC Address Viewer
+    <div class="app-sub">Designed and Maintained by RAKESH CHANDRA SETHY</div>
+  </div>
+  <div>
+    <button class="btn icon" onclick="goHome()" title="Home">🏠</button>
+  </div>
+</header>
+
+<div class="container" id="appContainer">
+  <div class="top-credit">PLC Address Information</div>
+
+  <div id="app">
+    <div class="loader">Loading PLC data…</div>
+  </div>
+</div>
+
+<script>
+const JSON_URL =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+
+const DRAWING_JSON =
+  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+
+let drawingAvailable = false;
+
+function getDriveFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  return (params.get("id") || "").toString();
+}
+
+function goBack(){ window.history.back(); }
+function goHome(){ window.location.href = "https://08electricaldata.github.io/index_mob.html"; }
+
+function goDriveInfo(){
+  const id = getDriveFromURL();
+  if(!id) return;
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id);
+}
+
+function goHistory(){
+  const id = getDriveFromURL();
+  if(!id) return;
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(id);
+}
+
+function goDrawing(){
+  const id = getDriveFromURL();
+  if(!id) return;
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" + encodeURIComponent(id);
+}
+
+/* Check drawing availability (non-blocking) */
+async function checkDrawingAvailability(id){
+  try{
+    const res = await fetch(DRAWING_JSON);
+    if(!res.ok) { drawingAvailable = false; return; }
+    const j = await res.json();
+    const found = (j.rows || []).some(r => String((r.id || "")).toUpperCase() === id.toUpperCase());
+    drawingAvailable = !!found;
+  }catch(e){
+    drawingAvailable = false;
+  }
+}
+
+/* Generate table HTML (desktop) */
+function buildTableHTML(title, dataArray){
+  const showBoard = dataArray.some(row => row.board && String(row.board).trim() !== "");
+  let html = `<div class="section"><div class="section-title">${title}</div>`;
+  html += `<table><thead><tr>
+    <th>Signal</th><th>Tag</th><th>Address</th><th>Description</th>
+    <th>Panel</th><th>TB No</th><th>RL</th>${showBoard ? "<th>Board</th>":""}
+    </tr></thead><tbody>`;
+  dataArray.forEach(row=>{
+    html += `<tr>
+      <td>${escapeHtml(row.signal)}</td>
+      <td>${escapeHtml(row.tag)}</td>
+      <td>${escapeHtml(row.address)}</td>
+      <td>${escapeHtml(row.description)}</td>
+      <td>${escapeHtml(row.panel)}</td>
+      <td>${escapeHtml(row.tb)}</td>
+      <td>${escapeHtml(row.rl)}</td>
+      ${showBoard ? `<td>${escapeHtml(row.board)}</td>` : ""}
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+/* Generate card list HTML (mobile) */
+function buildCardsHTML(title, dataArray){
+  let html = `<div class="section"><div class="section-title">${title}</div><div class="card-list">`;
+  dataArray.forEach(row=>{
+    html += `<article class="card" role="article" tabindex="0">
+      <div class="card-row">
+        <div class="card-col">
+          <div class="card-field">Signal</div>
+          <div class="card-value">${escapeHtml(row.signal)}</div>
+        </div>
+        <div class="card-col">
+          <div class="card-field">Tag</div>
+          <div class="card-value">${escapeHtml(row.tag)}</div>
+        </div>
+      </div>
+
+      <div class="card-row" style="margin-top:8px">
+        <div class="card-col">
+          <div class="card-field">Address</div>
+          <div class="card-value">${escapeHtml(row.address)}</div>
+        </div>
+        <div class="card-col">
+          <div class="card-field">Panel</div>
+          <div class="card-value">${escapeHtml(row.panel)}</div>
+        </div>
+      </div>
+
+      <div class="card-row" style="margin-top:8px">
+        <div class="card-col">
+          <div class="card-field">Description</div>
+          <div class="card-value">${escapeHtml(row.description)}</div>
+        </div>
+      </div>
+
+      <div class="card-meta">
+        <div class="chip">TB: ${escapeHtml(row.tb)}</div>
+        <div class="chip">RL: ${escapeHtml(row.rl)}</div>
+        ${row.board && row.board.trim() ? `<div class="chip">Board: ${escapeHtml(row.board)}</div>` : ''}
+      </div>
+    </article>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+/* Escape helper (basic) */
+function escapeHtml(s){
+  if(s === undefined || s === null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* Load and render PLC data */
+async function loadPLC(){
+  const app = document.getElementById("app");
+  const driveID = getDriveFromURL();
+  if(!driveID){
+    app.innerHTML = `<div class="no-data">No Drive ID provided in URL.</div>`;
+    return;
+  }
+
+  // Start drawing check (fire and forget)
+  checkDrawingAvailability(driveID);
+
+  // basic header and buttons (always shown)
+  let html = `<div style="text-align:center;margin-bottom:8px">
+      <h2 style="margin:8px 0 6px 0;color:var(--brand)">PLC ADDRESS OF DRIVE — ${escapeHtml(driveID)}</h2>
+    </div>
+    <div class="button-bar" role="toolbar" aria-label="actions">
+      <button class="btn icon" onclick="goBack()" title="Back">⬅</button>
+      <button class="btn icon" onclick="goHome()" title="Home">🏠</button>
+      <button class="btn" onclick="goDriveInfo()">ℹ️ Drive Info</button>
+      <button class="btn" onclick="goHistory()">📜 History</button>
+      <button id="drawBtn" class="btn" onclick="goDrawing()">📐 Drawings</button>
+    </div>`;
+
+  app.innerHTML = html + `<div class="loader">Loading PLC data…</div>`;
+
+  try{
+    const res = await fetch(JSON_URL);
+    if(!res.ok) throw new Error("Failed to fetch PLC JSON");
+    const data = await res.json();
+
+    // Normalize key: existing code used uppercase driveID
+    const driveKey = (driveID || "").toUpperCase();
+    const drive = (data.drives || {})[driveKey];
+
+    // If no drive entry
+    if(!drive){
+      html += `<div class="no-data">No PLC data found for: ${escapeHtml(driveID)}</div>`;
+      app.innerHTML = html;
+      // disable drawings if not available
+      setTimeout(()=>{ if(!drawingAvailable){ const db=document.getElementById('drawBtn'); if(db) db.disabled=true; } }, 10);
+      return;
+    }
+
+    // add last updated
+    if(data.updated){
+      html += `<div class="updated">Last Updated: ${new Date(data.updated).toLocaleString()}</div>`;
+    }
+
+    // Render inputs/outputs as cards for mobile and tables for desktop
+    if(Array.isArray(drive.inputs) && drive.inputs.length){
+      html += buildCardsHTML("INPUT SIGNALS", drive.inputs);
+    } else {
+      html += `<div class="section"><div class="section-title">INPUT SIGNALS</div><div class="no-data">No input signals found.</div></div>`;
+    }
+
+    if(Array.isArray(drive.outputs) && drive.outputs.length){
+      html += buildCardsHTML("OUTPUT SIGNALS", drive.outputs);
+    } else {
+      html += `<div class="section"><div class="section-title">OUTPUT SIGNALS</div><div class="no-data">No output signals found.</div></div>`;
+    }
+
+    // Prepare desktop tables too
+    html += `<div class="table-wrap" id="desktopTables" aria-hidden="true">`;
+    if(Array.isArray(drive.inputs) && drive.inputs.length){
+      html += buildTableHTML("INPUT SIGNALS", drive.inputs);
+    }
+    if(Array.isArray(drive.outputs) && drive.outputs.length){
+      html += buildTableHTML("OUTPUT SIGNALS", drive.outputs);
+    }
+    html += `</div>`;
+
+    app.innerHTML = html;
+
+    // disable draw button if drawings not available
+    if(!drawingAvailable){
+      const db = document.getElementById('drawBtn');
+      if(db) db.disabled = true;
+    }
+
+  }catch(err){
+    console.error(err);
+    app.innerHTML = `<div class="no-data">Error loading PLC data. Please try again later.</div>`;
+  }
+}
+
+/* Kick off */
+loadPLC();
+</script>
+</body>
+</html>
