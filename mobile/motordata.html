@@ -1,118 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Motor Details — Compact App View</title>
-
 <style>
-  /* Reset & base */
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f4f7ff;color:#102230;-webkit-font-smoothing:antialiased}
-  a{color:inherit}
-
-  /* Top credit */
-  .top-credit{background:#0b3b74;color:#fff;text-align:center;padding:10px 8px;font-weight:700;font-size:13px}
-
-  /* Container */
-  .wrap{max-width:1100px;margin:10px auto;padding:12px}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f4f7ff;color:#0b1220;-webkit-font-smoothing:antialiased}
+  .top-credit{background:#0b3b74;color:#fff;text-align:center;padding:10px;font-weight:700;font-size:13px}
+  .wrap{max-width:1000px;margin:10px auto;padding:12px}
 
   /* Header */
-  .header{text-align:center;padding:8px 6px}
-  .header h1{color:#0b3b74;font-size:18px;margin-bottom:4px;font-weight:800}
-  .header h2{color:#444;font-size:13px;font-weight:600;margin-bottom:4px}
-  .meta{font-size:12px;color:#556;margin-bottom:6px}
+  .hdr{ text-align:center;padding:8px 6px }
+  .title{font-weight:800;color:#0b3b74;font-size:18px;margin-bottom:6px}
+  .subtitle{font-size:13px;color:#445;margin-bottom:6px}
 
-  /* Buttons */
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
-  .btn{background:#fff;color:#0b3b74;border:1px solid rgba(11,59,116,0.12);padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(11,59,116,0.06)}
-  .btn.small{padding:7px 9px;font-size:13px;border-radius:8px}
+  /* toolbar */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+  .btn{background:#fff;color:#0b3b74;border:1px solid rgba(11,59,116,.12);padding:8px 10px;border-radius:10px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(11,59,116,0.04)}
+  .btn.small{padding:7px 8px;font-size:13px}
   .btn.primary{background:linear-gradient(90deg,#0b3b74,#0050aa);color:#fff;border:none}
-  .btn.full{width:100%}
 
-  /* Compact info block */
-  .info-card{background:#fff;padding:10px;border-radius:10px;box-shadow:0 8px 20px rgba(3,63,136,0.04);margin-bottom:10px}
-  .compact-lines{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#0b2333}
-  .compact-line{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-  .compact-item{font-weight:700;background:#f1f7ff;padding:6px 8px;border-radius:8px;font-size:13px;color:#0b3b74}
-  .compact-item.small{font-weight:600;background:transparent;padding:0;color:#233}
+  /* compact info */
+  .info-card{background:#fff;padding:10px;border-radius:10px;box-shadow:0 10px 26px rgba(3,63,136,0.04);margin-bottom:10px}
+  .compact-lines{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#122}
+  .compact-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{background:#eef6ff;color:#0b3b74;padding:6px 8px;border-radius:8px;font-weight:800;font-size:13px}
+  .chip.muted{background:transparent;color:#233;font-weight:700;padding:0}
 
   /* details (collapsible) */
-  details{background:transparent;border-radius:8px;margin-bottom:10px}
-  summary{cursor:pointer;list-style:none;outline:none;padding:10px;border-radius:8px;background:#fff;display:flex;justify-content:space-between;align-items:center;box-shadow:0 6px 20px rgba(3,63,136,0.04)}
-  summary .title{font-weight:800;color:#0b3b74;font-size:14px}
-  summary .count{font-size:12px;color:#666}
-  .detail-body{padding:8px;background:#fff;border-radius:0 0 10px 10px;margin-top:0;box-shadow:0 6px 20px rgba(3,63,136,0.04)}
+  details{margin-bottom:10px}
+  summary{
+    cursor:pointer;padding:10px;border-radius:8px;background:#fff;display:flex;justify-content:space-between;align-items:center;
+    box-shadow:0 10px 26px rgba(3,63,136,0.04);font-weight:800;color:#0b3b74;
+  }
+  .detail-body{padding:8px 10px;background:#fff;border-radius:0 0 10px 10px;box-shadow:0 10px 26px rgba(3,63,136,0.04)}
 
-  /* dense table for spare/pending with small font */
+  /* dense rows table */
   .dense-table{width:100%;border-collapse:collapse;font-size:12px}
-  .dense-table th, .dense-table td{padding:6px;border:1px solid #eef6ff;text-align:left}
-  .dense-table th{background:#eef6ff;color:#0b3b74;font-weight:700}
+  .dense-table th,.dense-table td{padding:6px;border:1px solid #eef6ff;text-align:left}
+  .dense-table th{background:#eef6ff;color:#0b3b74;font-weight:800}
   .dense-row td{padding:6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-  /* message and loader */
+  /* no-data / loader */
   .loader,.no-data{text-align:center;padding:14px;font-weight:700;color:#556}
 
-  /* Responsive adjustments */
-  @media(max-width:700px){
-    .compact-item{font-size:12px;padding:5px 7px}
-    .dense-table th, .dense-table td{padding:5px;font-size:11px}
-    .btn{padding:8px 10px}
-    .header h1{font-size:16px}
-  }
-  @media(max-width:420px){
-    .compact-lines{font-size:12px}
-    .compact-item{font-size:12px}
-    .dense-table th, .dense-table td{font-size:10.5px;padding:4px}
+  /* responsive tweaks */
+  @media(max-width:480px){
+    .title{font-size:16px}
+    .chip{font-size:12px;padding:5px 7px}
+    .dense-table th,.dense-table td{font-size:11px;padding:5px}
+    .btn{padding:7px 8px}
   }
 </style>
 </head>
 <body>
-
-<div class="top-credit">Designed & Maintained by RAKESH CHANDRA SETHY</div>
-
-<div class="wrap" id="app">
-  <div class="loader">Loading Motor Details...</div>
-</div>
+  <div class="top-credit">Designed & Maintained by RAKESH CHANDRA SETHY</div>
+  <main class="wrap" id="app">
+    <div class="loader">Loading Motor Details…</div>
+  </main>
 
 <script>
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
 
-function getID(){ return new URLSearchParams(location.search).get("id") || ""; }
+function qId(){ return new URLSearchParams(location.search).get("id") || ""; }
 function goBack(){ history.back(); }
 function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
-function goDrive(){ const id=getID(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id); }
-function goPLC(){ const id=getID(); if(!id) return; location.href = "plc.html?id=" + encodeURIComponent(id); }
+function goDrive(){ const id=qId(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id); }
+function goPLC(){ const id=qId(); if(!id) return; location.href = "plc.html?id=" + encodeURIComponent(id); }
+function safe(v){ return v===undefined||v===null ? "" : String(v); }
+function esc(s){ return safe(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(v){ if(!v) return "N/A"; const d=new Date(v); if(isNaN(d)) return v; return d.toLocaleDateString('en-GB'); }
 
-function safe(v){ return (v===undefined||v===null) ? "" : String(v); }
-function formatDate(v){ if(!v) return "N/A"; const d=new Date(v); if(isNaN(d)) return v; return d.toLocaleDateString('en-GB'); }
+/* Attempt to find pending/spare fields automatically:
+   check indices in order and choose first non-empty.
+   For separator try '@', '|', ';', '/'.
+   For item parts use '!' as field separator (as your data shows).
+*/
+function detectFieldValue(row, candidates){
+  for(const idx of candidates){
+    const v = safe(row[idx]).trim();
+    if(v) return { idx, raw: v };
+  }
+  return { idx: null, raw: "" };
+}
+function detectSep(s){
+  if(s.includes('@')) return '@';
+  if(s.includes('|')) return '|';
+  if(s.includes(';')) return ';';
+  if(s.includes('/')) return '/';
+  return '@';
+}
 
-async function loadMotor(){
+async function load(){
   const app = document.getElementById('app');
-  const id = getID().trim();
-  if(!id){ app.innerHTML = `<div class="no-data">No Drive ID supplied.</div>`; return; }
+  const id = qId().trim();
+  if(!id){
+    app.innerHTML = `<div class="no-data">No Drive ID supplied.</div>`; return;
+  }
 
   try{
     const res = await fetch(JSON_URL);
-    if(!res.ok) throw new Error('Failed to fetch JSON');
+    if(!res.ok) throw new Error('Unable to fetch JSON');
     const data = await res.json();
-
-    // locate row by equipment number (column index 3)
-    let row = null;
-    for(const r of (data.rows || [])){
+    let foundRow = null;
+    for(const r of (data.rows||[])){
       if(String(r[3]||"").trim().toUpperCase() === id.toUpperCase()){
-        row = r; break;
+        foundRow = r; break;
       }
     }
 
     let html = `
-      <div class="header">
-        <h1>MOTOR DETAILS</h1>
-        <h2>${escapeHtml(id)}</h2>
+      <div class="hdr">
+        <div class="title">MOTOR DETAILS</div>
+        <div class="subtitle">${esc(id)}</div>
         <div class="meta">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString('en-GB') : 'Unknown'}</div>
       </div>
 
-      <div class="toolbar" role="toolbar" aria-label="actions">
+      <div class="toolbar" role="toolbar">
         <button class="btn small" onclick="goBack()">⬅ Back</button>
         <button class="btn small" onclick="goHome()">🏠 Home</button>
         <button class="btn small" onclick="goDrive()">Drive Info</button>
@@ -120,12 +125,13 @@ async function loadMotor(){
       </div>
     `;
 
-    if(!row){
-      html += `<div class="no-data">Motor details not found for <b>${escapeHtml(id)}</b></div>`;
+    if(!foundRow){
+      html += `<div class="no-data">Motor details not found for <b>${esc(id)}</b></div>`;
       app.innerHTML = html; return;
     }
 
-    // Compact info lines
+    const row = foundRow;
+    // main attributes
     const KW = safe(row[5]);
     const MAKE = safe(row[7]);
     const FRAME = safe(row[8]);
@@ -136,70 +142,71 @@ async function loadMotor(){
     html += `<div class="info-card">
       <div class="compact-lines">
         <div class="compact-line">
-          <div class="compact-item">${'KW-'+KW}</div>
-          <div class="compact-item">${'FRAME SIZE-'+FRAME}</div>
-          <div class="compact-item">${'MAKE-'+MAKE}</div>
+          <div class="chip">${'KW-'+esc(KW)}</div>
+          <div class="chip">${'FRAME SIZE-'+esc(FRAME)}</div>
+          <div class="chip">${'MAKE-'+esc(MAKE)}</div>
         </div>
         <div class="compact-line">
-          <div class="compact-item">${'RPM-'+RPM}</div>
-          <div class="compact-item">${'FLC-'+FLC}</div>
-          <div class="compact-item">${'MTG-'+MTG}</div>
+          <div class="chip">${'RPM-'+esc(RPM)}</div>
+          <div class="chip">${'FLC-'+esc(FLC)}</div>
+          <div class="chip">${'MTG-'+esc(MTG)}</div>
         </div>
       </div>
     </div>`;
 
-    // Spare Motor Details (compact)
-    const spareData = safe(row[24]).trim();
-    let spareHtml = '';
-    if(spareData){
-      const spareList = spareData.split('@').map(s=>s.trim()).filter(Boolean);
+    // Spare motors: try index 24 first (as your schema), fallback to others
+    const spareCandidate = detectFieldValue(row, [24,25,23,22]);
+    const spareRaw = spareCandidate.raw;
+    const spareIdx = spareCandidate.idx;
+
+    // Pending motors: try likely indices (26,25,27,24)
+    const pendingCandidate = detectFieldValue(row, [26,25,27,24,28]);
+    const pendingRaw = pendingCandidate.raw;
+    const pendingIdx = pendingCandidate.idx;
+
+    // Build spare details (compact)
+    let spareHtml = `<details ${spareRaw ? '' : ''}><summary>Spare Motor Details ${spareIdx !== null ? '(col '+spareIdx+')':''}</summary><div class="detail-body">`;
+    if(!spareRaw){
+      spareHtml += `<div style="padding:8px;color:#666;font-size:13px">No Spare Motor Details Available</div>`;
+    } else {
+      const sep = detectSep(spareRaw);
+      const items = spareRaw.split(sep).map(s=>s.trim()).filter(Boolean);
       spareHtml += `<table class="dense-table"><thead><tr><th style="width:28px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOC</th></tr></thead><tbody>`;
-      spareList.forEach((it, idx)=>{
+      items.forEach((it, idx)=>{
         const parts = it.split('!').map(p=>p? p.trim() : '');
-        spareHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${escapeHtml(parts[0]||'')}</td><td>${escapeHtml(parts[1]||'')}</td><td>${escapeHtml(parts[2]||'')}</td><td>${escapeHtml(parts[3]||'')}</td><td>${escapeHtml(parts[4]||'')}</td><td>${escapeHtml(parts[5]||'')}</td><td>${escapeHtml(parts[6]||'')}</td><td>${escapeHtml(parts[7]||'')}</td></tr>`;
+        spareHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${esc(parts[0]||'')}</td><td>${esc(parts[1]||'')}</td><td>${esc(parts[2]||'')}</td><td>${esc(parts[3]||'')}</td><td>${esc(parts[4]||'')}</td><td>${esc(parts[5]||'')}</td><td>${esc(parts[6]||'')}</td><td>${esc(parts[7]||'')}</td></tr>`;
       });
-      spareHtml += '</tbody></table>';
-    } else {
-      spareHtml = `<div style="padding:8px;color:#666">No Spare Motor Details Available</div>`;
+      spareHtml += `</tbody></table>`;
     }
+    spareHtml += `</div></details>`;
 
-    html += `<details open>
-      <summary><span class="title">Spare Motor Details</span><span class="count">${spareData ? '' : '(empty)'}</span></summary>
-      <div class="detail-body">${spareHtml}</div>
-    </details>`;
-
-    // Pending Motors at ERS (compact)
-    const pendingData = safe(row[26]).trim();
-    let pendingHtml = '';
-    if(pendingData){
-      const pendingList = pendingData.split('@').map(s=>s.trim()).filter(Boolean);
+    // Build pending details
+    let pendingHtml = `<details ${pendingRaw ? '' : ''}><summary>Pending Motors at ERS ${pendingIdx !== null ? '(col '+pendingIdx+')':''}</summary><div class="detail-body">`;
+    if(!pendingRaw){
+      pendingHtml += `<div style="padding:8px;color:#666;font-size:13px">No Pending Motors Available</div>`;
+    } else {
+      const sep = detectSep(pendingRaw);
+      const items = pendingRaw.split(sep).map(s=>s.trim()).filter(Boolean);
       pendingHtml += `<table class="dense-table"><thead><tr><th style="width:28px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOC</th></tr></thead><tbody>`;
-      pendingList.forEach((it, idx)=>{
+      items.forEach((it, idx)=>{
         const parts = it.split('!').map(p=>p? p.trim() : '');
-        pendingHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${escapeHtml(parts[0]||'')}</td><td>${escapeHtml(parts[1]||'')}</td><td>${escapeHtml(parts[2]||'')}</td><td>${escapeHtml(parts[3]||'')}</td><td>${escapeHtml(parts[4]||'')}</td><td>${escapeHtml(parts[5]||'')}</td><td>${escapeHtml(parts[6]||'')}</td><td>${escapeHtml(parts[7]||'')}</td></tr>`;
+        pendingHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${esc(parts[0]||'')}</td><td>${esc(parts[1]||'')}</td><td>${esc(parts[2]||'')}</td><td>${esc(parts[3]||'')}</td><td>${esc(parts[4]||'')}</td><td>${esc(parts[5]||'')}</td><td>${esc(parts[6]||'')}</td><td>${esc(parts[7]||'')}</td></tr>`;
       });
-      pendingHtml += '</tbody></table>';
-    } else {
-      pendingHtml = `<div style="padding:8px;color:#666">No Pending Motors Available</div>`;
+      pendingHtml += `</tbody></table>`;
     }
+    pendingHtml += `</div></details>`;
 
-    html += `<details>
-      <summary><span class="title">Pending Motors at ERS</span><span class="count">${pendingData ? '' : '(empty)'}</span></summary>
-      <div class="detail-body">${pendingHtml}</div>
-    </details>`;
+    html += spareHtml + pendingHtml;
 
     app.innerHTML = html;
 
   } catch(err){
     console.error(err);
-    app.innerHTML = `<div class="no-data">Unable to load Motor Details.<br><br>${escapeHtml(err.message || '')}</div>`;
+    document.getElementById('app').innerHTML = `<div class="no-data">Unable to load motor details.<br>${esc(err.message||String(err))}</div>`;
   }
 }
 
-/* small helper */
-function escapeHtml(s){ if(s===undefined||s===null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-loadMotor();
+load();
 </script>
 </body>
 </html>
