@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLC Address Viewer — Compact Mobile View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  :root{
+    --brand:#1f3c88;
+    --brand-2:#0050aa;
+    --bg:#f4f7ff;
+    --card:#ffffff;
+    --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+    background:linear-gradient(180deg,#f7fbff,#f4f7ff);
+    color:#0b1220;
+  }
+
+  /* Header */
+  .app-header{
+    position:sticky;top:0;z-index:400;display:flex;align-items:center;gap:8px;padding:10px 12px;
+    background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#fff;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  }
+  .app-left{display:flex;gap:8px;align-items:center}
+  .app-title{flex:1;text-align:center;font-weight:800;font-size:15px}
+  .btn{background:#fff;color:var(--brand);border:0;padding:7px 10px;border-radius:8px;font-weight:700;cursor:pointer}
+  .btn.icon{width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+
+  /* Container */
+  .container{max-width:1100px;margin:10px auto;padding:8px}
+
+  /* Info bar */
+  .top-credit{background:linear-gradient(180deg, rgba(31,60,136,0.06), rgba(31,60,136,0.03));padding:6px;border-radius:8px;text-align:center;color:var(--brand);font-weight:700;margin-bottom:8px;font-size:13px}
+
+  /* Buttons */
+  .button-bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+  .button-bar .btn{min-width:40px;padding:6px 8px;font-size:13px}
+
+  .updated{font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px}
+
+  /* Compact list (mobile) */
+  .compact-list{display:flex;flex-direction:column;gap:6px}
+  .compact-row{
+    background:var(--card);
+    border-radius:6px;
+    padding:8px 8px;
+    box-shadow:0 6px 18px rgba(3,63,136,0.04);
+    font-size:12px;
+    line-height:1.1;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+
+  .row-line{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap:8px;
+    align-items:start;
+  }
+  .col-small{font-weight:700;color:#123;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .col-small .value{font-weight:600;color:#222;font-size:12px}
+  .desc{font-size:11px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .meta-line{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:#444}
+  .chip{background:#eef6ff;padding:4px 6px;border-radius:6px;color:var(--brand);font-weight:700}
+
+  /* Table for desktop */
+  .table-wrap{display:none;background:var(--card);border-radius:8px;padding:8px;box-shadow:0 6px 20px rgba(3,63,136,0.03);overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px;border:1px solid #e6edf6;text-align:left}
+  thead th{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#fff;font-weight:700}
+
+  /* No data / loader */
+  .no-data{padding:10px;text-align:center;color:#b91c1c;font-weight:700}
+  .loader{padding:14px;text-align:center;color:var(--muted);font-weight:700}
+
+  /* Desktop: show table, hide compact list */
+  @media(min-width:900px){
+    .compact-list{display:none}
+    .table-wrap{display:block}
+  }
+
+  /* further compacting for very small devices */
+  @media(max-width:360px){
+    .row-line{grid-template-columns: 1fr 1fr;}
+    .col-small{font-size:11px}
+    .desc{font-size:10px}
+    .meta-line{font-size:10px}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header" role="banner">
+  <div class="app-left">
+    <button class="btn icon" onclick="goBack()" title="Back">⬅</button>
+  </div>
+  <div class="app-title">PLC Address Viewer</div>
+  <div>
+    <button class="btn icon" onclick="goHome()" title="Home">🏠</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="top-credit">Designed and Maintained by RAKESH CHANDRA SETHY</div>
+
+  <div id="app">
+    <div class="loader">Loading PLC data…</div>
+  </div>
+</div>
+
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+const DRAWING_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+let drawingAvailable = false;
+
+function getDriveFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  return (params.get("id") || "").toString();
+}
+function goBack(){ history.back(); }
+function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
+
+function goDriveInfo(){
+  const id = getDriveFromURL(); if(!id) return;
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id);
+}
+function goHistory(){
+  const id = getDriveFromURL(); if(!id) return;
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(id);
+}
+function goDrawing(){
+  const id = getDriveFromURL(); if(!id) return;
+  window.location.href = "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" + encodeURIComponent(id);
+}
+
+async function checkDrawingAvailability(id){
+  try{
+    const res = await fetch(DRAWING_JSON);
+    if(!res.ok){ drawingAvailable = false; return; }
+    const j = await res.json();
+    drawingAvailable = !!(j.rows || []).find(r => String((r.id||"")).toUpperCase() === id.toUpperCase());
+  }catch(e){
+    drawingAvailable = false;
+  }
+}
+
+function escapeHtml(s){ if(s===undefined||s===null) return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* Build compact rows HTML */
+function buildCompactHTML(title, data){
+  let html = `<div class="section"><div class="updated" style="font-weight:800;color:var(--brand);margin-bottom:6px">${escapeHtml(title)}</div>`;
+  html += `<div class="compact-list">`;
+  data.forEach(row=>{
+    html += `<div class="compact-row" role="listitem" tabindex="0">
+      <div class="row-line">
+        <div class="col-small"><div class="card-field">Signal</div><div class="value">${escapeHtml(row.signal)}</div></div>
+        <div class="col-small"><div class="card-field">Tag</div><div class="value">${escapeHtml(row.tag)}</div></div>
+        <div class="col-small"><div class="card-field">Address</div><div class="value">${escapeHtml(row.address)}</div></div>
+      </div>
+      <div class="desc">${escapeHtml(row.description)}</div>
+      <div class="meta-line">
+        <div class="chip">Panel: ${escapeHtml(row.panel)}</div>
+        <div class="chip">TB: ${escapeHtml(row.tb)}</div>
+        <div class="chip">RL: ${escapeHtml(row.rl)}</div>
+        ${row.board && String(row.board).trim() ? `<div class="chip">Board: ${escapeHtml(row.board)}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += `</div></div>`;
+  return html;
+}
+
+/* Build table HTML (desktop) */
+function buildTableHTML(title, data){
+  const showBoard = data.some(r=> r.board && String(r.board).trim() !== "");
+  let html = `<div class="section"><div class="section-title">${escapeHtml(title)}</div>`;
+  html += `<table><thead><tr><th>Signal</th><th>Tag</th><th>Address</th><th>Description</th><th>Panel</th><th>TB No</th><th>RL</th>${showBoard ? '<th>Board</th>':''}</tr></thead><tbody>`;
+  data.forEach(row=>{
+    html += `<tr>
+      <td>${escapeHtml(row.signal)}</td>
+      <td>${escapeHtml(row.tag)}</td>
+      <td>${escapeHtml(row.address)}</td>
+      <td>${escapeHtml(row.description)}</td>
+      <td>${escapeHtml(row.panel)}</td>
+      <td>${escapeHtml(row.tb)}</td>
+      <td>${escapeHtml(row.rl)}</td>
+      ${showBoard ? `<td>${escapeHtml(row.board)}</td>` : ''}
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+async function loadPLC(){
+  const app = document.getElementById('app');
+  const driveID = getDriveFromURL();
+  if(!driveID){
+    app.innerHTML = `<div class="no-data">No Drive ID provided in URL.</div>`;
+    return;
+  }
+
+  // start drawing check
+  checkDrawingAvailability(driveID);
+
+  // header + buttons
+  let out = `<div style="text-align:center;margin-bottom:8px"><h3 style="margin:6px 0;color:var(--brand)">${escapeHtml('PLC ADDRESS OF DRIVE — ' + driveID)}</h3></div>
+    <div class="button-bar" role="toolbar" aria-label="actions">
+      <button class="btn icon" onclick="goBack()">⬅</button>
+      <button class="btn icon" onclick="goHome()">🏠</button>
+      <button class="btn" onclick="goDriveInfo()">Info</button>
+      <button class="btn" onclick="goHistory()">History</button>
+      <button id="drawBtn" class="btn" onclick="goDrawing()">Drawings</button>
+    </div>
+    <div class="updated" id="updatedEl">Loading…</div>`;
+
+  app.innerHTML = out + `<div class="loader">Loading PLC data…</div>`;
+
+  try{
+    const res = await fetch(JSON_URL);
+    if(!res.ok) throw new Error('Failed to fetch PLC JSON');
+    const data = await res.json();
+
+    const driveKey = (driveID||'').toUpperCase();
+    const drive = (data.drives || {})[driveKey];
+
+    if(!drive){
+      out += `<div class="no-data">No PLC data found for: ${escapeHtml(driveID)}</div>`;
+      app.innerHTML = out;
+      setTimeout(()=>{ if(!drawingAvailable){ const db=document.getElementById('drawBtn'); if(db) db.disabled=true; } }, 10);
+      return;
+    }
+
+    // updated timestamp
+    if(data.updated){
+      const dt = new Date(data.updated);
+      out += `<script>document.getElementById('updatedEl')?.remove();</script>`;
+      // We'll append it below instead to keep content building
+    }
+
+    // build compact lists
+    let content = '';
+    if(Array.isArray(drive.inputs) && drive.inputs.length){
+      content += buildCompactHTML('INPUT SIGNALS', drive.inputs);
+    } else {
+      content += `<div class="section"><div class="updated" style="font-weight:800;color:var(--brand);margin-bottom:6px">INPUT SIGNALS</div><div class="no-data">No input signals.</div></div>`;
+    }
+
+    if(Array.isArray(drive.outputs) && drive.outputs.length){
+      content += buildCompactHTML('OUTPUT SIGNALS', drive.outputs);
+    } else {
+      content += `<div class="section"><div class="updated" style="font-weight:800;color:var(--brand);margin-bottom:6px">OUTPUT SIGNALS</div><div class="no-data">No output signals.</div></div>`;
+    }
+
+    // desktop tables
+    let desktopTables = `<div class="table-wrap">`;
+    if(Array.isArray(drive.inputs) && drive.inputs.length){
+      desktopTables += buildTableHTML('INPUT SIGNALS', drive.inputs);
+    }
+    if(Array.isArray(drive.outputs) && drive.outputs.length){
+      desktopTables += buildTableHTML('OUTPUT SIGNALS', drive.outputs);
+    }
+    desktopTables += `</div>`;
+
+    // updated timestamp element
+    const updatedHtml = `<div class="updated">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString() : 'Unknown'}</div>`;
+
+    app.innerHTML = out + updatedHtml + content + desktopTables;
+
+    // disable draw button if not available
+    if(!drawingAvailable){
+      const db = document.getElementById('drawBtn');
+      if(db) db.disabled = true;
+    }
+
+  }catch(err){
+    console.error(err);
+    app.innerHTML = `<div class="no-data">Error loading PLC data.</div>`;
+  }
+}
+
+loadPLC();
+</script>
+</body>
+</html>
