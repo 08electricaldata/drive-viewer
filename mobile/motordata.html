@@ -2,283 +2,234 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PLC Address Viewer — Compact Mobile View</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motor Details — App View</title>
 
 <style>
-  :root{
-    --brand:#1f3c88;
-    --brand-2:#0050aa;
-    --bg:#f4f7ff;
-    --card:#ffffff;
-    --muted:#6b7280;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-    background:linear-gradient(180deg,#f7fbff,#f4f7ff);
-    color:#0b1220;
-  }
+  /* Reset & base */
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f4f7ff;color:#102230;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
 
-  /* Header */
-  .app-header{
-    position:sticky;top:0;z-index:400;display:flex;align-items:center;gap:8px;padding:10px 12px;
-    background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#fff;
-    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  /* Top credit */
+  .top-credit{
+    background:#0b3b74;color:#fff;text-align:center;padding:10px 8px;font-weight:700;font-size:13px;
   }
-  .app-left{display:flex;gap:8px;align-items:center}
-  .app-title{flex:1;text-align:center;font-weight:800;font-size:15px}
-  .btn{background:#fff;color:var(--brand);border:0;padding:7px 10px;border-radius:8px;font-weight:700;cursor:pointer}
-  .btn.icon{width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 
   /* Container */
-  .container{max-width:1100px;margin:10px auto;padding:8px}
+  .wrap{max-width:1100px;margin:10px auto;padding:12px}
 
-  /* Info bar */
-  .top-credit{background:linear-gradient(180deg, rgba(31,60,136,0.06), rgba(31,60,136,0.03));padding:6px;border-radius:8px;text-align:center;color:var(--brand);font-weight:700;margin-bottom:8px;font-size:13px}
+  /* Header */
+  .header{
+    text-align:center;padding:10px 6px 6px;
+  }
+  .header h1{color:#0b3b74;font-size:18px;margin-bottom:4px;font-weight:800}
+  .header h2{color:#444;font-size:13px;font-weight:600;margin-bottom:4px}
+  .meta{font-size:12px;color:#556;margin-bottom:6px}
 
   /* Buttons */
-  .button-bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
-  .button-bar .btn{min-width:40px;padding:6px 8px;font-size:13px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+  .btn{background:#fff;color:#0b3b74;border:1px solid rgba(11,59,116,0.12);padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(11,59,116,0.06);}
+  .btn.small{padding:8px 10px;font-size:13px;border-radius:8px}
+  .btn.primary{background:linear-gradient(90deg,#0b3b74,#0050aa);color:#fff;border:none}
+  .btn.full{width:100%}
 
-  .updated{font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px}
+  /* Info grid - compact */
+  .info-card{background:#fff;padding:10px;border-radius:10px;box-shadow:0 8px 20px rgba(3,63,136,0.04);margin-bottom:10px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}
+  .info-item{padding:6px;border-radius:8px;background:linear-gradient(180deg,#fbfdff,#fff);display:flex;flex-direction:column}
+  .info-label{font-size:11px;color:#3a5a7a;font-weight:800;margin-bottom:4px}
+  .info-value{font-size:14px;color:#0c2333;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-  /* Compact list (mobile) */
-  .compact-list{display:flex;flex-direction:column;gap:6px}
-  .compact-row{
-    background:var(--card);
-    border-radius:6px;
-    padding:8px 8px;
-    box-shadow:0 6px 18px rgba(3,63,136,0.04);
-    font-size:12px;
-    line-height:1.1;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
+  /* compact small tables inside collapsible sections */
+  details{background:transparent;border-radius:8px;margin-bottom:10px}
+  summary{cursor:pointer;list-style:none;outline:none;padding:10px;border-radius:8px;background:#fff;display:flex;justify-content:space-between;align-items:center;box-shadow:0 6px 20px rgba(3,63,136,0.04)}
+  summary .title{font-weight:800;color:#0b3b74;font-size:14px}
+  summary .count{font-size:12px;color:#556}
+  .detail-body{padding:8px;background:#fff;border-radius:0 0 10px 10px;margin-top:0;box-shadow:0 6px 20px rgba(3,63,136,0.04)}
+  .small-table{width:100%;border-collapse:collapse;font-size:12px}
+  .small-table th, .small-table td{padding:6px;border:1px solid #e9f0ff;text-align:left}
+  .small-table th{background:#eef6ff;color:#0b3b74;font-weight:700}
+  .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* message and loader */
+  .loader,.no-data{text-align:center;padding:18px;font-weight:700;color:#556}
+
+  /* Responsive adjustments */
+  @media(max-width:700px){
+    .info-grid{grid-template-columns:1fr 1fr}
+    .toolbar{gap:6px}
+    .btn{padding:8px 10px;font-size:13px}
+    .header h1{font-size:16px}
   }
-
-  .row-line{
-    display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap:8px;
-    align-items:start;
-  }
-  .col-small{font-weight:700;color:#123;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .col-small .value{font-weight:600;color:#222;font-size:12px}
-  .desc{font-size:11px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-  .meta-line{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:#444}
-  .chip{background:#eef6ff;padding:4px 6px;border-radius:6px;color:var(--brand);font-weight:700}
-
-  /* Table for desktop */
-  .table-wrap{display:none;background:var(--card);border-radius:8px;padding:8px;box-shadow:0 6px 20px rgba(3,63,136,0.03);overflow:auto}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:8px;border:1px solid #e6edf6;text-align:left}
-  thead th{background:linear-gradient(90deg,var(--brand),var(--brand-2));color:#fff;font-weight:700}
-
-  /* No data / loader */
-  .no-data{padding:10px;text-align:center;color:#b91c1c;font-weight:700}
-  .loader{padding:14px;text-align:center;color:var(--muted);font-weight:700}
-
-  /* Desktop: show table, hide compact list */
-  @media(min-width:900px){
-    .compact-list{display:none}
-    .table-wrap{display:block}
-  }
-
-  /* further compacting for very small devices */
-  @media(max-width:360px){
-    .row-line{grid-template-columns: 1fr 1fr;}
-    .col-small{font-size:11px}
-    .desc{font-size:10px}
-    .meta-line{font-size:10px}
+  @media(max-width:420px){
+    .info-grid{grid-template-columns:1fr}
   }
 </style>
 </head>
 <body>
 
-<header class="app-header" role="banner">
-  <div class="app-left">
-    <button class="btn icon" onclick="goBack()" title="Back">⬅</button>
-  </div>
-  <div class="app-title">PLC Address Viewer</div>
-  <div>
-    <button class="btn icon" onclick="goHome()" title="Home">🏠</button>
-  </div>
-</header>
+<div class="top-credit">Designed & Maintained by RAKESH CHANDRA SETHY</div>
 
-<div class="container">
-  <div class="top-credit">Designed and Maintained by RAKESH CHANDRA SETHY</div>
-
-  <div id="app">
-    <div class="loader">Loading PLC data…</div>
-  </div>
+<div class="wrap" id="app">
+  <div class="loader">Loading Motor Details...</div>
 </div>
 
 <script>
-const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
-const DRAWING_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
-let drawingAvailable = false;
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
 
-function getDriveFromURL(){
-  const params = new URLSearchParams(window.location.search);
-  return (params.get("id") || "").toString();
-}
+/* helper to get id param */
+function getID(){ return new URLSearchParams(location.search).get("id") || ""; }
 function goBack(){ history.back(); }
 function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
+/* use index2 for drive info for mobile consistency */
+function goDrive(){ const id=getID(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id); }
+function goPLC(){ const id=getID(); if(!id) return; location.href = "plc.html?id=" + encodeURIComponent(id); }
 
-function goDriveInfo(){
-  const id = getDriveFromURL(); if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
-}
-function goHistory(){
-  const id = getDriveFromURL(); if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
-}
-function goDrawing(){
-  const id = getDriveFromURL(); if(!id) return;
-  window.location.href = "https://08electricaldata.github.io/drive-viewer/mobile/drawing.html?id=" + encodeURIComponent(id);
+function formatDate(v){
+  if(!v) return "N/A";
+  const d=new Date(v);
+  if(isNaN(d)) return v;
+  return d.toLocaleDateString('en-GB');
 }
 
-async function checkDrawingAvailability(id){
-  try{
-    const res = await fetch(DRAWING_JSON);
-    if(!res.ok){ drawingAvailable = false; return; }
-    const j = await res.json();
-    drawingAvailable = !!(j.rows || []).find(r => String((r.id||"")).toUpperCase() === id.toUpperCase());
-  }catch(e){
-    drawingAvailable = false;
-  }
-}
-
-function escapeHtml(s){ if(s===undefined||s===null) return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* Build compact rows HTML */
-function buildCompactHTML(title, data){
-  let html = `<div class="section"><div class="updated" style="font-weight:800;color:var(--brand);margin-bottom:6px">${escapeHtml(title)}</div>`;
-  html += `<div class="compact-list">`;
-  data.forEach(row=>{
-    html += `<div class="compact-row" role="listitem" tabindex="0">
-      <div class="row-line">
-        <div class="col-small"><div>Signal</div><div class="value">${escapeHtml(row.signal)}</div></div>
-        <div class="col-small"><div>Tag</div><div class="value">${escapeHtml(row.tag)}</div></div>
-        <div class="col-small"><div>Address</div><div class="value">${escapeHtml(row.address)}</div></div>
-      </div>
-      <div class="desc">${escapeHtml(row.description)}</div>
-      <div class="meta-line">
-        <div class="chip">Panel: ${escapeHtml(row.panel)}</div>
-        <div class="chip">TB: ${escapeHtml(row.tb)}</div>
-        <div class="chip">RL: ${escapeHtml(row.rl)}</div>
-        ${row.board && String(row.board).trim() ? `<div class="chip">Board: ${escapeHtml(row.board)}</div>` : ''}
-      </div>
-    </div>`;
-  });
-  html += `</div></div>`;
-  return html;
-}
-
-/* Build table HTML (desktop) */
-function buildTableHTML(title, data){
-  const showBoard = data.some(r=> r.board && String(r.board).trim() !== "");
-  let html = `<div class="section"><div class="section-title">${escapeHtml(title)}</div>`;
-  html += `<table><thead><tr><th>Signal</th><th>Tag</th><th>Address</th><th>Description</th><th>Panel</th><th>TB No</th><th>RL</th>${showBoard ? '<th>Board</th>':''}</tr></thead><tbody>`;
-  data.forEach(row=>{
-    html += `<tr>
-      <td>${escapeHtml(row.signal)}</td>
-      <td>${escapeHtml(row.tag)}</td>
-      <td>${escapeHtml(row.address)}</td>
-      <td>${escapeHtml(row.description)}</td>
-      <td>${escapeHtml(row.panel)}</td>
-      <td>${escapeHtml(row.tb)}</td>
-      <td>${escapeHtml(row.rl)}</td>
-      ${showBoard ? `<td>${escapeHtml(row.board)}</td>` : ''}
-    </tr>`;
-  });
-  html += `</tbody></table></div>`;
-  return html;
-}
-
-async function loadPLC(){
+async function loadMotor(){
   const app = document.getElementById('app');
-  const driveID = getDriveFromURL();
-  if(!driveID){
-    app.innerHTML = `<div class="no-data">No Drive ID provided in URL.</div>`;
+  const id = getID().trim();
+  if(!id){
+    app.innerHTML = `<div class="no-data">No Drive ID supplied.</div>`;
     return;
   }
 
-  // start drawing check
-  checkDrawingAvailability(driveID);
-
-  // header + buttons
-  let out = `<div style="text-align:center;margin-bottom:8px"><h3 style="margin:6px 0;color:var(--brand)">${escapeHtml('PLC ADDRESS OF DRIVE — ' + driveID)}</h3></div>
-    <div class="button-bar" role="toolbar" aria-label="actions">
-      <button class="btn icon" onclick="goBack()">⬅</button>
-      <button class="btn icon" onclick="goHome()">🏠</button>
-      <button class="btn" onclick="goDriveInfo()">Info</button>
-      <button class="btn" onclick="goHistory()">History</button>
-      <button id="drawBtn" class="btn" onclick="goDrawing()">Drawings</button>
-    </div>
-    <div class="updated" id="updatedEl">Loading…</div>`;
-
-  app.innerHTML = out + `<div class="loader">Loading PLC data…</div>`;
-
   try{
     const res = await fetch(JSON_URL);
-    if(!res.ok) throw new Error('Failed to fetch PLC JSON');
+    if(!res.ok) throw new Error('Failed to fetch JSON');
     const data = await res.json();
 
-    const driveKey = (driveID||'').toUpperCase();
-    const drive = (data.drives || {})[driveKey];
+    // find row where column D (index 3) matches id (case-insensitive)
+    let row = null;
+    for(const r of (data.rows || [])){
+      if(String(r[3] || "").trim().toUpperCase() === id.toUpperCase()){
+        row = r; break;
+      }
+    }
 
-    if(!drive){
-      out += `<div class="no-data">No PLC data found for: ${escapeHtml(driveID)}</div>`;
-      app.innerHTML = out;
-      setTimeout(()=>{ if(!drawingAvailable){ const db=document.getElementById('drawBtn'); if(db) db.disabled=true; } }, 10);
+    // build header + toolbar
+    let html = `
+      <div class="header">
+        <h1>MOTOR DETAILS</h1>
+        <h2>${id}</h2>
+        <div class="meta">Last Updated : ${data.updated ? new Date(data.updated).toLocaleString('en-GB') : 'Unknown'}</div>
+      </div>
+
+      <div class="toolbar" role="toolbar" aria-label="actions">
+        <button class="btn small" onclick="goBack()">⬅ Back</button>
+        <button class="btn small" onclick="goHome()">🏠 Home</button>
+        <button class="btn small" onclick="goDrive()">Drive Info</button>
+        <button class="btn small" onclick="goPLC()">PLC</button>
+      </div>
+    `;
+
+    if(!row){
+      html += `<div class="no-data">Motor details not found for <b>${id}</b></div>`;
+      app.innerHTML = html;
       return;
     }
 
-    // updated timestamp
-    const updatedHtml = `<div class="updated">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString() : 'Unknown'}</div>`;
+    // info grid: use smaller labels and values
+    html += `<div class="info-card">
+      <div class="info-grid">
+        <div class="info-item"><div class="info-label">KW</div><div class="info-value">${row[5]||''}</div></div>
+        <div class="info-item"><div class="info-label">MAKE</div><div class="info-value">${row[7]||''}</div></div>
+        <div class="info-item"><div class="info-label">FRAME SIZE</div><div class="info-value">${row[8]||''}</div></div>
+        <div class="info-item"><div class="info-label">RPM</div><div class="info-value">${row[9]||''}</div></div>
+        <div class="info-item"><div class="info-label">FLC</div><div class="info-value">${row[10]||''}</div></div>
+        <div class="info-item"><div class="info-label">MTG</div><div class="info-value">${row[11]||''}</div></div>
+      </div>
+    </div>`;
 
-    // build compact lists
-    let content = '';
-    if(Array.isArray(drive.inputs) && drive.inputs.length){
-      content += buildCompactHTML('INPUT SIGNALS', drive.inputs);
+    // last motor replacement / last PM
+    html += `<div style="margin-top:10px;background:#fff;padding:10px;border-radius:10px;box-shadow:0 6px 20px rgba(3,63,136,0.04);">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="flex:1;"><div style="font-size:12px;color:#3a5a7a;font-weight:800">Last Motor Replacement</div>
+          <div style="font-size:14px;font-weight:700">${formatDate(row[37])}</div></div>
+        <div style="flex:1;"><div style="font-size:12px;color:#3a5a7a;font-weight:800">Last Motor PM</div>
+          <div style="font-size:14px;font-weight:700">${formatDate(row[38])}</div></div>
+      </div>
+    </div>`;
+
+    // Spare Motor Details (collapsible)
+    const spareData = (row[24]||"").trim();
+    let spareHtml = '';
+    if(spareData){
+      const spareList = spareData.split("@").map(s=>s.trim()).filter(Boolean);
+      spareHtml += `<table class="small-table">`;
+      spareHtml += `<thead><tr><th style="width:32px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOCATION</th></tr></thead><tbody>`;
+      spareList.forEach((it, idx)=>{
+        const parts = it.split("!").map(p=>p? p.trim() : "");
+        spareHtml += `<tr>
+          <td style="text-align:center">${idx+1}</td>
+          <td>${parts[0]||''}</td>
+          <td>${parts[1]||''}</td>
+          <td>${parts[2]||''}</td>
+          <td>${parts[3]||''}</td>
+          <td>${parts[4]||''}</td>
+          <td>${parts[5]||''}</td>
+          <td>${parts[6]||''}</td>
+          <td>${parts[7]||''}</td>
+        </tr>`;
+      });
+      spareHtml += `</tbody></table>`;
     } else {
-      content += `<div class="section"><div class="updated" style="font-weight:800;color:var(--brand);margin-bottom:6px">INPUT SIGNALS</div><div class="no-data">No input signals.</div></div>`;
+      spareHtml = `<div style="padding:10px;color:#666">No Spare Motor Details Available</div>`;
     }
 
-    if(Array.isArray(drive.outputs) && drive.outputs.length){
-      content += buildCompactHTML('OUTPUT SIGNALS', drive.outputs);
+    html += `<details open style="margin-top:10px">
+      <summary><span style="font-weight:800;color:#0b3b74">Spare Motor Details</span><span style="font-size:12px;color:#666;margin-left:8px">${spareData ? '' : '(empty)'}</span></summary>
+      <div class="detail-body" style="padding:8px 0">${spareHtml}</div>
+    </details>`;
+
+    // Pending Motors at ERS (collapsible)
+    const pendingData = (row[26]||"").trim();
+    let pendingHtml = '';
+    if(pendingData){
+      const pendingList = pendingData.split("@").map(s=>s.trim()).filter(Boolean);
+      pendingHtml += `<table class="small-table">`;
+      pendingHtml += `<thead><tr><th style="width:32px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOCATION</th></tr></thead><tbody>`;
+      pendingList.forEach((it, idx)=>{
+        const parts = it.split("!").map(p=>p? p.trim() : "");
+        pendingHtml += `<tr>
+          <td style="text-align:center">${idx+1}</td>
+          <td>${parts[0]||''}</td>
+          <td>${parts[1]||''}</td>
+          <td>${parts[2]||''}</td>
+          <td>${parts[3]||''}</td>
+          <td>${parts[4]||''}</td>
+          <td>${parts[5]||''}</td>
+          <td>${parts[6]||''}</td>
+          <td>${parts[7]||''}</td>
+        </tr>`;
+      });
+      pendingHtml += `</tbody></table>`;
     } else {
-      content += `<div class="section"><div class="updated" style="font-weight:800;color:var(--brand);margin-bottom:6px">OUTPUT SIGNALS</div><div class="no-data">No output signals.</div></div>`;
+      pendingHtml = `<div style="padding:10px;color:#666">No Pending Motors Available</div>`;
     }
 
-    // desktop tables
-    let desktopTables = `<div class="table-wrap">`;
-    if(Array.isArray(drive.inputs) && drive.inputs.length){
-      desktopTables += buildTableHTML('INPUT SIGNALS', drive.inputs);
-    }
-    if(Array.isArray(drive.outputs) && drive.outputs.length){
-      desktopTables += buildTableHTML('OUTPUT SIGNALS', drive.outputs);
-    }
-    desktopTables += `</div>`;
+    html += `<details style="margin-top:10px">
+      <summary><span style="font-weight:800;color:#0b3b74">Pending Motors at ERS</span><span style="font-size:12px;color:#666;margin-left:8px">${pendingData ? '' : '(empty)'}</span></summary>
+      <div class="detail-body" style="padding:8px 0">${pendingHtml}</div>
+    </details>`;
 
-    app.innerHTML = out + updatedHtml + content + desktopTables;
+    app.innerHTML = html;
 
-    // disable draw button if not available
-    if(!drawingAvailable){
-      const db = document.getElementById('drawBtn');
-      if(db) db.disabled = true;
-    }
-
-  }catch(err){
+  } catch(err){
     console.error(err);
-    app.innerHTML = `<div class="no-data">Error loading PLC data.</div>`;
+    app.innerHTML = `<div class="no-data">Unable to load Motor Details.<br><br>${err.message || ''}</div>`;
   }
 }
 
-loadPLC();
+/* start */
+loadMotor();
 </script>
 </body>
 </html>
