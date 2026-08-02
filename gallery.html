@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Electrical Photo Gallery</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#edf3fb;color:#222}
+header{background:#0d47a1;color:#fff;padding:18px;text-align:center;font-size:28px;font-weight:bold}
+header span{display:block;font-size:14px;margin-top:5px}
+main{max-width:1500px;margin:auto;padding:20px}
+.gallery{background:#fff;margin:25px 0;padding:18px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.gallery h2{margin-bottom:12px;color:#0d47a1}
+.wrap{position:relative;overflow:hidden}
+.track{display:flex;overflow-x:auto;scroll-behavior:smooth;gap:14px;padding:6px}
+.track::-webkit-scrollbar{display:none}
+.card{min-width:260px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}
+.card img{width:100%;height:180px;object-fit:cover;background:#ddd}
+.card div{padding:10px;text-align:center;font-weight:bold}
+.btn{position:absolute;top:45%;transform:translateY(-50%);width:42px;height:42px;border:none;border-radius:50%;background:#fff;font-size:22px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.prev{left:5px}.next{right:5px}
+.count{float:right;background:#1565c0;color:#fff;padding:4px 10px;border-radius:14px;font-size:13px}
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);align-items:center;justify-content:center;flex-direction:column;z-index:9999}
+#lightbox img{max-width:95%;max-height:82vh}
+#caption{color:#fff;padding:10px;font-size:20px}
+.close{position:absolute;top:15px;right:20px;color:#fff;font-size:40px;cursor:pointer}
+@media(max-width:700px){.card{min-width:200px}.card img{height:150px}}
+</style>
+</head>
+<body>
+<header>Electrical Photo Gallery<span>08 AREA • SAFETY • 5S</span></header>
+<main>
+<div class="gallery"><h2>08 AREA PHOTOS <span class="count" id="c1">0</span></h2><div class="wrap"><button class="btn prev" onclick="scrollTrack('t1',-280)">❮</button><div class="track" id="t1"></div><button class="btn next" onclick="scrollTrack('t1',280)">❯</button></div></div>
+<div class="gallery"><h2>SAFETY PHOTOS <span class="count" id="c2">0</span></h2><div class="wrap"><button class="btn prev" onclick="scrollTrack('t2',-280)">❮</button><div class="track" id="t2"></div><button class="btn next" onclick="scrollTrack('t2',280)">❯</button></div></div>
+<div class="gallery"><h2>5S PHOTOS <span class="count" id="c3">0</span></h2><div class="wrap"><button class="btn prev" onclick="scrollTrack('t3',-280)">❮</button><div class="track" id="t3"></div><button class="btn next" onclick="scrollTrack('t3',280)">❯</button></div></div>
+</main>
+
+<div id="lightbox">
+<div class="close" onclick="hideLightbox()">×</div>
+<img id="lbimg">
+<div id="caption"></div>
+</div>
+
+<script>
+const galleries=[
+{
+url:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/Gallery/08area.json",
+track:"t1",count:"c1"
+},
+{
+url:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/Gallery/safety.json",
+track:"t2",count:"c2"
+},
+{
+url:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/Gallery/5s.json",
+track:"t3",count:"c3"
+}
+];
+
+async function loadGallery(g){
+ const r=await fetch(g.url+"?t="+Date.now());
+ const j=await r.json();
+ document.getElementById(g.count).textContent=j.total;
+ const t=document.getElementById(g.track);
+ t.innerHTML="";
+ j.photos.forEach(p=>{
+   const c=document.createElement("div");
+   c.className="card";
+   c.innerHTML=`<img loading="lazy" src="${p.thumb||p.image}" alt=""><div>${p.title}</div>`;
+   c.onclick=()=>showLightbox(p.image,p.title);
+   t.appendChild(c);
+ });
+ setInterval(()=>{t.scrollBy({left:280,behavior:"smooth"});
+ if(t.scrollLeft+t.clientWidth>=t.scrollWidth-10){setTimeout(()=>t.scrollTo({left:0,behavior:"smooth"}),700);}
+ },3500);
+}
+function scrollTrack(id,x){document.getElementById(id).scrollBy({left:x,behavior:"smooth"});}
+function showLightbox(src,title){
+ document.getElementById("lbimg").src=src;
+ document.getElementById("caption").textContent=title;
+ document.getElementById("lightbox").style.display="flex";
+}
+function hideLightbox(){document.getElementById("lightbox").style.display="none";}
+galleries.forEach(loadGallery);
+</script>
+</body>
+</html>
