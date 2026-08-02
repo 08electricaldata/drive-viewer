@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relay Settings of Drives</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb}
+header{background:#0d47a1;color:#fff;padding:16px;text-align:center;font-size:24px;font-weight:bold}
+#buttons{display:flex;flex-wrap:wrap;gap:10px;padding:12px;justify-content:center}
+button{padding:12px 18px;border:none;border-radius:10px;background:#1976d2;color:#fff;font-weight:bold;cursor:pointer}
+button.active{background:#ff9800}
+#info{padding:8px 16px;font-size:14px}
+iframe{width:100%;height:calc(100vh - 170px);border:none;background:#fff}
+</style>
+</head>
+<body>
+<header>Relay Settings of Drives</header>
+
+<div id="buttons"></div>
+<div id="info">Loading relay list...</div>
+<iframe id="viewer"></iframe>
+
+<script>
+const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/relay/relaysettings.json";
+
+const btnDiv=document.getElementById("buttons");
+const info=document.getElementById("info");
+const viewer=document.getElementById("viewer");
+
+fetch(JSON_URL)
+.then(r=>r.json())
+.then(data=>{
+    info.textContent="Select a relay.";
+    data.relays.forEach(relay=>{
+        const b=document.createElement("button");
+        b.textContent=relay.relay;
+        b.onclick=()=>{
+            document.querySelectorAll("#buttons button").forEach(x=>x.classList.remove("active"));
+            b.classList.add("active");
+            if(relay.pdf){
+                viewer.src=relay.pdf.preview;
+                info.innerHTML="<b>"+relay.relay+"</b> &nbsp; | &nbsp; "+relay.pdf.name+
+                " &nbsp; | &nbsp; Updated: "+relay.pdf.updated;
+            }else{
+                viewer.removeAttribute("src");
+                info.textContent="No PDF available.";
+            }
+        };
+        btnDiv.appendChild(b);
+    });
+})
+.catch(e=>{
+    info.textContent="Unable to load relaysettings.json";
+    console.error(e);
+});
+</script>
+</body>
+</html>
