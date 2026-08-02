@@ -6,20 +6,43 @@
 <title>Relay Settings of Drives</title>
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb}
-header{background:#0d47a1;color:#fff;padding:16px;text-align:center;font-size:24px;font-weight:bold}
+/* Header with actions */
+header{
+  background:#0d47a1;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+}
+.header-title{font-size:20px;font-weight:700;text-align:center;flex:1}
+.header-actions{display:flex;gap:8px;align-items:center}
+.action-btn{background:#fff;color:#0d47a1;border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.action-btn:active{transform:translateY(1px)}
+
 #buttons{display:flex;flex-wrap:wrap;gap:10px;padding:12px;justify-content:center}
-button{padding:12px 18px;border:none;border-radius:10px;background:#1976d2;color:#fff;font-weight:bold;cursor:pointer}
-button.active{background:#ff9800}
+button.relay-btn{padding:12px 18px;border:none;border-radius:10px;background:#1976d2;color:#fff;font-weight:bold;cursor:pointer}
+button.relay-btn.active{background:#ff9800}
 #info{padding:8px 16px;font-size:14px}
 iframe{width:100%;height:calc(100vh - 170px);border:none;background:#fff}
+@media(max-width:600px){
+  .header-title{font-size:16px}
+  .action-btn{padding:6px 8px}
+  iframe{height:calc(100vh - 200px)}
+}
 </style>
 </head>
 <body>
-<header>Relay Settings of Drives</header>
+<header>
+  <div class="header-actions" aria-hidden="false">
+    <button class="action-btn" onclick="goBack()" title="Back">⬅ Back</button>
+  </div>
+
+  <div class="header-title">Relay Settings of Drives</div>
+
+  <div class="header-actions">
+    <button class="action-btn" onclick="goHome()" title="Home">🏠 Home</button>
+  </div>
+</header>
 
 <div id="buttons"></div>
 <div id="info">Loading relay list...</div>
-<iframe id="viewer"></iframe>
+<iframe id="viewer" title="Relay PDF Viewer"></iframe>
 
 <script>
 const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/relay/relaysettings.json";
@@ -28,17 +51,28 @@ const btnDiv=document.getElementById("buttons");
 const info=document.getElementById("info");
 const viewer=document.getElementById("viewer");
 
+/* Navigation helpers */
+function goHome(){
+  // Open mobile home as requested
+  location.href = "https://08electricaldata.github.io/";
+}
+function goBack(){
+  history.back();
+}
+
 fetch(JSON_URL)
 .then(r=>r.json())
 .then(data=>{
     info.textContent="Select a relay.";
-    data.relays.forEach(relay=>{
+    (data.relays||[]).forEach(relay=>{
         const b=document.createElement("button");
+        b.className = "relay-btn";
         b.textContent=relay.relay;
         b.onclick=()=>{
             document.querySelectorAll("#buttons button").forEach(x=>x.classList.remove("active"));
             b.classList.add("active");
             if(relay.pdf){
+                // show preview in iframe
                 viewer.src=relay.pdf.preview;
                 info.innerHTML="<b>"+relay.relay+"</b> &nbsp; | &nbsp; "+relay.pdf.name+
                 " &nbsp; | &nbsp; Updated: "+relay.pdf.updated;
