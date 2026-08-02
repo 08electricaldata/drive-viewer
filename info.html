@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>08 Area Information</title>
+<style>
+  /* Mobile-first app style */
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    background:linear-gradient(180deg,#f0f6ff,#eef7ff);
+    color:#0b1220;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;gap:10px;
+    padding:12px;
+    background:linear-gradient(90deg,#0d47a1,#0052cc);
+    color:#fff;
+    box-shadow:0 6px 18px rgba(0,0,0,.12);
+  }
+  .btn{
+    background:#fff;color:#0d47a1;border:0;padding:8px 10px;border-radius:10px;font-weight:800;cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,.12);min-width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .title{flex:1;text-align:center;font-weight:800;font-size:16px}
+  .subtitle{display:block;font-size:11px;opacity:.9;font-weight:600}
+
+  main{padding:14px;max-width:1100px;margin:0 auto}
+  .card{background:#fff;border-radius:12px;padding:12px;box-shadow:0 8px 24px rgba(3,63,136,.04);margin-bottom:12px}
+  .lead{font-weight:800;color:#0d47a1;margin-bottom:8px}
+  .actions{display:grid;grid-template-columns:1fr;gap:10px}
+  .primary{
+    background:linear-gradient(90deg,#0d47a1,#0052cc);
+    color:#fff;padding:12px;border-radius:10px;border:none;font-weight:900;cursor:pointer;font-size:15px;
+    box-shadow:0 10px 30px rgba(13,71,161,.12)
+  }
+  .secondary{
+    background:#fff;border:1px solid #dbeafe;color:#0d47a1;padding:10px;border-radius:10px;font-weight:800;cursor:pointer;
+  }
+  footer{padding:12px;text-align:center;font-size:12px;color:#556}
+  @media(min-width:700px){
+    .actions{grid-template-columns:repeat(2,1fr)}
+    .title{font-size:18px}
+  }
+</style>
+</head>
+<body>
+
+<header role="banner" aria-label="08 area header">
+  <button class="btn" onclick="goBack()" aria-label="Back">⬅</button>
+  <div class="title">08 Area Information<span class="subtitle">Drive & Site Resources</span></div>
+  <button class="btn" onclick="goHome()" aria-label="Home">🏠</button>
+</header>
+
+<main role="main">
+  <section class="card" aria-labelledby="section-title">
+    <div id="section-title" class="lead">Quick Actions</div>
+
+    <div class="actions" role="region" aria-label="Quick actions">
+      <button class="primary" onclick="openRelay()" aria-label="Open Relay Settings">Relay Settings</button>
+      <button class="secondary" onclick="openGallery()" aria-label="Open Gallery">Gallery</button>
+    </div>
+
+    <div style="margin-top:12px;color:#334;line-height:1.4;font-size:14px">
+      Tap Relay Settings to view relay documents and configurations for drives. Use Home to return to the app home.
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="resources-title">
+    <div id="resources-title" class="lead">Other Links</div>
+    <div style="display:grid;gap:8px">
+      <button class="secondary" onclick="openMonthlyJobs()">Monthly Job Trend</button>
+      <button class="secondary" onclick="openDriveViewer()">Drive Viewer</button>
+    </div>
+  </section>
+</main>
+
+<footer role="contentinfo">© 08 Electrical Data | Designed & Maintained by Rakesh Chandra Sethy</footer>
+
+<script>
+  function goHome(){
+    location.href = "https://08electricaldata.github.io/";
+  }
+  function goBack(){
+    history.back();
+  }
+  function openRelay(){
+    location.href = "https://08electricaldata.github.io/drive-viewer/relaysettings.html";
+  }
+  function openGallery(){
+    location.href = "https://08electricaldata.github.io/drive-viewer/gallery.html";
+  }
+  function openMonthlyJobs(){
+    location.href = "https://08electricaldata.github.io/drive-viewer/monthly-jobs.html";
+  }
+  function openDriveViewer(){
+    location.href = "https://08electricaldata.github.io/drive-viewer/index2.html";
+  }
+</script>
+
+</body>
+</html>
