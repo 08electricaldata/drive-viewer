@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Monthly Job Counts — App View</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* Mobile-first app styling */
+
+/* reset */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+
+/* base */
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:linear-gradient(180deg,#eef7ff,#f7fbff);
+  color:#07203a;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* sticky app header */
+.header{
+  position:sticky;
+  top:0;
+  z-index:999;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px;
+  background:linear-gradient(90deg,#0d47a1,#0052cc);
+  color:#fff;
+  box-shadow:0 8px 28px rgba(3,63,136,0.12);
+}
+.header .left, .header .right{display:flex;gap:8px;align-items:center}
+.header .title{flex:1;text-align:center;font-weight:800;font-size:17px}
+.header .subtitle{font-size:11px;opacity:.95}
+
+/* header buttons */
+.header button{
+  background:#fff;color:#0d47a1;border:0;padding:8px 12px;border-radius:10px;font-weight:800;cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,0.12);
+}
+.header button.icon{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center}
+
+/* main layout */
+main{padding:12px;max-width:1100px;margin:0 auto 40px;}
+
+/* KPIs stacked on mobile */
+.kpi-wrapper{
+  display:grid;
+  gap:10px;
+  grid-template-columns:1fr;
+  margin:14px 0;
+}
+.kpi{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px;
+  border-radius:12px;
+  background:linear-gradient(180deg,#fff,#eaf4ff);
+  box-shadow:0 10px 30px rgba(3,63,136,0.04);
+}
+.kpi h3{margin:0;font-size:13px;color:#003f88;font-weight:800}
+.kpi .num{font-size:20px;font-weight:900;color:#07203a}
+
+/* table container: responsive */
+.table-container{
+  margin-top:8px;
+  background:transparent;
+  padding:4px;
+}
+.table-scroll{
+  overflow:auto;
+  background:#fff;
+  border-radius:12px;
+  padding:8px;
+  box-shadow:0 10px 30px rgba(3,63,136,0.04);
+}
+
+/* compact table for mobile */
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+th, td{
+  padding:10px 8px;
+  text-align:center;
+  border-bottom:1px solid #eef6ff;
+}
+th{
+  background:linear-gradient(90deg,#003f88,#0052cc);
+  color:white;
+  font-weight:800;
+  font-size:13px;
+}
+td:first-child{text-align:left;font-weight:700}
+tr.clickable{cursor:pointer}
+.total-col{background:#f0f8ff;font-weight:800}
+
+/* modals full-screen on mobile */
+#trendModal, #jobDetailModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:9999;
+  padding:12px;
+  overflow:auto;
+}
+.modal-box{
+  background:#fff;border-radius:12px;padding:12px;max-width:960px;margin:24px auto;box-shadow:0 18px 40px rgba(3,63,136,0.12);
+}
+.job-modal-box{background:#fff;border-radius:12px;padding:12px;max-width:1000px;margin:12px auto;box-shadow:0 18px 40px rgba(3,63,136,0.12);max-height:88vh;overflow:auto}
+
+/* close button */
+.close-btn{
+  background:#e11d48;color:#fff;border:0;border-radius:50%;width:34px;height:34px;font-weight:800;cursor:pointer;
+  position:absolute;right:14px;top:14px;
+}
+
+/* search/export row */
+.search-box{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-bottom:8px}
+.search-box input{padding:8px;border-radius:8px;border:1px solid #e6f0ff;width:160px}
+.export-btn{padding:8px 12px;border-radius:8px;border:0;background:#003f88;color:#fff;cursor:pointer}
+
+/* small spinner / messages */
+.spinner{text-align:center;padding:16px;font-weight:800;color:#003f88}
+
+/* adjust for larger screens */
+@media(min-width:700px){
+  .kpi-wrapper{grid-template-columns:repeat(3,1fr)}
+  .card{padding:16px}
+  .header .title{font-size:20px}
+  .table-scroll{padding:12px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header" role="banner">
+  <div class="left">
+    <button class="icon" onclick="history.back()" aria-label="Back">⬅</button>
+  </div>
+  <div class="title" role="heading" aria-level="1">
+    Monthly Job Counts
+    <div class="subtitle">Designed & Maintained by Rakesh Chandra Sethy</div>
+  </div>
+  <div class="right">
+    <button onclick="goHome()" aria-label="Home">🏠</button>
+  </div>
+</div>
+
+<main role="main">
+  <section id="kpis" class="kpi-wrapper" aria-label="Key metrics"></section>
+
+  <div class="table-container" role="region" aria-label="Monthly job table">
+    <div class="table-scroll">
+      <table id="jobTable" aria-live="polite"></table>
+    </div>
+  </div>
+</main>
+
+<!-- TREND MODAL -->
+<div id="trendModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeTrend()" aria-label="Close trend">✕</button>
+    <h3 id="trendTitle" style="text-align:center;color:#003f88;margin-top:6px"></h3>
+    <div id="growthInfo" class="growth-text" style="text-align:center;font-weight:800;margin-bottom:10px"></div>
+    <canvas id="trendChart" height="140"></canvas>
+  </div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div id="jobDetailModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="job-modal-box">
+    <button class="close-btn" onclick="closeJobDetail()" aria-label="Close jobs">✕</button>
+    <h3 id="jobDetailTitle" style="text-align:center;color:#003f88;margin-top:6px"></h3>
+
+    <div class="search-box">
+      <input type="text" id="jobSearch" placeholder="Search..." oninput="filterPopup()">
+      <button class="export-btn" onclick="exportPopupCSV()">Export CSV</button>
+    </div>
+
+    <div id="popupSpinner" class="spinner">Loading...</div>
+
+    <div style="overflow:auto">
+      <table id="jobDetailTable" style="width:100%;border-collapse:collapse;"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Data sources (unchanged) */
+const DASHBOARD_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/summary.json";
+const MONTHLY_JOB_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/monthly_job_count.json";
+const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+
+let monthlyData;
+let chartInstance;
+let HISTORY_DATA = [];
+let popupRows = [];
+
+/* Navigation: Home should open index_mob.html */
+function goHome(){
+  location.href = "https://08electricaldata.github.io/index_mob.html";
+}
+
+/* Preload history JSONs (best-effort) */
+async function preloadHistory(){
+  for(const y of HISTORY_YEARS){
+    try{
+      const res = await fetch(HISTORY_BASE + y + ".json");
+      if(!res.ok) continue;
+      const data = await res.json();
+      if(data.rows) HISTORY_DATA = HISTORY_DATA.concat(data.rows);
+    }catch(e){
+      console.warn("History load failed for", y, e);
+    }
+  }
+}
+
+/* Load KPI panels */
+async function loadKPI(){
+  try{
+    const res = await fetch(DASHBOARD_JSON);
+    const data = await res.json();
+    const container = document.getElementById("kpis");
+    container.innerHTML = "";
+    (data.metrics||[]).forEach(m=>{
+      const box = document.createElement("div");
+      box.className = "kpi";
+      box.innerHTML = `<h3>${m.key.replace(/_/g," ")}</h3><div class="num">${m.due}</div><small style="color:#456">${m.installed?("Installed: "+m.installed):""}</small>`;
+      container.appendChild(box);
+    });
+  }catch(e){
+    console.error("KPI load failed", e);
+  }
+}
+
+/* Load monthly job table */
+async function loadTable(){
+  try{
+    const res = await fetch(MONTHLY_JOB_JSON);
+    monthlyData = await res.json();
+    const headers = monthlyData.headers || [];
+    const rows = monthlyData.rows || [];
+
+    let html = "<tr><th>Job Type</th>";
+    for(let i=1;i<headers.length;i++){
+      const label = new Date(headers[i]).toLocaleString('default',{month:'short',year:'numeric'});
+      html += `<th>${label}</th>`;
+    }
+    html += "<th>Total</th></tr>";
+
+    rows.forEach((r,index)=>{
+      let total = 0;
+      for(let i=1;i<r.length;i++) total += Number(r[i]||0);
+      if(total === 0) return; // skip empty rows to keep mobile tidy
+
+      html += `<tr class="clickable" onclick="openTrend(${index})">`;
+      html += `<td>${escapeHtml(r[0]||"")}</td>`;
+
+      for(let i=1;i<r.length;i++){
+        const jobType = r[0];
+        const headerDate = headers[i];
+        const monthIndex = new Date(headerDate).getMonth();
+        const yearValue = new Date(headerDate).getFullYear();
+        const value = (r[i]||0);
+
+        // each cell opens job detail for that month (stop propagation handled)
+        html += `<td onclick='openMonthDetail("${escapeJS(jobType)}",${monthIndex},${yearValue},event)'>${value}</td>`;
+      }
+
+      html += `<td class="total-col">${total}</td>`;
+      html += `</tr>`;
+    });
+
+    document.getElementById("jobTable").innerHTML = html;
+  }catch(e){
+    console.error("Table load failed", e);
+    document.getElementById("jobTable").innerHTML = "<tr><td colspan='8'>Unable to load data</td></tr>";
+  }
+}
+
+/* Open job detail modal for given jobType/month/year */
+async function openMonthDetail(jobType, monthIndex, yearValue, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+
+  document.getElementById("jobDetailModal").style.display = "block";
+  document.getElementById("popupSpinner").style.display = "block";
+  document.getElementById("jobDetailTable").innerHTML = "";
+
+  // allow modal animation
+  await new Promise(r=>setTimeout(r,250));
+
+  popupRows = HISTORY_DATA.filter(r=>{
+    const d = new Date(r[4]);
+    return (r[7] === jobType) && (d.getMonth() === monthIndex) && (d.getFullYear() === yearValue);
+  });
+
+  renderPopupTable(popupRows);
+  document.getElementById("popupSpinner").style.display = "none";
+  document.getElementById("jobDetailTitle").innerText = `${jobType} - ${new Date(yearValue, monthIndex).toLocaleString('default',{month:'long'})} ${yearValue}`;
+  document.getElementById("jobSearch").value = "";
+}
+
+function renderPopupTable(data){
+  let html = "<tr style='background:#003f88;color:white'><th>TR</th><th>BAT</th><th>EQP</th><th>Date</th><th>Details</th></tr>";
+  if(!data || data.length === 0){
+    html += "<tr><td colspan='5' style='padding:14px;text-align:center'>No Records Found</td></tr>";
+  } else {
+    data.forEach(r=>{
+      html += "<tr>";
+      html += `<td>${escapeHtml(r[0]||"")}</td>`;
+      html += `<td>${escapeHtml(r[2]||"")}</td>`;
+      html += `<td>${escapeHtml(r[3]||"")}</td>`;
+      html += `<td>${new Date(r[4]).toLocaleDateString()}</td>`;
+      html += `<td style="text-align:left">${escapeHtml(r[5]||"")}</td>`;
+      html += "</tr>";
+    });
+  }
+  document.getElementById("jobDetailTable").innerHTML = html;
+}
+
+function filterPopup(){
+  const val = (document.getElementById("jobSearch").value || "").toLowerCase();
+  const filtered = popupRows.filter(r => JSON.stringify(r).toLowerCase().includes(val));
+  renderPopupTable(filtered);
+}
+
+function exportPopupCSV(){
+  const rows = [];
+  document.querySelectorAll("#jobDetailTable tr").forEach(tr=>{
+    const cells = [...tr.children].map(td => `"${td.innerText.replace(/"/g,'""')}"`);
+    rows.push(cells.join(","));
+  });
+  const blob = new Blob([rows.join("\n")], {type: "text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "job_details.csv";
+  a.click();
+}
+
+function closeJobDetail(){
+  document.getElementById("jobDetailModal").style.display = "none";
+}
+
+/* Trend modal */
+function openTrend(index){
+  const headers = (monthlyData.headers || []).slice(1);
+  const row = (monthlyData.rows || [])[index];
+  if(!row) return;
+
+  const labels = headers.map(h => new Date(h).toLocaleString('default',{month:'short'}));
+  const values = row.slice(1).map(v => Number(v||0));
+
+  document.getElementById("trendTitle").innerText = `${row[0]} Trend`;
+  document.getElementById("trendModal").style.display = "flex";
+
+  const ctx = document.getElementById("trendChart").getContext('2d');
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    data:{
+      labels,
+      datasets:[
+        {type:'bar', data: values, backgroundColor:'rgba(0,82,204,0.4)'},
+        {type:'line', data: values, borderColor:'#003f88', tension:0.4, borderWidth:2, pointRadius:3}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true}}
+    }
+  });
+}
+
+function closeTrend(){
+  document.getElementById("trendModal").style.display = "none";
+}
+
+/* small helpers */
+function escapeHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeJS(s){ return String(s || '').replace(/"/g,'\\"').replace(/'/g,"\\'"); }
+
+/* start */
+preloadHistory();
+loadKPI();
+loadTable();
+
+</script>
+</body>
+</html>
