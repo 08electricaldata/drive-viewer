@@ -180,6 +180,7 @@ th{
   <select id="typeSelect">
     <option value="rewinding">Rewinding</option>
     <option value="overhauling">Overhauling</option>
+    <option value="scrap">SCRAP</option>
   </select>
   <input type="text" id="searchBox" placeholder="Search...">
   <button onclick="exportCSV()">Export Excel</button>
@@ -213,7 +214,8 @@ th{
 <script>
 const JSON_FILES={
   rewinding:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
-  overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
+  overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json",
+  scrap:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/scrap.json"
 };
 
 let currentData=[];
@@ -414,7 +416,7 @@ function updateCards(withP, withoutP){
   document.getElementById("highCount").innerText = high;
   document.getElementById("mediumCount").innerText = med;
   document.getElementById("lowCount").innerText = low;
-  document.getElementById("noPriorityCount").innerText = withoutP.length;
+  document.getElementById("noPriorityCount").innerText = withoutPriority.length || withoutP.length;
 }
 
 function exportCSV(){
