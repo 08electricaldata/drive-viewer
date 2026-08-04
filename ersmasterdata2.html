@@ -162,11 +162,11 @@ th{
     <div>
       <button class="header-btn" onclick="history.back()">⬅ Back</button>
       <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
-      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/drive-viewer/ersmasterdata.html'">🗂️ ERS Master</button>
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/drive-viewer/ersmasterdata.html'">🗂️ ERS Transaction</button>
     </div>
 
     <div class="header-center">
-      <h1>Rewinding / Overhauling Dashboard</h1>
+      <h1>Rewinding / Overhauling / Scrap Dashboard</h1>
       <p>Designed and maintained by Rakesh Chandra Sethi</p>
     </div>
 
@@ -249,20 +249,90 @@ function normalize(s){
   return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,"");
 }
 
-async function loadData(type){
-  const res=await fetch(JSON_FILES[type]);
-  const json=await res.json();
-  currentData=json.data||[];
-  if(currentData.length===0){
-    headers=[];
-    priorityKey="";
-    render();
-    return;
+/* Normalize/convert incoming JSON into array of objects + headers array
+   Supports:
+    - { data: [ {..}, ... ] }
+    - { rows: [ [..], .. ], headers: [..] }
+    - { rows: [ {..}, .. ] }
+    - raw array of objects
+    - nested arrays (first found array used)
+*/
+function normalizeJsonToTable(json){
+  // 1) if json.data is array of objects
+  if(json && Array.isArray(json.data) && json.data.length && typeof json.data[0] === 'object' && !Array.isArray(json.data[0])){
+    console.log('Detected shape: json.data array of objects');
+    return { rows: json.data, headers: Object.keys(json.data[0]) };
   }
-  headers=Object.keys(currentData[0]||{});
-  // find priority key by matching desired 'PRIORITY'
-  priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
-  render();
+
+  // 2) if json.rows is array of arrays and json.headers exists
+  if(Array.isArray(json.rows) && Array.isArray(json.headers) && json.headers.length && Array.isArray(json.rows[0])){
+    console.log('Detected shape: rows array of arrays + headers array');
+    const hdrs = json.headers.map(h => (h==null? 'col': String(h)));
+    const rowsObj = json.rows.map(r => {
+      const obj = {};
+      for(let i=0;i<hdrs.length;i++){
+        obj[hdrs[i]] = r[i] === undefined ? "" : r[i];
+      }
+      return obj;
+    });
+    return { rows: rowsObj, headers: hdrs };
+  }
+
+  // 3) if json.rows is array of objects
+  if(Array.isArray(json.rows) && json.rows.length && typeof json.rows[0] === 'object' && !Array.isArray(json.rows[0])){
+    console.log('Detected shape: json.rows array of objects');
+    return { rows: json.rows, headers: Object.keys(json.rows[0]) };
+  }
+
+  // 4) if json itself is array of objects
+  if(Array.isArray(json) && json.length && typeof json[0] === 'object' && !Array.isArray(json[0])){
+    console.log('Detected shape: root is array of objects');
+    return { rows: json, headers: Object.keys(json[0]) };
+  }
+
+  // 5) attempt to find first array inside json
+  for(const k in json){
+    if(Array.isArray(json[k]) && json[k].length){
+      const arr = json[k];
+      if(typeof arr[0] === 'object' && !Array.isArray(arr[0])){
+        console.log('Detected shape: found array of objects under key', k);
+        return { rows: arr, headers: Object.keys(arr[0]) };
+      } else if(Array.isArray(arr[0]) && Array.isArray(json.headers)){
+        console.log('Detected shape: found rows array-of-arrays under key', k, 'using json.headers');
+        const hdrs = json.headers.map(h => (h==null? 'col': String(h)));
+        const rowsObj = arr.map(r => {
+          const obj = {};
+          for(let i=0;i<hdrs.length;i++) obj[hdrs[i]] = r[i]===undefined?"":r[i];
+          return obj;
+        });
+        return { rows: rowsObj, headers: hdrs };
+      }
+    }
+  }
+
+  // fallback: empty
+  console.warn('Unable to normalize JSON shape — no usable array found');
+  return { rows: [], headers: [] };
+}
+
+async function loadData(type){
+  try{
+    const res = await fetch(JSON_FILES[type]);
+    const json = await res.json();
+    const normalized = normalizeJsonToTable(json || {});
+    currentData = normalized.rows || [];
+    headers = normalized.headers || [];
+    console.log('Loaded', type, 'records:', currentData.length, 'headers:', headers.length);
+    // determine priority key
+    priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
+    render();
+  }catch(err){
+    console.error('Failed to load', type, err);
+    currentData = [];
+    headers = [];
+    priorityKey = "";
+    render();
+  }
 }
 
 /* find the actual header key from headers by matching a display label */
@@ -290,22 +360,22 @@ function findKeyMatch(displayName){
 function buildOrderedKeys(){
   const orderedKeys = [];
   for(const display of desiredDisplayCols){
-    let matchName = display;
     if(display.toLowerCase() === "problems"){
-      // try to match original MOTOR LOCATION key variants if present in JSON
       const candidateNames = [
         "Motor Location Update On",
         "Motor Location Update",
         "Motor Location",
         "Motor Location Updated On",
-        "motorlocationupdateon"
+        "problem",
+        "problems",
+        "issue",
+        "description"
       ];
       let found = null;
       for(const c of candidateNames){
         found = findKeyMatch(c);
         if(found) break;
       }
-      // fallback to matching "Problems" itself
       orderedKeys.push(found || findKeyMatch(display) || null);
       continue;
     }
@@ -323,7 +393,7 @@ function buildOrderedKeys(){
 }
 
 function render(){
-  const q=searchBox.value.toLowerCase();
+  const q = (searchBox.value||"").toLowerCase();
   const filtered = currentData.filter(r=>{
     return Object.values(r).join(" ").toLowerCase().includes(q);
   });
@@ -387,15 +457,16 @@ function buildTable(id, data, orderedKeys){
       const key = orderedKeys[i];
       if(key === null) continue; // skip excluded/missing
       let val = row[key] ?? "";
+      if(val === null || val === undefined) val = "";
       if(priorityKey && key === priorityKey){
         let cls = "";
         const num = Number(val);
         if(!isNaN(num) && num >= 1 && num <= 4) cls = `priority-${num}`;
-        tr += `<td data-col="${escapeHtml(display)}" class="${cls}">${escapeHtml(val)}</td>`;
+        tr += `<td data-col="${escapeHtml(display)}" class="${cls}">${escapeHtml(String(val))}</td>`;
       } else if(String(val).toUpperCase().includes("COMPLETED")){
-        tr += `<td data-col="${escapeHtml(display)}"><span class="badge completed">${escapeHtml(val)}</span></td>`;
+        tr += `<td data-col="${escapeHtml(display)}"><span class="badge completed">${escapeHtml(String(val))}</span></td>`;
       } else {
-        tr += `<td data-col="${escapeHtml(display)}">${escapeHtml(val)}</td>`;
+        tr += `<td data-col="${escapeHtml(display)}">${escapeHtml(String(val))}</td>`;
       }
     }
     tr += "</tr>";
@@ -416,7 +487,7 @@ function updateCards(withP, withoutP){
   document.getElementById("highCount").innerText = high;
   document.getElementById("mediumCount").innerText = med;
   document.getElementById("lowCount").innerText = low;
-  document.getElementById("noPriorityCount").innerText = withoutPriority.length || withoutP.length;
+  document.getElementById("noPriorityCount").innerText = withoutP.length;
 }
 
 function exportCSV(){
@@ -455,6 +526,7 @@ function escapeCSV(s){
 select.addEventListener("change",()=>loadData(select.value));
 searchBox.addEventListener("keyup",render);
 
+/* initial load */
 loadData(select.value);
 </script>
 
