@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="utf-8">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -64,6 +64,8 @@
     <div class="actions" role="region" aria-label="Quick actions">
       <button class="primary" onclick="openRelay()" aria-label="Open Relay Settings">Relay Settings</button>
       <button class="secondary" onclick="openGallery()" aria-label="Open Gallery">Gallery</button>
+      <button class="secondary" onclick="openNoSpare()" aria-label="Open Drives No Spare Motor">Drives No spare motor</button>
+      <button class="secondary" onclick="openSpareERS()" aria-label="Open Spare Motor ERS">Spare Motor ERS</button>
     </div>
 
     <div style="margin-top:12px;color:#334;line-height:1.4;font-size:14px">
@@ -96,6 +98,12 @@
   }
   function openMonthlyJobs(){
     location.href = "https://08electricaldata.github.io/drive-viewer/monthly-jobs.html";
+  }
+  function openNoSpare(){
+    location.href = "https://08electricaldata.github.io/drive-viewer/nospare.html";
+  }
+  function openSpareERS(){
+    location.href = "https://08electricaldata.github.io/drive-viewer/sparemotor.html";
   }
 </script>
 
