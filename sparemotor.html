@@ -57,7 +57,7 @@
 
   <div class="controls">
     <button class="clear-btn" id="clearFiltersBtn">Clear filters</button>
-    <div style="margin-left:auto;color:var(--muted);font-size:13px">Use any field input (type or pick) to filter the table</div>
+    <div style="margin-left:auto;color:var(--muted);font-size:13px">Type or pick a value to filter</div>
   </div>
 
   <div class="table-wrap" id="tableWrap">
@@ -71,13 +71,12 @@
 <script>
 const SOURCE_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/sparelist.json";
 
-const IGNORE_FIRST = 10; // ignore rows 0..9
-const HEADER_ROW_INDEX = 10; // 11th row (index 10) is header
-const DATA_START_INDEX = 11; // rows from index 11 onwards are data
+// For array-of-arrays shape use these indexes (0-based)
+const HEADER_ROW_INDEX_FOR_ROWS = 10; // 11th row
+const DATA_START_INDEX_FOR_ROWS  = 11; // 12th row
 
-let rawRows = [];      // array-of-arrays or array-of-objects depending on JSON
-let headers = [];      // array of header strings
-let dataRows = [];     // array of objects { header: value }
+let headers = [];
+let dataRows = []; // array of objects
 
 const totalRowsEl = document.getElementById('totalRows');
 const shownRowsEl = document.getElementById('shownRows');
@@ -92,104 +91,6 @@ const filters = {}; // key -> selected value (string)
 function escapeHtml(s){
   return String(s===undefined||s===null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function detectAndNormalize(json){
-  // Prefer json.rows if exists
-  if(json && Array.isArray(json.rows) && json.rows.length){
-    // rows could be array-of-arrays or array-of-objects
-    if(Array.isArray(json.rows[0])){
-      rawRows = json.rows;
-    } else if(typeof json.rows[0] === 'object'){
-      // convert array-of-objects to rows-of-arrays using their keys order
-      // but we want to preserve rawRows in array-of-arrays form for ignoring first rows
-      // So build rows array with header row as keys and subsequent rows as values
-      const keys = Object.keys(json.rows[0]);
-      rawRows = [];
-      // optionally if json.headers exist, we might use them
-      if(Array.isArray(json.headers) && json.headers.length>=1){
-        // create header row from json.headers then rows as arrays
-        rawRows = [json.headers];
-        json.rows.forEach(obj => rawRows.push(keys.map(k=>obj[k]));
-      } else {
-        rawRows = [keys];
-        json.rows.forEach(obj => rawRows.push(keys.map(k=>obj[k])));
-      }
-    }
-    return;
-  }
-
-  // If json.data exists and is array-of-objects or array-of-arrays
-  if(json && Array.isArray(json.data) && json.data.length){
-    if(Array.isArray(json.data[0])){
-      rawRows = json.data;
-      return;
-    } else if(typeof json.data[0] === 'object'){
-      // build rows: use keys as header row then values
-      const keys = Object.keys(json.data[0]);
-      rawRows = [keys];
-      json.data.forEach(obj => rawRows.push(keys.map(k=>obj[k]));
-      return;
-    }
-  }
-
-  // If json itself is an array-of-objects (some sheets use that)
-  if(Array.isArray(json) && json.length && typeof json[0] === 'object'){
-    const keys = Object.keys(json[0]);
-    rawRows = [keys];
-    json.forEach(obj => rawRows.push(keys.map(k=>obj[k])));
-    return;
-  }
-
-  // Fallback: find first array inside object
-  for(const k in json){
-    if(Array.isArray(json[k]) && json[k].length){
-      const arr = json[k];
-      if(Array.isArray(arr[0])){
-        rawRows = arr;
-        return;
-      } else if(typeof arr[0] === 'object'){
-        const keys = Object.keys(arr[0]);
-        rawRows = [keys];
-        arr.forEach(o => rawRows.push(keys.map(k=>o[k])));
-        return;
-      }
-    }
-  }
-
-  // nothing usable
-  rawRows = [];
-}
-
-// Build headers/dataRows from rawRows following the rule: ignore first 10 rows; 11th is header; rest are data
-function buildTableFromRawRows(){
-  headers = [];
-  dataRows = [];
-  if(!rawRows || rawRows.length <= HEADER_ROW_INDEX){
-    statusMsg.textContent = 'No usable rows found in JSON (not enough rows).';
-    return;
-  }
-  const hdrRow = rawRows[HEADER_ROW_INDEX];
-  // If hdrRow is an object? Usually rows are arrays. If object, convert keys to array:
-  if(!Array.isArray(hdrRow) && typeof hdrRow === 'object'){
-    headers = Object.values(hdrRow).map(v => String(v||''));
-  } else {
-    headers = hdrRow.map(h => String(h===undefined||h===null ? '' : h));
-  }
-
-  // Build data rows: for i >= DATA_START_INDEX
-  for(let i = DATA_START_INDEX; i < rawRows.length; i++){
-    const r = rawRows[i];
-    if(!r) continue;
-    // convert to object keyed by headers
-    const obj = {};
-    for(let c=0;c<headers.length;c++){
-      const key = headers[c] || `Col${c+1}`;
-      const val = Array.isArray(r) ? (r[c] === undefined ? '' : r[c]) : (r[key] === undefined ? '' : r[key]);
-      obj[key] = val;
-    }
-    dataRows.push(obj);
-  }
 }
 
 function uniqueValuesForColumn(col){
@@ -222,7 +123,7 @@ function createFilters(){
     const datalist = document.createElement('datalist');
     datalist.id = 'dl-'+idx;
     const opts = uniqueValuesForColumn(col);
-    // add small "All" option
+    // small "All" option (empty)
     const optAll = document.createElement('option');
     optAll.value = '';
     datalist.appendChild(optAll);
@@ -247,7 +148,6 @@ function renderTableHeader(){
   headers.forEach(h => {
     const th = document.createElement('th');
     th.textContent = h;
-    // mark Problems-like column for wrapping
     const n = String(h||'').toLowerCase();
     if(/problem|issue|description|motorlocation|remarks|comment/.test(n)){
       th.setAttribute('data-col','Problems');
@@ -265,7 +165,6 @@ function rowMatchesFilters(rowObj){
     const want = String(filters[key]||'').toLowerCase();
     if(!want) continue;
     const val = String(rowObj[key]===undefined||rowObj[key]===null ? '' : rowObj[key]).toLowerCase();
-    // allow partial match
     if(!val.includes(want)) return false;
   }
   return true;
@@ -275,21 +174,19 @@ function renderFilteredTable(){
   tableBody.innerHTML = '';
   let shown = 0;
   const frag = document.createDocumentFragment();
-  dataRows.forEach((rowObj, idx) => {
+  dataRows.forEach((rowObj) => {
     if(!rowMatchesFilters(rowObj)) return;
     shown++;
     const tr = document.createElement('tr');
     headers.forEach(h => {
       const td = document.createElement('td');
-      const key = h;
-      const raw = rowObj[key];
+      const raw = rowObj[h];
       td.innerHTML = escapeHtml(raw);
-      // Problems-like wrap
-      const n = String(key||'').toLowerCase();
+      const n = String(h||'').toLowerCase();
       if(/problem|issue|description|motorlocation|remarks|comment/.test(n)){
         td.setAttribute('data-col','Problems');
       } else {
-        td.setAttribute('data-col', key);
+        td.setAttribute('data-col', h);
       }
       tr.appendChild(td);
     });
@@ -302,7 +199,6 @@ function renderFilteredTable(){
 }
 
 clearFiltersBtn.addEventListener('click', ()=>{
-  // clear inputs and filters object
   filtersDiv.querySelectorAll('input').forEach(i=>i.value='');
   for(const k in filters) delete filters[k];
   renderFilteredTable();
@@ -314,56 +210,87 @@ async function loadAndBuild(){
     const res = await fetch(SOURCE_URL);
     if(!res.ok) throw new Error('Fetch failed ' + res.status);
     const json = await res.json();
-    // Many sheet JSONs put rows in json.rows or json.data. Expect array-of-arrays.
-    if(Array.isArray(json.rows) && json.rows.length && Array.isArray(json.rows[0])){
-      rawRows = json.rows;
-    } else if(Array.isArray(json.data) && json.data.length && Array.isArray(json.data[0])){
-      rawRows = json.data;
-    } else if(Array.isArray(json) && json.length && Array.isArray(json[0])){
-      rawRows = json;
-    } else {
-      // attempt detect first array
+    console.log('Loaded JSON keys:', Object.keys(json));
+
+    // 1) If json.data is array of objects -> use directly
+    if(json && Array.isArray(json.data) && json.data.length && typeof json.data[0] === 'object' && !Array.isArray(json.data[0])){
+      console.log('Detected json.data array-of-objects shape');
+      dataRows = json.data.filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
+      headers = Object.keys(dataRows[0] || {});
+      // make sure headers are strings
+      headers = headers.map(h => String(h));
+    }
+    // 2) If json.rows is array-of-arrays -> use header row at index HEADER_ROW_INDEX_FOR_ROWS
+    else if(json && Array.isArray(json.rows) && json.rows.length && Array.isArray(json.rows[0])){
+      console.log('Detected json.rows array-of-arrays shape');
+      const rawRows = json.rows;
+      if(rawRows.length <= HEADER_ROW_INDEX_FOR_ROWS){
+        statusMsg.textContent = `Not enough rows in JSON (need at least ${HEADER_ROW_INDEX_FOR_ROWS+1}). Found ${rawRows.length}.`;
+        return;
+      }
+      headers = rawRows[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h===undefined||h===null ? '' : h));
+      dataRows = [];
+      for(let i = DATA_START_INDEX_FOR_ROWS; i < rawRows.length; i++){
+        const r = rawRows[i];
+        if(!r) continue;
+        const obj = {};
+        for(let c=0;c<headers.length;c++){
+          const key = headers[c] || `Col${c+1}`;
+          obj[key] = (Array.isArray(r) ? (r[c] === undefined ? '' : r[c]) : r[key] === undefined ? '' : r[key]);
+        }
+        // skip fully empty
+        if(Object.values(obj).some(v => v !== "" && v !== null && v !== undefined)) dataRows.push(obj);
+      }
+    }
+    // 3) If json.data is array-of-arrays
+    else if(json && Array.isArray(json.data) && json.data.length && Array.isArray(json.data[0])){
+      console.log('Detected json.data array-of-arrays shape');
+      const rawRows = json.data;
+      if(rawRows.length <= HEADER_ROW_INDEX_FOR_ROWS){
+        statusMsg.textContent = `Not enough rows in JSON (need at least ${HEADER_ROW_INDEX_FOR_ROWS+1}). Found ${rawRows.length}.`;
+        return;
+      }
+      headers = rawRows[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h===undefined||h===null ? '' : h));
+      dataRows = [];
+      for(let i = DATA_START_INDEX_FOR_ROWS; i < rawRows.length; i++){
+        const r = rawRows[i];
+        if(!r) continue;
+        const obj = {};
+        for(let c=0;c<headers.length;c++){
+          const key = headers[c] || `Col${c+1}`;
+          obj[key] = r[c] === undefined ? '' : r[c];
+        }
+        if(Object.values(obj).some(v => v !== "" && v !== null && v !== undefined)) dataRows.push(obj);
+      }
+    }
+    // 4) fallback try to find first array of objects under any property
+    else {
       let found = false;
       for(const k in json){
-        if(Array.isArray(json[k]) && json[k].length && Array.isArray(json[k][0])){
-          rawRows = json[k];
+        if(Array.isArray(json[k]) && json[k].length && typeof json[k][0] === 'object' && !Array.isArray(json[k][0])){
+          console.log('Detected array-of-objects under key', k);
+          dataRows = json[k].filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
+          headers = Object.keys(dataRows[0] || {});
           found = true;
           break;
         }
       }
       if(!found){
-        // maybe json.data is array of objects: convert to rows with headers (but user asked raw rows)
-        if(Array.isArray(json.data) && json.data.length && typeof json.data[0] === 'object'){
-          const keys = Object.keys(json.data[0]);
-          rawRows = [keys];
-          json.data.forEach(obj => rawRows.push(keys.map(k => obj[k] === undefined ? '' : obj[k])));
-        } else {
-          // fallback: try json.sheet or first array-of-objects
-          let arrFound = null;
-          for(const k in json) if(Array.isArray(json[k]) && json[k].length) { arrFound = json[k]; break; }
-          if(arrFound && typeof arrFound[0] === 'object'){
-            const keys = Object.keys(arrFound[0]);
-            rawRows = [keys];
-            arrFound.forEach(obj => rawRows.push(keys.map(k => obj[k] === undefined ? '' : obj[k])));
-          } else {
-            rawRows = [];
-          }
-        }
+        statusMsg.textContent = 'Unable to find usable data array in JSON.';
+        console.warn('JSON structure not recognized', json);
+        return;
       }
     }
 
-    if(!rawRows || rawRows.length === 0){
-      statusMsg.textContent = 'No rows found in the JSON.';
+    console.log('Headers count:', headers.length, 'Data rows:', dataRows.length);
+    if(!headers || headers.length === 0 || !dataRows || dataRows.length === 0){
+      statusMsg.textContent = 'No usable header or data rows found after parsing JSON.';
       return;
     }
 
-    // ensure we have enough rows
-    if(rawRows.length <= HEADER_ROW_INDEX){
-      statusMsg.textContent = `Not enough rows in JSON (need at least ${HEADER_ROW_INDEX+1}). Found ${rawRows.length}.`;
-      return;
-    }
+    // normalize header strings to be safe keys (but keep original header text)
+    headers = headers.map(h => String(h));
 
-    buildTableFromRawRows();
     createFilters();
     renderTableHeader();
     renderFilteredTable();
