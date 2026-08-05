@@ -3,15 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Spare List — Filterable Table</title>
+<title>Spare List — Filterable Table (Fit to Screen)</title>
 <style>
-  :root{--brand:#0d47a1;--muted:#6b7280}
+  :root{
+    --brand:#0d47a1;
+    --muted:#6b7280;
+    --table-font-size:13px; /* overridden dynamically */
+    --cell-padding:8px;     /* overridden dynamically on desktop */
+  }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#eef6ff,#f7fbff);color:#07203a}
   header{position:sticky;top:0;z-index:30;background:linear-gradient(90deg,var(--brand),#0052cc);color:#fff;padding:12px;display:flex;gap:10px;align-items:center}
   .btn{background:#fff;color:var(--brand);border:0;padding:8px 10px;border-radius:8px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.08)}
   .title{flex:1;text-align:center;font-weight:800;font-size:16px}
-  main{padding:12px;max-width:1200px;margin:0 auto}
+  main{padding:12px;max-width:1400px;margin:0 auto}
   .meta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .count{background:#fff;padding:10px;border-radius:8px;box-shadow:0 8px 20px rgba(3,63,136,0.04);font-weight:800}
   .filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
@@ -25,18 +30,49 @@
   .clear-btn{background:#f3f4f6;border:1px solid #e6eefb;padding:8px 10px;border-radius:6px;cursor:pointer}
   .search-info{color:var(--muted);font-size:13px;margin-left:auto}
 
-  .table-wrap{overflow:auto;background:#fff;border-radius:10px;padding:8px;box-shadow:0 10px 30px rgba(3,63,136,0.05)}
-  table{width:100%;border-collapse:collapse;min-width:800px}
-  th,td{padding:8px 10px;border:1px solid #eef4ff;font-size:13px;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  thead th{position:sticky;top:0;background:linear-gradient(90deg,#003f88,#0052cc);color:#fff;z-index:2}
-  th[data-col="Problems"], td[data-col="Problems"]{white-space:normal;word-break:break-word;overflow-wrap:anywhere;max-width:360px}
+  .table-wrap{background:#fff;border-radius:10px;padding:6px;box-shadow:0 10px 30px rgba(3,63,136,0.05)}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed; /* ensure fixed layout so columns share width */
+  }
+  thead th, tbody td{
+    padding:var(--cell-padding);
+    border:1px solid #eef4ff;
+    font-size:var(--table-font-size);
+    text-align:left;
+    vertical-align:top;
+    white-space:normal; /* allow wrapping */
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
+  thead th{
+    position:sticky;top:0;background:linear-gradient(90deg,#003f88,#0052cc);color:#fff;z-index:2;
+    font-weight:800;
+  }
+  /* problems-like column still allowed to be wide and wrap */
+  th[data-col="Problems"], td[data-col="Problems"]{
+    /* no extra rules needed, wrapping already enabled */
+  }
   tr:nth-child(even){background:#fbfdff}
   .no-data{padding:18px;text-align:center;color:#b91c1c;font-weight:800}
 
-  @media(max-width:760px){
-    .filter{min-width:160px}
-    table{min-width:100%}
+  /* desktop compacting */
+  @media(min-width:1100px){
+    :root{
+      --cell-padding:6px;
+    }
   }
+
+  /* mobile: keep inputs usable and allow horizontal scroll if many columns */
+  @media(max-width:900px){
+    table{table-layout:auto}
+    thead th, tbody td{font-size:13px;padding:8px}
+    .filter{min-width:160px}
+  }
+
+  /* dynamic style placeholder for per-column widths */
+  /* a <style id="dynamic-table-style"> will be injected by script */
 </style>
 </head>
 <body>
@@ -158,6 +194,8 @@ function renderTableHeader(){
   });
   tableHead.innerHTML = '';
   tableHead.appendChild(tr);
+  // after header is rendered set dynamic widths & font-size
+  applyDynamicTableStyling(headers.length);
 }
 
 function rowMatchesFilters(rowObj){
@@ -181,7 +219,9 @@ function renderFilteredTable(){
     headers.forEach(h => {
       const td = document.createElement('td');
       const raw = rowObj[h];
-      td.innerHTML = escapeHtml(raw);
+      // preserve newlines inside cells as <br>
+      const text = escapeHtml(raw);
+      td.innerHTML = String(text).replace(/\n/g,'<br>');
       const n = String(h||'').toLowerCase();
       if(/problem|issue|description|motorlocation|remarks|comment/.test(n)){
         td.setAttribute('data-col','Problems');
@@ -204,6 +244,52 @@ clearFiltersBtn.addEventListener('click', ()=>{
   renderFilteredTable();
 });
 
+// dynamically add style to control column widths and font-size
+function applyDynamicTableStyling(colCount){
+  // ensure at least 1
+  colCount = Math.max(1, colCount || 1);
+
+  // compute font size: reduce as column count increases
+  // baseline 14px for few columns, down to 9px for many columns
+  let fontSize;
+  if(colCount <= 8) fontSize = 14;
+  else if(colCount <= 12) fontSize = 12;
+  else if(colCount <= 16) fontSize = 11;
+  else if(colCount <= 20) fontSize = 10;
+  else fontSize = 9;
+
+  // compute padding: smaller on desktop
+  const padding = (colCount > 12) ? '6px' : '8px';
+
+  // compute CSS widths: each column gets equal share
+  const pct = (100 / colCount).toFixed(6) + '%';
+
+  // build per-column width rule (th:nth-child and td:nth-child)
+  let widths = '';
+  for(let i=1;i<=colCount;i++){
+    widths += `#dataTable th:nth-child(${i}), #dataTable td:nth-child(${i}){width:${pct};}\n`;
+  }
+
+  const styleId = 'dynamic-table-style';
+  let styleEl = document.getElementById(styleId);
+  const css = `
+    :root{--table-font-size:${fontSize}px; --cell-padding:${padding};}
+    ${widths}
+  `;
+  if(styleEl){
+    styleEl.textContent = css;
+  } else {
+    styleEl = document.createElement('style');
+    styleEl.id = styleId;
+    styleEl.textContent = css;
+    document.head.appendChild(styleEl);
+  }
+
+  // If too many columns for mobile, allow table-layout:auto for small screens
+  // (CSS media queries already handle this)
+}
+
+// loader and parser (robust for both shapes)
 async function loadAndBuild(){
   statusMsg.textContent = 'Loading sparelist...';
   try{
@@ -217,7 +303,6 @@ async function loadAndBuild(){
       console.log('Detected json.data array-of-objects shape');
       dataRows = json.data.filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
       headers = Object.keys(dataRows[0] || {});
-      // make sure headers are strings
       headers = headers.map(h => String(h));
     }
     // 2) If json.rows is array-of-arrays -> use header row at index HEADER_ROW_INDEX_FOR_ROWS
@@ -238,7 +323,6 @@ async function loadAndBuild(){
           const key = headers[c] || `Col${c+1}`;
           obj[key] = (Array.isArray(r) ? (r[c] === undefined ? '' : r[c]) : r[key] === undefined ? '' : r[key]);
         }
-        // skip fully empty
         if(Object.values(obj).some(v => v !== "" && v !== null && v !== undefined)) dataRows.push(obj);
       }
     }
@@ -288,7 +372,7 @@ async function loadAndBuild(){
       return;
     }
 
-    // normalize header strings to be safe keys (but keep original header text)
+    // keep headers as strings
     headers = headers.map(h => String(h));
 
     createFilters();
