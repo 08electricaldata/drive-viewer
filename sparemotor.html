@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Spare List — Filterable Table (Fit to Screen)</title>
+<title>Spare List — ERS</title>
 <style>
   :root{
     --brand:#0d47a1;
@@ -50,29 +50,20 @@
     position:sticky;top:0;background:linear-gradient(90deg,#003f88,#0052cc);color:#fff;z-index:2;
     font-weight:800;
   }
-  /* problems-like column still allowed to be wide and wrap */
-  th[data-col="Problems"], td[data-col="Problems"]{
-    /* no extra rules needed, wrapping already enabled */
-  }
   tr:nth-child(even){background:#fbfdff}
   .no-data{padding:18px;text-align:center;color:#b91c1c;font-weight:800}
 
-  /* desktop compacting */
   @media(min-width:1100px){
     :root{
       --cell-padding:6px;
     }
   }
 
-  /* mobile: keep inputs usable and allow horizontal scroll if many columns */
   @media(max-width:900px){
     table{table-layout:auto}
     thead th, tbody td{font-size:13px;padding:8px}
     .filter{min-width:160px}
   }
-
-  /* dynamic style placeholder for per-column widths */
-  /* a <style id="dynamic-table-style"> will be injected by script */
 </style>
 </head>
 <body>
@@ -124,6 +115,13 @@ const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 
 const filters = {}; // key -> selected value (string)
 
+// columns to exclude from display
+const EXCLUDE_HEADERS = ['col16','col17','rownumber']; // normalized names
+
+function normalizeKey(s){
+  return String(s||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+}
+
 function escapeHtml(s){
   return String(s===undefined||s===null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -155,11 +153,9 @@ function createFilters(){
       if(v) filters[col] = v; else delete filters[col];
       renderFilteredTable();
     });
-    // datalist
     const datalist = document.createElement('datalist');
     datalist.id = 'dl-'+idx;
     const opts = uniqueValuesForColumn(col);
-    // small "All" option (empty)
     const optAll = document.createElement('option');
     optAll.value = '';
     datalist.appendChild(optAll);
@@ -194,7 +190,6 @@ function renderTableHeader(){
   });
   tableHead.innerHTML = '';
   tableHead.appendChild(tr);
-  // after header is rendered set dynamic widths & font-size
   applyDynamicTableStyling(headers.length);
 }
 
@@ -219,7 +214,6 @@ function renderFilteredTable(){
     headers.forEach(h => {
       const td = document.createElement('td');
       const raw = rowObj[h];
-      // preserve newlines inside cells as <br>
       const text = escapeHtml(raw);
       td.innerHTML = String(text).replace(/\n/g,'<br>');
       const n = String(h||'').toLowerCase();
@@ -246,30 +240,19 @@ clearFiltersBtn.addEventListener('click', ()=>{
 
 // dynamically add style to control column widths and font-size
 function applyDynamicTableStyling(colCount){
-  // ensure at least 1
   colCount = Math.max(1, colCount || 1);
-
-  // compute font size: reduce as column count increases
-  // baseline 14px for few columns, down to 9px for many columns
   let fontSize;
   if(colCount <= 8) fontSize = 14;
   else if(colCount <= 12) fontSize = 12;
   else if(colCount <= 16) fontSize = 11;
   else if(colCount <= 20) fontSize = 10;
   else fontSize = 9;
-
-  // compute padding: smaller on desktop
   const padding = (colCount > 12) ? '6px' : '8px';
-
-  // compute CSS widths: each column gets equal share
   const pct = (100 / colCount).toFixed(6) + '%';
-
-  // build per-column width rule (th:nth-child and td:nth-child)
   let widths = '';
   for(let i=1;i<=colCount;i++){
     widths += `#dataTable th:nth-child(${i}), #dataTable td:nth-child(${i}){width:${pct};}\n`;
   }
-
   const styleId = 'dynamic-table-style';
   let styleEl = document.getElementById(styleId);
   const css = `
@@ -284,12 +267,8 @@ function applyDynamicTableStyling(colCount){
     styleEl.textContent = css;
     document.head.appendChild(styleEl);
   }
-
-  // If too many columns for mobile, allow table-layout:auto for small screens
-  // (CSS media queries already handle this)
 }
 
-// loader and parser (robust for both shapes)
 async function loadAndBuild(){
   statusMsg.textContent = 'Loading sparelist...';
   try{
@@ -298,14 +277,14 @@ async function loadAndBuild(){
     const json = await res.json();
     console.log('Loaded JSON keys:', Object.keys(json));
 
-    // 1) If json.data is array of objects -> use directly
+    let parsedHeaders = [];
+    let parsedRows = [];
+
     if(json && Array.isArray(json.data) && json.data.length && typeof json.data[0] === 'object' && !Array.isArray(json.data[0])){
       console.log('Detected json.data array-of-objects shape');
-      dataRows = json.data.filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
-      headers = Object.keys(dataRows[0] || {});
-      headers = headers.map(h => String(h));
+      parsedRows = json.data.filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
+      parsedHeaders = Object.keys(parsedRows[0] || {});
     }
-    // 2) If json.rows is array-of-arrays -> use header row at index HEADER_ROW_INDEX_FOR_ROWS
     else if(json && Array.isArray(json.rows) && json.rows.length && Array.isArray(json.rows[0])){
       console.log('Detected json.rows array-of-arrays shape');
       const rawRows = json.rows;
@@ -313,20 +292,18 @@ async function loadAndBuild(){
         statusMsg.textContent = `Not enough rows in JSON (need at least ${HEADER_ROW_INDEX_FOR_ROWS+1}). Found ${rawRows.length}.`;
         return;
       }
-      headers = rawRows[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h===undefined||h===null ? '' : h));
-      dataRows = [];
+      parsedHeaders = rawRows[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h===undefined||h===null ? '' : h));
       for(let i = DATA_START_INDEX_FOR_ROWS; i < rawRows.length; i++){
         const r = rawRows[i];
         if(!r) continue;
         const obj = {};
-        for(let c=0;c<headers.length;c++){
-          const key = headers[c] || `Col${c+1}`;
+        for(let c=0;c<parsedHeaders.length;c++){
+          const key = parsedHeaders[c] || `Col${c+1}`;
           obj[key] = (Array.isArray(r) ? (r[c] === undefined ? '' : r[c]) : r[key] === undefined ? '' : r[key]);
         }
-        if(Object.values(obj).some(v => v !== "" && v !== null && v !== undefined)) dataRows.push(obj);
+        if(Object.values(obj).some(v => v !== "" && v !== null && v !== undefined)) parsedRows.push(obj);
       }
     }
-    // 3) If json.data is array-of-arrays
     else if(json && Array.isArray(json.data) && json.data.length && Array.isArray(json.data[0])){
       console.log('Detected json.data array-of-arrays shape');
       const rawRows = json.data;
@@ -334,27 +311,25 @@ async function loadAndBuild(){
         statusMsg.textContent = `Not enough rows in JSON (need at least ${HEADER_ROW_INDEX_FOR_ROWS+1}). Found ${rawRows.length}.`;
         return;
       }
-      headers = rawRows[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h===undefined||h===null ? '' : h));
-      dataRows = [];
+      parsedHeaders = rawRows[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h===undefined||h===null ? '' : h));
       for(let i = DATA_START_INDEX_FOR_ROWS; i < rawRows.length; i++){
         const r = rawRows[i];
         if(!r) continue;
         const obj = {};
-        for(let c=0;c<headers.length;c++){
-          const key = headers[c] || `Col${c+1}`;
+        for(let c=0;c<parsedHeaders.length;c++){
+          const key = parsedHeaders[c] || `Col${c+1}`;
           obj[key] = r[c] === undefined ? '' : r[c];
         }
-        if(Object.values(obj).some(v => v !== "" && v !== null && v !== undefined)) dataRows.push(obj);
+        if(Object.values(obj).some(v => v !== "" && v !== null && v !== undefined)) parsedRows.push(obj);
       }
     }
-    // 4) fallback try to find first array of objects under any property
     else {
       let found = false;
       for(const k in json){
         if(Array.isArray(json[k]) && json[k].length && typeof json[k][0] === 'object' && !Array.isArray(json[k][0])){
           console.log('Detected array-of-objects under key', k);
-          dataRows = json[k].filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
-          headers = Object.keys(dataRows[0] || {});
+          parsedRows = json[k].filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
+          parsedHeaders = Object.keys(parsedRows[0] || {});
           found = true;
           break;
         }
@@ -366,14 +341,27 @@ async function loadAndBuild(){
       }
     }
 
-    console.log('Headers count:', headers.length, 'Data rows:', dataRows.length);
+    // Filter out excluded columns (Col16, Col17, rowNumber) by normalized name
+    const excludeSet = new Set(EXCLUDE_HEADERS);
+    const filteredHeaders = parsedHeaders.filter(h => {
+      const n = normalizeKey(h);
+      return !excludeSet.has(n);
+    });
+
+    // Rebuild dataRows ensuring only filtered headers are present (preserve original header names)
+    dataRows = parsedRows.map(r => {
+      const obj = {};
+      filteredHeaders.forEach(h => { obj[h] = r[h]; });
+      return obj;
+    });
+
+    headers = filteredHeaders.map(h => String(h));
+
+    console.log('Final headers count:', headers.length, 'Data rows:', dataRows.length);
     if(!headers || headers.length === 0 || !dataRows || dataRows.length === 0){
       statusMsg.textContent = 'No usable header or data rows found after parsing JSON.';
       return;
     }
-
-    // keep headers as strings
-    headers = headers.map(h => String(h));
 
     createFilters();
     renderTableHeader();
