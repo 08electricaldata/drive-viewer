@@ -180,6 +180,7 @@ th{
   <select id="typeSelect">
     <option value="rewinding">Rewinding</option>
     <option value="overhauling">Overhauling</option>
+    <option value="scrap">SCRAP</option>
   </select>
   <input type="text" id="searchBox" placeholder="Search...">
   <button onclick="exportCSV()">Export Excel</button>
@@ -213,7 +214,8 @@ th{
 <script>
 const JSON_FILES={
   rewinding:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
-  overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
+  overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json",
+  scrap:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/scrap.json"
 };
 
 let currentData=[];
@@ -248,18 +250,25 @@ function normalize(s){
 }
 
 async function loadData(type){
-  const res=await fetch(JSON_FILES[type]);
-  const json=await res.json();
-  currentData=json.data||[];
-  if(currentData.length===0){
-    headers=[];
-    priorityKey="";
-    render();
-    return;
+  try{
+    const res=await fetch(JSON_FILES[type]);
+    const json=await res.json();
+    currentData = json.data || [];
+    if(currentData.length === 0){
+      headers = [];
+      priorityKey = "";
+      render();
+      return;
+    }
+    headers = Object.keys(currentData[0]||{});
+    // find priority key by matching desired 'PRIORITY'
+    priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
+  }catch(err){
+    console.error(err);
+    currentData = [];
+    headers = [];
+    priorityKey = "";
   }
-  headers=Object.keys(currentData[0]||{});
-  // find priority key by matching desired 'PRIORITY'
-  priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
   render();
 }
 
@@ -288,22 +297,23 @@ function findKeyMatch(displayName){
 function buildOrderedKeys(){
   const orderedKeys = [];
   for(const display of desiredDisplayCols){
-    let matchName = display;
     if(display.toLowerCase() === "problems"){
-      // try to match original MOTOR LOCATION key variants if present in JSON
       const candidateNames = [
         "Motor Location Update On",
         "Motor Location Update",
         "Motor Location",
         "Motor Location Updated On",
-        "motorlocationupdateon"
+        "motorlocationupdateon",
+        "problem",
+        "problems",
+        "issue",
+        "description"
       ];
       let found = null;
       for(const c of candidateNames){
         found = findKeyMatch(c);
         if(found) break;
       }
-      // fallback to matching "Problems" itself
       orderedKeys.push(found || findKeyMatch(display) || null);
       continue;
     }
@@ -321,14 +331,39 @@ function buildOrderedKeys(){
 }
 
 function render(){
-  const q=searchBox.value.toLowerCase();
-  const filtered = currentData.filter(r=>{
+  const q = (searchBox.value || "").toLowerCase();
+  const filtered = currentData.filter(r => {
     return Object.values(r).join(" ").toLowerCase().includes(q);
   });
 
-  const orderedKeys = buildOrderedKeys();
-  const withPriority=[];
-  const withoutPriority=[];
+  // build ordered keys from desired mapping
+  const mappedOrderedKeys = buildOrderedKeys();
+
+  // If none of desiredDisplayCols matched (all null), fallback to using actual headers (after applying excludedNames)
+  const allNull = mappedOrderedKeys.every(k => k === null);
+
+  let keysForTable = [];
+  let labelsForTable = [];
+
+  if(allNull){
+    // use actual headers, excluding excludedNames
+    keysForTable = headers.filter(h => {
+      const kn = normalize(h);
+      return !excludedNames.some(ex => kn.includes(ex));
+    });
+    labelsForTable = keysForTable.slice(); // show actual header names as labels
+  } else {
+    // build lists based on desiredDisplayCols order, skipping nulls
+    for(let i=0;i<desiredDisplayCols.length;i++){
+      const key = mappedOrderedKeys[i];
+      if(key === null) continue;
+      keysForTable.push(key);
+      labelsForTable.push(desiredDisplayCols[i]);
+    }
+  }
+
+  const withPriority = [];
+  const withoutPriority = [];
 
   filtered.forEach(r=>{
     const pVal = priorityKey ? (r[priorityKey] ?? "") : "";
@@ -349,12 +384,18 @@ function render(){
     });
   }
 
-  buildTable("priorityTable", withPriority, orderedKeys);
-  buildTable("noPriorityTable", withoutPriority, orderedKeys);
+  // Render using keysForTable + labelsForTable
+  buildTable("priorityTable", withPriority, keysForTable, labelsForTable);
+  buildTable("noPriorityTable", withoutPriority, keysForTable, labelsForTable);
   updateCards(withPriority, withoutPriority);
 }
 
-function buildTable(id, data, orderedKeys){
+/*
+  buildTable(id, data, keys, labels)
+  - keys: array of JSON keys to show (actual keys from JSON)
+  - labels: array of display labels for each column (same length as keys)
+*/
+function buildTable(id, data, keys, labels){
   const table = document.getElementById(id);
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
@@ -365,12 +406,10 @@ function buildTable(id, data, orderedKeys){
     return;
   }
 
-  // Build header row using desiredDisplayCols but keep matching to orderedKeys
+  // Build header row using provided labels
   let head = "<tr>";
-  for(let i=0;i<desiredDisplayCols.length;i++){
-    const display = desiredDisplayCols[i];
-    const key = orderedKeys[i];
-    if(key === null) continue; // skip excluded/missing
+  for(let i=0;i<keys.length;i++){
+    const display = labels[i] || keys[i];
     head += `<th data-col="${escapeHtml(display)}">${escapeHtml(display)}</th>`;
   }
   head += "</tr>";
@@ -380,20 +419,24 @@ function buildTable(id, data, orderedKeys){
   tbody.innerHTML = "";
   data.forEach(row=>{
     let tr = "<tr>";
-    for(let i=0;i<desiredDisplayCols.length;i++){
-      const display = desiredDisplayCols[i];
-      const key = orderedKeys[i];
-      if(key === null) continue; // skip excluded/missing
+    for(let i=0;i<keys.length;i++){
+      const key = keys[i];
       let val = row[key] ?? "";
       if(priorityKey && key === priorityKey){
         let cls = "";
         const num = Number(val);
         if(!isNaN(num) && num >= 1 && num <= 4) cls = `priority-${num}`;
-        tr += `<td data-col="${escapeHtml(display)}" class="${cls}">${escapeHtml(val)}</td>`;
+        tr += `<td data-col="${escapeHtml(key)}" class="${cls}">${escapeHtml(val)}</td>`;
       } else if(String(val).toUpperCase().includes("COMPLETED")){
-        tr += `<td data-col="${escapeHtml(display)}"><span class="badge completed">${escapeHtml(val)}</span></td>`;
+        tr += `<td data-col="${escapeHtml(key)}"><span class="badge completed">${escapeHtml(val)}</span></td>`;
       } else {
-        tr += `<td data-col="${escapeHtml(display)}">${escapeHtml(val)}</td>`;
+        // if the header looks like problems/issue/description, mark for wrapping
+        const normalizedHeader = normalize(labels[i] || key);
+        if(/problem|issue|description|motorlocation|remarks|comment/.test(normalizedHeader)){
+          tr += `<td data-col="Problems">${escapeHtml(val)}</td>`;
+        } else {
+          tr += `<td data-col="${escapeHtml(key)}">${escapeHtml(val)}</td>`;
+        }
       }
     }
     tr += "</tr>";
@@ -418,15 +461,30 @@ function updateCards(withP, withoutP){
 }
 
 function exportCSV(){
-  const orderedKeys = buildOrderedKeys();
-  // header row - only include visible cols
-  const visibleDisplays = [];
-  const visibleKeys = [];
-  for(let i=0;i<desiredDisplayCols.length;i++){
-    if(orderedKeys[i] === null) continue;
-    visibleDisplays.push(desiredDisplayCols[i]);
-    visibleKeys.push(orderedKeys[i]);
+  // Build export using same fallback logic as render()
+  const mappedOrderedKeys = buildOrderedKeys();
+  const allNull = mappedOrderedKeys.every(k => k === null);
+
+  let exportKeys = [];
+  let exportLabels = [];
+
+  if(allNull){
+    exportKeys = headers.filter(h => {
+      const kn = normalize(h);
+      return !excludedNames.some(ex => kn.includes(ex));
+    });
+    exportLabels = exportKeys.slice();
+  } else {
+    for(let i=0;i<desiredDisplayCols.length;i++){
+      const key = mappedOrderedKeys[i];
+      if(key === null) continue;
+      exportKeys.push(key);
+      exportLabels.push(desiredDisplayCols[i]);
+    }
   }
+
+  const visibleDisplays = exportLabels;
+  const visibleKeys = exportKeys;
 
   let csv = visibleDisplays.join(",") + "\n";
   currentData.forEach(r=>{
@@ -453,6 +511,7 @@ function escapeCSV(s){
 select.addEventListener("change",()=>loadData(select.value));
 searchBox.addEventListener("keyup",render);
 
+// initial load
 loadData(select.value);
 </script>
 
