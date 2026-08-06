@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>08 Area — Rows where Col 23 = "No motors found"</title>
+<style>
+  :root{--brand:#0d47a1;--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#eef7ff,#f7fbff);color:#082033}
+  header{position:sticky;top:0;background:linear-gradient(90deg,var(--brand),#0052cc);color:#fff;padding:12px;display:flex;align-items:center;gap:10px;z-index:20}
+  .btn{background:#fff;color:var(--brand);border:0;padding:8px 10px;border-radius:10px;font-weight:800;cursor:pointer;min-width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .title{flex:1;text-align:center;font-weight:800}
+  main{padding:12px;max-width:980px;margin:0 auto}
+  .card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 10px 30px rgba(3,63,136,0.06)}
+  .row-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .left{min-width:0;flex:1}
+  .label{font-weight:900;color:var(--brand);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .compact{font-size:13px;color:#123;margin-top:8px;line-height:1.35}
+  .expand{margin-top:8px;background:#fbfdff;padding:10px;border-radius:8px;border:1px solid #e6f4ff;display:none}
+  .toggle{background:transparent;border:0;color:var(--brand);font-weight:800;cursor:pointer}
+  .no-data{padding:18px;text-align:center;color:#b91c1c;font-weight:800}
+  .spinner{padding:18px;text-align:center;color:var(--muted);font-weight:700}
+  details summary{cursor:pointer;outline:none;font-weight:800;color:var(--brand);padding:8px 0}
+  dl{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+  dt{font-weight:800;color:var(--brand)}
+  dd{margin:0;word-break:break-word}
+  @media(min-width:720px){ .card{padding:14px} }
+</style>
+</head>
+<body>
+
+<header role="banner">
+  <button class="btn" onclick="history.back()" aria-label="Back">⬅</button>
+  <div class="title">08 Area — Rows where Col 23 = "No motors found"</div>
+  <button class="btn" onclick="location.href='https://08electricaldata.github.io/index_mob.html'" aria-label="Home">🏠</button>
+</header>
+
+<main id="app" role="main">
+  <div class="spinner">Loading data…</div>
+</main>
+
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+// target column index to check value "No motors found"
+const TARGET_COL = 23;
+// columns to display serially: D..N => indices 3..13
+const DISPLAY_START = 3;
+const DISPLAY_END = 13;
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function init(){
+  const app = document.getElementById('app');
+  app.innerHTML = '<div class="spinner">Loading data…</div>';
+  try{
+    const res = await fetch(JSON_URL);
+    if(!res.ok) throw new Error('Fetch failed: ' + res.status);
+    const data = await res.json();
+    const headers = data.headers || [];
+    const rows = data.rows || [];
+
+    const matches = rows.filter(r => {
+      const cell = r[TARGET_COL];
+      return String(cell || '').trim().toLowerCase() === 'no motors found';
+    });
+
+    if(matches.length === 0){
+      app.innerHTML = `<div class="no-data">No rows found where column ${TARGET_COL} = "No motors found".</div>`;
+      return;
+    }
+
+    const container = document.createElement('div');
+
+    matches.forEach((r, idx) => {
+      // equipment id / name for heading
+      const equipId = r[3] || r[2] || `Row ${idx+1}`;
+      const equipName = r[4] || '';
+
+      // Build compact D..N output using headers labels
+      const parts = [];
+      for(let i = DISPLAY_START; i <= DISPLAY_END; i++){
+        const label = headers[i] ? String(headers[i]).trim() : `col${i}`;
+        const val = r[i];
+        if(val !== undefined && val !== null && String(val).trim() !== ''){
+          parts.push(`${label} - ${String(val).trim()}`);
+        }
+      }
+
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const head = document.createElement('div');
+      head.className = 'row-head';
+      head.innerHTML = `<div class="left"><div class="label">${esc(equipId)}</div><div class="sub">${esc(String(equipName).slice(0,120))}</div></div>
+                        <div><button class="toggle" aria-expanded="false">SHOW</button></div>`;
+      card.appendChild(head);
+
+      const compact = document.createElement('div');
+      compact.className = 'compact';
+      compact.textContent = parts.join(' , ') || '(no D–N data)';
+      card.appendChild(compact);
+
+      // expand area: show full details or only interesting columns
+      const expand = document.createElement('div');
+      expand.className = 'expand';
+      // build dl of only D..N (labels + values) plus a details link to full row
+      let dl = '<dl>';
+      for(let i = DISPLAY_START; i <= DISPLAY_END; i++){
+        const label = headers[i] ? String(headers[i]).trim() : `col${i}`;
+        const val = r[i];
+        if(val === undefined || val === null || String(val).trim() === '') continue;
+        dl += `<dt>${esc(label)}</dt><dd>${esc(String(val))}</dd>`;
+      }
+      dl += '</dl>';
+      expand.innerHTML = dl + `<details style="margin-top:8px"><summary>Show all row fields</summary><div style="margin-top:8px">${buildFullRowHTML(headers, r)}</div></details>`;
+      expand.style.display = 'none';
+      card.appendChild(expand);
+
+      // toggle button and card click toggle
+      const btn = head.querySelector('button.toggle');
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const open = expand.style.display === 'block';
+        expand.style.display = open ? 'none' : 'block';
+        btn.textContent = open ? 'SHOW' : 'HIDE';
+        btn.setAttribute('aria-expanded', String(!open));
+      });
+
+      card.addEventListener('click', (e) => {
+        if(e.target.tagName.toLowerCase() === 'button') return;
+        const open = expand.style.display === 'block';
+        expand.style.display = open ? 'none' : 'block';
+        btn.textContent = open ? 'SHOW' : 'HIDE';
+        btn.setAttribute('aria-expanded', String(!open));
+      });
+
+      container.appendChild(card);
+    });
+
+    app.innerHTML = '';
+    app.appendChild(container);
+
+  }catch(err){
+    console.error(err);
+    document.getElementById('app').innerHTML = `<div class="no-data">Failed to load data: ${esc(err.message || String(err))}</div>`;
+  }
+}
+
+function buildFullRowHTML(headers, r){
+  let html = '<dl style="display:grid;grid-template-columns:1fr 2fr;gap:8px">';
+  for(let i=0;i<headers.length;i++){
+    const label = headers[i] || `col${i}`;
+    const val = r[i] === undefined || r[i] === null ? '' : String(r[i]);
+    if(String(val).trim() === '') continue;
+    html += `<dt style="font-weight:800;color:var(--brand)">${esc(label)}</dt><dd>${esc(val)}</dd>`;
+  }
+  html += '</dl>';
+  return html;
+}
+
+init();
+</script>
+</body>
+</html>
