@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending Dashboard — Compact View (priority colors)</title>
+<title>Pending Dashboard — ERS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -110,6 +110,8 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
     <div>
       <button class="header-btn" onclick="history.back()">⬅</button>
       <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/index_mob.html'">🏠</button>
+      <!-- NEW SPARE MOTOR button beside Home -->
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/drive-viewer/mobile/sparemotor.html'">SPARE MOTOR</button>
     </div>
     <div class="header-center">
       <h1>Rewinding / Overhauling Dashboard</h1>
@@ -132,6 +134,8 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
   <select id="typeSelect" style="min-width:150px">
     <option value="rewinding">Rewinding</option>
     <option value="overhauling">Overhauling</option>
+    <!-- NEW SCRAP option -->
+    <option value="scrap">SCRAP</option>
   </select>
 
   <input type="text" id="searchBox" placeholder="Search..." style="min-width:160px">
@@ -169,7 +173,9 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
 /* --- configuration --- */
 const JSON_FILES = {
   rewinding: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
-  overhauling: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json"
+  overhauling: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json",
+  // NEW scrap mapping
+  scrap: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/scrap.json"
 };
 const desiredDisplayCols = [
   "PRIORITY","W.O No","kW","Make","Frame Size","Mounting","RPM","Sl No",
@@ -221,7 +227,38 @@ async function loadData(type){
     }
 
     currentData = data;
-    headers = currentData[0] ? Object.keys(currentData[0]) : [];
+    // if data is array-of-arrays (rows), try convert to array-of-objects when possible
+    if(currentData.length && Array.isArray(currentData[0])) {
+      // if json provides headers separately (json.headers), use them; otherwise try first row as header row if it looks like strings
+      let hdrs = json.headers && Array.isArray(json.headers) ? json.headers.slice() : null;
+      if(!hdrs && currentData.length > 0) {
+        // if first row are strings and look like headers, use it
+        const firstRow = currentData[0];
+        const strings = firstRow.every(c => typeof c === 'string' && c.trim() !== '');
+        if(strings) {
+          hdrs = firstRow.slice();
+          // data rows start from index 1
+          currentData = currentData.slice(1).map(r => {
+            const obj = {};
+            for(let i=0;i<hdrs.length;i++) obj[hdrs[i]||`Col${i+1}`] = r[i];
+            return obj;
+          });
+        } else {
+          // fallback: build keys Col1..N and convert
+          const maxCols = Math.max(...currentData.map(r => r.length));
+          hdrs = Array.from({length: maxCols}, (_,i) => `Col${i+1}`);
+          currentData = currentData.map(r => {
+            const obj = {};
+            for(let i=0;i<hdrs.length;i++) obj[hdrs[i]] = r[i];
+            return obj;
+          });
+        }
+      }
+      headers = hdrs || (currentData[0] ? Object.keys(currentData[0]) : []);
+    } else {
+      headers = currentData[0] ? Object.keys(currentData[0]) : [];
+    }
+
     priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
     setStatus(`Loaded ${currentData.length} rows`);
     debugInfo.innerHTML += `<div><strong>Rows:</strong> ${currentData.length} <strong>Headers:</strong> ${headers.join(", ")}</div>`;
@@ -381,7 +418,6 @@ function updateCards(withP, withoutP){
   document.getElementById("lowCount").innerText = low;
   document.getElementById("noPriorityCount").innerText = withoutP.length;
 
-  // Also update ARIA / titles so color meaning is clear
   document.getElementById("highCard").title = "Priority 1 (Important)";
   document.getElementById("mediumCard").title = "Priority 2";
   document.getElementById("lowCard").title = "Priority 3";
