@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pending Dashboard — Compact View (priority colors)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --brand: #003f88;
+  --bg: #f4f7ff;
+  --label-color: #374151;
+  --value-color: #0b1220;
+  --label-width: 34%;
+  --font-size: 13px;
+  --line-height: 1.35;
+  --card-radius: 8px;
+  --card-gap: 10px;
+  --summary-scale: 0.7;
+  /* priority colors */
+  --prio-1: #d32f2f;   /* important / high */
+  --prio-2: #ff9800;   /* less */
+  --prio-3: #fbc02d;   /* lesser */
+  --prio-4: #66bb6a;   /* lower (if used) */
+  --prio-none: #9e9e9e;/* no priority */
+  --total-bg: #003f88; /* total box */
+}
+*{box-sizing:border-box}
+body{font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;background:var(--bg);-webkit-font-smoothing:antialiased;color:var(--value-color);font-size:var(--font-size);}
+
+/* Header */
+.header{background:var(--brand);color:#fff;padding:12px 10px}
+.header-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.header-center{text-align:center;flex:1}
+.header-center h1{margin:0;font-size:18px}
+.header-center p{margin:4px 0 0;font-size:11px;opacity:0.95}
+.header-btn{background:#fff;color:var(--brand);border:none;padding:6px 8px;border-radius:6px;font-size:12px;cursor:pointer;margin:3px}
+
+/* SUMMARY - moved directly under header and compact */
+.summary-wrap{display:flex;justify-content:center;padding:8px 10px;gap:8px}
+.summary{
+  background:#fff;padding:6px 8px;border-radius:8px;box-shadow:0 4px 12px rgba(7,18,42,0.05);
+  min-width:70px;text-align:center;transform:scale(var(--summary-scale));transform-origin:center left;
+  color:#fff;
+}
+.summary h3{margin:0;font-size:14px}
+.summary span{display:block;font-size:10px;color:rgba(255,255,255,0.9);margin-top:4px}
+
+/* colored variants */
+.summary.total{background:var(--total-bg); color:#fff}
+.summary.prio1{background:var(--prio-1); color:#fff}
+.summary.prio2{background:var(--prio-2); color:#fff}
+.summary.prio3{background:var(--prio-3); color:#fff}
+.summary.prio4{background:var(--prio-4); color:#fff}
+.summary.none{background:var(--prio-none); color:#fff}
+
+/* controls */
+.controls{padding:8px 10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center}
+select,input,button{padding:6px 8px;font-size:13px;border-radius:6px;border:1px solid #d1d5db}
+
+/* status */
+.status-bar{padding:6px 10px;text-align:center;color:#0b1220}
+.status-bar .msg{display:inline-block;padding:6px 8px;border-radius:6px;background:#fff;box-shadow:0 2px 6px rgba(7,18,42,.04);font-size:12px}
+.status-bar .link{color:var(--brand);text-decoration:underline;cursor:pointer}
+
+/* tables */
+.table-wrapper{padding:6px 8px;overflow:auto;max-height:56vh}
+table{border-collapse:collapse;width:100%;background:#fff;table-layout:auto;min-width:100%}
+th,td{padding:8px 10px;font-size:13px;line-height:var(--line-height);vertical-align:top;border:1px solid #e6e9ef}
+th{background:var(--brand);color:#fff;position:sticky;top:0;z-index:2;text-align:left}
+th[data-col="Problems"], td[data-col="Problems"]{white-space:normal;overflow-wrap:anywhere;word-break:break-word;text-overflow:clip}
+
+/* mobile stacked style */
+@media (max-width:760px){
+  thead{display:none}
+  table, tbody, tr, td { display:block; width:100%; }
+  tbody tr { display:block;margin-bottom:var(--card-gap);border-radius:var(--card-radius);background:#fff;padding:8px;box-shadow:0 10px 24px rgba(7,18,42,0.06);border:1px solid rgba(0,0,0,0.04); }
+  td{display:flex;align-items:flex-start;gap:8px;padding:6px;border:none;white-space:nowrap;overflow:visible}
+  td::before{content:attr(data-col);font-weight:700;color:var(--label-color);width:var(--label-width);flex:0 0 var(--label-width);max-width:var(--label-width);box-sizing:border-box;padding-right:6px;font-size:12px}
+  td>.val{flex:1 1 calc(100% - var(--label-width));text-align:left;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+  td[data-col="Problems"]>.val{white-space:normal;overflow-wrap:anywhere;word-break:break-word;text-overflow:clip}
+}
+
+/* compact app-view tweaks */
+body.app-view {
+  --font-size: 12px;
+  --card-gap: 8px;
+  --card-radius: 7px;
+  --summary-scale: 0.7;
+}
+body.app-view .header { padding:10px 8px; }
+body.app-view .header-center h1 { font-size:16px }
+body.app-view .controls select, body.app-view .controls input, body.app-view .controls button { padding:5px 6px; font-size:12px }
+body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px }
+
+/* hidden debug by default */
+#debugInfo{display:none;font-size:12px;color:#333;margin-top:6px;text-align:left}
+
+/* footer actions */
+.footer-actions{display:flex;gap:8px;justify-content:center;padding:10px}
+
+/* print */
+@media print{ .controls, .header-bar { display:none; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-bar">
+    <div>
+      <button class="header-btn" onclick="history.back()">⬅</button>
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/index_mob.html'">🏠</button>
+      <!-- NEW SPARE MOTOR button beside Home -->
+      <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/drive-viewer/mobile/sparemotor.html'">SPARE MOTOR</button>
+    </div>
+    <div class="header-center">
+      <h1>Rewinding / Overhauling Dashboard</h1>
+      <p>Designed and maintained by Rakesh Chandra Sethi</p>
+    </div>
+    <div></div>
+  </div>
+
+  <!-- SUMMARY moved to top -->
+  <div class="summary-wrap" id="summaryTop">
+    <div id="totalCard" class="summary total"><h3 id="totalCount">0</h3><span>Total</span></div>
+    <div id="highCard" class="summary prio1"><h3 id="highCount">0</h3><span>High</span></div>
+    <div id="mediumCard" class="summary prio2"><h3 id="mediumCount">0</h3><span>Medium</span></div>
+    <div id="lowCard" class="summary prio3"><h3 id="lowCount">0</h3><span>Low</span></div>
+    <div id="noneCard" class="summary none"><h3 id="noPriorityCount">0</h3><span>No</span></div>
+  </div>
+</div>
+
+<div class="controls">
+  <select id="typeSelect" style="min-width:150px">
+    <option value="rewinding">Rewinding</option>
+    <option value="overhauling">Overhauling</option>
+    <!-- NEW SCRAP option -->
+    <option value="scrap">SCRAP</option>
+  </select>
+
+  <input type="text" id="searchBox" placeholder="Search..." style="min-width:160px">
+  <button id="appViewBtn" class="header-btn" onclick="toggleAppView()">📱 App View</button>
+  <button onclick="exportCSV()">Export Excel</button>
+</div>
+
+<div class="status-bar" id="statusBar">
+  <div class="msg" id="statusMsg">Ready</div>
+</div>
+
+<div class="table-wrapper">
+  <table id="priorityTable" aria-label="Priority assigned">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="table-wrapper" style="margin-top:6px">
+  <table id="noPriorityTable" aria-label="No priority assigned">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="footer-actions">
+  <button id="retryBtn" class="header-btn" style="background:#fff;color:var(--brand);border:1px solid #cfd8e3" onclick="retryFetch()">🔄 Retry Fetch</button>
+  <button id="sampleBtn" class="header-btn" style="background:#fff;color:var(--brand);border:1px solid #cfd8e3" onclick="loadSampleData()">📥 Load Sample Data</button>
+  <button id="debugToggle" class="header-btn" style="background:#fff;color:var(--brand);border:1px solid #cfd8e3" onclick="toggleDebug()">Show debug</button>
+</div>
+
+<div id="debugInfo"></div> <!-- hidden by default -->
+
+<script>
+/* --- configuration --- */
+const JSON_FILES = {
+  rewinding: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
+  overhauling: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json",
+  // NEW scrap mapping
+  scrap: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/scrap.json"
+};
+const desiredDisplayCols = [
+  "PRIORITY","W.O No","kW","Make","Frame Size","Mounting","RPM","Sl No",
+  "Equipment details","Problems","Job Completion Dat"
+];
+const excludedNames = ["voltage","area","storage","remarks"];
+
+let currentData = [], headers = [], priorityKey = "";
+
+const select = document.getElementById("typeSelect");
+const searchBox = document.getElementById("searchBox");
+const statusMsg = document.getElementById("statusMsg");
+const debugInfo = document.getElementById("debugInfo");
+const debugToggle = document.getElementById("debugToggle");
+
+function setStatus(text){ statusMsg.innerText = text; }
+
+/* --- loadData with diagnostics & retry --- */
+async function loadData(type){
+  const url = JSON_FILES[type];
+  setStatus("Loading...");
+  debugInfo.innerHTML = `<div><strong>Fetching:</strong> ${url}</div>`;
+  try{
+    const res = await fetch(url, {cache: "no-store"});
+    debugInfo.innerHTML += `<div><strong>HTTP:</strong> ${res.status} ${res.statusText}</div>`;
+    if(!res.ok){
+      setStatus("Fetch failed: " + res.status);
+      showFetchError(url, `HTTP ${res.status} ${res.statusText}`);
+      currentData = [];
+      headers = [];
+      priorityKey = "";
+      render();
+      return;
+    }
+    const json = await res.json();
+    let data = [];
+    if(Array.isArray(json)) data = json;
+    else if(Array.isArray(json.data)) data = json.data;
+    else if(json.rows && Array.isArray(json.rows)) data = json.rows;
+    else {
+      debugInfo.innerHTML += `<div><strong>JSON preview keys:</strong> ${escapeHtml(JSON.stringify(Object.keys(json)).slice(0,200))}</div>`;
+      setStatus("Loaded JSON but could not find data array.");
+      currentData = [];
+      headers = [];
+      priorityKey = "";
+      render();
+      showFetchError(url, "Unexpected JSON structure.");
+      return;
+    }
+
+    currentData = data;
+    // if data is array-of-arrays (rows), try convert to array-of-objects when possible
+    if(currentData.length && Array.isArray(currentData[0])) {
+      // if json provides headers separately (json.headers), use them; otherwise try first row as header row if it looks like strings
+      let hdrs = json.headers && Array.isArray(json.headers) ? json.headers.slice() : null;
+      if(!hdrs && currentData.length > 0) {
+        // if first row are strings and look like headers, use it
+        const firstRow = currentData[0];
+        const strings = firstRow.every(c => typeof c === 'string' && c.trim() !== '');
+        if(strings) {
+          hdrs = firstRow.slice();
+          // data rows start from index 1
+          currentData = currentData.slice(1).map(r => {
+            const obj = {};
+            for(let i=0;i<hdrs.length;i++) obj[hdrs[i]||`Col${i+1}`] = r[i];
+            return obj;
+          });
+        } else {
+          // fallback: build keys Col1..N and convert
+          const maxCols = Math.max(...currentData.map(r => r.length));
+          hdrs = Array.from({length: maxCols}, (_,i) => `Col${i+1}`);
+          currentData = currentData.map(r => {
+            const obj = {};
+            for(let i=0;i<hdrs.length;i++) obj[hdrs[i]] = r[i];
+            return obj;
+          });
+        }
+      }
+      headers = hdrs || (currentData[0] ? Object.keys(currentData[0]) : []);
+    } else {
+      headers = currentData[0] ? Object.keys(currentData[0]) : [];
+    }
+
+    priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
+    setStatus(`Loaded ${currentData.length} rows`);
+    debugInfo.innerHTML += `<div><strong>Rows:</strong> ${currentData.length} <strong>Headers:</strong> ${headers.join(", ")}</div>`;
+    render();
+  } catch(err){
+    console.error("Fetch error", err);
+    setStatus("Fetch error: " + (err.message || err));
+    showFetchError(JSON_FILES[type], err.message || String(err));
+    currentData = []; headers = []; priorityKey = "";
+    render();
+  }
+}
+
+function showFetchError(url, details){
+  statusMsg.innerHTML = `Error — <a class="link" href="${url}" target="_blank" rel="noopener">Open raw JSON</a>`;
+  debugInfo.innerHTML += `<div><strong>Error:</strong> ${escapeHtml(String(details))}</div>`;
+}
+
+function toggleDebug(){
+  if(debugInfo.style.display === "none" || debugInfo.style.display === "") {
+    debugInfo.style.display = "block";
+    debugToggle.innerText = "Hide debug";
+  } else {
+    debugInfo.style.display = "none";
+    debugToggle.innerText = "Show debug";
+  }
+}
+
+/* Sample data for testing */
+function loadSampleData(){
+  currentData = [
+    {
+      "PRIORITY":"1",
+      "W.O No":"095/30.04.26",
+      "kW":"75",
+      "Make":"ABB",
+      "Frame Size":"315S MA41",
+      "Mounting":"B3",
+      "RPM":"1485",
+      "Sl No":"864679",
+      "Equipment details":"P-908, (BAT- E)",
+      "Motor Location Update On":"R/W BY M/S MAITY. (1st LOT)",
+      "Job Completion Dat":"NS"
+    },
+    {
+      "PRIORITY":"2",
+      "W.O No":"100/02.05.26",
+      "kW":"45",
+      "Make":"Siemens",
+      "Frame Size":"225S",
+      "Mounting":"B3",
+      "RPM":"1500",
+      "Sl No":"864680",
+      "Equipment details":"P-912",
+      "Motor Location Update On":"Checked; pending parts",
+      "Job Completion Dat":"TBD"
+    }
+  ];
+  headers = Object.keys(currentData[0]);
+  priorityKey = findKeyMatch("PRIORITY") || headers[0];
+  setStatus("Sample data loaded (" + currentData.length + " rows)");
+  debugInfo.innerHTML = `<div><strong>Sample data</strong> loaded for testing</div>`;
+  render();
+}
+
+function normalize(s){ return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,""); }
+function findKeyMatch(displayName){
+  const n = normalize(displayName);
+  for(const h of headers) if(normalize(h) === n) return h;
+  for(const h of headers) if(normalize(h).includes(n) || n.includes(normalize(h))) return h;
+  const tokens = n.split(/[^a-z0-9]+/).filter(Boolean);
+  for(const h of headers){ const hn = normalize(h); if(tokens.every(t=>hn.includes(t))) return h; }
+  return null;
+}
+
+function buildOrderedKeys(){
+  const ordered = [];
+  for(const display of desiredDisplayCols){
+    if(display.toLowerCase() === "problems"){
+      const candidates = ["Motor Location Update On","Motor Location Update","Motor Location","Motor Location Updated On","Problems","problem","motorlocationupdateon"];
+      let found = null;
+      for(const c of candidates){ found = findKeyMatch(c); if(found) break; }
+      ordered.push(found || findKeyMatch(display) || null);
+      continue;
+    }
+    ordered.push(findKeyMatch(display) || null);
+  }
+  return ordered.map(k => {
+    if(!k) return k;
+    const kn = normalize(k);
+    for(const ex of excludedNames) if(kn.includes(ex)) return null;
+    return k;
+  });
+}
+
+function render(){
+  const q = (searchBox.value || "").toLowerCase();
+  const filtered = currentData.filter(r => Object.values(r||{}).join(" ").toLowerCase().includes(q));
+  const orderedKeys = buildOrderedKeys();
+  const withPriority = [], withoutPriority = [];
+  filtered.forEach(r => {
+    const pVal = priorityKey ? (r[priorityKey] ?? "") : "";
+    if(pVal || pVal === 0 || pVal === "0") {
+      if(String(pVal).trim() !== "") withPriority.push(r); else withoutPriority.push(r);
+    } else withoutPriority.push(r);
+  });
+  if(priorityKey) withPriority.sort((a,b) => (Number(a[priorityKey])||9999) - (Number(b[priorityKey])||9999));
+  buildTable("priorityTable", withPriority, orderedKeys);
+  buildTable("noPriorityTable", withoutPriority, orderedKeys);
+  updateCards(withPriority, withoutPriority);
+}
+
+function buildTable(id, data, orderedKeys){
+  const table = document.getElementById(id);
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  if(!data || data.length === 0){
+    thead.innerHTML = "";
+    tbody.innerHTML = "<tr><td style='padding:12px'>No Data</td></tr>";
+    return;
+  }
+  let head = "<tr>";
+  for(let i=0;i<desiredDisplayCols.length;i++){
+    const display = desiredDisplayCols[i];
+    const key = orderedKeys[i];
+    if(key === null) continue;
+    head += `<th data-col="${escapeHtml(display)}">${escapeHtml(display)}</th>`;
+  }
+  head += "</tr>";
+  thead.innerHTML = head;
+
+  tbody.innerHTML = "";
+  data.forEach(row => {
+    let tr = "<tr>";
+    for(let i=0;i<desiredDisplayCols.length;i++){
+      const display = desiredDisplayCols[i];
+      const key = orderedKeys[i];
+      if(key === null) continue;
+      const raw = row[key] ?? "";
+      const val = escapeHtml(raw);
+      tr += `<td data-col="${escapeHtml(display)}"><span class="val">${val}</span></td>`;
+    }
+    tr += "</tr>";
+    tbody.insertAdjacentHTML("beforeend", tr);
+  });
+}
+
+function updateCards(withP, withoutP){
+  let high=0,med=0,low=0;
+  withP.forEach(r=>{
+    const p = priorityKey ? Number(r[priorityKey]) : NaN;
+    if(p===1) high++; else if(p===2) med++; else if(!isNaN(p)) low++;
+  });
+  document.getElementById("totalCount").innerText = withP.length + withoutP.length;
+  document.getElementById("highCount").innerText = high;
+  document.getElementById("mediumCount").innerText = med;
+  document.getElementById("lowCount").innerText = low;
+  document.getElementById("noPriorityCount").innerText = withoutP.length;
+
+  document.getElementById("highCard").title = "Priority 1 (Important)";
+  document.getElementById("mediumCard").title = "Priority 2";
+  document.getElementById("lowCard").title = "Priority 3";
+  document.getElementById("noneCard").title = "No priority assigned";
+}
+
+function exportCSV(){
+  const orderedKeys = buildOrderedKeys();
+  const visibleDisplays = [], visibleKeys = [];
+  for(let i=0;i<desiredDisplayCols.length;i++){
+    if(orderedKeys[i] === null) continue;
+    visibleDisplays.push(desiredDisplayCols[i]);
+    visibleKeys.push(orderedKeys[i]);
+  }
+  let csv = visibleDisplays.join(",") + "\n";
+  currentData.forEach(r => {
+    const row = visibleKeys.map(k => `"${escapeCSV(String(r[k] ?? ""))}"`).join(",");
+    csv += row + "\n";
+  });
+  const blob = new Blob([csv], {type: "text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "pending_data_filtered.csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function escapeCSV(s){ return String(s).replace(/"/g,'""'); }
+
+/* App view toggle */
+function toggleAppView(){
+  const enabled = document.body.classList.toggle("app-view");
+  localStorage.setItem("appView", enabled ? "1" : "0");
+  document.getElementById("appViewBtn").innerText = enabled ? "🧭 Desktop View" : "📱 App View";
+}
+
+/* init app view */
+(function initAppView(){
+  const v = localStorage.getItem("appView");
+  if(v === "1"){ document.body.classList.add("app-view"); document.getElementById("appViewBtn").innerText = "🧭 Desktop View"; }
+  else document.getElementById("appViewBtn").innerText = "📱 App View";
+})();
+
+select.addEventListener("change", ()=> loadData(select.value));
+searchBox.addEventListener("keyup", render);
+
+/* initial load */
+loadData(select.value);
+</script>
+
+</body>
+</html>
