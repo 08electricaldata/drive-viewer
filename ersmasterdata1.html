@@ -221,6 +221,7 @@ const JSON_FILES={
 let currentData=[];
 let headers=[];
 let priorityKey=""; // actual JSON key used for priority
+let currentType = 'rewinding'; // track selected type
 
 const select=document.getElementById("typeSelect");
 const searchBox=document.getElementById("searchBox");
@@ -250,6 +251,7 @@ function normalize(s){
 }
 
 async function loadData(type){
+  currentType = type; // set current selection type
   try{
     const res=await fetch(JSON_FILES[type]);
     const json=await res.json();
@@ -293,10 +295,25 @@ function findKeyMatch(displayName){
 }
 
 /* Build the ordered list of actual JSON keys to render (matching desiredDisplayCols)
-   For the "Problems" display label we attempt to match JSON keys related to Motor Location Update On. */
+   For the "Problems" display label we attempt to match JSON keys related to Motor Location Update On.
+   For SCRAP only: override "Job Completion Dat" to use column L (headers[11]) if available.
+*/
 function buildOrderedKeys(){
   const orderedKeys = [];
   for(const display of desiredDisplayCols){
+    // special-case: Job Completion Dat -> use column L for SCRAP only
+    if(display.toLowerCase() === "job completion dat" && currentType === 'scrap'){
+      // column L is index 11 (0-based). If headers array long enough, use it.
+      if(headers && headers.length > 11 && headers[11]) {
+        orderedKeys.push(headers[11]);
+        continue;
+      } else {
+        // fallback to normal matching
+        orderedKeys.push(findKeyMatch(display) || null);
+        continue;
+      }
+    }
+
     if(display.toLowerCase() === "problems"){
       const candidateNames = [
         "Motor Location Update On",
