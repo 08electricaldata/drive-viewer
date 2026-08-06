@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending Dashboard — ERS</title>
+<title>Pending Dashboard — Compact View (priority colors)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -110,7 +110,6 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
     <div>
       <button class="header-btn" onclick="history.back()">⬅</button>
       <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/index_mob.html'">🏠</button>
-      <!-- NEW SPARE MOTOR button beside Home -->
       <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/drive-viewer/mobile/sparemotor.html'">SPARE MOTOR</button>
     </div>
     <div class="header-center">
@@ -134,13 +133,15 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
   <select id="typeSelect" style="min-width:150px">
     <option value="rewinding">Rewinding</option>
     <option value="overhauling">Overhauling</option>
-    <!-- NEW SCRAP option -->
     <option value="scrap">SCRAP</option>
   </select>
 
   <input type="text" id="searchBox" placeholder="Search..." style="min-width:160px">
   <button id="appViewBtn" class="header-btn" onclick="toggleAppView()">📱 App View</button>
   <button onclick="exportCSV()">Export Excel</button>
+
+  <!-- NEW WhatsApp button beside Export Excel -->
+  <button id="whatsappBtn" style="background:#25D366;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;" onclick="shareViaWhatsApp()">WhatsApp</button>
 </div>
 
 <div class="status-bar" id="statusBar">
@@ -174,7 +175,6 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
 const JSON_FILES = {
   rewinding: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
   overhauling: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json",
-  // NEW scrap mapping
   scrap: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/scrap.json"
 };
 const desiredDisplayCols = [
@@ -227,24 +227,20 @@ async function loadData(type){
     }
 
     currentData = data;
-    // if data is array-of-arrays (rows), try convert to array-of-objects when possible
+    // if data is array-of-arrays (rows), convert to array-of-objects
     if(currentData.length && Array.isArray(currentData[0])) {
-      // if json provides headers separately (json.headers), use them; otherwise try first row as header row if it looks like strings
       let hdrs = json.headers && Array.isArray(json.headers) ? json.headers.slice() : null;
       if(!hdrs && currentData.length > 0) {
-        // if first row are strings and look like headers, use it
         const firstRow = currentData[0];
         const strings = firstRow.every(c => typeof c === 'string' && c.trim() !== '');
         if(strings) {
           hdrs = firstRow.slice();
-          // data rows start from index 1
           currentData = currentData.slice(1).map(r => {
             const obj = {};
             for(let i=0;i<hdrs.length;i++) obj[hdrs[i]||`Col${i+1}`] = r[i];
             return obj;
           });
         } else {
-          // fallback: build keys Col1..N and convert
           const maxCols = Math.max(...currentData.map(r => r.length));
           hdrs = Array.from({length: maxCols}, (_,i) => `Col${i+1}`);
           currentData = currentData.map(r => {
@@ -416,7 +412,7 @@ function updateCards(withP, withoutP){
   document.getElementById("highCount").innerText = high;
   document.getElementById("mediumCount").innerText = med;
   document.getElementById("lowCount").innerText = low;
-  document.getElementById("noPriorityCount").innerText = withoutP.length;
+  document.getElementById("noPriorityCount").innerText = withoutPriority.length;
 
   document.getElementById("highCard").title = "Priority 1 (Important)";
   document.getElementById("mediumCard").title = "Priority 2";
@@ -466,6 +462,90 @@ searchBox.addEventListener("keyup", render);
 
 /* initial load */
 loadData(select.value);
+
+/* ============================
+   WhatsApp share functionality
+   ============================ */
+
+/*
+ - shareViaWhatsApp() builds a short textual preview of the currently visible rows
+   (limited to avoid very long URLs), prompts for an optional phone number (international,
+   digits only, no plus). If a phone is entered the link opens wa.me/<phone>?text=...
+   Otherwise it opens wa.me/?text=... so user can pick a chat/group manually.
+ - The shared text includes the display column labels and up to N rows, then " (truncated)"
+   if necessary. The function restricts the encoded message length to a safe size (~1200 chars).
+*/
+
+function shareViaWhatsApp(){
+  // Build visible rows (filtered by search)
+  const q = (searchBox.value || "").toLowerCase();
+  const filtered = currentData.filter(r => Object.values(r||{}).join(" ").toLowerCase().includes(q));
+  if(!filtered || filtered.length === 0){
+    alert("No rows to share for the current selection and search.");
+    return;
+  }
+
+  // Determine visible columns (labels + keys)
+  const orderedKeys = buildOrderedKeys();
+  const visibleDisplays = [];
+  const visibleKeys = [];
+  for(let i=0;i<desiredDisplayCols.length;i++){
+    if(orderedKeys[i] === null) continue;
+    visibleDisplays.push(desiredDisplayCols[i]);
+    visibleKeys.push(orderedKeys[i]);
+  }
+  if(visibleKeys.length === 0){
+    // fallback to first 6 real headers
+    const use = headers.slice(0,6);
+    use.forEach(h => { visibleDisplays.push(h); visibleKeys.push(h); });
+  }
+
+  // Build text lines: header + rows; limit characters
+  const headerLine = visibleDisplays.join(" | ");
+  const lines = [headerLine];
+  const MAX_CHARS = 1200; // keep URL comfortable
+  let charCount = headerLine.length + 2;
+  let added = 0;
+  for(let i=0;i<filtered.length;i++){
+    const row = filtered[i];
+    const vals = visibleKeys.map(k => String(row[k] ?? "").replace(/\r?\n/g,' ').trim());
+    const line = vals.join(" | ");
+    if(charCount + line.length + 1 > MAX_CHARS){
+      break;
+    }
+    lines.push(line);
+    charCount += line.length + 1;
+    added++;
+  }
+  if(added < filtered.length){
+    lines.push(`... (${filtered.length - added} more rows, truncated)`);
+  }
+
+  let message = `List (${select.value.toUpperCase()})\n` + lines.join("\n");
+
+  // Ask optional phone number
+  const phone = prompt("Enter phone number with country code (digits only) to send directly, or leave blank to pick chat/group in WhatsApp:", "");
+  if(phone === null) return; // user cancelled
+
+  // clean phone
+  const cleaned = phone ? phone.replace(/\D/g,'') : "";
+  if(cleaned && cleaned.length < 7){
+    if(!confirm("Number looks short — continue?")) return;
+  }
+
+  // encode
+  const encoded = encodeURIComponent(message);
+
+  // Build wa.me URL
+  const waUrl = cleaned ? `https://wa.me/${cleaned}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+
+  // Warn if too long
+  if(message.length > 1400 && !confirm("Message is long and will be truncated by WhatsApp link length limits. Continue?")) return;
+
+  // Open new window
+  window.open(waUrl, "_blank");
+}
+
 </script>
 
 </body>
