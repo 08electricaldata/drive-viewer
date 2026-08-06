@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Spare List — Mobile App View</title>
+<style>
+  :root{
+    --brand:#0d47a1;
+    --bg:#f4f7ff;
+    --muted:#6b7280;
+    --card-bg:#fff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#eef6ff,#f7fbff);color:#07203a;-webkit-font-smoothing:antialiased}
+  header{
+    position:sticky;top:0;z-index:40;
+    display:flex;align-items:center;gap:8px;
+    padding:12px 10px;background:linear-gradient(90deg,var(--brand),#0052cc);
+    color:#fff;
+    box-shadow:0 6px 18px rgba(0,0,0,.08)
+  }
+  .header-left{display:flex;gap:8px;align-items:center}
+  .btn{
+    background:#fff;color:var(--brand);border:0;padding:10px 12px;border-radius:10px;font-weight:800;cursor:pointer;
+    min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 20px rgba(3,63,136,.08)
+  }
+  .title{flex:1;text-align:center;font-weight:900;font-size:16px}
+  main{padding:12px;max-width:900px;margin:0 auto}
+  .counts{display:flex;gap:8px;align-items:center;margin:10px 0;overflow:auto}
+  .count{
+    background:var(--card-bg);padding:8px 10px;border-radius:10px;min-width:100px;text-align:center;
+    box-shadow:0 8px 20px rgba(3,63,136,0.04);font-weight:800;
+  }
+  .controls{display:flex;gap:8px;align-items:center;margin:10px 0}
+  .search{flex:1;display:flex}
+  .search input{flex:1;padding:10px;border-radius:8px;border:1px solid #e6eefb}
+  .view-toggle{display:flex;gap:6px}
+  .small-btn{background:#fff;border:1px solid #e6eefb;padding:8px;border-radius:8px;font-weight:800;cursor:pointer}
+
+  /* Filters accordion (mobile friendly) */
+  .filters-wrap{margin:10px 0}
+  details.filters{background:var(--card-bg);border-radius:10px;padding:8px;box-shadow:0 8px 18px rgba(3,63,136,.04)}
+  .filters-row{display:flex;gap:8px;overflow:auto;padding:6px 2px}
+  .filter{
+    min-width:140px;background:var(--card-bg);padding:8px;border-radius:8px;border:1px solid #eef4ff;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .filter label{font-size:12px;font-weight:700;color:var(--brand);white-space:nowrap}
+  .filter input{padding:8px;border-radius:6px;border:1px solid #eef4ff}
+
+  /* Card list */
+  .list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .card{
+    background:var(--card-bg);padding:10px;border-radius:12px;box-shadow:0 10px 30px rgba(3,63,136,0.05);
+  }
+  .card-head{display:flex;justify-content:space-between;gap:8px;align-items:start}
+  .card-title{font-weight:900;color:var(--brand);font-size:15px}
+  .card-sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .card-compact{margin-top:8px;color:#123;font-size:13px}
+  .card-details{margin-top:10px;border-radius:8px;padding:10px;background:#fbfdff;border:1px solid #eaf4ff;display:none}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+  .kv dt{font-weight:800;color:var(--brand);font-size:12px}
+  .kv dd{margin:0;font-size:13px;color:#222}
+
+  .toggle-details{background:transparent;border:0;color:var(--brand);font-weight:800;cursor:pointer}
+
+  /* Table view (hidden by default on mobile, visible when toggled) */
+  .table-wrap{display:none;background:#fff;border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(3,63,136,0.05);margin-top:8px;overflow:auto}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border:1px solid #eef4ff;font-size:12px;text-align:left;vertical-align:top;white-space:normal}
+  thead th{background:linear-gradient(90deg,var(--brand),#0052cc);color:#fff;position:sticky;top:0}
+
+  /* small adjustments for very narrow screens */
+  @media(min-width:700px){
+    main{padding:16px}
+    .filter{min-width:160px}
+  }
+
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <button class="btn" onclick="history.back()">⬅ Back</button>
+  </div>
+  <div class="title">Spare List — Mobile</div>
+  <div class="header-right">
+    <button class="btn" onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
+  </div>
+</header>
+
+<main>
+  <div class="counts" aria-live="polite">
+    <div class="count">Total: <span id="totalRows">0</span></div>
+    <div class="count">Showing: <span id="shownRows">0</span></div>
+  </div>
+
+  <div class="controls">
+    <div class="search">
+      <input id="searchBox" placeholder="Search all fields..." aria-label="Search">
+    </div>
+    <div class="view-toggle">
+      <button id="cardsViewBtn" class="small-btn" aria-pressed="true">Cards</button>
+      <button id="tableViewBtn" class="small-btn">Table</button>
+    </div>
+  </div>
+
+  <div class="filters-wrap">
+    <details class="filters" open>
+      <summary style="font-weight:900;color:var(--brand);padding:6px 0;cursor:pointer">Filters</summary>
+      <div class="filters-row" id="filtersRow" aria-label="Filters row"></div>
+    </details>
+  </div>
+
+  <div id="listContainer" class="list" role="list"></div>
+
+  <div class="table-wrap" id="tableWrap">
+    <table id="dataTable" role="table" aria-label="Spare list table">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const SOURCE_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/sparelist.json";
+
+// same header/data indexes for array-of-arrays exports
+const HEADER_ROW_INDEX_FOR_ROWS = 10; // 11th row
+const DATA_START_INDEX_FOR_ROWS  = 11; // 12th row
+
+let parsedHeaders = [];
+let parsedRows = []; // raw parsed rows (array of objects)
+
+const totalRowsEl = document.getElementById('totalRows');
+const shownRowsEl = document.getElementById('shownRows');
+const statusMsg = document.getElementById('totalRows'); // reuse
+const filtersRow = document.getElementById('filtersRow');
+const listContainer = document.getElementById('listContainer');
+const tableWrap = document.getElementById('tableWrap');
+const tableHead = document.getElementById('tableHead');
+const tableBody = document.getElementById('tableBody');
+
+const searchBox = document.getElementById('searchBox');
+const cardsViewBtn = document.getElementById('cardsViewBtn');
+const tableViewBtn = document.getElementById('tableViewBtn');
+
+const EXCLUDE_HEADERS = ['col16','col17','rownumber']; // normalized names to drop
+
+let headers = [];
+let dataRows = []; // filtered header-sanitized rows we display
+
+const filters = {}; // { header: value }
+
+function normalizeKey(s){
+  return String(s||'').toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+}
+function escapeHtml(s){ return String(s===undefined||s===null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Build filter inputs (datalist-enabled). Mobile: render inputs horizontally scrollable.
+function buildFilters(){
+  filtersRow.innerHTML = '';
+  headers.forEach((h, idx) => {
+    const col = h || `Col${idx+1}`;
+    const container = document.createElement('div');
+    container.className = 'filter';
+    const label = document.createElement('label');
+    label.textContent = col;
+    const input = document.createElement('input');
+    input.setAttribute('list','dl-'+idx);
+    input.placeholder = 'type or pick';
+    input.autocomplete = 'off';
+    input.addEventListener('input', ()=> {
+      const v = input.value.trim();
+      if(v) filters[col] = v; else delete filters[col];
+      renderAll();
+    });
+
+    // build datalist options from unique values in column (but limit to first 200 to avoid huge datalists)
+    const datalist = document.createElement('datalist');
+    datalist.id = 'dl-'+idx;
+    const values = uniqueValuesForColumn(col);
+    const limit = 200;
+    for(let i=0;i<Math.min(values.length, limit); i++){
+      const opt = document.createElement('option');
+      opt.value = values[i];
+      datalist.appendChild(opt);
+    }
+
+    container.appendChild(label);
+    container.appendChild(input);
+    container.appendChild(datalist);
+    filtersRow.appendChild(container);
+  });
+
+  // add a Clear Filters button at the end
+  const clear = document.createElement('button');
+  clear.className = 'small-btn';
+  clear.textContent = 'Clear';
+  clear.style.minWidth = '70px';
+  clear.addEventListener('click', ()=> {
+    filtersRow.querySelectorAll('input').forEach(i=>i.value='');
+    for(const k in filters) delete filters[k];
+    renderAll();
+  });
+  filtersRow.appendChild(clear);
+}
+
+// Return unique sorted values for a column
+function uniqueValuesForColumn(col){
+  const set = new Set();
+  parsedRows.forEach(r => {
+    const v = r[col];
+    if(v !== undefined && v !== null && String(v).trim() !== '') set.add(String(v));
+  });
+  return Array.from(set).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true}));
+}
+
+// Build card list view
+function renderCards(rows){
+  listContainer.innerHTML = '';
+  if(!rows || rows.length === 0){
+    listContainer.innerHTML = '<div style="padding:18px;text-align:center;color:#b91c1c;font-weight:800">No data</div>';
+    return;
+  }
+
+  rows.forEach((r, idx) => {
+    const card = document.createElement('article');
+    card.className = 'card';
+    // pick a main title: prefer 'W.O No' or first header
+    const titleKey = headers.find(h => /wo|wo no|work order/i.test(h)) || headers[0];
+    const subKey = headers.find(h => /equipment|detail|make/i.test(h)) || headers[1];
+
+    const titleText = r[titleKey] ?? `Row ${idx+1}`;
+    const subText = r[subKey] ?? '';
+
+    card.innerHTML = `
+      <div class="card-head">
+        <div style="min-width:0">
+          <div class="card-title">${escapeHtml(titleText)}</div>
+          <div class="card-sub">${escapeHtml(String(subText)).slice(0,140)}</div>
+        </div>
+        <div>
+          <button class="toggle-details" aria-expanded="false">Show</button>
+        </div>
+      </div>
+      <div class="card-compact">${buildCompactLine(r)}</div>
+      <div class="card-details" aria-hidden="true">${buildDetailsHTML(r)}</div>
+    `;
+    const toggle = card.querySelector('.toggle-details');
+    const details = card.querySelector('.card-details');
+    toggle.addEventListener('click', (e)=>{
+      const open = details.style.display === 'block';
+      details.style.display = open ? 'none' : 'block';
+      details.setAttribute('aria-hidden', String(open));
+      toggle.textContent = open ? 'Show' : 'Hide';
+      toggle.setAttribute('aria-expanded', String(!open));
+    });
+
+    // allow tapping the card head to toggle as well
+    card.querySelector('.card-head').addEventListener('click', (e)=>{
+      if(e.target.tagName.toLowerCase() === 'button') return;
+      toggle.click();
+    });
+
+    listContainer.appendChild(card);
+  });
+}
+
+function buildCompactLine(row){
+  // show a short summary: combine a few important columns if present
+  const picks = [];
+  const preferKeys = ['kW','Make','Frame Size','RPM','Sl No','Voltage','Area'];
+  for(const k of preferKeys){
+    if(headers.includes(k) && row[k]) picks.push(`${k}: ${row[k]}`);
+  }
+  if(picks.length) return picks.join(' · ');
+  // fallback: first 3 columns
+  const first = headers.slice(0,3).map(h => (row[h] ? `${h}: ${row[h]}` : null)).filter(Boolean);
+  return first.join(' · ');
+}
+
+function buildDetailsHTML(row){
+  let html = '<dl class="kv">';
+  headers.forEach(h=>{
+    const v = row[h];
+    if(v === undefined || v === null || String(v).trim()==='') return;
+    html += `<dt>${escapeHtml(h)}</dt><dd>${escapeHtml(String(v)).replace(/\n/g,'<br>')}</dd>`;
+  });
+  html += '</dl>';
+  return html;
+}
+
+// Table view builder (responsive)
+function renderTable(rows){
+  tableHead.innerHTML = '';
+  tableBody.innerHTML = '';
+  if(!rows || rows.length===0){
+    tableBody.innerHTML = '<tr><td style="padding:12px">No Data</td></tr>';
+    return;
+  }
+  const tr = document.createElement('tr');
+  headers.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    tr.appendChild(th);
+  });
+  tableHead.appendChild(tr);
+
+  const frag = document.createDocumentFragment();
+  rows.forEach(r => {
+    const rowEl = document.createElement('tr');
+    headers.forEach(h => {
+      const td = document.createElement('td');
+      td.innerHTML = escapeHtml(r[h] ?? '').replace(/\n/g,'<br>');
+      rowEl.appendChild(td);
+    });
+    frag.appendChild(rowEl);
+  });
+  tableBody.appendChild(frag);
+}
+
+// Filtering logic (search + per-column filters)
+function rowMatchesFilters(row){
+  // global search
+  const q = (searchBox.value||'').toLowerCase().trim();
+  if(q){
+    const all = Object.values(row).join(' ').toLowerCase();
+    if(!all.includes(q)) return false;
+  }
+  // per-column filters
+  for(const key in filters){
+    const want = String(filters[key]||'').toLowerCase().trim();
+    if(!want) continue;
+    const val = String(row[key]===undefined||row[key]===null ? '' : row[key]).toLowerCase();
+    if(!val.includes(want)) return false;
+  }
+  return true;
+}
+
+function renderAll(){
+  // apply filters to parsedRows
+  const filtered = parsedRows.filter(r => rowMatchesFilters(r));
+  totalRowsEl.textContent = parsedRows.length;
+  shownRowsEl.textContent = filtered.length;
+  // update datalists (optional: heavy to refresh; skipping for performance)
+  renderCards(filtered);
+  renderTable(filtered);
+}
+
+// toggle view buttons
+cardsViewBtn.addEventListener('click', ()=>{
+  tableWrap.style.display = 'none';
+  listContainer.style.display = 'flex';
+  cardsViewBtn.setAttribute('aria-pressed','true');
+  tableViewBtn.setAttribute('aria-pressed','false');
+});
+tableViewBtn.addEventListener('click', ()=>{
+  listContainer.style.display = 'none';
+  tableWrap.style.display = 'block';
+  cardsViewBtn.setAttribute('aria-pressed','false');
+  tableViewBtn.setAttribute('aria-pressed','true');
+});
+
+// listen search input
+searchBox.addEventListener('input', ()=> renderAll());
+
+// load JSON and parse shapes (robust like before)
+async function loadAndBuild(){
+  try{
+    const res = await fetch(SOURCE_URL);
+    if(!res.ok) throw new Error('Fetch failed ' + res.status);
+    const json = await res.json();
+
+    let rows = [], hdrs = [];
+
+    // shape 1: json.data = array of objects
+    if(json && Array.isArray(json.data) && json.data.length && typeof json.data[0] === 'object' && !Array.isArray(json.data[0])){
+      hdrs = Object.keys(json.data[0]);
+      rows = json.data.slice();
+    }
+    // shape 2: json.rows array-of-arrays (header at index HEADER_ROW_INDEX_FOR_ROWS)
+    else if(json && Array.isArray(json.rows) && json.rows.length && Array.isArray(json.rows[0])){
+      const raw = json.rows;
+      if(raw.length <= HEADER_ROW_INDEX_FOR_ROWS) {
+        console.warn('Not enough rows for header in rows shape');
+      } else {
+        hdrs = raw[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h || ''));
+        for(let i = DATA_START_INDEX_FOR_ROWS; i < raw.length; i++){
+          const r = raw[i];
+          if(!r) continue;
+          const obj = {};
+          for(let c=0;c<hdrs.length;c++){
+            obj[hdrs[c]||`Col${c+1}`] = r[c] === undefined ? '' : r[c];
+          }
+          rows.push(obj);
+        }
+      }
+    }
+    // shape 3: json.data array-of-arrays
+    else if(json && Array.isArray(json.data) && json.data.length && Array.isArray(json.data[0])){
+      const raw = json.data;
+      if(raw.length > HEADER_ROW_INDEX_FOR_ROWS){
+        hdrs = raw[HEADER_ROW_INDEX_FOR_ROWS].map(h => String(h || ''));
+        for(let i = DATA_START_INDEX_FOR_ROWS; i < raw.length; i++){
+          const r = raw[i];
+          if(!r) continue;
+          const obj = {};
+          for(let c=0;c<hdrs.length;c++){
+            obj[hdrs[c]||`Col${c+1}`] = r[c] === undefined ? '' : r[c];
+          }
+          rows.push(obj);
+        }
+      }
+    }
+    // fallback: find first array-of-objects in json
+    else {
+      let found = false;
+      for(const k in json){
+        if(Array.isArray(json[k]) && json[k].length && typeof json[k][0] === 'object' && !Array.isArray(json[k][0])){
+          rows = json[k].slice();
+          hdrs = Object.keys(rows[0] || {});
+          found = true;
+          break;
+        }
+      }
+      if(!found) {
+        console.warn('No usable data shape detected', json);
+      }
+    }
+
+    // filter out excluded headers by normalized name
+    const excludeSet = new Set(EXCLUDE_HEADERS);
+    headers = (hdrs||[]).filter(h => {
+      const n = normalizeKey(h);
+      return !excludeSet.has(n);
+    });
+
+    // rebuild parsedRows to only include these headers
+    parsedRows = rows.map(r => {
+      const obj = {};
+      headers.forEach(h => { obj[h] = r[h]; });
+      return obj;
+    }).filter(r => Object.values(r).some(v => v !== "" && v !== null && v !== undefined));
+
+    // build UI
+    buildFilters();
+    renderAll();
+    // default to cards
+    listContainer.style.display = 'flex';
+    tableWrap.style.display = 'none';
+  }catch(err){
+    console.error(err);
+    listContainer.innerHTML = `<div style="padding:18px;text-align:center;color:#b91c1c;font-weight:800">Failed to load data</div>`;
+  }
+}
+
+// initial
+loadAndBuild();
+</script>
+</body>
+</html>
