@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending at ERS Dashboard  </title>
+<title>Pending Dashboard — Compact View (priority colors)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -17,13 +17,12 @@
   --card-radius: 8px;
   --card-gap: 10px;
   --summary-scale: 0.7;
-  /* priority colors */
-  --prio-1: #d32f2f;   /* important / high */
-  --prio-2: #ff9800;   /* less */
-  --prio-3: #fbc02d;   /* lesser */
-  --prio-4: #66bb6a;   /* lower (if used) */
-  --prio-none: #9e9e9e;/* no priority */
-  --total-bg: #003f88; /* total box */
+  --prio-1: #d32f2f;
+  --prio-2: #ff9800;
+  --prio-3: #fbc02d;
+  --prio-4: #66bb6a;
+  --prio-none: #9e9e9e;
+  --total-bg: #003f88;
 }
 *{box-sizing:border-box}
 body{font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;background:var(--bg);-webkit-font-smoothing:antialiased;color:var(--value-color);font-size:var(--font-size);}
@@ -36,23 +35,17 @@ body{font-family:Arial,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial
 .header-center p{margin:4px 0 0;font-size:11px;opacity:0.95}
 .header-btn{background:#fff;color:var(--brand);border:none;padding:6px 8px;border-radius:6px;font-size:12px;cursor:pointer;margin:3px}
 
-/* SUMMARY - moved directly under header and compact */
+/* SUMMARY */
 .summary-wrap{display:flex;justify-content:center;padding:8px 10px;gap:8px}
-.summary{
-  background:#fff;padding:6px 8px;border-radius:8px;box-shadow:0 4px 12px rgba(7,18,42,0.05);
-  min-width:70px;text-align:center;transform:scale(var(--summary-scale));transform-origin:center left;
-  color:#fff;
-}
+.summary{background:#fff;padding:6px 8px;border-radius:8px;box-shadow:0 4px 12px rgba(7,18,42,0.05);min-width:70px;text-align:center;transform:scale(var(--summary-scale));transform-origin:center left;color:#fff;}
 .summary h3{margin:0;font-size:14px}
 .summary span{display:block;font-size:10px;color:rgba(255,255,255,0.9);margin-top:4px}
-
-/* colored variants */
-.summary.total{background:var(--total-bg); color:#fff}
-.summary.prio1{background:var(--prio-1); color:#fff}
-.summary.prio2{background:var(--prio-2); color:#fff}
-.summary.prio3{background:var(--prio-3); color:#fff}
-.summary.prio4{background:var(--prio-4); color:#fff}
-.summary.none{background:var(--prio-none); color:#fff}
+.summary.total{background:var(--total-bg);}
+.summary.prio1{background:var(--prio-1);}
+.summary.prio2{background:var(--prio-2);}
+.summary.prio3{background:var(--prio-3);}
+.summary.prio4{background:var(--prio-4);}
+.summary.none{background:var(--prio-none);}
 
 /* controls */
 .controls{padding:8px 10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;align-items:center}
@@ -93,14 +86,11 @@ body.app-view .header-center h1 { font-size:16px }
 body.app-view .controls select, body.app-view .controls input, body.app-view .controls button { padding:5px 6px; font-size:12px }
 body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px }
 
-/* hidden debug by default */
+/* debug */
 #debugInfo{display:none;font-size:12px;color:#333;margin-top:6px;text-align:left}
 
-/* footer actions */
+/* footer */
 .footer-actions{display:flex;gap:8px;justify-content:center;padding:10px}
-
-/* print */
-@media print{ .controls, .header-bar { display:none; } }
 </style>
 </head>
 <body>
@@ -119,7 +109,6 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
     <div></div>
   </div>
 
-  <!-- SUMMARY moved to top -->
   <div class="summary-wrap" id="summaryTop">
     <div id="totalCard" class="summary total"><h3 id="totalCount">0</h3><span>Total</span></div>
     <div id="highCard" class="summary prio1"><h3 id="highCount">0</h3><span>High</span></div>
@@ -139,8 +128,6 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
   <input type="text" id="searchBox" placeholder="Search..." style="min-width:160px">
   <button id="appViewBtn" class="header-btn" onclick="toggleAppView()">📱 App View</button>
   <button onclick="exportCSV()">Export Excel</button>
-
-  <!-- NEW WhatsApp button beside Export Excel -->
   <button id="whatsappBtn" style="background:#25D366;color:#fff;border:none;padding:6px 10px;border-radius:6px;font-weight:700;cursor:pointer;" onclick="shareViaWhatsApp()">WhatsApp</button>
 </div>
 
@@ -168,10 +155,10 @@ body.app-view table th, body.app-view table td { padding:6px 8px; font-size:12px
   <button id="debugToggle" class="header-btn" style="background:#fff;color:var(--brand);border:1px solid #cfd8e3" onclick="toggleDebug()">Show debug</button>
 </div>
 
-<div id="debugInfo"></div> <!-- hidden by default -->
+<div id="debugInfo"></div>
 
 <script>
-/* --- configuration --- */
+/* configuration */
 const JSON_FILES = {
   rewinding: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
   overhauling: "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json",
@@ -192,60 +179,88 @@ const debugInfo = document.getElementById("debugInfo");
 const debugToggle = document.getElementById("debugToggle");
 
 function setStatus(text){ statusMsg.innerText = text; }
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 
-/* --- loadData with diagnostics & retry --- */
+/* improved loadData with fallback & debug */
 async function loadData(type){
   const url = JSON_FILES[type];
   setStatus("Loading...");
-  debugInfo.innerHTML = `<div><strong>Fetching:</strong> ${url}</div>`;
+  debugInfo.innerHTML = `<div><strong>Fetching primary URL:</strong> ${url}</div>`;
+
   try{
-    const res = await fetch(url, {cache: "no-store"});
-    debugInfo.innerHTML += `<div><strong>HTTP:</strong> ${res.status} ${res.statusText}</div>`;
+    let res = await fetch(url, { cache: "no-store" });
+
     if(!res.ok){
-      setStatus("Fetch failed: " + res.status);
+      debugInfo.innerHTML += `<div style="color:orange"><strong>Primary fetch failed:</strong> ${res.status} ${res.statusText}</div>`;
+      let fallback = url;
+      if(url.includes("https://raw.githubusercontent.com/")){
+        fallback = url.replace("https://raw.githubusercontent.com/", "https://raw.githack.com/");
+      } else {
+        fallback = url + (url.includes("?") ? "&raw=true" : "?raw=true");
+      }
+      debugInfo.innerHTML += `<div><strong>Trying fallback URL:</strong> ${fallback}</div>`;
+      res = await fetch(fallback, { cache: "no-store" });
+    }
+
+    if(!res.ok){
+      const txt = await res.text().catch(()=>"<no body>");
+      debugInfo.innerHTML += `<div style="color:red"><strong>Fallback fetch failed:</strong> ${res.status} ${res.statusText}</div>`;
+      debugInfo.innerHTML += `<pre style="max-height:220px;overflow:auto;border:1px solid #eee;padding:8px">${escapeHtml(String(txt).slice(0,5000))}</pre>`;
+      setStatus("Fetch failed: " + (res.status || "network error"));
       showFetchError(url, `HTTP ${res.status} ${res.statusText}`);
-      currentData = [];
-      headers = [];
-      priorityKey = "";
+      currentData = []; headers = []; priorityKey = "";
       render();
       return;
     }
-    const json = await res.json();
+
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (parseErr) {
+      debugInfo.innerHTML += `<div style="color:red"><strong>JSON parse error:</strong> ${escapeHtml(parseErr.message)}</div>`;
+      debugInfo.innerHTML += `<pre style="max-height:220px;overflow:auto;border:1px solid #eee;padding:8px">${escapeHtml(text.slice(0,5000))}</pre>`;
+      setStatus("Invalid JSON received");
+      showFetchError(url, "Invalid JSON (see debug)");
+      currentData = []; headers = []; priorityKey = "";
+      render();
+      return;
+    }
+
     let data = [];
-    if(Array.isArray(json)) data = json;
-    else if(Array.isArray(json.data)) data = json.data;
-    else if(json.rows && Array.isArray(json.rows)) data = json.rows;
+    if (Array.isArray(json)) data = json;
+    else if (Array.isArray(json.data)) data = json.data;
+    else if (json.rows && Array.isArray(json.rows)) data = json.rows;
     else {
-      debugInfo.innerHTML += `<div><strong>JSON preview keys:</strong> ${escapeHtml(JSON.stringify(Object.keys(json)).slice(0,200))}</div>`;
-      setStatus("Loaded JSON but could not find data array.");
+      debugInfo.innerHTML += `<div style="color:orange"><strong>JSON shape not recognized — keys:</strong> ${escapeHtml(JSON.stringify(Object.keys(json)).slice(0,500))}</div>`;
+      setStatus("Loaded JSON but can't find data array");
       currentData = [];
       headers = [];
       priorityKey = "";
       render();
-      showFetchError(url, "Unexpected JSON structure.");
+      showFetchError(url, "Unexpected JSON shape (see debug)");
       return;
     }
 
     currentData = data;
-    // if data is array-of-arrays (rows), convert to array-of-objects
-    if(currentData.length && Array.isArray(currentData[0])) {
-      let hdrs = json.headers && Array.isArray(json.headers) ? json.headers.slice() : null;
-      if(!hdrs && currentData.length > 0) {
+    if (currentData.length && Array.isArray(currentData[0])) {
+      let hdrs = Array.isArray(json.headers) ? json.headers.slice() : null;
+      if (!hdrs && currentData.length > 0) {
         const firstRow = currentData[0];
-        const strings = firstRow.every(c => typeof c === 'string' && c.trim() !== '');
-        if(strings) {
+        const allStrings = firstRow.every(c => typeof c === "string" && c.trim() !== "");
+        if (allStrings) {
           hdrs = firstRow.slice();
           currentData = currentData.slice(1).map(r => {
             const obj = {};
-            for(let i=0;i<hdrs.length;i++) obj[hdrs[i]||`Col${i+1}`] = r[i];
+            for (let i = 0; i < hdrs.length; i++) obj[hdrs[i] || `Col${i+1}`] = r[i];
             return obj;
           });
         } else {
-          const maxCols = Math.max(...currentData.map(r => r.length));
-          hdrs = Array.from({length: maxCols}, (_,i) => `Col${i+1}`);
+          const maxCols = Math.max(...currentData.map(r => (r && r.length) || 0));
+          hdrs = Array.from({ length: maxCols }, (_, i) => `Col${i+1}`);
           currentData = currentData.map(r => {
             const obj = {};
-            for(let i=0;i<hdrs.length;i++) obj[hdrs[i]] = r[i];
+            for (let i = 0; i < hdrs.length; i++) obj[hdrs[i]] = r[i];
             return obj;
           });
         }
@@ -257,11 +272,12 @@ async function loadData(type){
 
     priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
     setStatus(`Loaded ${currentData.length} rows`);
-    debugInfo.innerHTML += `<div><strong>Rows:</strong> ${currentData.length} <strong>Headers:</strong> ${headers.join(", ")}</div>`;
+    debugInfo.innerHTML += `<div><strong>Rows:</strong> ${currentData.length} <strong>Headers:</strong> ${escapeHtml(JSON.stringify(headers).slice(0,1000))}</div>`;
     render();
-  } catch(err){
+  } catch (err) {
     console.error("Fetch error", err);
     setStatus("Fetch error: " + (err.message || err));
+    debugInfo.innerHTML += `<div style="color:red"><strong>Exception:</strong> ${escapeHtml(String(err))}</div>`;
     showFetchError(JSON_FILES[type], err.message || String(err));
     currentData = []; headers = []; priorityKey = "";
     render();
@@ -283,7 +299,6 @@ function toggleDebug(){
   }
 }
 
-/* Sample data for testing */
 function loadSampleData(){
   currentData = [
     {
@@ -412,8 +427,7 @@ function updateCards(withP, withoutP){
   document.getElementById("highCount").innerText = high;
   document.getElementById("mediumCount").innerText = med;
   document.getElementById("lowCount").innerText = low;
-  document.getElementById("noPriorityCount").innerText = withoutPriority.length;
-
+  document.getElementById("noPriorityCount").innerText = withoutP.length;
   document.getElementById("highCard").title = "Priority 1 (Important)";
   document.getElementById("mediumCard").title = "Priority 2";
   document.getElementById("lowCard").title = "Priority 3";
@@ -439,23 +453,15 @@ function exportCSV(){
   a.href = url; a.download = "pending_data_filtered.csv"; a.click();
   URL.revokeObjectURL(url);
 }
-
-function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 function escapeCSV(s){ return String(s).replace(/"/g,'""'); }
 
-/* App view toggle */
+/* App view toggle + init */
 function toggleAppView(){
   const enabled = document.body.classList.toggle("app-view");
   localStorage.setItem("appView", enabled ? "1" : "0");
   document.getElementById("appViewBtn").innerText = enabled ? "🧭 Desktop View" : "📱 App View";
 }
-
-/* init app view */
-(function initAppView(){
-  const v = localStorage.getItem("appView");
-  if(v === "1"){ document.body.classList.add("app-view"); document.getElementById("appViewBtn").innerText = "🧭 Desktop View"; }
-  else document.getElementById("appViewBtn").innerText = "📱 App View";
-})();
+(function initAppView(){ const v = localStorage.getItem("appView"); if(v === "1"){ document.body.classList.add("app-view"); document.getElementById("appViewBtn").innerText = "🧭 Desktop View"; } else document.getElementById("appViewBtn").innerText = "📱 App View"; })();
 
 select.addEventListener("change", ()=> loadData(select.value));
 searchBox.addEventListener("keyup", render);
@@ -463,89 +469,44 @@ searchBox.addEventListener("keyup", render);
 /* initial load */
 loadData(select.value);
 
-/* ============================
-   WhatsApp share functionality
-   ============================ */
+/* retryFetch (simple retry wrapper) */
+function retryFetch(){ loadData(select.value); }
 
-/*
- - shareViaWhatsApp() builds a short textual preview of the currently visible rows
-   (limited to avoid very long URLs), prompts for an optional phone number (international,
-   digits only, no plus). If a phone is entered the link opens wa.me/<phone>?text=...
-   Otherwise it opens wa.me/?text=... so user can pick a chat/group manually.
- - The shared text includes the display column labels and up to N rows, then " (truncated)"
-   if necessary. The function restricts the encoded message length to a safe size (~1200 chars).
-*/
-
+/* WhatsApp share */
 function shareViaWhatsApp(){
-  // Build visible rows (filtered by search)
   const q = (searchBox.value || "").toLowerCase();
   const filtered = currentData.filter(r => Object.values(r||{}).join(" ").toLowerCase().includes(q));
-  if(!filtered || filtered.length === 0){
-    alert("No rows to share for the current selection and search.");
-    return;
-  }
-
-  // Determine visible columns (labels + keys)
+  if(!filtered || filtered.length === 0){ alert("No rows to share for the current selection and search."); return; }
   const orderedKeys = buildOrderedKeys();
   const visibleDisplays = [];
   const visibleKeys = [];
-  for(let i=0;i<desiredDisplayCols.length;i++){
-    if(orderedKeys[i] === null) continue;
-    visibleDisplays.push(desiredDisplayCols[i]);
-    visibleKeys.push(orderedKeys[i]);
-  }
-  if(visibleKeys.length === 0){
-    // fallback to first 6 real headers
-    const use = headers.slice(0,6);
-    use.forEach(h => { visibleDisplays.push(h); visibleKeys.push(h); });
-  }
-
-  // Build text lines: header + rows; limit characters
+  for(let i=0;i<desiredDisplayCols.length;i++){ if(orderedKeys[i] === null) continue; visibleDisplays.push(desiredDisplayCols[i]); visibleKeys.push(orderedKeys[i]); }
+  if(visibleKeys.length === 0){ const use = headers.slice(0,6); use.forEach(h => { visibleDisplays.push(h); visibleKeys.push(h); }); }
   const headerLine = visibleDisplays.join(" | ");
   const lines = [headerLine];
-  const MAX_CHARS = 1200; // keep URL comfortable
+  const MAX_CHARS = 1200;
   let charCount = headerLine.length + 2;
   let added = 0;
   for(let i=0;i<filtered.length;i++){
     const row = filtered[i];
     const vals = visibleKeys.map(k => String(row[k] ?? "").replace(/\r?\n/g,' ').trim());
     const line = vals.join(" | ");
-    if(charCount + line.length + 1 > MAX_CHARS){
-      break;
-    }
+    if(charCount + line.length + 1 > MAX_CHARS) break;
     lines.push(line);
     charCount += line.length + 1;
     added++;
   }
-  if(added < filtered.length){
-    lines.push(`... (${filtered.length - added} more rows, truncated)`);
-  }
-
+  if(added < filtered.length) lines.push(`... (${filtered.length - added} more rows, truncated)`);
   let message = `List (${select.value.toUpperCase()})\n` + lines.join("\n");
-
-  // Ask optional phone number
   const phone = prompt("Enter phone number with country code (digits only) to send directly, or leave blank to pick chat/group in WhatsApp:", "");
-  if(phone === null) return; // user cancelled
-
-  // clean phone
+  if(phone === null) return;
   const cleaned = phone ? phone.replace(/\D/g,'') : "";
-  if(cleaned && cleaned.length < 7){
-    if(!confirm("Number looks short — continue?")) return;
-  }
-
-  // encode
+  if(cleaned && cleaned.length < 7){ if(!confirm("Number looks short — continue?")) return; }
   const encoded = encodeURIComponent(message);
-
-  // Build wa.me URL
   const waUrl = cleaned ? `https://wa.me/${cleaned}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
-
-  // Warn if too long
-  if(message.length > 1400 && !confirm("Message is long and will be truncated by WhatsApp link length limits. Continue?")) return;
-
-  // Open new window
+  if(message.length > 1400 && !confirm("Message is long and may be truncated. Continue?")) return;
   window.open(waUrl, "_blank");
 }
-
 </script>
 
 </body>
