@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DOL 90 kW Motor – Interactive Training</title>
+<style>
+:root{
+  --bg:#07111f;--panel:#0d1b2d;--panel2:#10243a;--line:#35516f;--text:#eef6ff;
+  --muted:#9fb3c8;--blue:#36a9ff;--green:#31e981;--yellow:#ffd84d;--red:#ff4d5d;
+  --orange:#ff9d3d;--shadow:0 14px 35px rgba(0,0,0,.32)
+}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 50% 0,#12345b 0,#07111f 45%,#040a12 100%);color:var(--text);font-family:Inter,Arial,sans-serif}
+header{position:sticky;top:0;z-index:10;background:rgba(5,13,24,.92);backdrop-filter:blur(12px);border-bottom:1px solid #20364f;padding:14px 18px}
+.head{max-width:1500px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:15px}
+h1{font-size:21px;margin:0} .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.badge{padding:8px 12px;border-radius:20px;background:#132b45;border:1px solid #315271;color:#8ed1ff;font-weight:700;font-size:12px}
+.wrap{max-width:1500px;margin:auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px}
+.card{background:linear-gradient(180deg,rgba(17,36,58,.96),rgba(9,23,38,.96));border:1px solid #213b56;border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.card h2{font-size:14px;margin:0;padding:13px 15px;border-bottom:1px solid #20384f;color:#cde8ff}
+.main{padding:10px}.schematic{width:100%;min-height:650px;background:#06101b;border-radius:12px;border:1px solid #1c344b}
+svg{width:100%;height:100%;display:block}
+.wire{stroke:#60788f;stroke-width:4;fill:none}.wire.live{stroke:#35e981;filter:url(#glow)}.wire.warn{stroke:#ffd84d}
+.comp{fill:#0c1c2d;stroke:#7090aa;stroke-width:2}.comp.live{stroke:#35e981;filter:url(#glow)}
+.label{fill:#dcecff;font-size:14px;font-weight:700}.small{fill:#9fb3c8;font-size:11px}
+.status{font-weight:800}.on{fill:#31e981}.off{fill:#71849a}.danger{fill:#ff4d5d}.warnText{fill:#ffd84d}
+.motorBody{fill:#102b44;stroke:#8cb4d5;stroke-width:3}.rotor{fill:none;stroke:#6ba9d7;stroke-width:4;stroke-dasharray:8 8}
+.control{padding:14px;display:grid;gap:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+button{border:1px solid #355574;background:#142a40;color:#eaf5ff;border-radius:10px;padding:11px 12px;font-weight:800;cursor:pointer;transition:.15s}
+button:hover{transform:translateY(-1px);border-color:#62b8f7}button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+button.start{background:#0c543a;border-color:#24a96a}.stop{background:#5b1d28;border-color:#c94355}.reset{background:#26384c}
+.mode button.active{outline:2px solid #39b5ff;background:#0d3858}
+.readouts{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.read{background:#081521;border:1px solid #20384f;border-radius:10px;padding:10px}.read span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}.read b{font-size:19px;display:block;margin-top:3px}
+.signal{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border:1px solid #20384f;border-radius:9px;background:#081521}.lamp{width:11px;height:11px;border-radius:50%;background:#3b4a58}.lamp.green{background:#31e981;box-shadow:0 0 13px #31e981}.lamp.red{background:#ff4d5d;box-shadow:0 0 13px #ff4d5d}
+.log{height:180px;overflow:auto;background:#050d16;border:1px solid #1b3045;border-radius:10px;padding:9px;font:11px ui-monospace,monospace;color:#a8c5dd}.log div{margin:3px 0}
+.learn{padding:14px}.step{padding:10px;border-left:3px solid #2d9be8;margin:8px 0;background:#091827;border-radius:0 8px 8px 0;font-size:12px;color:#c9d9e8}.step b{color:#fff}
+.fault select,.fault input{width:100%;padding:10px;border-radius:9px;border:1px solid #355574;background:#0a1725;color:#fff}
+.note{font-size:11px;color:#91a8bd;line-height:1.5;padding:10px 14px;border-top:1px solid #20384f}
+@media(max-width:1050px){.wrap{grid-template-columns:1fr}.schematic{min-height:580px}}
+@media(max-width:650px){header{padding:11px}.wrap{padding:8px}.grid3{grid-template-columns:1fr 1fr}.schematic{min-height:500px}h1{font-size:17px}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><h1>⚡ DOL 90 kW MOTOR — Interactive Training</h1><div class="sub">Educational simulator • Power, control, PLC/DCS feedback and fault logic</div></div><div id="topStatus" class="badge">● READY</div></div></header>
+
+<div class="wrap">
+<section class="card">
+<h2>Interactive DOL module schematic</h2>
+<div class="main">
+<div class="schematic">
+<svg viewBox="0 0 1100 700" role="img" aria-label="DOL 90 kW interactive electrical training schematic">
+<defs>
+ <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#31e981"/></marker>
+</defs>
+<text x="35" y="32" class="label" font-size="18">POWER CIRCUIT — 3Φ DOL</text>
+<text x="700" y="32" class="label" font-size="18">CONTROL / AUTOMATION</text>
+
+<!-- power -->
+<text x="38" y="90" class="label">L1</text><text x="38" y="150" class="label">L2</text><text x="38" y="210" class="label">L3</text>
+<path id="w1" class="wire" d="M65 85 H145 M65 145 H145 M65 205 H145"/>
+<rect x="145" y="58" width="80" height="180" rx="8" class="comp"/>
+<text x="158" y="90" class="label">S/FU</text><text x="157" y="108" class="small">SWITCH</text><text x="157" y="124" class="small">FUSE UNIT</text>
+<path id="sfw" class="wire" d="M225 85 H275 M225 145 H275 M225 205 H275"/>
+<rect x="275" y="58" width="70" height="180" rx="8" class="comp"/>
+<text x="292" y="91" class="label">MCB</text><text x="292" y="111" class="small">3 POLE</text>
+<path id="mcw" class="wire" d="M345 85 H410 M345 145 H410 M345 205 H410"/>
+
+<!-- K1 -->
+<rect id="k1box" x="410" y="55" width="105" height="190" rx="10" class="comp"/>
+<text x="445" y="84" class="label">K1</text><text x="430" y="103" class="small">POWER</text><text x="429" y="118" class="small">CONTACTOR</text>
+<line x1="425" y1="145" x2="500" y2="145" stroke="#718ca3" stroke-width="5"/>
+<line x1="425" y1="190" x2="500" y2="190" stroke="#718ca3" stroke-width="5"/>
+<line x1="425" y1="235" x2="500" y2="235" stroke="#718ca3" stroke-width="5"/>
+<circle id="k1lamp" cx="493" cy="80" r="7" class="off"/>
+
+<path id="kw" class="wire" d="M515 85 H565 M515 145 H565 M515 205 H565"/>
+<!-- overload representation -->
+<rect x="565" y="58" width="75" height="180" rx="8" class="comp"/>
+<text x="580" y="95" class="label">OL</text><text x="575" y="112" class="small">OVERLOAD</text><text x="578" y="129" class="small">TRIP</text>
+<path id="olw" class="wire" d="M640 85 H690 M640 145 H690 M640 205 H690"/>
+<!-- motor -->
+<g id="motor">
+ <ellipse cx="780" cy="145" rx="85" ry="90" class="motorBody"/>
+ <ellipse cx="780" cy="145" rx="45" ry="45" class="rotor"/>
+ <line x1="780" y1="100" x2="780" y2="190" class="rotor"/>
+ <line x1="735" y1="145" x2="825" y2="145" class="rotor"/>
+ <text x="746" y="225" class="label">MOTOR</text><text x="747" y="242" class="small">90 kW • 3Φ</text>
+</g>
+<path id="mw" class="wire" d="M690 85 H705 M690 145 H705 M690 205 H705"/>
+<text x="65" y="275" class="small">Illustrative training model — actual protection/settings must follow the approved plant drawing and equipment data.</text>
+
+<!-- current / transducer -->
+<rect x="665" y="280" width="140" height="75" rx="10" class="comp"/>
+<text x="684" y="307" class="label">AMMETER</text><text x="695" y="329" id="ampSvg" class="label">0.0 A</text>
+<path id="ctwire" class="wire" d="M805 318 H850"/>
+<rect x="850" y="280" width="120" height="75" rx="10" class="comp"/>
+<text x="865" y="307" class="label">TRANSDUCER</text><text x="878" y="329" id="maSvg" class="small">4.00 mA</text>
+<path id="aiwire" class="wire" d="M970 318 H1015" marker-end="url(#arrow)"/>
+<text x="945" y="370" class="small">AI → PLC</text>
+
+<!-- control block -->
+<rect x="35" y="330" width="250" height="145" rx="12" class="comp"/>
+<text x="55" y="358" class="label">LOCAL CONTROL</text>
+<circle id="readyLamp" cx="65" cy="390" r="7" class="off"/><text x="82" y="395" class="small">READY</text>
+<circle id="runLamp" cx="65" cy="425" r="7" class="off"/><text x="82" y="430" class="small">RUN</text>
+<circle id="tripLamp" cx="65" cy="460" r="7" class="off"/><text x="82" y="465" class="small">TRIP</text>
+<text x="160" y="395" class="small">START / STOP</text><text x="160" y="430" class="small">MODE SELECTOR</text><text x="160" y="465" class="small">AUX CONTACT K1</text>
+
+<!-- PLC -->
+<rect x="350" y="400" width="250" height="205" rx="12" class="comp"/>
+<text x="440" y="430" class="label" font-size="17">PLC</text>
+<text x="375" y="460" class="small">DI READY</text><circle id="plcReady" cx="490" cy="456" r="7" class="off"/>
+<text x="375" y="490" class="small">DI RUN</text><circle id="plcRun" cx="490" cy="486" r="7" class="off"/>
+<text x="375" y="520" class="small">DI TRIP</text><circle id="plcTrip" cx="490" cy="516" r="7" class="off"/>
+<text x="375" y="550" class="small">AI CURRENT</text><text id="plcCurrent" x="490" y="550" class="small">0.0 A</text>
+<text x="375" y="580" class="small">DO START</text><circle id="plcStartLamp" cx="490" cy="576" r="7" class="off"/>
+
+<!-- DCS -->
+<rect x="670" y="410" width="350" height="190" rx="12" class="comp"/>
+<text x="820" y="440" class="label" font-size="17">DCS / HMI</text>
+<text x="700" y="472" class="small">MOTOR STATUS</text><text id="dcsStatus" x="850" y="472" class="label">STOPPED</text>
+<text x="700" y="505" class="small">CURRENT</text><text id="dcsCurrent" x="850" y="505" class="label">0.0 A</text>
+<text x="700" y="538" class="small">READY / RUN / TRIP</text><text id="dcsSignals" x="850" y="538" class="small">READY / — / —</text>
+<text x="700" y="571" class="small">COMMAND</text><text id="dcsCommand" x="850" y="571" class="small">NONE</text>
+</svg>
+</div>
+</div>
+</section>
+
+<aside>
+<div class="card">
+<h2>🎛️ Controls</h2>
+<div class="control">
+<div><b>Mode selection</b></div>
+<div class="grid2 mode"><button id="localBtn" class="active">LOCAL</button><button id="remoteBtn">REMOTE</button></div>
+<div class="grid2"><button id="startBtn" class="start">▶ START</button><button id="stopBtn" class="stop">■ STOP</button></div>
+<div class="grid2"><button id="plcStartBtn">PLC START</button><button id="dcsStartBtn">DCS START</button></div>
+<div class="grid2"><button id="tripBtn">⚠ SIMULATE TRIP</button><button id="resetBtn" class="reset">↻ RESET</button></div>
+<div class="readouts">
+<div class="read"><span>Motor</span><b id="motorRead">STOPPED</b></div>
+<div class="read"><span>Current</span><b id="currentRead">0.0 A</b></div>
+<div class="read"><span>Transducer</span><b id="maRead">4.00 mA</b></div>
+<div class="read"><span>Contactor</span><b id="k1Read">OFF</b></div>
+</div>
+<div class="signal"><span>READY</span><span class="lamp green" id="readyUi"></span></div>
+<div class="signal"><span>RUN</span><span class="lamp" id="runUi"></span></div>
+<div class="signal"><span>TRIP</span><span class="lamp" id="tripUi"></span></div>
+</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>🧪 Fault simulation</h2>
+<div class="control fault">
+<select id="fault">
+<option value="none">Normal operation</option>
+<option value="mcb">MCB OFF</option>
+<option value="sfuse">Switch Fuse OFF</option>
+<option value="trip">Overload / protection trip</option>
+<option value="transducer">Transducer fault</option>
+</select>
+<button id="applyFault">Apply fault</button>
+</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>📘 How it works</h2>
+<div class="learn">
+<div class="step"><b>1. READY:</b> Control/protection permissives are healthy and no trip is active.</div>
+<div class="step"><b>2. START:</b> In LOCAL, the local START command is used. In REMOTE, the simulated PLC/DCS command is used.</div>
+<div class="step"><b>3. K1:</b> The contactor coil is energized; its main contacts close and the motor receives full line voltage.</div>
+<div class="step"><b>4. HOLD:</b> A typical DOL control circuit uses an auxiliary holding contact so the contactor remains energized after START is released.</div>
+<div class="step"><b>5. FEEDBACK:</b> RUN/READY/TRIP status is represented as PLC/DCS signals. Current is shown through the simulated transducer.</div>
+<div class="step"><b>6. STOP/TRIP:</b> STOP or a protection trip de-energizes K1 and removes motor power.</div>
+</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>📝 Event log</h2>
+<div class="control"><div id="log" class="log"></div></div>
+</div>
+</aside>
+</div>
+
+<div class="note">TRAINING ONLY: This interactive page is a conceptual simulation, not an electrical commissioning/wiring instruction. Actual 90 kW motor protection, contactor, fuse/MCB, overload, control voltage, PLC I/O and DCS logic must be taken from the approved plant drawings, motor nameplate and manufacturer documentation. A conventional DOL uses a contactor/control circuit and protection; the exact implementation varies by installation. citeturn0search0turn0search12turn0search1</div>
+
+<script>
+const s={
+ mode:'LOCAL',k1:false,motor:false,trip:false,current:0,ma:4,
+ fault:'none',plcStart:false,dcsStart:false,events:[]
+};
+const $=id=>document.getElementById(id);
+function log(t){const d=new Date().toLocaleTimeString();s.events.unshift(`[${d}] ${t}`);$('log').innerHTML=s.events.slice(0,80).map(x=>`<div>${x}</div>`).join('')}
+function setLamp(id,on,red=false){const e=$(id); if(!e)return;e.classList.remove('green','red');e.classList.add(on?(red?'red':'green'):'');}
+function commandStart(){
+ if(s.trip||s.fault==='mcb'||s.fault==='sfuse'){log('START blocked: power/protection fault active');return}
+ if(s.mode==='LOCAL'||s.plcStart||s.dcsStart){s.k1=true;s.motor=true;log(`${s.mode} START accepted → K1 energized → motor RUN`)}
+ update();
+}
+function stop(reason='STOP command'){s.k1=false;s.motor=false;s.plcStart=false;s.dcsStart=false;log(`${reason} → K1 de-energized → motor STOP`);update()}
+function applyFault(){
+ s.fault=$('fault').value;
+ if(s.fault==='trip'){s.trip=true;stop('PROTECTION TRIP');s.trip=true}
+ else {s.trip=false}
+ log(`Fault mode: ${$('fault').selectedOptions[0].text}`);
+ update();
+}
+function reset(){s.mode='LOCAL';s.k1=false;s.motor=false;s.trip=false;s.fault='none';s.plcStart=false;s.dcsStart=false;$('fault').value='none';log('System reset → READY');update()}
+function update(){
+ const ready=!s.trip&&s.fault!=='mcb'&&s.fault!=='sfuse';
+ if(!ready){s.k1=false;s.motor=false}
+ if(s.motor)s.current=Math.min(52, s.current+.8); else s.current=Math.max(0,s.current-1.8);
+ if(s.current<.5)s.current=0;
+ s.ma=s.fault==='transducer'?0:4+(s.current/100)*16;
+ $('motorRead').textContent=s.motor?'RUNNING':'STOPPED';
+ $('currentRead').textContent=s.current.toFixed(1)+' A';
+ $('maRead').textContent=s.ma.toFixed(2)+' mA';
+ $('k1Read').textContent=s.k1?'ON':'OFF';
+ $('topStatus').textContent=s.trip?'● TRIP':(s.motor?'● RUNNING':'● READY');
+ $('topStatus').style.color=s.trip?'#ff6b78':s.motor?'#61f2a0':'#8ed1ff';
+ $('ampSvg').textContent=s.current.toFixed(1)+' A';
+ $('maSvg').textContent=s.ma.toFixed(2)+' mA';
+ $('plcCurrent').textContent=s.current.toFixed(1)+' A';
+ $('dcsCurrent').textContent=s.current.toFixed(1)+' A';
+ $('dcsStatus').textContent=s.motor?'RUNNING':'STOPPED';
+ $('dcsSignals').textContent=`${ready?'READY':'—'} / ${s.motor?'RUN':'—'} / ${s.trip?'TRIP':'—'}`;
+ $('dcsCommand').textContent=s.plcStart?'PLC START':s.dcsStart?'DCS START':'NONE';
+ setLamp('readyUi',ready);setLamp('runUi',s.motor);setLamp('tripUi',s.trip,true);
+ ['readyLamp','plcReady'].forEach(id=>$(id).classList.toggle('on',ready));
+ ['runLamp','plcRun'].forEach(id=>$(id).classList.toggle('on',s.motor));
+ ['tripLamp','plcTrip'].forEach(id=>$(id).classList.toggle('danger',s.trip));
+ $('k1lamp').classList.toggle('on',s.k1);
+ $('k1box').classList.toggle('live',s.k1);
+ ['w1','sfw','mcw','kw','olw','mw','ctwire','aiwire'].forEach(id=>$(id).classList.toggle('live',s.motor));
+ $('startBtn').disabled=s.mode==='REMOTE'||!ready;
+ $('stopBtn').disabled=!s.motor&&!s.k1;
+ $('plcStartBtn').disabled=s.mode!=='REMOTE'||!ready;
+ $('dcsStartBtn').disabled=s.mode!=='REMOTE'||!ready;
+}
+$('localBtn').onclick=()=>{s.mode='LOCAL';s.plcStart=false;s.dcsStart=false;$('localBtn').classList.add('active');$('remoteBtn').classList.remove('active');log('LOCAL selected');update()}
+$('remoteBtn').onclick=()=>{s.mode='REMOTE';$('remoteBtn').classList.add('active');$('localBtn').classList.remove('active');log('REMOTE selected — PLC/DCS command enabled');update()}
+$('startBtn').onclick=commandStart;$('stopBtn').onclick=()=>stop();
+$('plcStartBtn').onclick=()=>{s.plcStart=true;commandStart()};$('dcsStartBtn').onclick=()=>{s.dcsStart=true;commandStart()};
+$('tripBtn').onclick=()=>{s.trip=true;stop('SIMULATED PROTECTION TRIP');s.trip=true;log('TRIP feedback sent to PLC/DCS');update()};
+$('resetBtn').onclick=reset;$('applyFault').onclick=applyFault;
+log('System initialized — READY. Select LOCAL or REMOTE.');
+update();
+setInterval(()=>{if(s.motor)update()},120);
+</script>
+</body>
+</html>
