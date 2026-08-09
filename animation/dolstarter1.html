@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DOL Starter 90 kW — Interactive Training Simulator</title>
+<style>
+  :root{
+    --bg:#f5f8fb; --panel:#fff; --accent:#0d47a1;
+    --ok:#16a34a; --warn:#f59e0b; --err:#dc2626; --muted:#6b7280;
+    --wire-off:#bfc9d9; --wire-on:#ffd54d;
+    --card-radius:10px; --shadow:0 10px 30px rgba(3,63,136,0.08);
+    --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  }
+  html,body{height:100%;margin:0;font-family:var(--font);background:linear-gradient(180deg,#eef6ff,#f8fbff);color:#07203a}
+  .wrap{max-width:1200px;margin:18px auto;padding:14px}
+  header{display:flex;align-items:center;gap:12px}
+  header h1{font-size:18px;margin:0}
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:16px;margin-top:14px}
+  .panel{background:var(--panel);border-radius:var(--card-radius);padding:12px;box-shadow:var(--shadow)}
+  .schem{padding:6px}
+  svg{width:100%;height:540px;display:block}
+  .controls{display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--accent);color:#fff;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--accent);border:1px solid #dfe7f4}
+  .btn.warn{background:var(--warn);color:#fff}
+  .btn.err{background:var(--err);color:#fff}
+  .small{padding:6px 8px;font-size:13px;border-radius:8px}
+  select,input{padding:6px 8px;border-radius:8px;border:1px solid #e6eefb}
+  .muted{color:var(--muted);font-size:13px}
+  .console{height:120px;overflow:auto;background:#0b12202b;padding:8px;border-radius:8px;font-family:monospace;font-size:12px}
+  .indicator-row{display:flex;gap:8px;align-items:center;margin-top:6px}
+  .lamp{width:14px;height:14px;border-radius:50%;background:#e2e8f0;box-shadow:inset 0 -1px 0 rgba(0,0,0,.05)}
+  .lamp.ready.on{background:var(--ok)}
+  .lamp.run.on{background:var(--ok)}
+  .lamp.trip.on{background:var(--err)}
+  .panel-title{font-weight:800;color:#123;margin-bottom:8px}
+  .info-popup{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;padding:12px;border-radius:10px;box-shadow:0 14px 40px rgba(2,6,23,.2);z-index:999;max-width:520px}
+  .info-popup h3{margin:0 0 8px}
+  .overlay{position:fixed;inset:0;background:rgba(3,6,23,0.35);z-index:998}
+  .footer{margin-top:10px;font-size:13px;color:var(--muted)}
+  /* wire & element classes (SVG) */
+  .wire{stroke:var(--wire-off);stroke-width:6;stroke-linecap:round;transition:stroke .18s,filter .18s}
+  .wire.on{stroke:var(--wire-on);filter:drop-shadow(0 0 8px rgba(255,213,77,.6))}
+  .coil{fill:#fff;stroke:#163963;stroke-width:2;transition:fill .15s,filter .15s}
+  .coil.on{fill:#ffeaa7;filter:drop-shadow(0 0 6px rgba(255,213,77,.45))}
+  .motor{fill:#fff;stroke:#123863;stroke-width:2;transition:fill .2s,filter .2s}
+  .motor.run{fill:#c9f6d8;filter:drop-shadow(0 0 12px rgba(34,197,94,.15))}
+  .mcb.off{fill:#f8fafc;stroke:#9aa7be}
+  .mcb.on{fill:#e0f2ff;stroke:#2b6fb3}
+  .fuse.on{fill:#fff;stroke:#2b6fb3}
+  .fuse.off{fill:#fff2f2;stroke:#d97706}
+  /* gauge */
+  .gauge { width:160px; height:86px; }
+  .controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  @media(max-width:1000px){ .layout{grid-template-columns:1fr} svg{height:420px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DOL Starter — 90 kW Interactive Training</h1>
+    <div style="margin-left:auto" class="muted">SVG + JS simulation — click parts for info, use Fault Simulation to test protections</div>
+  </header>
+
+  <div class="layout">
+    <!-- Left: SVG schematic -->
+    <div class="panel schem" aria-label="DOL schematic">
+      <svg id="schematic" viewBox="0 0 1100 700" role="img" aria-labelledby="schemTitle">
+        <title id="schemTitle">DOL 90 kW starter schematic</title>
+
+        <!-- top labels -->
+        <text x="50" y="40" font-size="14" fill="#163963">L1</text>
+        <text x="50" y="80" font-size="14" fill="#163963">L2</text>
+        <text x="50" y="120" font-size="14" fill="#163963">L3</text>
+
+        <!-- left incoming wires -->
+        <path id="wire_in_1" class="wire" d="M90 40 H230"/>
+        <path id="wire_in_2" class="wire" d="M90 80 H230"/>
+        <path id="wire_in_3" class="wire" d="M90 120 H230"/>
+
+        <!-- Switch Fuse Unit (S/FU) -->
+        <g id="sf_unit" transform="translate(230,10)" style="cursor:pointer">
+          <rect x="0" y="12" width="80" height="50" rx="8" fill="#fff" stroke="#244a7b" />
+          <text x="40" y="44" font-size="12" text-anchor="middle">S/FU</text>
+        </g>
+
+        <!-- wires to MCB -->
+        <path id="wire_sf_1" class="wire" d="M310 40 H410"/>
+        <path id="wire_sf_2" class="wire" d="M310 80 H410"/>
+        <path id="wire_sf_3" class="wire" d="M310 120 H410"/>
+
+        <!-- MCB -->
+        <g id="mcb" transform="translate(410,5)" style="cursor:pointer" >
+          <rect id="mcb_rect" x="0" y="15" width="90" height="50" rx="8" class="mcb off"/>
+          <text x="45" y="45" font-size="12" text-anchor="middle">MCB</text>
+        </g>
+
+        <!-- wires to contactor -->
+        <path id="wire_mcb_1" class="wire" d="M500 40 H610"/>
+        <path id="wire_mcb_2" class="wire" d="M500 80 H610"/>
+        <path id="wire_mcb_3" class="wire" d="M500 120 H610"/>
+
+        <!-- Power contactor K1 -->
+        <g id="k1" transform="translate(610,10)" style="cursor:pointer">
+          <rect x="0" y="4" width="110" height="72" rx="10" fill="#fff" stroke="#173d63" />
+          <text x="55" y="44" font-size="12" text-anchor="middle">Main Contactor K1</text>
+          <circle id="k1_coil" cx="55" cy="58" r="9" class="coil"/>
+        </g>
+
+        <!-- wires to motor -->
+        <path id="wire_k1_1" class="wire" d="M720 40 H840"/>
+        <path id="wire_k1_2" class="wire" d="M720 80 H840"/>
+        <path id="wire_k1_3" class="wire" d="M720 120 H840"/>
+
+        <!-- Motor -->
+        <g id="motor" transform="translate(840,18)" style="cursor:pointer">
+          <rect id="motor_rect" x="0" y="8" width="140" height="64" rx="10" class="motor"/>
+          <text x="70" y="44" font-size="13" text-anchor="middle">Motor 90 kW</text>
+        </g>
+
+        <!-- Control circuit (24V) path -->
+        <text x="80" y="200" font-size="13" fill="#163963">Control (24V DC)</text>
+
+        <!-- selector (local/remote) -->
+        <g id="selector" transform="translate(80,220)" style="cursor:pointer">
+          <rect x="0" y="0" width="180" height="64" rx="8" fill="#fff" stroke="#dbe8fb"/>
+          <text x="12" y="28" font-size="12" fill="#123">Selector</text>
+          <text id="sel_text" x="170" y="28" font-size="12" text-anchor="end" fill="#123">LOCAL</text>
+          <text x="12" y="48" font-size="12" fill="#666">Local / Remote</text>
+        </g>
+
+        <!-- local start/stop buttons representation -->
+        <g id="local_controls" transform="translate(280,220)" style="cursor:pointer">
+          <rect x="0" y="0" width="220" height="64" rx="8" fill="#fff" stroke="#dbe8fb"/>
+          <text x="12" y="28" font-size="12" fill="#123">Local Start / Stop</text>
+          <text x="12" y="48" font-size="12" fill="#666">Pushbuttons</text>
+        </g>
+
+        <!-- auxiliary contact (seal-in) -->
+        <g id="aux_contact" transform="translate(520,220)" style="cursor:pointer">
+          <rect x="0" y="0" width="110" height="50" rx="8" fill="#fff" stroke="#dbe8fb"/>
+          <text x="55" y="30" font-size="12" text-anchor="middle">K1 AUX</text>
+        </g>
+
+        <!-- transducer & ammeter -->
+        <g id="transducer" transform="translate(840,220)" style="cursor:pointer">
+          <rect x="0" y="0" width="200" height="100" rx="8" fill="#fff" stroke="#dbe8fb"/>
+          <text x="100" y="20" font-size="13" text-anchor="middle">Transducer</text>
+          <text x="100" y="40" font-size="12" text-anchor="middle" id="trans_out">4.00 mA</text>
+
+          <!-- ammeter gauge (svg nested) -->
+          <g transform="translate(10,48)">
+            <svg width="180" height="46" viewBox="0 0 180 46">
+              <path d="M12 38 A60 60 0 0 1 168 38" stroke="#e6eefb" stroke-width="8" fill="none"></path>
+              <path id="gauge_arc" d="M12 38 A60 60 0 0 1 168 38" stroke="#bfdef0" stroke-width="6" fill="none"></path>
+              <line id="needle" x1="90" y1="38" x2="90" y2="13" stroke="#123863" stroke-width="3" stroke-linecap="round" transform="rotate(-90 90 38)"></line>
+            </svg>
+          </g>
+          <text id="amm_val" x="160" y="72" font-size="12" text-anchor="end">0 A</text>
+        </g>
+
+        <!-- PLC panel -->
+        <g id="plc_panel" transform="translate(40,340)">
+          <rect x="0" y="0" width="260" height="140" rx="8" fill="#fff" stroke="#e6eefb"/>
+          <text x="12" y="20" font-size="13" fill="#123">PLC Panel</text>
+          <text x="12" y="44" font-size="12" id="plc_ready">READY: NO</text>
+          <text x="12" y="64" font-size="12" id="plc_run">RUN: NO</text>
+          <text x="12" y="84" font-size="12" id="plc_trip">TRIP: NO</text>
+          <text x="12" y="104" font-size="12" id="plc_ai">AI CURRENT: 0 A → 4.00 mA</text>
+        </g>
+
+        <!-- DCS panel -->
+        <g id="dcs_panel" transform="translate(320,340)">
+          <rect x="0" y="0" width="260" height="140" rx="8" fill="#fff" stroke="#e6eefb"/>
+          <text x="12" y="20" font-size="13" fill="#123">DCS Panel</text>
+          <text x="12" y="44" font-size="12" id="dcs_status">MOTOR: STOPPED</text>
+          <text x="12" y="64" font-size="12" id="dcs_cur">CURRENT: 0 A</text>
+          <text x="12" y="84" font-size="12" id="dcs_ready">READY: NO</text>
+          <text x="12" y="104" font-size="12" id="dcs_trip">TRIP: NO</text>
+        </g>
+
+        <!-- Fault simulation panel (visual only) -->
+        <g id="fault_panel" transform="translate(640,340)">
+          <rect x="0" y="0" width="300" height="140" rx="8" fill="#fff" stroke="#e6eefb"/>
+          <text x="12" y="20" font-size="13" fill="#123">Fault Simulation</text>
+          <text x="12" y="44" font-size="11" fill="#666">Use the controls on the right panel to inject faults and test protection.</text>
+        </g>
+
+      </svg>
+      <div style="margin-top:8px" class="muted">Click components on the schematic to open tooltips and explanations.</div>
+    </div>
+
+    <!-- Right: control panel, PLC/DCS console, fault panel -->
+    <div class="panel">
+      <div class="panel-title">Controls & Simulation</div>
+
+      <div class="controls">
+        <div class="row">
+          <label class="muted">Mode</label>
+          <select id="modeSelect" class="small" style="margin-left:auto">
+            <option value="local">LOCAL</option>
+            <option value="remote">REMOTE</option>
+          </select>
+        </div>
+
+        <div class="row" style="gap:6px">
+          <button id="startLocal" class="btn">START (Local)</button>
+          <button id="stopLocal" class="btn ghost">STOP</button>
+          <button id="plcStartBtn" class="btn ghost">PLC START</button>
+          <button id="plcStopBtn" class="btn ghost">PLC STOP</button>
+        </div>
+
+        <div class="row" style="gap:8px">
+          <label class="muted">MCB</label>
+          <label class="small" style="margin-left:auto"><input type="checkbox" id="mcbCheck"> ON</label>
+        </div>
+        <div class="row" style="gap:8px">
+          <label class="muted">Switch Fuse</label>
+          <label class="small" style="margin-left:auto"><input type="checkbox" id="fuseCheck" checked> OK</label>
+        </div>
+
+        <div class="row" style="gap:8px">
+          <label class="muted">Trip threshold (A)</label>
+          <input id="tripThresh" class="small" value="250" style="width:100px;margin-left:auto"/>
+        </div>
+
+        <div class="row" style="gap:8px">
+          <button id="injectTrip" class="btn err">Inject Trip</button>
+          <button id="resetTrip" class="btn ghost">Reset Trip</button>
+        </div>
+
+        <div class="row" style="margin-top:6px">
+          <div style="flex:1">
+            <div class="muted">Ammeter</div>
+            <div style="font-size:20px;font-weight:800" id="ammeterVal">0 A</div>
+          </div>
+          <div>
+            <div class="muted">Motor</div>
+            <div id="motorStateText" style="font-weight:800">STOPPED</div>
+          </div>
+        </div>
+
+        <div style="border-top:1px dashed #eef4ff;padding-top:8px">
+          <div class="muted">PLC / DCS Console</div>
+          <div class="console" id="logConsole" aria-live="polite"></div>
+        </div>
+
+        <div style="border-top:1px dashed #eef4ff;padding-top:8px" class="controls-grid">
+          <div>
+            <div class="muted">Faults</div>
+            <select id="faultSelect" class="small">
+              <option value="none">Normal</option>
+              <option value="mcb_off">MCB OFF</option>
+              <option value="fuse_open">Switch Fuse Open</option>
+              <option value="contactor_fail">Contactor Failure (stuck)</option>
+              <option value="trip">Simulate Trip</option>
+              <option value="trans_fail">Transducer Failure</option>
+              <option value="plc_comm">PLC Comm Fault</option>
+            </select>
+            <button id="applyFault" class="small" style="margin-left:6px">Apply</button>
+          </div>
+
+          <div>
+            <div class="muted">Auto Sequence</div>
+            <button id="playSeq" class="small">Play</button>
+            <button id="pauseSeq" class="small">Pause</button>
+            <button id="resetSeq" class="small">Reset</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px" class="panel">
+    <div class="panel-title">Step-by-step guided notes</div>
+    <div id="guideText" class="muted">
+      Steps:
+      <ol>
+        <li>Choose LOCAL or REMOTE mode.</li>
+        <li>If LOCAL: press START; if REMOTE: send PLC START.</li>
+        <li>Observe K1 coil energize, main contacts close and motor run.</li>
+        <li>Ammeter will rise; transducer converts Amps → 4–20 mA and sends to PLC/DCS.</li>
+        <li>Inject faults to see protection behavior (MCB OFF, Fuse Open, Trip, etc.).</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- info popup area -->
+<div id="overlay" class="overlay" style="display:none"></div>
+<div id="infoPopup" class="info-popup" style="display:none" role="dialog" aria-modal="true">
+  <h3 id="popupTitle">Component</h3>
+  <div id="popupBody" style="margin-top:8px"></div>
+  <div style="text-align:right;margin-top:10px">
+    <button id="closePopup" class="btn ghost">Close</button>
+  </div>
+</div>
+
+<script>
+/* ----------------
+  Simulator core
+   - state object
+   - update loop
+   - UI bindings
+------------------*/
+const state = {
+  selector: 'local',   // local | remote
+  mcbOn: false,
+  fuseOk: true,
+  k1_coil: false,
+  motorRunning: false,
+  trip: false,
+  tripReason: '',
+  current: 0,         // amps
+  transducerOK: true,
+  plcCommOK: true
+};
+
+const FULL_SCALE = 200; // amps = full scale for transducer (adjustable)
+const TRIP_THRESHOLD_DEFAULT = 250; // default (can change from UI)
+let tripThreshold = TRIP_THRESHOLD_DEFAULT;
+let simTimer = null;
+let seqTimer = null;
+let sequencePlaying = false;
+
+const elements = {
+  wires: Array.from(document.querySelectorAll('.wire')),
+  k1_coil: document.getElementById('k1_coil'),
+  motor_rect: document.getElementById('motor_rect'),
+  mcb_rect: document.getElementById('mcb_rect'),
+  trans_out: document.getElementById('trans_out'),
+  amm_val: document.getElementById('amm_val'),
+  needle: document.getElementById('needle'),
+  amm_val_text: document.getElementById('ammeterVal'),
+  motorStateText: document.getElementById('motorStateText'),
+  plc_ready: document.getElementById('plc_ready'),
+  plc_run: document.getElementById('plc_run'),
+  plc_trip: document.getElementById('plc_trip'),
+  plc_ai: document.getElementById('plc_ai'),
+  dcs_status: document.getElementById('dcs_status'),
+  dcs_cur: document.getElementById('dcs_cur'),
+  dcs_ready: document.getElementById('dcs_ready'),
+  dcs_trip: document.getElementById('dcs_trip'),
+  console: document.getElementById('logConsole'),
+  lampReady: document.getElementById('lampReady'),
+  lampRun: document.getElementById('lampRun'),
+  lampTrip: document.getElementById('lampTrip')
+};
+
+// small logger
+function log(msg){
+  const t = (new Date()).toLocaleTimeString();
+  elements.console.innerText = `[${t}] ${msg}\n` + elements.console.innerText;
+}
+
+// visual updates
+function setWiresPowered(on){
+  elements.wires.forEach(w=> {
+    if(on) w.classList.add('on'); else w.classList.remove('on');
+  });
+}
+function updateCoilVisual(){
+  if(state.k1_coil) elements.k1_coil.classList.add('on'); else elements.k1_coil.classList.remove('on');
+}
+function updateMotorVisual(){
+  if(state.motorRunning) elements.motor_rect.classList.add('run'); else elements.motor_rect.classList.remove('run');
+}
+function updateMCBVisual(){
+  if(state.mcbOn) elements.mcb_rect.classList.add('on'), elements.mcb_rect.classList.remove('off');
+  else elements.mcb_rect.classList.add('off'), elements.mcb_rect.classList.remove('on');
+}
+function updateAmmeter(){
+  const val = Math.round(state.current);
+  elements.amm_val.innerText = `${val} A`;
+  elements.amm_val_text.innerText = `${val} A`;
+  // needle rotation mapping 0..(trip*1.2) => -90..+90
+  const maxVal = Math.max(tripThreshold * 1.2, FULL_SCALE);
+  const angle = Math.max(-90, Math.min(90, (val / maxVal) * 90));
+  elements.needle.setAttribute('transform', `rotate(${angle} 90 38)`);
+}
+function updateTransducer(){
+  if(!state.transducerOK){
+    elements.trans_out.innerText = `ERR`;
+    elements.plc_ai.innerText = `AI CURRENT: ERR`;
+    return;
+  }
+  // linear mapping: 0..FULL_SCALE => 4..20 mA
+  const mA = (4 + Math.max(0,Math.min(FULL_SCALE, state.current))/FULL_SCALE * 16);
+  elements.trans_out.innerText = `${mA.toFixed(2)} mA`;
+  elements.plc_ai.innerText = `AI CURRENT: ${Math.round(state.current)} A → ${mA.toFixed(2)} mA`;
+}
+function updatePLCPanel(){
+  elements.plc_ready.innerText = `READY: ${(!state.trip && state.mcbOn && state.fuseOk) ? 'YES' : 'NO'}`;
+  elements.plc_run.innerText = `RUN: ${state.motorRunning ? 'YES' : 'NO'}`;
+  elements.plc_trip.innerText = `TRIP: ${state.trip ? 'YES' : 'NO'}`;
+}
+function updateDCSPanel(){
+  elements.dcs_status.innerText = `MOTOR: ${state.motorRunning ? 'RUNNING' : 'STOPPED'}`;
+  elements.dcs_cur.innerText = `CURRENT: ${Math.round(state.current)} A`;
+  elements.dcs_ready.innerText = `READY: ${(!state.trip && state.mcbOn && state.fuseOk) ? 'YES' : 'NO'}`;
+  elements.dcs_trip.innerText = `TRIP: ${state.trip ? 'YES' : 'NO'}`;
+}
+
+// core logic functions
+function canEnergize(){
+  return state.mcbOn && state.fuseOk && !state.trip;
+}
+
+function energizeCoil(source='Local'){
+  // if contactor fail fault is present, we can optionally simulate stuck-open (handle via faults)
+  if(!canEnergize()){
+    log(`Coil NOT energized by ${source} — permissive missing`);
+    return;
+  }
+  // coil picks
+  state.k1_coil = true;
+  updateCoilVisual();
+  log(`K1 coil energized (${source})`);
+  // close power contacts
+  // start motor
+  startMotor();
+  // PLC indication
+  sendPLC('RUN', true);
+  updateAll();
+}
+
+function deenergizeCoil(reason='Stop'){
+  state.k1_coil = false;
+  updateCoilVisual();
+  log(`K1 coil de-energized (${reason})`);
+  stopMotor();
+  sendPLC('RUN', false);
+  updateAll();
+}
+
+function startMotor(){
+  if(state.motorRunning) return;
+  // if contactor failure (stuck open) exists, motor cannot start
+  if(currentFault==='contactor_fail'){
+    log('Contactor failed to close — motor cannot start');
+    return;
+  }
+  state.motorRunning = true;
+  log('Motor started');
+  // simulate in loop
+  if(!simTimer) simTimer = setInterval(simulateCurrent, 450);
+  updateAll();
+}
+
+function stopMotor(){
+  if(!state.motorRunning) return;
+  state.motorRunning = false;
+  log('Motor stopped');
+  if(simTimer){ clearInterval(simTimer); simTimer = null; }
+  state.current = 0;
+  updateAll();
+}
+
+function manualTrip(reason='Manual Trip'){
+  state.trip = true;
+  state.tripReason = reason;
+  log(`TRIP: ${reason}`);
+  deenergizeCoil('Trip');
+  updateAll();
+  sendPLC('TRIP', true);
+}
+
+function resetTrip(){
+  state.trip = false;
+  state.tripReason = '';
+  log('Trip reset');
+  sendPLC('TRIP', false);
+  updateAll();
+}
+
+// simulate current behavior
+function simulateCurrent(){
+  if(!state.motorRunning){
+    state.current = Math.max(0, state.current - Math.random()*6);
+  } else {
+    // nominal approx for 90 kW at 415V ~ 140A (depends pf); use nominal=140
+    const nominal = 140;
+    const variability = 40;
+    const target = nominal + (Math.random()-0.5)*variability;
+    state.current += (target - state.current) * 0.22;
+  }
+  // if current exceeds tripThreshold -> trip
+  if(state.current > tripThreshold && !state.trip){
+    manualTrip('Overcurrent');
+  }
+  updateAll();
+}
+
+// PLC / DCS messages (simulate)
+function sendPLC(signal, value){
+  if(!state.plcCommOK){
+    log(`PLC comm error — cannot send ${signal}`);
+    return;
+  }
+  log(`PLC Indication: ${signal} = ${value}`);
+  // update panels
+  updatePLCPanel();
+  updateDCSPanel();
+}
+
+// update all visuals and panels
+function updateAll(){
+  const powerFlow = state.motorRunning && state.mcbOn && state.fuseOk;
+  setWiresPowered(powerFlow);
+  updateCoilVisual();
+  updateMotorVisual();
+  updateMCBVisual();
+  updateAmmeter();
+  updateTransducer();
+  updatePLCPanel();
+  updateDCSPanel();
+  // lamps
+  document.querySelector('.lamp.ready').classList.toggle('on', (!state.trip && state.mcbOn && state.fuseOk));
+  document.querySelector('.lamp.run').classList.toggle('on', state.motorRunning);
+  document.querySelector('.lamp.trip').classList.toggle('on', state.trip);
+  elements.motorStateText.innerText = state.motorRunning ? 'RUNNING' : 'STOPPED';
+}
+
+// UI bindings
+document.getElementById('modeSelect').addEventListener('change', e=>{
+  state.selector = e.target.value;
+  log('Mode set to ' + state.selector.toUpperCase());
+  // in remote, local start should not function; UI-level disable handled in handlers
+});
+document.getElementById('startLocal').addEventListener('click', ()=>{
+  if(state.selector !== 'local'){ alert('Switch to LOCAL to use the local start'); return; }
+  if(!canEnergize()){ alert('Power permissive missing (MCB OFF or Fuse Open or TRIP active)'); return; }
+  energizeCoil('Local Start');
+});
+document.getElementById('stopLocal').addEventListener('click', ()=> deenergizeCoil('Local Stop'));
+document.getElementById('plcStartBtn').addEventListener('click', ()=>{
+  if(state.selector !== 'remote'){ alert('Switch to REMOTE for PLC Start'); return; }
+  if(!canEnergize()){ alert('Power permissive missing'); return; }
+  energizeCoil('PLC Start');
+});
+document.getElementById('plcStopBtn').addEventListener('click', ()=> deenergizeCoil('PLC Stop'));
+
+document.getElementById('mcbCheck').addEventListener('change', e=>{
+  state.mcbOn = e.target.checked;
+  log('MCB ' + (state.mcbOn ? 'ON' : 'OFF'));
+  if(!state.mcbOn) deenergizeCoil('MCB OFF');
+  updateAll();
+});
+document.getElementById('fuseCheck').addEventListener('change', e=>{
+  state.fuseOk = e.target.checked;
+  log('Switch Fuse ' + (state.fuseOk ? 'OK' : 'OPEN'));
+  if(!state.fuseOk) deenergizeCoil('Fuse Open');
+  updateAll();
+});
+document.getElementById('tripThresh').addEventListener('change', e=>{
+  const v = Number(e.target.value) || TRIP_THRESHOLD_DEFAULT;
+  tripThreshold = v;
+  log(`Trip threshold set to ${tripThreshold} A`);
+});
+
+document.getElementById('injectTrip').addEventListener('click', ()=> manualTrip('Manual Trip Button'));
+document.getElementById('resetTrip').addEventListener('click', ()=> resetTrip());
+
+// Fault application
+let currentFault = 'none';
+document.getElementById('applyFault').addEventListener('click', ()=>{
+  const f = document.getElementById('faultSelect').value;
+  applyFault(f);
+});
+
+function applyFault(fault){
+  currentFault = fault;
+  log(`Fault applied: ${fault}`);
+  // reset and set state changes depending on fault
+  if(fault === 'none'){
+    // clear dependencies
+    state.transducerOK = true;
+    state.plcCommOK = true;
+    // do not auto reset trip or MCB; user action required
+  } else if(fault === 'mcb_off'){
+    state.mcbOn = false;
+    document.getElementById('mcbCheck').checked = false;
+    deenergizeCoil('MCB OFF (Fault)');
+  } else if(fault === 'fuse_open'){
+    state.fuseOk = false;
+    document.getElementById('fuseCheck').checked = false;
+    deenergizeCoil('Fuse Open (Fault)');
+  } else if(fault === 'contactor_fail'){
+    // set a flag — when energizeCoil called, we will not close K1
+    // represented by preventing motor start; nothing else now
+    // (we simply log and allow energizeCoil attempt which will be blocked)
+  } else if(fault === 'trip'){
+    manualTrip('Simulated Trip Fault');
+  } else if(fault === 'trans_fail'){
+    state.transducerOK = false;
+  } else if(fault === 'plc_comm'){
+    state.plcCommOK = false;
+  }
+  updateAll();
+}
+
+// clickable component info popups
+const overlay = document.getElementById('overlay');
+const popup = document.getElementById('infoPopup');
+const popupTitle = document.getElementById('popupTitle');
+const popupBody = document.getElementById('popupBody');
+document.getElementById('sf_unit').addEventListener('click', ()=> showInfo('Switch Fuse Unit (S/FU)', `Protects against short circuits and isolates the supply. In simulation this is a permissive for the MCB.`));
+document.getElementById('mcb').addEventListener('click', ()=> showInfo('MCB (Circuit Breaker)', `Main protective device. Turn ON to allow motor starting. When OFF, contactor cannot energize.`));
+document.getElementById('k1').addEventListener('click', ()=> showInfo('Main Contactor K1', `Power contactor that closes the three-phase power to the motor when its coil is energized. Also provides auxiliary contact (seal-in) for control.`));
+document.getElementById('aux_contact').addEventListener('click', ()=> showInfo('Auxiliary (Seal-in) Contact', `Maintains coil path once K1 is energized until STOP or Trip.`));
+document.getElementById('motor').addEventListener('click', ()=> showInfo('Motor 90 kW', `Synchronous representation. In simulation current is approximated; motor runs when K1 main contacts close.`));
+document.getElementById('transducer').addEventListener('click', ()=> {
+  const mA = state.transducerOK ? (4 + Math.max(0,Math.min(FULL_SCALE,state.current))/FULL_SCALE*16).toFixed(2) : 'ERR';
+  showInfo('Current Transducer', `Converts motor current to 4–20 mA for PLC/DCS. Current = ${Math.round(state.current)} A → Output ≈ ${mA} mA.`);
+});
+document.getElementById('local_controls').addEventListener('click', ()=> showInfo('Local Controls', `Local START / STOP pushbuttons. Start is enabled only when selector = LOCAL.`));
+document.getElementById('selector').addEventListener('click', ()=> showInfo('Selector Local / Remote', `When LOCAL, local start/stop control is used. When REMOTE, PLC/DCS must request start.`));
+
+// popup handlers
+document.getElementById('closePopup').addEventListener('click', closePopup);
+overlay.addEventListener('click', closePopup);
+function showInfo(title, html){
+  popupTitle.innerText = title;
+  popupBody.innerHTML = `<div style="font-size:13px">${html}</div>`;
+  overlay.style.display = 'block';
+  popup.style.display = 'block';
+}
+function closePopup(){
+  overlay.style.display = 'none';
+  popup.style.display = 'none';
+}
+
+// step sequence / guided play
+const seqSteps = [
+  { id:'ready', text:'System ready. Ensure MCB and Fuse are ON.' },
+  { id:'start_coil', text:'Start: Coil energizes (K1). Aux contact seals in.' },
+  { id:'power_flow', text:'Power contacts close — 3-phase flows to motor.' },
+  { id:'motor_ramp', text:'Motor ramps up — current rises.' },
+  { id:'transmit', text:'Transducer converts current → 4–20 mA and sends to PLC/DCS.' },
+  { id:'running', text:'Motor running — PLC/DCS report RUN.' }
+];
+let seqIndex = 0;
+document.getElementById('playSeq').addEventListener('click', ()=> {
+  if(sequencePlaying) return;
+  sequencePlaying = true;
+  log('Sequence play started');
+  seqIndex = 0;
+  seqTimer = setInterval(()=> {
+    if(seqIndex >= seqSteps.length){ clearInterval(seqTimer); sequencePlaying=false; log('Sequence finished'); return; }
+    const step = seqSteps[seqIndex++];
+    runSeqStep(step);
+  }, 1200);
+});
+document.getElementById('pauseSeq').addEventListener('click', ()=> {
+  if(seqTimer) clearInterval(seqTimer);
+  sequencePlaying = false;
+  log('Sequence paused');
+});
+document.getElementById('resetSeq').addEventListener('click', ()=> {
+  if(seqTimer) clearInterval(seqTimer); sequencePlaying=false; seqIndex=0;
+  // reset to initial state (MCB/Fuse unchanged)
+  state.k1_coil=false; state.motorRunning=false; state.current=0; state.trip=false; state.transducerOK=true; state.plcCommOK=true;
+  updateAll();
+  log('Sequence reset');
+});
+
+function runSeqStep(step){
+  log('Step: ' + step.text);
+  if(step.id === 'ready'){
+    // nothing - just informative
+  } else if(step.id === 'start_coil'){
+    if(!canEnergize()){ log('Cannot energize coil — permissive missing'); return; }
+    state.k1_coil = true; updateCoilVisual();
+  } else if(step.id === 'power_flow'){
+    // visually wires on (simulate)
+    setWiresPowered(true);
+  } else if(step.id === 'motor_ramp'){
+    startMotor();
+  } else if(step.id === 'transmit'){
+    updateTransducer();
+  } else if(step.id === 'running'){
+    sendPLC('RUN', true);
+  }
+}
+
+// initialize UI defaults
+document.getElementById('mcbCheck').checked = false;
+document.getElementById('fuseCheck').checked = true;
+document.getElementById('tripThresh').value = TRIP_THRESHOLD_DEFAULT;
+updateAll();
+
+</script>
+</body>
+</html>
