@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DOL 90 kW Starter — Interactive Animation</title>
+<style>
+  :root{
+    --bg:#f5f8fb;
+    --panel:#fff;
+    --accent:#0d47a1;
+    --ok:#16a34a;
+    --warn:#f59e0b;
+    --err:#dc2626;
+    --muted:#6b7280;
+    --wire-off:#bfc9d9;
+    --wire-on:#ffd54d;
+    --glow: 0 0 12px rgba(255,213,77,.6);
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#eef6ff,#f8fbff);color:#07203a}
+  .wrap{max-width:1100px;margin:16px auto;padding:16px}
+  header{display:flex;gap:12px;align-items:center}
+  header h1{font-size:18px;margin:0}
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-top:12px}
+  .panel{background:var(--panel);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(3,63,136,0.06)}
+  .schem{padding:8px}
+  svg{width:100%;height:520px;display:block}
+  .controls{display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--accent);color:#fff;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .btn.off{background:#cbd5e1;color:#0b1220}
+  .small{padding:6px 8px;font-size:13px;border-radius:8px}
+  label.select{display:flex;gap:8px;align-items:center}
+  .indicator{display:inline-flex;align-items:center;gap:8px;padding:6px;border-radius:8px}
+  .lamp{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 -1px 0 rgba(0,0,0,.1)}
+  .lamp.ready{background:#e2e8f0}
+  .lamp.run{background:#e2e8f0}
+  .lamp.trip{background:#e2e8f0}
+  .status{font-size:13px;color:var(--muted)}
+  .console{height:150px;overflow:auto;background:#0b12202b;padding:8px;border-radius:8px;font-family:monospace;font-size:12px}
+  .gauge{width:160px;height:100px}
+  .small-note{font-size:12px;color:var(--muted)}
+  .control-row{display:flex;gap:6px;flex-wrap:wrap}
+  .toggle{display:inline-flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:#f8fafc;border:1px solid #e6eefb;cursor:pointer}
+  .muted{color:var(--muted);font-size:13px}
+  footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* wire styles applied to SVG paths by classes */
+  .wire{stroke:var(--wire-off);stroke-width:6;stroke-linecap:round;transition:stroke 250ms, filter 250ms}
+  .wire.on{stroke:var(--wire-on);filter:drop-shadow(0 0 6px rgba(255,213,77,.6))}
+  .coil{fill:#fff;stroke:#344e89;stroke-width:2}
+  .coil.on{fill:#ffeaa7;filter:drop-shadow(0 0 6px rgba(255,213,77,.5))}
+  .motor{fill:#fff;stroke:#123863;stroke-width:2}
+  .motor.run{fill:#c9f6d8;filter:drop-shadow(0 0 12px rgba(34,197,94,.25))}
+  .mcb.off{fill:#f3f4f6;stroke:#9aa7be}
+  .mcb.on{fill:#bfdef0;stroke:#2b6fb3}
+  .fuse.off{fill:#fff2f2;stroke:#d97706}
+  .fuse.on{fill:#fff;stroke:#2b6fb3}
+
+  /* small animations */
+  @keyframes pulse { from { transform:scale(1); } 50%{transform:scale(1.06);} to{transform:scale(1);} }
+  .blink { animation: pulse 1s linear infinite; }
+
+  /* responsive */
+  @media(max-width:980px){ .layout{grid-template-columns:1fr; } svg{height:420px} .panel{padding:10px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DOL Starter (90 kW) — Interactive learning animation</h1>
+    <div style="margin-left:auto" class="small-note">Click controls to operate — watch indicators, ammeter & PLC messages</div>
+  </header>
+
+  <div class="layout">
+    <!-- Left: schematic & animation -->
+    <div class="panel schem">
+      <svg id="schemSvg" viewBox="0 0 1000 600" aria-label="DOL starter schematic">
+        <!-- Definitions -->
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- Top: supply L1,L2,L3 -->
+        <text x="60" y="40" font-size="14" fill="#344e89">L1</text>
+        <text x="60" y="80" font-size="14" fill="#344e89">L2</text>
+        <text x="60" y="120" font-size="14" fill="#344e89">L3</text>
+
+        <!-- Wires from left supply -->
+        <path id="wireL1" class="wire" d="M100 40 H220" />
+        <path id="wireL2" class="wire" d="M100 80 H220" />
+        <path id="wireL3" class="wire" d="M100 120 H220" />
+
+        <!-- Switch Fuse Unit (rect) -->
+        <g id="switchFuse" transform="translate(220,10)">
+          <rect x="0" y="10" width="60" height="40" rx="6" fill="#fff" stroke="#334e89" />
+          <text x="30" y="36" font-size="12" text-anchor="middle" fill="#0b1220">Fuse</text>
+        </g>
+
+        <!-- Wires from fuse to MCB -->
+        <path id="wireF1" class="wire" d="M280 40 H360" />
+        <path id="wireF2" class="wire" d="M280 80 H360" />
+        <path id="wireF3" class="wire" d="M280 120 H360" />
+
+        <!-- MCB -->
+        <g id="mcb" transform="translate(360,5)">
+          <rect id="mcbRect" x="0" y="15" width="70" height="50" rx="6" class="mcb off" />
+          <text x="35" y="45" font-size="12" text-anchor="middle" fill="#0b1220">MCB</text>
+        </g>
+
+        <!-- wire to contactor -->
+        <path id="wireM1" class="wire" d="M430 40 H520" />
+        <path id="wireM2" class="wire" d="M430 80 H520" />
+        <path id="wireM3" class="wire" d="M430 120 H520" />
+
+        <!-- Power Contactor (Main) -->
+        <g id="mainContactor" transform="translate(520,10)">
+          <rect x="0" y="6" width="80" height="64" rx="8" fill="#fff" stroke="#123863" />
+          <text x="40" y="36" font-size="12" text-anchor="middle" fill="#0b1220">Power Contactor</text>
+          <!-- coil icon for cont -->
+          <circle id="mainCoil" class="coil" cx="40" cy="54" r="8" />
+        </g>
+
+        <!-- wires to motor -->
+        <path id="wireC1" class="wire" d="M600 40 H700" />
+        <path id="wireC2" class="wire" d="M600 80 H700" />
+        <path id="wireC3" class="wire" d="M600 120 H700" />
+
+        <!-- Motor representation -->
+        <g id="motor" transform="translate(700,20)">
+          <rect class="motor" x="0" y="8" width="120" height="64" rx="8" />
+          <text x="60" y="44" font-size="12" text-anchor="middle" fill="#0b1220">Motor 90 kW</text>
+        </g>
+
+        <!-- Control panel area (lower) -->
+        <g id="control" transform="translate(140,180)">
+          <!-- Control supply -->
+          <text x="0" y="16" font-size="12" fill="#334e89">Control 24V</text>
+
+          <!-- Local/Remote selector -->
+          <rect x="0" y="30" width="120" height="58" rx="8" fill="#fff" stroke="#9aa7be"/>
+          <text x="8" y="52" font-size="12" fill="#0b1220">Selector</text>
+          <text id="selLabel" x="70" y="52" font-size="12" fill="#0b1220" text-anchor="end">Local</text>
+
+          <!-- Start/Stop -->
+          <rect x="140" y="30" width="160" height="58" rx="8" fill="#fff" stroke="#9aa7be" />
+          <text x="155" y="50" font-size="12" fill="#0b1220">Local Start / Stop</text>
+        </g>
+
+        <!-- Aux (seal-in) contact (control interlock) -->
+        <g id="aux" transform="translate(340,240)">
+          <rect x="0" y="0" width="80" height="40" rx="6" fill="#fff" stroke="#334e89"/>
+          <text x="40" y="24" font-size="12" text-anchor="middle">Aux (seal)</text>
+        </g>
+
+        <!-- Transducer & Ammeter -->
+        <g id="trans" transform="translate(780,240)">
+          <rect x="0" y="0" width="160" height="80" rx="8" fill="#fff" stroke="#334e89"/>
+          <text x="80" y="20" font-size="12" text-anchor="middle">Transducer</text>
+          <text x="80" y="40" font-size="12" text-anchor="middle">→ PLC / DCS</text>
+          <g transform="translate(20,48)" class="gauge">
+            <svg width="120" height="40" viewBox="0 0 120 40">
+              <path d="M10 35 A45 45 0 0 1 110 35" stroke="#e6eefb" stroke-width="8" fill="none"></path>
+              <path id="gaugeArc" d="M10 35 A45 45 0 0 1 110 35" stroke="#bfdef0" stroke-width="6" fill="none"></path>
+              <line id="needle" x1="60" y1="35" x2="60" y2="15" stroke="#123863" stroke-width="3" stroke-linecap="round" transform="rotate(-90 60 35)"></line>
+            </svg>
+          </g>
+        </g>
+
+        <!-- Indications to PLC / DCS -->
+        <g id="indications" transform="translate(140,360)">
+          <text x="0" y="16" font-size="12" fill="#334e89">PLC / DCS Indications</text>
+          <g transform="translate(0,24)">
+            <rect x="0" y="4" width="220" height="90" rx="8" fill="#fff" stroke="#e3eefb"/>
+            <g transform="translate(12,16)">
+              <foreignObject x="0" y="0" width="196" height="80">
+                <div style="font-family:Arial;font-size:13px;color:#08203a;">
+                  <div id="indReady" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                    <div class="lamp ready" id="lampReady" style="width:12px;height:12px;border-radius:50%"></div>
+                    <div>READY</div>
+                  </div>
+                  <div id="indRun" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                    <div class="lamp run" id="lampRun" style="width:12px;height:12px;border-radius:50%"></div>
+                    <div>RUN</div>
+                  </div>
+                  <div id="indTrip" style="display:flex;gap:8px;align-items:center">
+                    <div class="lamp trip" id="lampTrip" style="width:12px;height:12px;border-radius:50%"></div>
+                    <div>TRIP</div>
+                  </div>
+                </div>
+              </foreignObject>
+            </g>
+          </g>
+        </g>
+
+        <!-- Labels -->
+        <text x="430" y="10" font-size="12" fill="#334e89">Main Power Path</text>
+        <text x="160" y="200" font-size="12" fill="#334e89">Control Circuit</text>
+
+      </svg>
+      <div style="margin-top:12px" class="small-note">Wires glow when energized. Coil fill indicates contactor energized. Ammeter and PLC messages are simulated.</div>
+    </div>
+
+    <!-- Right: controls & console -->
+    <div class="panel">
+      <div class="controls">
+        <div class="row">
+          <label class="select">
+            <div class="muted">Selector</div>
+            <select id="sel" class="small">
+              <option value="local">Local</option>
+              <option value="remote">Remote</option>
+            </select>
+          </label>
+          <div style="margin-left:auto" class="small-note">If Remote, PLC Start works</div>
+        </div>
+
+        <div class="row control-row">
+          <button id="startBtn" class="btn small">Start (Local)</button>
+          <button id="stopBtn" class="btn small" style="background:#ef4444">Stop</button>
+          <button id="plcStart" class="small">PLC Start</button>
+        </div>
+
+        <div class="row control-row">
+          <label class="toggle"><input type="checkbox" id="mcbToggle"> MCB (ON/OFF)</label>
+          <label class="toggle"><input type="checkbox" id="fuseToggle" checked> Fuse OK</label>
+          <button id="tripBtn" class="small" style="background:#f97316;color:#fff">Trip (overcurrent)</button>
+        </div>
+
+        <div class="row" style="align-items:center;gap:12px">
+          <div>
+            <div class="muted">Ammeter</div>
+            <div id="ammText" style="font-weight:700;font-size:20px">0 A</div>
+          </div>
+          <div style="margin-left:auto">
+            <div class="muted">Motor state</div>
+            <div id="motorState" style="font-weight:700">Stopped</div>
+          </div>
+        </div>
+
+        <div class="row" style="gap:8px;align-items:center">
+          <div class="indicator"><div class="lamp ready" id="readyLamp" style="width:16px;height:16px"></div> Ready</div>
+          <div class="indicator"><div class="lamp run" id="runLamp" style="width:16px;height:16px"></div> Run</div>
+          <div class="indicator"><div class="lamp trip" id="tripLamp" style="width:16px;height:16px"></div> Trip</div>
+        </div>
+
+        <div style="margin-top:8px">
+          <div class="muted">PLC / DCS Console</div>
+          <div id="console" class="console" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="small-note">Simulation simplified for learning — not for commissioning. Shows control and power interplay (contactor coil, seal-in auxiliary, transducer → ammeter & PLC).</footer>
+</div>
+
+<script>
+/*
+  Simple DOL starter simulation script
+  - Controls and state:
+    mcbOn (bool), fuseOk (bool), contactorCoil (bool), motorRunning (bool), selector (local/remote)
+  - Start behaviour:
+    * In Local: Start button energizes coil if MCB & Fuse OK and no trip
+    * In Remote: PLC Start triggers coil
+    * Seal-in (aux) ensures coil keeps energized after Start until Stop or Trip/MCB off
+  - Trip:
+    * Trip button or overcurrent (ammeter > threshold) causes trip -> contactor de-energized & trip lamp
+  - Ammeter:
+    * When motor running, random-ish current based on load (simulate), else near zero
+  - Visuals:
+    * Add class 'on' to wire paths to glow
+    * Coil circle gets 'on' class when energized
+    * Motor rectangle gets 'run' class when running
+    * Lamps change background colors
+  - Console logs emulate PLC messages sent (Ready, Run, Trip)
+*/
+
+const sel = document.getElementById('sel');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const plcStart = document.getElementById('plcStart');
+const mcbToggle = document.getElementById('mcbToggle');
+const fuseToggle = document.getElementById('fuseToggle');
+const tripBtn = document.getElementById('tripBtn');
+const consoleEl = document.getElementById('console');
+const ammText = document.getElementById('ammText');
+const motorState = document.getElementById('motorState');
+
+const wireIds = ['wireL1','wireL2','wireL3','wireF1','wireF2','wireF3','wireM1','wireM2','wireM3','wireC1','wireC2','wireC3'];
+const coilEl = document.getElementById('mainCoil');
+const motorRect = document.querySelector('#motor rect');
+
+const lampReady = document.getElementById('lampReady');
+const lampRun = document.getElementById('lampRun');
+const lampTrip = document.getElementById('lampTrip');
+
+let state = {
+  mcbOn: false,
+  fuseOk: true,
+  coil: false,
+  motor: false,
+  trip: false,
+  selector: 'local'
+};
+
+// thresholds
+const TRIP_CURRENT = 250; // amps threshold (example for 90kW)
+let currentValue = 0;
+let simInterval = null;
+
+// helper: console log
+function log(msg){
+  const t = new Date().toLocaleTimeString();
+  consoleEl.innerHTML = `[${t}] ${msg}\n` + consoleEl.innerHTML;
+}
+
+// visual helpers
+function setWirePower(on){
+  wireIds.forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(on) el.classList.add('on'); else el.classList.remove('on');
+  });
+}
+function updateCoilVisual(){
+  if(state.coil) coilEl.classList.add('on'); else coilEl.classList.remove('on');
+}
+function updateMotorVisual(){
+  if(state.motor) motorRect.classList.add('run');
+  else motorRect.classList.remove('run');
+}
+function updateLamps(){
+  lampReady.style.background = (!state.trip && state.mcbOn && state.fuseOk) ? 'var(--ok)' : '#e2e8f0';
+  lampRun.style.background = state.motor ? 'var(--ok)' : '#e2e8f0';
+  lampTrip.style.background = state.trip ? 'var(--err)' : '#e2e8f0';
+}
+function updateMotorText(){ motorState.innerText = state.motor ? 'Running' : 'Stopped'; }
+
+// control logic
+function canEnergizeCoil(){
+  return state.mcbOn && state.fuseOk && !state.trip;
+}
+
+function energizeCoil(from='local'){
+  if(!canEnergizeCoil()){
+    log(`Coil NOT energized (mcb:${state.mcbOn} fuse:${state.fuseOk} trip:${state.trip})`);
+    return;
+  }
+  state.coil = true;
+  updateCoilVisual();
+  log(`Coil energized (${from})`);
+  // seal-in: simulate aux contact being closed -> motor run
+  startMotor();
+  indicateToPLC('RUN', true);
+  updateAll();
+}
+
+function deEnergizeCoil(reason='stop'){
+  state.coil = false;
+  updateCoilVisual();
+  stopMotor();
+  log(`Coil de-energized (${reason})`);
+  indicateToPLC('RUN', false);
+  updateAll();
+}
+
+function startMotor(){
+  if(state.motor) return;
+  if(!canEnergizeCoil()) { log('Cannot start motor: permissives not met'); return; }
+  state.motor = true;
+  log('Motor started');
+  indicateToPLC('READY', true);
+  updateAll();
+  // start current simulation
+  if(simInterval) clearInterval(simInterval);
+  simInterval = setInterval(simulateCurrent, 500);
+}
+
+function stopMotor(){
+  if(!state.motor) return;
+  state.motor = false;
+  log('Motor stopped');
+  indicateToPLC('READY', false);
+  if(simInterval){ clearInterval(simInterval); simInterval = null; }
+  currentValue = 0;
+  updateAmmeter();
+  updateAll();
+}
+
+// simulate current (amps) during run; includes random fluctuation and increases slowly
+function simulateCurrent(){
+  if(!state.motor){
+    currentValue = Math.max(0, currentValue - Math.random()*6);
+  } else {
+    // base current sim for 90 kW (approx): assume 90kW at 415V 3ph -> I ≈ P/(√3*V*pf) ~ 90e3/(1.732*415*0.9) ≈ 138 A
+    // we'll simulate nominal ~140 A with load swings; use some variability
+    const nominal = 140;
+    const variance = 40;
+    // move currentValue gently towards a random target
+    const target = nominal + (Math.random()-0.5)*variance;
+    currentValue += (target - currentValue) * 0.25; // smoothing
+  }
+  updateAmmeter();
+
+  // trip on overcurrent
+  if(currentValue > TRIP_CURRENT && !state.trip){
+    triggerTrip('Overcurrent');
+  }
+}
+// update ammeter gauge (needle rotation and text)
+function updateAmmeter(){
+  const cap = Math.round(currentValue);
+  ammText.innerText = `${cap} A`;
+  // rotate needle: map 0..TRIP_CURRENT*1.2 to -90..+90 degrees
+  const needle = document.getElementById('needle');
+  const maxVal = TRIP_CURRENT * 1.2;
+  const angle = Math.max(-90, Math.min(90, (cap / maxVal) * 90));
+  needle.setAttribute('transform', `rotate(${angle} 60 35)`);
+}
+
+// trip handling
+function triggerTrip(reason='Trip'){
+  state.trip = true;
+  updateAll();
+  log(`TRIP triggered: ${reason}`);
+  // de-energize coil & motor
+  deEnergizeCoil('trip');
+  indicateToPLC('TRIP', true);
+  // visually set trip lamp
+  updateLamps();
+}
+
+// reset trip manually (not in UI by default, can implement)
+function resetTrip(){
+  state.trip = false;
+  log('Trip reset');
+  indicateToPLC('TRIP', false);
+  updateAll();
+}
+
+// PLC indication function (simulate sending status to PLC/DCS)
+function indicateToPLC(signal, value){
+  log(`PLC/DCS Indication: ${signal} = ${value}`);
+}
+
+// UI wiring events
+startBtn.addEventListener('click', ()=>{
+  if(sel.value !== 'local'){ alert('Selector not in Local'); return; }
+  if(!state.mcbOn || !state.fuseOk){ alert('Power permissive missing (MCB or Fuse)'); return; }
+  energizeCoil('Local Start');
+});
+stopBtn.addEventListener('click', ()=>{
+  deEnergizeCoil('Manual Stop');
+});
+plcStart.addEventListener('click', ()=>{
+  if(sel.value !== 'remote'){ alert('Selector not in Remote'); return; }
+  energizeCoil('PLC Start');
+});
+
+mcbToggle.addEventListener('change', (e)=>{
+  state.mcbOn = e.target.checked;
+  log(`MCB turned ${state.mcbOn ? 'ON' : 'OFF'}`);
+  if(!state.mcbOn){ deEnergizeCoil('MCB OFF'); }
+  updateAll();
+});
+fuseToggle.addEventListener('change', (e)=>{
+  state.fuseOk = e.target.checked;
+  log(`Fuse status: ${state.fuseOk ? 'OK' : 'Open'}`);
+  if(!state.fuseOk){ deEnergizeCoil('Fuse Open'); }
+  updateAll();
+});
+tripBtn.addEventListener('click', ()=>{
+  triggerTrip('Manual Trip Button');
+});
+
+sel.addEventListener('change', (e)=>{
+  state.selector = e.target.value;
+  log(`Selector: ${state.selector.toUpperCase()}`);
+  updateAll();
+});
+
+// update all visuals & gauges
+function updateAll(){
+  // wire power flows only if motor running and MCB+Fuse ok
+  const powerOn = state.motor && state.mcbOn && state.fuseOk;
+  setWirePower(powerOn);
+  updateCoilVisual();
+  updateMotorVisual();
+  updateLamps();
+  updateMotorText();
+}
+
+// helper: basic HTML escape
+function escapeHTML(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// initial status
+updateAll();
+log('Simulation ready');
+
+// expose resetTrip from console for convenience
+window.resetTrip = resetTrip;
+
+/* Optional: expose some test helpers in the UI (not shown), can be used in browser console:
+   window.triggerTrip('test'); window.resetTrip(); window.energizeCoil(); window.deEnergizeCoil();
+*/
+
+</script>
+</body>
+</html>
