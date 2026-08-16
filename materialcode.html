@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Material Codes — searchable table</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin: 24px; background:#fafafa; color:#111; }
+    .container { max-width: 980px; margin: 0 auto; }
+    header h1 { margin: 0 0 8px; font-size: 20px; }
+    .controls { display:flex; gap:12px; align-items:center; margin:12px 0 18px; flex-wrap:wrap; }
+    select, input[type="search"] { padding:8px 10px; font-size:14px; border:1px solid #ccd; border-radius:6px; min-width:220px; }
+    table { width:100%; border-collapse: collapse; background:white; box-shadow: 0 0 0 1px #eee; }
+    thead th { text-align:left; padding:10px 12px; background:#f4f6f8; border-bottom:1px solid #e6e9ee; font-weight:600; }
+    tbody td { padding:10px 12px; border-top:1px solid #f1f3f5; vertical-align:top; }
+    tbody tr:nth-child(even) td { background:#fcfdfe; }
+    .empty { padding:18px; color:#666; }
+    .note { font-size:13px; color:#555; margin-top:10px; }
+    @media (max-width:720px){
+      .controls { flex-direction:column; align-items:stretch; }
+      select, input[type="search"] { width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Material Codes</h1>
+      <div class="note">Dropdown lists unique values from column D of the JSON. Selecting a value shows matching rows (columns B, C & D). The first two rows of the JSON are ignored.</div>
+    </header>
+
+    <div class="controls" aria-hidden="false">
+      <label for="typeSelect" style="font-weight:600">Type (column D):</label>
+      <select id="typeSelect" aria-label="Select material type">
+        <option value="">Loading...</option>
+      </select>
+
+      <label for="searchBox" style="font-weight:600">Search:</label>
+      <input id="searchBox" type="search" placeholder="Filter Material desc., code or type" aria-label="Search table" />
+    </div>
+
+    <table id="resultsTable" aria-live="polite">
+      <thead>
+        <tr>
+          <th>Material desc.</th>
+          <th>Material code</th>
+          <th>Type of material</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="empty" colspan="3">Loading data…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // URL to the JSON file you provided
+    const DATA_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialcode.json';
+
+    // DOM refs
+    const typeSelect = document.getElementById('typeSelect');
+    const searchBox = document.getElementById('searchBox');
+    const resultsTbody = document.querySelector('#resultsTable tbody');
+
+    // State
+    let allRows = [];       // all rows from JSON after skipping first two
+    let displayedRows = []; // currently displayed rows (after type filter)
+
+    // Utility: safe string
+    const toStr = v => (v === null || v === undefined) ? '' : String(v);
+
+    // Fetch JSON and initialize UI
+    fetch(DATA_URL)
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        if (!data || !Array.isArray(data.rows)) throw new Error('JSON has no rows array');
+        // Per request: ignore first two rows and the first two header rows, start from 3rd row
+        // So slice from index 2 onward
+        allRows = data.rows.slice(2).filter(r => Array.isArray(r) && r.length >= 4);
+        if (allRows.length === 0) {
+          renderEmpty('No data found after skipping the first two rows.');
+          typeSelect.innerHTML = '<option value="">No types</option>';
+          return;
+        }
+
+        // Build unique types from column D (index 3)
+        const typesSet = new Set();
+        allRows.forEach(r => {
+          const val = toStr(r[3]).trim();
+          if (val) typesSet.add(val);
+        });
+        const types = Array.from(typesSet).sort((a,b)=> a.localeCompare(b, undefined, {sensitivity:'base'}));
+
+        // Populate dropdown (include "All types" option)
+        typeSelect.innerHTML = '';
+        const allOption = document.createElement('option');
+        allOption.value = '__ALL__';
+        allOption.textContent = 'All types';
+        typeSelect.appendChild(allOption);
+        types.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          typeSelect.appendChild(opt);
+        });
+
+        // Default to All types and render all rows
+        typeSelect.value = '__ALL__';
+        applyTypeFilter();
+
+      })
+      .catch(err => {
+        renderEmpty('Error loading data: ' + err.message);
+        typeSelect.innerHTML = '<option value="">Error</option>';
+        console.error(err);
+      });
+
+    // Apply filter by type selection
+    function applyTypeFilter() {
+      const selected = typeSelect.value;
+      if (!selected || selected === '__ALL__') {
+        displayedRows = allRows.slice();
+      } else {
+        displayedRows = allRows.filter(r => toStr(r[3]).trim() === selected);
+      }
+      applySearchFilter(); // apply search on top
+    }
+
+    // Apply search filter to displayedRows and render
+    function applySearchFilter() {
+      const q = toStr(searchBox.value).trim().toLowerCase();
+      const filtered = q ? displayedRows.filter(r => {
+        // columns B (index1), C (index2), D (index3)
+        return [1,2,3].some(i => toStr(r[i]).toLowerCase().includes(q));
+      }) : displayedRows;
+      renderTable(filtered);
+    }
+
+    // Render table rows
+    function renderTable(rows) {
+      resultsTbody.innerHTML = '';
+      if (!rows || rows.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td class="empty" colspan="3">No matching rows.</td>';
+        resultsTbody.appendChild(tr);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        // Material desc. -> column B -> index 1
+        const desc = toStr(r[1]);
+        // Material code -> column C -> index 2
+        const code = toStr(r[2]);
+        // Type -> column D -> index 3
+        const type = toStr(r[3]);
+
+        const td1 = document.createElement('td'); td1.textContent = desc;
+        const td2 = document.createElement('td'); td2.textContent = code;
+        const td3 = document.createElement('td'); td3.textContent = type;
+
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        frag.appendChild(tr);
+      });
+      resultsTbody.appendChild(frag);
+    }
+
+    // Render a single-row empty message
+    function renderEmpty(msg) {
+      resultsTbody.innerHTML = '<tr><td class="empty" colspan="3">' + msg + '</td></tr>';
+    }
+
+    // Events
+    typeSelect.addEventListener('change', () => {
+      applyTypeFilter();
+    });
+    searchBox.addEventListener('input', () => {
+      applySearchFilter();
+    });
+
+    // Accessibility: allow Enter on search to focus first result (optional)
+    searchBox.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const firstRow = resultsTbody.querySelector('tr td');
+        if (firstRow) firstRow.focus();
+      }
+    });
+  </script>
+</body>
+</html>
