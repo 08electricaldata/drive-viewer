@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Material Codes — Mobile View</title>
+  <style>
+    :root{
+      --bg:#f6fbff;
+      --card:#fff;
+      --accent:#0d47a1;
+      --muted:#64748b;
+      --radius:12px;
+      --gap:12px;
+    }
+    /* Mobile-first layout */
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#eef7ff,var(--bg));
+      color:#062238;
+      -webkit-font-smoothing:antialiased;
+      padding:14px;
+    }
+
+    .topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .topbar .left{display:flex;gap:8px;align-items:center}
+    button.icon{
+      background:var(--card);border:0;padding:10px;border-radius:10px;min-width:44px;height:44px;
+      box-shadow:0 6px 18px rgba(3,63,136,.08);cursor:pointer;font-weight:700;color:var(--accent);
+      display:inline-flex;align-items:center;justify-content:center;
+    }
+    .title{flex:1;text-align:center;font-weight:800;font-size:15px;color:var(--accent)}
+    .card{background:var(--card);border-radius:var(--radius);padding:12px;box-shadow:0 10px 30px rgba(3,63,136,.04);margin-bottom:12px}
+
+    .controls{display:flex;gap:8px;flex-direction:column}
+    .row{display:flex;gap:8px;align-items:center}
+    select, input[type="search"]{
+      width:100%;padding:10px;border-radius:10px;border:1px solid #e6eefb;font-size:14px;
+      background:#fff;color:#062238;
+    }
+
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    thead th{padding:10px 8px;text-align:left;font-weight:700;font-size:13px;color:var(--accent);border-bottom:1px solid #eef4ff}
+    tbody td{padding:10px 8px;border-top:1px solid #fbfdff;font-size:14px;color:#082635}
+    .empty{padding:18px;color:var(--muted);text-align:center}
+
+    .note{font-size:12px;color:var(--muted);margin-top:8px}
+
+    @media(min-width:720px){
+      body{padding:24px}
+      .controls{flex-direction:row}
+      select, input[type="search"]{min-width:240px}
+      .title{font-size:17px}
+      .card{padding:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar" role="navigation" aria-label="Top actions">
+    <div class="left">
+      <button id="backBtn" class="icon" aria-label="Back">⬅</button>
+    </div>
+    <div class="title">Material Codes</div>
+    <div style="display:flex;gap:8px;">
+      <button id="homeBtn" class="icon" aria-label="Home">🏠</button>
+      <button id="infoBtn" class="icon" aria-label="Information">ℹ️</button>
+    </div>
+  </div>
+
+  <main>
+    <section class="card" aria-labelledby="controls-title">
+      <div id="controls-title" style="font-weight:800;color:var(--accent);margin-bottom:8px">Filter & Search</div>
+
+      <div class="controls" role="region" aria-label="Filters">
+        <div style="flex:1;">
+          <label for="typeSelect" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted)">Type (column D)</label>
+          <select id="typeSelect" aria-label="Select material type">
+            <option>Loading…</option>
+          </select>
+        </div>
+
+        <div style="flex:1;">
+          <label for="searchBox" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted)">Search</label>
+          <input id="searchBox" type="search" placeholder="Filter Material desc. or code" aria-label="Search" />
+        </div>
+      </div>
+
+      <div class="note">The first two rows of the JSON are ignored. Dropdown filters by column D; results show only Description (column B) and Code (column C).</div>
+    </section>
+
+    <section class="card" aria-labelledby="table-title">
+      <div id="table-title" style="font-weight:800;color:var(--accent);margin-bottom:8px">Results</div>
+
+      <div style="overflow:auto">
+        <table id="resultsTable" aria-live="polite">
+          <thead>
+            <tr>
+              <th>Material desc.</th>
+              <th>Material code</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="empty" colspan="2">Loading data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer style="text-align:center;font-size:12px;color:#65788a;margin-top:8px">© 08 Electrical Data</footer>
+
+  <script>
+    // Data & navigation URLs
+    const DATA_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialcode.json';
+    const HOME_URL = 'https://08electricaldata.github.io/index_mob.html';
+    const INFO_URL = 'https://08electricaldata.github.io/drive-viewer/mobile/info.html';
+
+    // DOM
+    const typeSelect = document.getElementById('typeSelect');
+    const searchBox = document.getElementById('searchBox');
+    const resultsTbody = document.querySelector('#resultsTable tbody');
+    const backBtn = document.getElementById('backBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const infoBtn = document.getElementById('infoBtn');
+
+    // State
+    let allRows = [];       // after skipping first two rows
+    let displayedRows = []; // after type filter
+
+    const toStr = v => (v === null || v === undefined) ? '' : String(v);
+
+    // Fetch and init
+    fetch(DATA_URL)
+      .then(r => { if (!r.ok) throw new Error('Fetch failed ' + r.status); return r.json(); })
+      .then(data => {
+        if (!data || !Array.isArray(data.rows)) throw new Error('Invalid JSON structure');
+        // ignore first two rows, use from index 2 onward
+        allRows = data.rows.slice(2).filter(r => Array.isArray(r) && r.length >= 4);
+
+        if (allRows.length === 0){
+          renderEmpty('No data available after skipping the first two rows.');
+          typeSelect.innerHTML = '<option value="">No types</option>';
+          return;
+        }
+
+        // build unique types from column D (index 3)
+        const types = Array.from(new Set(allRows.map(r => toStr(r[3]).trim()).filter(Boolean)))
+                           .sort((a,b)=> a.localeCompare(b, undefined, {sensitivity:'base'}));
+
+        // populate dropdown (include "All types")
+        typeSelect.innerHTML = '';
+        const allOpt = document.createElement('option');
+        allOpt.value = '__ALL__'; allOpt.textContent = 'All types';
+        typeSelect.appendChild(allOpt);
+        types.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t; opt.textContent = t;
+          typeSelect.appendChild(opt);
+        });
+
+        typeSelect.value = '__ALL__';
+        applyTypeFilter();
+      })
+      .catch(err => {
+        console.error(err);
+        renderEmpty('Error loading data: ' + err.message);
+        typeSelect.innerHTML = '<option value="">Error</option>';
+      });
+
+    // Filters & render (mobile: ignore column D in table; search only over B & C)
+    function applyTypeFilter(){
+      const sel = typeSelect.value;
+      if (!sel || sel === '__ALL__') displayedRows = allRows.slice();
+      else displayedRows = allRows.filter(r => toStr(r[3]).trim() === sel);
+      applySearch();
+    }
+
+    function applySearch(){
+      const q = toStr(searchBox.value).trim().toLowerCase();
+      const filtered = q ? displayedRows.filter(r => {
+        const desc = toStr(r[1]).toLowerCase();
+        const code = toStr(r[2]).toLowerCase();
+        return desc.includes(q) || code.includes(q);
+      }) : displayedRows;
+      renderTable(filtered);
+    }
+
+    function renderTable(rows){
+      resultsTbody.innerHTML = '';
+      if (!rows || rows.length === 0){
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td class="empty" colspan="2">No matching rows.</td>';
+        resultsTbody.appendChild(tr);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = toStr(r[1]);
+        const td2 = document.createElement('td'); td2.textContent = toStr(r[2]);
+        tr.appendChild(td1); tr.appendChild(td2);
+        frag.appendChild(tr);
+      });
+      resultsTbody.appendChild(frag);
+    }
+
+    function renderEmpty(msg){
+      resultsTbody.innerHTML = '<tr><td class="empty" colspan="2">'+msg+'</td></tr>';
+    }
+
+    // Events
+    typeSelect.addEventListener('change', applyTypeFilter);
+    searchBox.addEventListener('input', applySearch);
+
+    backBtn.addEventListener('click', () => {
+      if (window.history && window.history.length > 1) window.history.back();
+      else window.location.href = HOME_URL;
+    });
+    homeBtn.addEventListener('click', () => { window.location.href = HOME_URL; });
+    infoBtn.addEventListener('click', () => { window.location.href = INFO_URL; });
+
+    // accessibility: allow Enter to focus first result
+    searchBox.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const first = resultsTbody.querySelector('tr td');
+        if (first) first.focus();
+      }
+    });
+  </script>
+</body>
+</html>
