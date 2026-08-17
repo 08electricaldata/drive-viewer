@@ -102,6 +102,7 @@
       applyFilters();
     });
 
+    
     fetch(DATA_URL)
       .then(r => {
         if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
