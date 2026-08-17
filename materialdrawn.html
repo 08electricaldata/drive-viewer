@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Material Drawn Viewer</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 18px; }
+    header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    h1 { margin:0; font-size:18px; }
+    .controls { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .controls label { font-size:13px; }
+    .controls input[type="text"], .controls input[type="date"] { padding:6px; font-size:13px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    th, td { border:1px solid #ddd; padding:6px; text-align:left; vertical-align:top; }
+    th { background:#f5f5f5; position:sticky; top:0; z-index:1; }
+    tr:nth-child(even) td { background:#fafafa; }
+    .buttons { margin-left:auto; display:flex; gap:8px; }
+    button { padding:6px 10px; font-size:13px; cursor:pointer; }
+    .small { font-size:12px; color:#555; }
+    .summary { margin-top:6px; font-size:13px; color:#333; }
+    .nowrap { white-space:nowrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Material Drawn — Viewer</h1>
+    <div class="buttons">
+      <button id="backBtn">Back</button>
+      <button id="homeBtn">Home</button>
+      <button id="infoBtn">Information</button>
+    </div>
+  </header>
+
+  <div class="controls" aria-label="filters">
+    <!-- Column C (Material) filters -->
+    <div>
+      <label class="nowrap">Material (C) contains:<br><input id="cContains" type="text" placeholder="contains..." /></label>
+    </div>
+    <div>
+      <label class="nowrap">Material (C) exact:<br><input id="cExact" type="text" placeholder="exact match..." /></label>
+    </div>
+
+    <!-- Column D (Material Description) filters -->
+    <div>
+      <label class="nowrap">Description (D) contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
+    </div>
+    <div>
+      <label class="nowrap">Description (D) exact:<br><input id="dExact" type="text" placeholder="exact match..." /></label>
+    </div>
+
+    <!-- Date filters for column G -->
+    <div>
+      <label class="nowrap">From (G):<br><input id="fromDate" type="date" /></label>
+    </div>
+    <div>
+      <label class="nowrap">To (G):<br><input id="toDate" type="date" /></label>
+    </div>
+
+    <div>
+      <button id="clearFilters">Clear Filters</button>
+    </div>
+  </div>
+
+  <div class="summary"><span id="countText">Loading...</span></div>
+
+  <div style="overflow:auto; max-height:70vh;">
+    <table id="dataTable" aria-live="polite">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // URL to the raw JSON you provided
+    const DATA_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json';
+
+    // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
+    const IDX_C = 2, IDX_D = 3, IDX_G = 6;
+
+    let headers = [];
+    let rows = []; // raw rows array
+    let rowsFiltered = [];
+
+    // Buttons behaviour
+    document.getElementById('backBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
+    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
+    document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'); });
+
+    // Inputs
+    const cContains = document.getElementById('cContains');
+    const cExact = document.getElementById('cExact');
+    const dContains = document.getElementById('dContains');
+    const dExact = document.getElementById('dExact');
+    const fromDate = document.getElementById('fromDate');
+    const toDate = document.getElementById('toDate');
+    const clearFilters = document.getElementById('clearFilters');
+
+    [cContains,cExact,dContains,dExact,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
+    clearFilters.addEventListener('click', () => {
+      cContains.value=''; cExact.value=''; dContains.value=''; dExact.value=''; fromDate.value=''; toDate.value='';
+      applyFilters();
+    });
+
+    fetch(DATA_URL)
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
+        return r.json();
+      })
+      .then(json => {
+        headers = Array.isArray(json.headers) ? json.headers : [];
+        rows = Array.isArray(json.rows) ? json.rows : [];
+        buildTableHead();
+        // Only keep rows where column C is non-blank (non-empty string and not null/undefined)
+        rows = rows.filter(r => {
+          const v = safeString(r[IDX_C]);
+          return v !== '';
+        });
+        // Sort by column G (date) newest -> oldest
+        rows.sort((a,b) => {
+          const da = parseFlexibleDate(a[IDX_G]);
+          const db = parseFlexibleDate(b[IDX_G]);
+          // Put rows with valid dates first, by descending date.
+          if (da && db) return db - da;
+          if (da && !db) return -1;
+          if (!da && db) return 1;
+          return 0;
+        });
+        applyFilters();
+      })
+      .catch(err => {
+        document.getElementById('countText').textContent = 'Error loading data: ' + err;
+        console.error(err);
+      });
+
+    function buildTableHead() {
+      const thead = document.getElementById('tableHead');
+      thead.innerHTML = '';
+      const tr = document.createElement('tr');
+      // If headers exist, use them; otherwise fall back to column indexes up to longest row
+      if (headers.length) {
+        headers.forEach(h => {
+          const th = document.createElement('th');
+          th.textContent = h || '';
+          tr.appendChild(th);
+        });
+      } else {
+        // determine max columns
+        const maxCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
+        for (let i=0;i<maxCols;i++){
+          const th=document.createElement('th');
+          th.textContent = 'Col ' + String.fromCharCode(65 + (i%26));
+          tr.appendChild(th);
+        }
+      }
+      thead.appendChild(tr);
+    }
+
+    function applyFilters() {
+      const cContainsVal = cContains.value.trim().toLowerCase();
+      const cExactVal = cExact.value.trim().toLowerCase();
+      const dContainsVal = dContains.value.trim().toLowerCase();
+      const dExactVal = dExact.value.trim().toLowerCase();
+      const from = fromDate.value ? new Date(fromDate.value) : null;
+      const to = toDate.value ? new Date(toDate.value) : null;
+      // If 'to' is provided, extend to end of day
+      if (to) to.setHours(23,59,59,999);
+
+      rowsFiltered = rows.filter(r => {
+        const c = safeString(r[IDX_C]).toLowerCase();
+        const d = safeString(r[IDX_D]).toLowerCase();
+        // C contains/exact logic: if exact provided then exact must match; otherwise if contains provided then must contain; if neither provided, pass
+        if (cExactVal && c !== cExactVal) return false;
+        if (cContainsVal && !c.includes(cContainsVal)) return false;
+        if (dExactVal && d !== dExactVal) return false;
+        if (dContainsVal && !d.includes(dContainsVal)) return false;
+
+        // Date filter on column G
+        const cell = r[IDX_G];
+        const dt = parseFlexibleDate(cell);
+        if (from || to) {
+          if (!dt) return false; // when filtering by date range, ignore rows with no valid date
+          if (from && dt < from) return false;
+          if (to && dt > to) return false;
+        }
+        return true;
+      });
+
+      renderTableBody();
+    }
+
+    function renderTableBody() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      // Use headers length to determine columns to show, else use longest row
+      const colCount = headers.length || (rowsFiltered.reduce((m,r)=>Math.max(m,r.length),0) || 0);
+
+      rowsFiltered.forEach(row => {
+        const tr = document.createElement('tr');
+        for (let i=0;i<colCount;i++) {
+          const td = document.createElement('td');
+          let v = row[i];
+          if (i === IDX_G) {
+            // show dates in ISO-like format if parseable or raw text otherwise
+            const dt = parseFlexibleDate(v);
+            td.textContent = dt ? dt.toISOString().split('T')[0] : safeString(v);
+          } else {
+            td.textContent = (v === null || v === undefined) ? '' : String(v);
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('countText').textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows (column C non-blank enforced)`;
+    }
+
+    // Helpers
+    function safeString(v) {
+      if (v === null || v === undefined) return '';
+      return String(v).trim();
+    }
+
+    // Try to parse multiple date formats that appear in your JSON:
+    // - ISO (Date.parse)
+    // - "dd-mm-yyyy" or "dd-mm-yyyyThh:mm:ssZ" (some rows)
+    // Return a Date object or null if unparseable
+    function parseFlexibleDate(val) {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'number') {
+        // treat as Excel-ish serial? No: assume epoch ms (rare). Try to construct.
+        const d = new Date(val);
+        if (!isNaN(d)) return d;
+      }
+      const s = String(val).trim();
+      if (!s) return null;
+      // Try native parser
+      const d1 = new Date(s);
+      if (!isNaN(d1)) return d1;
+      // Try dd-mm-yyyy or dd-mm-yyyy hh:mm:ss
+      // Common patterns in file: "25-08-2010", "28-01-2011", sometimes without time.
+      const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
+      if (m) {
+        const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
+        // if time present, parse; otherwise create date midnight UTC/local
+        if (m[4]) {
+          const rest = m[4];
+          // try to parse rest with Date (append to ISO)
+          const iso = `${yr.toString().padStart(4,'0')}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}T${rest}`;
+          const d2 = new Date(iso);
+          if (!isNaN(d2)) return d2;
+        }
+        const d = new Date(yr, mon, day);
+        if (!isNaN(d)) return d;
+      }
+      return null;
+    }
+
+  </script>
+</body>
+</html>
