@@ -85,8 +85,6 @@
     </table>
   </div>
 
-  <!-- Modal container (created dynamically) -->
-
   <script>
     // URLs to the JSON files
     const MATERIAL_CODE_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialcode.json';
@@ -136,17 +134,14 @@
       return null;
     }
 
-    // Format date for display (YYYY-MM-DD) or fallback to original
+    // Format date for display in popup as dd-mm-yyyy (no time). Fallback to raw if unparseable.
     function formatDateCell(raw) {
       const dt = parseFlexibleDate(raw);
       if (!dt) return toStr(raw);
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth()+1).padStart(2,'0');
-      const d = String(dt.getDate()).padStart(2,'0');
-      const hh = String(dt.getHours()).padStart(2,'0');
-      const mm = String(dt.getMinutes()).padStart(2,'0');
-      const hasTime = dt.getHours() !== 0 || dt.getMinutes() !== 0 || dt.getSeconds() !== 0;
-      return hasTime ? `${y}-${m}-${d} ${hh}:${mm}` : `${y}-${m}-${d}`;
+      const dd = String(dt.getDate()).padStart(2,'0');
+      const mm = String(dt.getMonth() + 1).padStart(2,'0');
+      const yyyy = dt.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
     }
 
     // Fetch both JSONs (prefetch materialdrawn for quick lookups)
@@ -183,11 +178,10 @@
 
       // materialdrawn.json processing
       if (!drawnJson || !Array.isArray(drawnJson.rows)) {
-        // no drawn data, keep drawnRows empty
         drawnRows = [];
         drawnHeaders = Array.isArray(drawnJson.headers) ? drawnJson.headers : [];
       } else {
-        drawnRows = drawnJson.rows.slice(); // keep as-is
+        drawnRows = drawnJson.rows.slice();
         drawnHeaders = Array.isArray(drawnJson.headers) ? drawnJson.headers : [];
         // Build index by material code at column C (index 2)
         drawnRows.forEach(r => {
@@ -196,7 +190,7 @@
           if (!drawnIndexByCode.has(code)) drawnIndexByCode.set(code, []);
           drawnIndexByCode.get(code).push(r);
         });
-        // For each list in index, sort by date column G (index 6) descending (present -> past)
+        // Sort each list by date column G (index 6) descending (present -> past)
         const IDX_G = 6;
         drawnIndexByCode.forEach((arr, code) => {
           arr.sort((a,b) => {
@@ -279,9 +273,7 @@
 
     // Open modal showing transactions for a specific material code
     function openTransactionsModal(materialCode) {
-      // look up in prebuilt index
       const rows = drawnIndexByCode.get(materialCode) || [];
-      // Build modal elements
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
       backdrop.tabIndex = -1;
@@ -292,7 +284,6 @@
       modal.setAttribute('aria-modal','true');
       modal.setAttribute('aria-label','Transactions for ' + materialCode);
 
-      // header
       const header = document.createElement('header');
       const h2 = document.createElement('h2'); h2.textContent = 'Transactions — ' + materialCode;
       const meta = document.createElement('div'); meta.className = 'meta small';
@@ -303,13 +294,11 @@
 
       modal.appendChild(header);
 
-      // body: show summary and table
       const bodyDiv = document.createElement('div');
       if (!rows || rows.length === 0) {
         const p = document.createElement('div'); p.className = 'tx-empty'; p.textContent = 'No transactions found for this material code in materialdrawn.json';
         bodyDiv.appendChild(p);
       } else {
-        // show a small summary line (first & last date)
         const firstDate = formatDateCell(rows[0][6]);
         const lastDate = formatDateCell(rows[rows.length-1][6]);
         const summary = document.createElement('div');
@@ -318,13 +307,11 @@
         summary.textContent = `Showing ${rows.length} transactions — latest: ${firstDate} → earliest: ${lastDate}`;
         bodyDiv.appendChild(summary);
 
-        // Build a transactions table showing relevant columns: we'll include column headers from drawnHeaders when available; otherwise show index labels.
         const txTable = document.createElement('table');
         txTable.className = 'tx-table';
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
 
-        // Determine column count: prefer drawnHeaders length or max length in rows
         const colCount = (Array.isArray(drawnHeaders) && drawnHeaders.length) ? drawnHeaders.length : rows.reduce((m,r)=>Math.max(m,r.length), 0);
 
         for (let i=0;i<colCount;i++) {
@@ -340,7 +327,6 @@
           const tr = document.createElement('tr');
           for (let i=0;i<colCount;i++) {
             const td = document.createElement('td');
-            // For date column G (index 6) show formatted date
             if (i === 6) td.textContent = formatDateCell(r[i]);
             else td.textContent = toStr(r[i]);
             tr.appendChild(td);
@@ -355,7 +341,6 @@
       backdrop.appendChild(modal);
       document.body.appendChild(backdrop);
 
-      // Focus and close handling
       closeBtn.focus();
 
       function closeModal() {
@@ -365,7 +350,6 @@
       function onKey(e) {
         if (e.key === 'Escape') closeModal();
       }
-      // clicking outside modal closes it
       backdrop.addEventListener('click', (ev) => {
         if (ev.target === backdrop) closeModal();
       });
