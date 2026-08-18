@@ -3,77 +3,62 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Material Drawn — Mobile View (Filtered Columns)</title>
+  <title>Material Drawn Viewer</title>
   <style>
-    :root { --pad:8px; --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-    body { font-family:var(--font); margin:12px; color:#222; -webkit-font-smoothing:antialiased; }
-    header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
-    h1 { margin:0; font-size:16px; font-weight:600; }
-    .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
-    .control { display:flex; flex-direction:column; gap:4px; font-size:13px; min-width:120px; }
-    input[type="text"], input[type="date"] { padding:6px; font-size:13px; border:1px solid #ddd; border-radius:4px; }
+    body { font-family: Arial, Helvetica, sans-serif; margin: 18px; }
+    header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    h1 { margin:0; font-size:18px; } 
+    .controls { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .controls label { font-size:13px; }
+    .controls input[type="text"], .controls input[type="date"] { padding:6px; font-size:13px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    th, td { border:1px solid #ddd; padding:6px; text-align:left; vertical-align:top; }
+    th { background:#f5f5f5; position:sticky; top:0; z-index:1; }
+    tr:nth-child(even) td { background:#fafafa; }
     .buttons { margin-left:auto; display:flex; gap:8px; }
-    button { padding:6px 10px; font-size:13px; cursor:pointer; border-radius:4px; border:1px solid #bbb; background:#fafafa; }
-    .summary { margin:6px 0 10px 0; font-size:13px; color:#333; }
-
-    .table-wrap { overflow:auto; -webkit-overflow-scrolling:touch; }
-    table { width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
-    thead th { position:sticky; top:0; background:#f6f7f8; z-index:1; text-align:left; padding:8px; border-bottom:1px solid #e2e2e2; font-weight:600; }
-    tbody td { padding:8px; border-bottom:1px solid #eee; vertical-align:top; }
-    tbody tr:nth-child(even) td { background:#fbfbfb; }
+    button { padding:6px 10px; font-size:13px; cursor:pointer; }
+    .small { font-size:12px; color:#555; }
+    .summary { margin-top:6px; font-size:13px; color:#333; }
     .nowrap { white-space:nowrap; }
-
-    @media (max-width:720px) {
-      .controls { gap:6px; }
-      .control { min-width:100px; }
-      table { min-width:560px; }
-      thead th, tbody td { padding:7px; font-size:13px; }
-    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Material Drawn — Mobile View</h1>
+    <h1>Material Drawn — Viewer</h1>
     <div class="buttons">
       <button id="backBtn">Back</button>
       <button id="homeBtn">Home</button>
-      <button id="infoBtn">Info</button>
+      <button id="infoBtn">Information</button>
     </div>
   </header>
 
   <div class="controls" aria-label="filters">
-    <div class="control">
-      <label class="nowrap">Material (contains)</label>
-      <input id="cContains" type="text" placeholder="contains..." />
+    <!-- Column C (Material) filters -->
+    <div>
+      <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." /></label>
     </div>
-    <div class="control">
-      <label class="nowrap">Material (exact)</label>
-      <input id="cExact" type="text" placeholder="exact..." />
+
+    <!-- Column D (Material Description) filters -->
+    <div>
+      <label class="nowrap">Material Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
     </div>
-    <div class="control">
-      <label class="nowrap">Description (contains)</label>
-      <input id="dContains" type="text" placeholder="contains..." />
+
+    <!-- Date filters for column G -->
+    <div>
+      <label class="nowrap">From (G):<br><input id="fromDate" type="date" /></label>
     </div>
-    <div class="control">
-      <label class="nowrap">Description (exact)</label>
-      <input id="dExact" type="text" placeholder="exact..." />
+    <div>
+      <label class="nowrap">To (G):<br><input id="toDate" type="date" /></label>
     </div>
-    <div class="control">
-      <label class="nowrap">From (Date)</label>
-      <input id="fromDate" type="date" />
-    </div>
-    <div class="control">
-      <label class="nowrap">To (Date)</label>
-      <input id="toDate" type="date" />
-    </div>
-    <div style="display:flex; align-items:center; gap:6px;">
-      <button id="clearFilters">Clear</button>
+
+    <div>
+      <button id="clearFilters">Clear Filters</button>
     </div>
   </div>
 
   <div class="summary"><span id="countText">Loading...</span></div>
 
-  <div class="table-wrap">
+  <div style="overflow:auto; max-height:70vh;">
     <table id="dataTable" aria-live="polite">
       <thead id="tableHead"></thead>
       <tbody id="tableBody"></tbody>
@@ -81,62 +66,60 @@
   </div>
 
   <script>
-    // JSON source
+    // URL to the raw JSON you provided
     const DATA_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json';
 
-    // Enforced indexes:
-    const IDX_MATERIAL = 2; // column C
-    const IDX_MATERIAL_DESC = 3; // column D
-    const FALLBACK_DATE_INDEX = 6; // column G fallback
-
-    // Header tokens to detect qty and date
-    const QTY_TOKENS = ['qty','quantity','requirement quantity','requirementquantity','req qty','reqqty','requirement_qty'];
-    const DATE_TOKENS = ['requirements date','requirement date','req date','reqdate','requirementsdate','requirementdate','date'];
+    // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
+    const IDX_C = 2, IDX_D = 3, IDX_G = 6;
+    // Index to hide (first column / Sub-number)
+    const HIDDEN_INDEX = 0;
 
     let headers = [];
-    let rows = [];
+    let rows = []; // raw rows array
     let rowsFiltered = [];
-    let idxQty = null;
-    let idxDate = null;
 
-    // UI elements
+    // Buttons behaviour
+    document.getElementById('backBtn').addEventListener('click', () => { history.back(); });
+    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
+    document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'); });
+
+    // Inputs
     const cContains = document.getElementById('cContains');
-    const cExact = document.getElementById('cExact');
     const dContains = document.getElementById('dContains');
-    const dExact = document.getElementById('dExact');
     const fromDate = document.getElementById('fromDate');
     const toDate = document.getElementById('toDate');
     const clearFilters = document.getElementById('clearFilters');
 
-    document.getElementById('backBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/index_mob.html', '_self'); });
-    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/index_mob.html', '_self'); });
-    document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/mobile/info.html', '_blank'); });
-
-    [cContains,cExact,dContains,dExact,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
+    [cContains,dContains,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
     clearFilters.addEventListener('click', () => {
-      cContains.value=''; cExact.value=''; dContains.value=''; dExact.value=''; fromDate.value=''; toDate.value='';
+      cContains.value=''; dContains.value=''; fromDate.value=''; toDate.value='';
       applyFilters();
     });
 
     fetch(DATA_URL)
-      .then(r => { if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status); return r.json(); })
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
+        return r.json();
+      })
       .then(json => {
         headers = Array.isArray(json.headers) ? json.headers : [];
         rows = Array.isArray(json.rows) ? json.rows : [];
-        detectQtyAndDateIndexes();
-        // enforce non-blank on Material (column C)
-        rows = rows.filter(r => safeString(r[IDX_MATERIAL]) !== '');
-        // sort by date (detected or fallback) newest -> oldest
-        const sortIdx = (typeof idxDate === 'number') ? idxDate : FALLBACK_DATE_INDEX;
+        // Only keep rows where column C is non-blank (non-empty string and not null/undefined)
+        rows = rows.filter(r => {
+          const v = safeString(r[IDX_C]);
+          return v !== '';
+        });
+        buildTableHead(); // build head now that headers/rows exist
+        // Sort by column G (date) newest -> oldest
         rows.sort((a,b) => {
-          const da = parseFlexibleDate(a[sortIdx]);
-          const db = parseFlexibleDate(b[sortIdx]);
+          const da = parseFlexibleDate(a[IDX_G]);
+          const db = parseFlexibleDate(b[IDX_G]);
+          // Put rows with valid dates first, by descending date.
           if (da && db) return db - da;
           if (da && !db) return -1;
           if (!da && db) return 1;
           return 0;
         });
-        buildTableHead();
         applyFilters();
       })
       .catch(err => {
@@ -144,119 +127,110 @@
         console.error(err);
       });
 
-    function normalize(s) {
-      if (s === null || s === undefined) return '';
-      return String(s).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-    }
-
-    function detectQtyAndDateIndexes() {
-      idxQty = null;
-      idxDate = null;
-      const nh = headers.map(h => normalize(h));
-      // detect qty
-      for (let i=0;i<nh.length;i++) {
-        const h = nh[i];
-        for (const t of QTY_TOKENS) {
-          if (h === normalize(t) || h.includes(normalize(t)) || normalize(t).includes(h)) {
-            idxQty = i;
-            break;
-          }
-        }
-        if (idxQty !== null) break;
+    // Compute visible column indexes with date column first (move IDX_G to front),
+    // then all other indexes in ascending order, skipping HIDDEN_INDEX and avoiding duplicates.
+    function getVisibleIndexes() {
+      // determine total number of columns, using headers if present else using longest row
+      let totalCols = 0;
+      if (headers.length) {
+        totalCols = headers.length;
+      } else {
+        totalCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
       }
-      if (idxQty === null) console.warn('qty column not found by name; qty cells will be empty.');
-
-      // detect date (requirements date)
-      for (let i=0;i<nh.length;i++) {
-        const h = nh[i];
-        for (const t of DATE_TOKENS) {
-          if (h === normalize(t) || h.includes(normalize(t)) || normalize(t).includes(h)) {
-            idxDate = i;
-            break;
-          }
-        }
-        if (idxDate !== null) break;
+      const indexes = [];
+      // Add date column first if within range and not hidden
+      if (IDX_G >= 0 && IDX_G < totalCols && IDX_G !== HIDDEN_INDEX) {
+        indexes.push(IDX_G);
       }
-      if (idxDate === null) {
-        console.warn('Requirements date header not found by name; falling back to index', FALLBACK_DATE_INDEX);
-        idxDate = FALLBACK_DATE_INDEX;
+      for (let i=0;i<totalCols;i++) {
+        if (i === HIDDEN_INDEX) continue;
+        if (i === IDX_G) continue; // already added
+        indexes.push(i);
       }
-      console.log('Detected idxQty=', idxQty, ' idxDate=', idxDate);
+      return indexes;
     }
 
     function buildTableHead() {
       const thead = document.getElementById('tableHead');
       thead.innerHTML = '';
       const tr = document.createElement('tr');
-      ['Material','Material Description','Date','qty'].forEach(h => {
-        const th = document.createElement('th'); th.textContent = h; tr.appendChild(th);
-      });
+      const visible = getVisibleIndexes();
+
+      if (headers.length) {
+        visible.forEach(idx => {
+          const th = document.createElement('th');
+          // If this is the date column ensure heading is friendly "Date"
+          if (idx === IDX_G) {
+            th.textContent = 'Date';
+          } else {
+            th.textContent = headers[idx] || '';
+          }
+          tr.appendChild(th);
+        });
+      } else {
+        // fallback labels using original column letters (A,B,C,...), skipping the hidden one
+        visible.forEach(idx => {
+          const th = document.createElement('th');
+          const letter = String.fromCharCode(65 + (idx % 26));
+          th.textContent = (idx === IDX_G) ? 'Date' : 'Col ' + letter;
+          tr.appendChild(th);
+        });
+      }
       thead.appendChild(tr);
     }
 
     function applyFilters() {
       const cContainsVal = cContains.value.trim().toLowerCase();
-      const cExactVal = cExact.value.trim().toLowerCase();
       const dContainsVal = dContains.value.trim().toLowerCase();
-      const dExactVal = dExact.value.trim().toLowerCase();
       const from = fromDate.value ? new Date(fromDate.value) : null;
       const to = toDate.value ? new Date(toDate.value) : null;
+      // If 'to' is provided, extend to end of day
       if (to) to.setHours(23,59,59,999);
 
       rowsFiltered = rows.filter(r => {
-        const c = safeString(r[IDX_MATERIAL]).toLowerCase();
-        const d = safeString(r[IDX_MATERIAL_DESC]).toLowerCase();
-        if (cExactVal && c !== cExactVal) return false;
+        const c = safeString(r[IDX_C]).toLowerCase();
+        const d = safeString(r[IDX_D]).toLowerCase();
+        // C contains logic
         if (cContainsVal && !c.includes(cContainsVal)) return false;
-        if (dExactVal && d !== dExactVal) return false;
         if (dContainsVal && !d.includes(dContainsVal)) return false;
 
-        // Date filter
-        const cell = r[idxDate];
+        // Date filter on column G
+        const cell = r[IDX_G];
         const dt = parseFlexibleDate(cell);
         if (from || to) {
-          if (!dt) return false;
+          if (!dt) return false; // when filtering by date range, ignore rows with no valid date
           if (from && dt < from) return false;
           if (to && dt > to) return false;
         }
         return true;
       });
 
-      renderTable();
+      renderTableBody();
     }
 
-    function renderTable() {
+    function renderTableBody() {
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = '';
+      const visible = getVisibleIndexes();
+
       rowsFiltered.forEach(row => {
         const tr = document.createElement('tr');
-
-        // Material (force column C / index 2)
-        const tdMat = document.createElement('td');
-        tdMat.textContent = safeString(row[IDX_MATERIAL]);
-        tr.appendChild(tdMat);
-
-        // Material Description (force column D / index 3)
-        const tdDesc = document.createElement('td');
-        tdDesc.textContent = safeString(row[IDX_MATERIAL_DESC]);
-        tr.appendChild(tdDesc);
-
-        // Date (formatted dd-mm-yyyy)
-        const tdDate = document.createElement('td');
-        const rawDate = row[idxDate];
-        const dt = parseFlexibleDate(rawDate);
-        tdDate.textContent = dt ? formatDateDDMMYYYY(dt) : safeString(rawDate);
-        tr.appendChild(tdDate);
-
-        // qty (detected by header)
-        const tdQty = document.createElement('td');
-        tdQty.textContent = (typeof idxQty === 'number') ? safeString(row[idxQty]) : '';
-        tr.appendChild(tdQty);
-
+        visible.forEach(idx => {
+          const td = document.createElement('td');
+          let v = row[idx];
+          if (idx === IDX_G) {
+            // show dates in dd-mm-yyyy format if parseable or raw text otherwise
+            const dt = parseFlexibleDate(v);
+            td.textContent = dt ? formatDateDDMMYYYY(dt) : safeString(v);
+          } else {
+            td.textContent = (v === null || v === undefined) ? '' : String(v);
+          }
+          tr.appendChild(td);
+        });
         tbody.appendChild(tr);
       });
 
-      document.getElementById('countText').textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows`;
+      document.getElementById('countText').textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows (column C non-blank enforced)`;
     }
 
     // Helpers
@@ -267,24 +241,28 @@
 
     function formatDateDDMMYYYY(d) {
       const dd = String(d.getDate()).padStart(2,'0');
-      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const mm = String(d.getMonth() + 1).padStart(2,'0');
       const yyyy = d.getFullYear();
       return `${dd}-${mm}-${yyyy}`;
     }
 
+    // Try to parse multiple date formats that appear in your JSON:
+    // - ISO (Date.parse)
+    // - "dd-mm-yyyy" or "dd-mm-yyyyThh:mm:ssZ" (some rows)
+    // Return a Date object or null if unparseable
     function parseFlexibleDate(val) {
       if (val === null || val === undefined) return null;
-      if (val instanceof Date && !isNaN(val)) return val;
       if (typeof val === 'number') {
+        // treat as epoch ms (rare). Try to construct.
         const d = new Date(val);
         if (!isNaN(d)) return d;
       }
       const s = String(val).trim();
       if (!s) return null;
-      // native ISO parse
+      // Try native parser
       const d1 = new Date(s);
       if (!isNaN(d1)) return d1;
-      // dd-mm-yyyy or dd/mm/yyyy (with optional time)
+      // Try dd-mm-yyyy or dd-mm-yyyy hh:mm:ss
       const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
       if (m) {
         const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
@@ -306,6 +284,7 @@
       }
       return null;
     }
+
   </script>
 </body>
 </html>
