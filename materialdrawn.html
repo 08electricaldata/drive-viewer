@@ -37,16 +37,10 @@
     <div>
       <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." /></label>
     </div>
-    <div>
-      <label class="nowrap">Material Code exact:<br><input id="cExact" type="text" placeholder="exact match..." /></label>
-    </div>
 
     <!-- Column D (Material Description) filters -->
     <div>
       <label class="nowrap">Material Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
-    </div>
-    <div>
-      <label class="nowrap">Description (D) exact:<br><input id="dExact" type="text" placeholder="exact match..." /></label>
     </div>
 
     <!-- Date filters for column G -->
@@ -85,22 +79,20 @@
     let rowsFiltered = [];
 
     // Buttons behaviour
-    document.getElementById('backBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
+    document.getElementById('backBtn').addEventListener('click', () => { history.back(); });
     document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
     document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'); });
 
     // Inputs
     const cContains = document.getElementById('cContains');
-    const cExact = document.getElementById('cExact');
     const dContains = document.getElementById('dContains');
-    const dExact = document.getElementById('dExact');
     const fromDate = document.getElementById('fromDate');
     const toDate = document.getElementById('toDate');
     const clearFilters = document.getElementById('clearFilters');
 
-    [cContains,cExact,dContains,dExact,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
+    [cContains,dContains,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
     clearFilters.addEventListener('click', () => {
-      cContains.value=''; cExact.value=''; dContains.value=''; dExact.value=''; fromDate.value=''; toDate.value='';
+      cContains.value=''; dContains.value=''; fromDate.value=''; toDate.value='';
       applyFilters();
     });
 
@@ -135,7 +127,8 @@
         console.error(err);
       });
 
-    // Compute visible column indexes (all original indexes except the hidden one)
+    // Compute visible column indexes with date column first (move IDX_G to front),
+    // then all other indexes in ascending order, skipping HIDDEN_INDEX and avoiding duplicates.
     function getVisibleIndexes() {
       // determine total number of columns, using headers if present else using longest row
       let totalCols = 0;
@@ -144,10 +137,14 @@
       } else {
         totalCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
       }
-      // build indexes [0..totalCols-1] then filter out HIDDEN_INDEX
       const indexes = [];
+      // Add date column first if within range and not hidden
+      if (IDX_G >= 0 && IDX_G < totalCols && IDX_G !== HIDDEN_INDEX) {
+        indexes.push(IDX_G);
+      }
       for (let i=0;i<totalCols;i++) {
         if (i === HIDDEN_INDEX) continue;
+        if (i === IDX_G) continue; // already added
         indexes.push(i);
       }
       return indexes;
@@ -162,7 +159,12 @@
       if (headers.length) {
         visible.forEach(idx => {
           const th = document.createElement('th');
-          th.textContent = headers[idx] || '';
+          // If this is the date column ensure heading is friendly "Date"
+          if (idx === IDX_G) {
+            th.textContent = 'Date';
+          } else {
+            th.textContent = headers[idx] || '';
+          }
           tr.appendChild(th);
         });
       } else {
@@ -170,7 +172,7 @@
         visible.forEach(idx => {
           const th = document.createElement('th');
           const letter = String.fromCharCode(65 + (idx % 26));
-          th.textContent = 'Col ' + letter;
+          th.textContent = (idx === IDX_G) ? 'Date' : 'Col ' + letter;
           tr.appendChild(th);
         });
       }
@@ -179,9 +181,7 @@
 
     function applyFilters() {
       const cContainsVal = cContains.value.trim().toLowerCase();
-      const cExactVal = cExact.value.trim().toLowerCase();
       const dContainsVal = dContains.value.trim().toLowerCase();
-      const dExactVal = dExact.value.trim().toLowerCase();
       const from = fromDate.value ? new Date(fromDate.value) : null;
       const to = toDate.value ? new Date(toDate.value) : null;
       // If 'to' is provided, extend to end of day
@@ -190,10 +190,8 @@
       rowsFiltered = rows.filter(r => {
         const c = safeString(r[IDX_C]).toLowerCase();
         const d = safeString(r[IDX_D]).toLowerCase();
-        // C contains/exact logic: if exact provided then exact must match; otherwise if contains provided then must contain; if neither provided, pass
-        if (cExactVal && c !== cExactVal) return false;
+        // C contains logic
         if (cContainsVal && !c.includes(cContainsVal)) return false;
-        if (dExactVal && d !== dExactVal) return false;
         if (dContainsVal && !d.includes(dContainsVal)) return false;
 
         // Date filter on column G
@@ -219,11 +217,11 @@
         const tr = document.createElement('tr');
         visible.forEach(idx => {
           const td = document.createElement('td');
-          const v = row[idx];
+          let v = row[idx];
           if (idx === IDX_G) {
-            // show dates in ISO-like format if parseable or raw text otherwise
+            // show dates in dd-mm-yyyy format if parseable or raw text otherwise
             const dt = parseFlexibleDate(v);
-            td.textContent = dt ? dt.toISOString().split('T')[0] : safeString(v);
+            td.textContent = dt ? formatDateDDMMYYYY(dt) : safeString(v);
           } else {
             td.textContent = (v === null || v === undefined) ? '' : String(v);
           }
@@ -241,6 +239,13 @@
       return String(v).trim();
     }
 
+    function formatDateDDMMYYYY(d) {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth() + 1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+
     // Try to parse multiple date formats that appear in your JSON:
     // - ISO (Date.parse)
     // - "dd-mm-yyyy" or "dd-mm-yyyyThh:mm:ssZ" (some rows)
@@ -248,7 +253,7 @@
     function parseFlexibleDate(val) {
       if (val === null || val === undefined) return null;
       if (typeof val === 'number') {
-        // treat as Excel-ish serial? No: assume epoch ms (rare). Try to construct.
+        // treat as epoch ms (rare). Try to construct.
         const d = new Date(val);
         if (!isNaN(d)) return d;
       }
@@ -258,19 +263,23 @@
       const d1 = new Date(s);
       if (!isNaN(d1)) return d1;
       // Try dd-mm-yyyy or dd-mm-yyyy hh:mm:ss
-      // Common patterns in file: "25-08-2010", "28-01-2011", sometimes without time.
       const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
       if (m) {
         const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
-        // if time present, parse; otherwise create date midnight UTC/local
         if (m[4]) {
           const rest = m[4];
-          // try to parse rest with Date (append to ISO)
           const iso = `${yr.toString().padStart(4,'0')}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}T${rest}`;
           const d2 = new Date(iso);
           if (!isNaN(d2)) return d2;
         }
         const d = new Date(yr, mon, day);
+        if (!isNaN(d)) return d;
+      }
+      // mm/dd/yyyy fallback
+      const m2 = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      if (m2) {
+        const mth = Number(m2[1]) - 1, day = Number(m2[2]), yr = Number(m2[3]);
+        const d = new Date(yr, mth, day);
         if (!isNaN(d)) return d;
       }
       return null;
