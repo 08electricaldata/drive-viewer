@@ -11,7 +11,7 @@
     .controls { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
     .controls label { font-size:13px; }
     .controls input[type="text"], .controls input[type="date"] { padding:6px; font-size:13px; }
-    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; min-width:640px; }
     th, td { border:1px solid #ddd; padding:6px; text-align:left; vertical-align:top; }
     th { background:#f5f5f5; position:sticky; top:0; z-index:1; }
     tr:nth-child(even) td { background:#fafafa; }
@@ -33,22 +33,19 @@
   </header>
 
   <div class="controls" aria-label="filters">
-    <!-- Column C (Material) filters -->
-    <div>
-      <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." /></label>
-    </div>
+    <!-- Material Code contains removed per request -->
 
-    <!-- Column D (Material Description) filters -->
+    <!-- Column D (Material Description) filter -->
     <div>
       <label class="nowrap">Material Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
     </div>
 
-    <!-- Date filters for column G -->
+    <!-- Date filters for column 1 -->
     <div>
-      <label class="nowrap">From (G):<br><input id="fromDate" type="date" /></label>
+      <label class="nowrap">From (Date):<br><input id="fromDate" type="date" /></label>
     </div>
     <div>
-      <label class="nowrap">To (G):<br><input id="toDate" type="date" /></label>
+      <label class="nowrap">To (Date):<br><input id="toDate" type="date" /></label>
     </div>
 
     <div>
@@ -66,13 +63,14 @@
   </div>
 
   <script>
-    // URL to the raw JSON you provided
+    // URL to the raw JSON
     const DATA_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json';
 
-    // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
-    const IDX_C = 2, IDX_D = 3, IDX_G = 6;
-    // Index to hide (first column / Sub-number)
-    const HIDDEN_INDEX = 0;
+    // Column indexes (1-based columns from your instruction converted to 0-based indexes)
+    const IDX_DATE = 0;      // Column 1 -> index 0 (Date)
+    const IDX_MATERIAL = 2;  // Column 3 -> index 2 (Material)
+    const IDX_DESC = 3;      // Column 4 -> index 3 (Material Description)
+    const IDX_QTY = 6;       // Column 7 -> index 6 (Requirement Quantity)
 
     let headers = [];
     let rows = []; // raw rows array
@@ -80,19 +78,18 @@
 
     // Buttons behaviour
     document.getElementById('backBtn').addEventListener('click', () => { history.back(); });
-    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
+    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/index_mob.html', '_self'); });
     document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'); });
 
     // Inputs
-    const cContains = document.getElementById('cContains');
     const dContains = document.getElementById('dContains');
     const fromDate = document.getElementById('fromDate');
     const toDate = document.getElementById('toDate');
     const clearFilters = document.getElementById('clearFilters');
 
-    [cContains,dContains,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
+    [dContains, fromDate, toDate].forEach(el => el.addEventListener('input', applyFilters));
     clearFilters.addEventListener('click', () => {
-      cContains.value=''; dContains.value=''; fromDate.value=''; toDate.value='';
+      dContains.value=''; fromDate.value=''; toDate.value='';
       applyFilters();
     });
 
@@ -104,17 +101,13 @@
       .then(json => {
         headers = Array.isArray(json.headers) ? json.headers : [];
         rows = Array.isArray(json.rows) ? json.rows : [];
-        // Only keep rows where column C is non-blank (non-empty string and not null/undefined)
-        rows = rows.filter(r => {
-          const v = safeString(r[IDX_C]);
-          return v !== '';
-        });
-        buildTableHead(); // build head now that headers/rows exist
-        // Sort by column G (date) newest -> oldest
+        // Keep only rows where Material (column 3 / index 2) is non-blank
+        rows = rows.filter(r => safeString(r[IDX_MATERIAL]) !== '');
+        buildTableHead();
+        // Sort by date (column 1) newest -> oldest using IDX_DATE
         rows.sort((a,b) => {
-          const da = parseFlexibleDate(a[IDX_G]);
-          const db = parseFlexibleDate(b[IDX_G]);
-          // Put rows with valid dates first, by descending date.
+          const da = parseFlexibleDate(a[IDX_DATE]);
+          const db = parseFlexibleDate(b[IDX_DATE]);
           if (da && db) return db - da;
           if (da && !db) return -1;
           if (!da && db) return 1;
@@ -127,78 +120,45 @@
         console.error(err);
       });
 
-    // Compute visible column indexes with date column first (move IDX_G to front),
-    // then all other indexes in ascending order, skipping HIDDEN_INDEX and avoiding duplicates.
+    // Only show the selected columns in this order: Date, Material code, Desc., Quantity
     function getVisibleIndexes() {
-      // determine total number of columns, using headers if present else using longest row
-      let totalCols = 0;
-      if (headers.length) {
-        totalCols = headers.length;
-      } else {
-        totalCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
-      }
-      const indexes = [];
-      // Add date column first if within range and not hidden
-      if (IDX_G >= 0 && IDX_G < totalCols && IDX_G !== HIDDEN_INDEX) {
-        indexes.push(IDX_G);
-      }
-      for (let i=0;i<totalCols;i++) {
-        if (i === HIDDEN_INDEX) continue;
-        if (i === IDX_G) continue; // already added
-        indexes.push(i);
-      }
-      return indexes;
+      return [IDX_DATE, IDX_MATERIAL, IDX_DESC, IDX_QTY].filter(idx => {
+        // ensure the index exists in the dataset (guards against short rows)
+        // determine total columns available
+        const totalCols = headers.length ? headers.length : (rows.reduce((m,r)=>Math.max(m,r.length),0) || 0);
+        return (typeof idx === 'number' && idx >= 0 && idx < totalCols);
+      });
     }
 
     function buildTableHead() {
       const thead = document.getElementById('tableHead');
       thead.innerHTML = '';
       const tr = document.createElement('tr');
-      const visible = getVisibleIndexes();
-
-      if (headers.length) {
-        visible.forEach(idx => {
-          const th = document.createElement('th');
-          // If this is the date column ensure heading is friendly "Date"
-          if (idx === IDX_G) {
-            th.textContent = 'Date';
-          } else {
-            th.textContent = headers[idx] || '';
-          }
-          tr.appendChild(th);
-        });
-      } else {
-        // fallback labels using original column letters (A,B,C,...), skipping the hidden one
-        visible.forEach(idx => {
-          const th = document.createElement('th');
-          const letter = String.fromCharCode(65 + (idx % 26));
-          th.textContent = (idx === IDX_G) ? 'Date' : 'Col ' + letter;
-          tr.appendChild(th);
-        });
-      }
+      // Use fixed friendly headings
+      const headings = ['Date', 'Material code', 'Desc.', 'Quantity'];
+      headings.forEach(h => {
+        const th = document.createElement('th');
+        th.textContent = h;
+        tr.appendChild(th);
+      });
       thead.appendChild(tr);
     }
 
     function applyFilters() {
-      const cContainsVal = cContains.value.trim().toLowerCase();
       const dContainsVal = dContains.value.trim().toLowerCase();
       const from = fromDate.value ? new Date(fromDate.value) : null;
       const to = toDate.value ? new Date(toDate.value) : null;
-      // If 'to' is provided, extend to end of day
       if (to) to.setHours(23,59,59,999);
 
       rowsFiltered = rows.filter(r => {
-        const c = safeString(r[IDX_C]).toLowerCase();
-        const d = safeString(r[IDX_D]).toLowerCase();
-        // C contains logic
-        if (cContainsVal && !c.includes(cContainsVal)) return false;
+        const d = safeString(r[IDX_DESC]).toLowerCase();
         if (dContainsVal && !d.includes(dContainsVal)) return false;
 
-        // Date filter on column G
-        const cell = r[IDX_G];
+        // Date filter on column IDX_DATE
+        const cell = r[IDX_DATE];
         const dt = parseFlexibleDate(cell);
         if (from || to) {
-          if (!dt) return false; // when filtering by date range, ignore rows with no valid date
+          if (!dt) return false; // ignore rows with no valid date when date range is applied
           if (from && dt < from) return false;
           if (to && dt > to) return false;
         }
@@ -217,9 +177,8 @@
         const tr = document.createElement('tr');
         visible.forEach(idx => {
           const td = document.createElement('td');
-          let v = row[idx];
-          if (idx === IDX_G) {
-            // show dates in dd-mm-yyyy format if parseable or raw text otherwise
+          const v = row[idx];
+          if (idx === IDX_DATE) {
             const dt = parseFlexibleDate(v);
             td.textContent = dt ? formatDateDDMMYYYY(dt) : safeString(v);
           } else {
@@ -230,7 +189,7 @@
         tbody.appendChild(tr);
       });
 
-      document.getElementById('countText').textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows (column C non-blank enforced)`;
+      document.getElementById('countText').textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows (Material non-blank enforced)`;
     }
 
     // Helpers
@@ -246,23 +205,20 @@
       return `${dd}-${mm}-${yyyy}`;
     }
 
-    // Try to parse multiple date formats that appear in your JSON:
-    // - ISO (Date.parse)
-    // - "dd-mm-yyyy" or "dd-mm-yyyyThh:mm:ssZ" (some rows)
-    // Return a Date object or null if unparseable
+    // Parse multiple date formats; returns Date or null
     function parseFlexibleDate(val) {
       if (val === null || val === undefined) return null;
+      if (val instanceof Date && !isNaN(val)) return val;
       if (typeof val === 'number') {
-        // treat as epoch ms (rare). Try to construct.
         const d = new Date(val);
         if (!isNaN(d)) return d;
       }
       const s = String(val).trim();
       if (!s) return null;
-      // Try native parser
+      // native parser
       const d1 = new Date(s);
       if (!isNaN(d1)) return d1;
-      // Try dd-mm-yyyy or dd-mm-yyyy hh:mm:ss
+      // dd-mm-yyyy or dd/mm/yyyy with optional time
       const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
       if (m) {
         const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
