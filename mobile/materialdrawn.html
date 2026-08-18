@@ -40,7 +40,7 @@
       <label class="nowrap">Material Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
     </div>
 
-    <!-- Date filters for column 1 -->
+    <!-- Date filters for column G -->
     <div>
       <label class="nowrap">From (Date):<br><input id="fromDate" type="date" /></label>
     </div>
@@ -66,11 +66,15 @@
     // URL to the raw JSON
     const DATA_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json';
 
-    // Column indexes (1-based columns from your instruction converted to 0-based indexes)
-    const IDX_DATE = 0;      // Column 1 -> index 0 (Date)
-    const IDX_MATERIAL = 2;  // Column 3 -> index 2 (Material)
-    const IDX_DESC = 3;      // Column 4 -> index 3 (Material Description)
-    const IDX_QTY = 6;       // Column 7 -> index 6 (Requirement Quantity)
+    // Source column indexes (0-based):
+    // column G -> index 6 (Date)
+    // column 3 -> index 2 (Material code)
+    // column 4 -> index 3 (Material description)
+    // column H -> index 7 (Quantity)
+    const IDX_G = 6;         // Date source (column G)
+    const IDX_MATERIAL = 2;  // Material code (column 3)
+    const IDX_DESC = 3;      // Material description (column 4)
+    const IDX_QTY = 7;       // Quantity (column H)
 
     let headers = [];
     let rows = []; // raw rows array
@@ -101,13 +105,13 @@
       .then(json => {
         headers = Array.isArray(json.headers) ? json.headers : [];
         rows = Array.isArray(json.rows) ? json.rows : [];
-        // Keep only rows where Material (column 3 / index 2) is non-blank
+        // Keep only rows where Material (index 2) is non-blank
         rows = rows.filter(r => safeString(r[IDX_MATERIAL]) !== '');
         buildTableHead();
-        // Sort by date (column 1) newest -> oldest using IDX_DATE
+        // Sort by date (column G) newest -> oldest using IDX_G
         rows.sort((a,b) => {
-          const da = parseFlexibleDate(a[IDX_DATE]);
-          const db = parseFlexibleDate(b[IDX_DATE]);
+          const da = parseFlexibleDate(a[IDX_G]);
+          const db = parseFlexibleDate(b[IDX_G]);
           if (da && db) return db - da;
           if (da && !db) return -1;
           if (!da && db) return 1;
@@ -120,21 +124,18 @@
         console.error(err);
       });
 
-    // Only show the selected columns in this order: Date, Material code, Desc., Quantity
+    // Only show these selected columns in this order: Date (G), Material (3), Desc. (4), Quantity (H)
     function getVisibleIndexes() {
-      return [IDX_DATE, IDX_MATERIAL, IDX_DESC, IDX_QTY].filter(idx => {
-        // ensure the index exists in the dataset (guards against short rows)
-        // determine total columns available
-        const totalCols = headers.length ? headers.length : (rows.reduce((m,r)=>Math.max(m,r.length),0) || 0);
-        return (typeof idx === 'number' && idx >= 0 && idx < totalCols);
-      });
+      const totalCols = headers.length ? headers.length : (rows.reduce((m,r)=>Math.max(m,r.length),0) || 0);
+      const desired = [IDX_G, IDX_MATERIAL, IDX_DESC, IDX_QTY];
+      return desired.filter(idx => (typeof idx === 'number' && idx >= 0 && idx < totalCols));
     }
 
     function buildTableHead() {
       const thead = document.getElementById('tableHead');
       thead.innerHTML = '';
       const tr = document.createElement('tr');
-      // Use fixed friendly headings
+      // Fixed friendly headings
       const headings = ['Date', 'Material code', 'Desc.', 'Quantity'];
       headings.forEach(h => {
         const th = document.createElement('th');
@@ -154,8 +155,8 @@
         const d = safeString(r[IDX_DESC]).toLowerCase();
         if (dContainsVal && !d.includes(dContainsVal)) return false;
 
-        // Date filter on column IDX_DATE
-        const cell = r[IDX_DATE];
+        // Date filter on column G (IDX_G)
+        const cell = r[IDX_G];
         const dt = parseFlexibleDate(cell);
         if (from || to) {
           if (!dt) return false; // ignore rows with no valid date when date range is applied
@@ -163,6 +164,16 @@
           if (to && dt > to) return false;
         }
         return true;
+      });
+
+      // Sort the filtered results by date descending (recent -> older)
+      rowsFiltered.sort((a,b) => {
+        const da = parseFlexibleDate(a[IDX_G]);
+        const db = parseFlexibleDate(b[IDX_G]);
+        if (da && db) return db - da;
+        if (da && !db) return -1;
+        if (!da && db) return 1;
+        return 0;
       });
 
       renderTableBody();
@@ -178,7 +189,7 @@
         visible.forEach(idx => {
           const td = document.createElement('td');
           const v = row[idx];
-          if (idx === IDX_DATE) {
+          if (idx === IDX_G) {
             const dt = parseFlexibleDate(v);
             td.textContent = dt ? formatDateDDMMYYYY(dt) : safeString(v);
           } else {
