@@ -108,9 +108,9 @@
     const toDate = document.getElementById('toDate');
     const clearFilters = document.getElementById('clearFilters');
 
-    document.getElementById('backBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
-    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
-    document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'); });
+    document.getElementById('backBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/index_mob.html', '_self'); });
+    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/index_mob.html', '_self'); });
+    document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/mobile/info.html', '_blank'); });
 
     [cContains,cExact,dContains,dExact,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
     clearFilters.addEventListener('click', () => {
