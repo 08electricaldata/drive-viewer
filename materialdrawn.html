@@ -77,6 +77,8 @@
 
     // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
     const IDX_C = 2, IDX_D = 3, IDX_G = 6;
+    // Index to hide (first column / Sub-number)
+    const HIDDEN_INDEX = 0;
 
     let headers = [];
     let rows = []; // raw rows array
@@ -102,7 +104,6 @@
       applyFilters();
     });
 
-    
     fetch(DATA_URL)
       .then(r => {
         if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
@@ -111,12 +112,12 @@
       .then(json => {
         headers = Array.isArray(json.headers) ? json.headers : [];
         rows = Array.isArray(json.rows) ? json.rows : [];
-        buildTableHead();
         // Only keep rows where column C is non-blank (non-empty string and not null/undefined)
         rows = rows.filter(r => {
           const v = safeString(r[IDX_C]);
           return v !== '';
         });
+        buildTableHead(); // build head now that headers/rows exist
         // Sort by column G (date) newest -> oldest
         rows.sort((a,b) => {
           const da = parseFlexibleDate(a[IDX_G]);
@@ -134,25 +135,44 @@
         console.error(err);
       });
 
+    // Compute visible column indexes (all original indexes except the hidden one)
+    function getVisibleIndexes() {
+      // determine total number of columns, using headers if present else using longest row
+      let totalCols = 0;
+      if (headers.length) {
+        totalCols = headers.length;
+      } else {
+        totalCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
+      }
+      // build indexes [0..totalCols-1] then filter out HIDDEN_INDEX
+      const indexes = [];
+      for (let i=0;i<totalCols;i++) {
+        if (i === HIDDEN_INDEX) continue;
+        indexes.push(i);
+      }
+      return indexes;
+    }
+
     function buildTableHead() {
       const thead = document.getElementById('tableHead');
       thead.innerHTML = '';
       const tr = document.createElement('tr');
-      // If headers exist, use them; otherwise fall back to column indexes up to longest row
+      const visible = getVisibleIndexes();
+
       if (headers.length) {
-        headers.forEach(h => {
+        visible.forEach(idx => {
           const th = document.createElement('th');
-          th.textContent = h || '';
+          th.textContent = headers[idx] || '';
           tr.appendChild(th);
         });
       } else {
-        // determine max columns
-        const maxCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
-        for (let i=0;i<maxCols;i++){
-          const th=document.createElement('th');
-          th.textContent = 'Col ' + String.fromCharCode(65 + (i%26));
+        // fallback labels using original column letters (A,B,C,...), skipping the hidden one
+        visible.forEach(idx => {
+          const th = document.createElement('th');
+          const letter = String.fromCharCode(65 + (idx % 26));
+          th.textContent = 'Col ' + letter;
           tr.appendChild(th);
-        }
+        });
       }
       thead.appendChild(tr);
     }
@@ -193,15 +213,14 @@
     function renderTableBody() {
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = '';
-      // Use headers length to determine columns to show, else use longest row
-      const colCount = headers.length || (rowsFiltered.reduce((m,r)=>Math.max(m,r.length),0) || 0);
+      const visible = getVisibleIndexes();
 
       rowsFiltered.forEach(row => {
         const tr = document.createElement('tr');
-        for (let i=0;i<colCount;i++) {
+        visible.forEach(idx => {
           const td = document.createElement('td');
-          let v = row[i];
-          if (i === IDX_G) {
+          const v = row[idx];
+          if (idx === IDX_G) {
             // show dates in ISO-like format if parseable or raw text otherwise
             const dt = parseFlexibleDate(v);
             td.textContent = dt ? dt.toISOString().split('T')[0] : safeString(v);
@@ -209,7 +228,7 @@
             td.textContent = (v === null || v === undefined) ? '' : String(v);
           }
           tr.appendChild(td);
-        }
+        });
         tbody.appendChild(tr);
       });
 
