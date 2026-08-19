@@ -348,6 +348,7 @@
     }
 
     // Open modal showing transactions for a specific material code
+    // Modified: popup shows ONLY two columns — Requirements date (col G index 6) and Requirement Quantity (col H index 7)
     function openTransactionsModal(materialCode) {
       const rows = drawnIndexByCode.get(materialCode) || [];
       const backdrop = document.createElement('div');
@@ -361,7 +362,12 @@
       modal.setAttribute('aria-label','Transactions for ' + materialCode);
 
       const header = document.createElement('header');
-      const h2 = document.createElement('h2'); h2.textContent = 'Transactions — ' + materialCode;
+
+      // Use first matched row to show MaterialCode and Material Description in header if available
+      const firstRow = (rows && rows.length) ? rows[0] : null;
+      const materialDesc = firstRow ? toStr(firstRow[3]) : '';
+      const h2 = document.createElement('h2');
+      h2.textContent = `MaterialCode: ${materialCode}` + (materialDesc ? ` \u00A0 — \u00A0 Desc.: ${materialDesc}` : '');
       const meta = document.createElement('div'); meta.className = 'meta small';
       meta.textContent = 'Sorted: present → past (column G)';
       const closeBtn = document.createElement('button'); closeBtn.className = 'close'; closeBtn.textContent = 'Close';
@@ -383,30 +389,26 @@
         summary.textContent = `Showing ${rows.length} transactions — latest: ${firstDate} → earliest: ${lastDate}`;
         bodyDiv.appendChild(summary);
 
+        // Build a compact two-column table: Requirements date (G) and Requirement Quantity (H)
         const txTable = document.createElement('table');
         txTable.className = 'tx-table';
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
-
-        const colCount = (Array.isArray(drawnHeaders) && drawnHeaders.length) ? drawnHeaders.length : rows.reduce((m,r)=>Math.max(m,r.length), 0);
-
-        for (let i=0;i<colCount;i++) {
-          const th = document.createElement('th');
-          th.textContent = (drawnHeaders[i] && drawnHeaders[i].trim()) ? drawnHeaders[i] : `Col ${i}`;
-          trHead.appendChild(th);
-        }
+        const thDate = document.createElement('th'); thDate.textContent = 'Requirements date';
+        const thQty = document.createElement('th'); thQty.textContent = 'Requirement Quantity';
+        trHead.appendChild(thDate); trHead.appendChild(thQty);
         thead.appendChild(trHead);
         txTable.appendChild(thead);
 
         const tbody = document.createElement('tbody');
         rows.forEach(r => {
           const tr = document.createElement('tr');
-          for (let i=0;i<colCount;i++) {
-            const td = document.createElement('td');
-            if (i === 6) td.textContent = formatDateCell(r[i]);
-            else td.textContent = toStr(r[i]);
-            tr.appendChild(td);
-          }
+          const tdDate = document.createElement('td');
+          tdDate.textContent = formatDateCell(r[6]); // column G
+          const tdQty = document.createElement('td');
+          tdQty.textContent = toStr(r[7]); // column H
+          tr.appendChild(tdDate);
+          tr.appendChild(tdQty);
           tbody.appendChild(tr);
         });
         txTable.appendChild(tbody);
@@ -420,7 +422,7 @@
       closeBtn.focus();
 
       function closeModal() {
-        document.body.removeChild(backdrop);
+        if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
         document.removeEventListener('keydown', onKey);
       }
       function onKey(e) {
