@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Material Codes — Mobile View</title>
+  <style>
+    :root{
+      --bg:#f6fbff;
+      --card:#fff;
+      --accent:#0d47a1;
+      --muted:#64748b;
+      --radius:12px;
+      --gap:12px;
+    }
+    /* Mobile-first layout */
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#eef7ff,var(--bg));
+      color:#062238;
+      -webkit-font-smoothing:antialiased;
+      padding:14px;
+    }
+
+    .topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .topbar .left{display:flex;gap:8px;align-items:center}
+    button.icon{
+      background:var(--card);border:0;padding:10px;border-radius:10px;min-width:44px;height:44px;
+      box-shadow:0 6px 18px rgba(3,63,136,.08);cursor:pointer;font-weight:700;color:var(--accent);
+      display:inline-flex;align-items:center;justify-content:center;
+    }
+    .title{flex:1;text-align:center;font-weight:800;font-size:15px;color:var(--accent)}
+    .card{background:var(--card);border-radius:var(--radius);padding:12px;box-shadow:0 10px 30px rgba(3,63,136,.04);margin-bottom:12px}
+
+    .controls{display:flex;gap:8px;flex-direction:column}
+    .row{display:flex;gap:8px;align-items:center}
+    select, input[type="search"]{
+      width:100%;padding:10px;border-radius:10px;border:1px solid #e6eefb;font-size:14px;
+      background:#fff;color:#062238;
+    }
+
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    thead th{padding:10px 8px;text-align:left;font-weight:700;font-size:13px;color:var(--accent);border-bottom:1px solid #eef4ff}
+    tbody td{padding:10px 8px;border-top:1px solid #fbfdff;font-size:14px;color:#082635}
+    .empty{padding:18px;color:var(--muted);text-align:center}
+    .clickable { color: #0d47a1; text-decoration: underline; cursor: pointer; }
+
+    .note{font-size:12px;color:var(--muted);margin-top:8px}
+
+    /* Modal styles */
+    .modal-backdrop {
+      position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;
+      z-index:9999;padding:16px;
+    }
+    .modal {
+      width:100%;max-width:720px;background:#fff;border-radius:12px;padding:12px;box-shadow:0 20px 60px rgba(2,6,23,0.4);
+      max-height:90vh;overflow:auto;
+    }
+    .modal h2{margin:0 0 8px 0;font-size:16px;color:#073169}
+    .modal .close {
+      position:absolute;right:18px;top:14px;background:#fff;border:0;border-radius:8px;padding:6px 8px;cursor:pointer;
+      box-shadow:0 6px 18px rgba(3,63,136,.08);
+    }
+    .modal table{width:100%;margin-top:8px;border-collapse:collapse}
+    .modal thead th{background:#f6f9ff;padding:8px;border-bottom:1px solid #eef4ff;font-weight:700}
+    .modal tbody td{padding:8px;border-top:1px solid #f7fbff}
+
+    @media(min-width:720px){
+      body{padding:24px}
+      .controls{flex-direction:row}
+      select, input[type="search"]{min-width:240px}
+      .title{font-size:17px}
+      .card{padding:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar" role="navigation" aria-label="Top actions">
+    <div class="left">
+      <button id="backBtn" class="icon" aria-label="Back">⬅</button>
+    </div>
+    <div class="title">Material Codes</div>
+    <div style="display:flex;gap:8px;">
+      <button id="homeBtn" class="icon" aria-label="Home">🏠</button>
+      <button id="infoBtn" class="icon" aria-label="Information">ℹ️</button>
+    </div>
+  </div>
+
+  <main>
+    <section class="card" aria-labelledby="controls-title">
+      <div id="controls-title" style="font-weight:800;color:var(--accent);margin-bottom:8px">Filter & Search</div>
+
+      <div class="controls" role="region" aria-label="Filters">
+        <div style="flex:1;">
+          <label for="typeSelect" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted)">Type (column D)</label>
+          <select id="typeSelect" aria-label="Select material type">
+            <option>Loading…</option>
+          </select>
+        </div>
+
+        <div style="flex:1;">
+          <label for="searchBox" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted)">Search</label>
+          <input id="searchBox" type="search" placeholder="Filter Material desc. or code" aria-label="Search" />
+        </div>
+      </div>
+
+    </section>
+
+    <section class="card" aria-labelledby="table-title">
+      <div id="table-title" style="font-weight:800;color:var(--accent);margin-bottom:8px">Results</div>
+
+      <div style="overflow:auto">
+        <table id="resultsTable" aria-live="polite">
+          <thead>
+            <tr>
+              <th>Material desc.</th>
+              <th>Material code</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="empty" colspan="2">Loading data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer style="text-align:center;font-size:12px;color:#65788a;margin-top:8px">© 08 Electrical Data</footer>
+
+  <script>
+    // Data & navigation URLs
+    const DATA_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json';
+    const HOME_URL = 'https://08electricaldata.github.io/index_mob.html';
+    const INFO_URL = 'https://08electricaldata.github.io/drive-viewer/mobile/info.html';
+
+    // DOM
+    const typeSelect = document.getElementById('typeSelect');
+    const searchBox = document.getElementById('searchBox');
+    const resultsTbody = document.querySelector('#resultsTable tbody');
+    const backBtn = document.getElementById('backBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const infoBtn = document.getElementById('infoBtn');
+
+    // State
+    let allRows = [];       // after skipping first two rows (kept as original logic)
+    let displayedRows = []; // after type filter
+
+    const toStr = v => (v === null || v === undefined) ? '' : String(v);
+
+    // Helpers for dates (used in popup)
+    function parseFlexibleDate(val) {
+      if (val === null || val === undefined) return null;
+      if (val instanceof Date && !isNaN(val)) return val;
+      if (typeof val === 'number') {
+        const d = new Date(val);
+        if (!isNaN(d)) return d;
+      }
+      const s = String(val).trim();
+      if (!s) return null;
+      const d1 = new Date(s);
+      if (!isNaN(d1)) return d1;
+      const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
+      if (m) {
+        const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
+        if (m[4]) {
+          const rest = m[4];
+          const iso = `${yr.toString().padStart(4,'0')}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}T${rest}`;
+          const d2 = new Date(iso);
+          if (!isNaN(d2)) return d2;
+        }
+        const d = new Date(yr, mon, day);
+        if (!isNaN(d)) return d;
+      }
+      const m2 = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      if (m2) {
+        const mth = Number(m2[1]) - 1, day = Number(m2[2]), yr = Number(m2[3]);
+        const d = new Date(yr, mth, day);
+        if (!isNaN(d)) return d;
+      }
+      return null;
+    }
+    function formatDateDDMMYYYY(d) {
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth() + 1).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+
+    // Fetch and init
+    fetch(DATA_URL)
+      .then(r => { if (!r.ok) throw new Error('Fetch failed ' + r.status); return r.json(); })
+      .then(data => {
+        if (!data || !Array.isArray(data.rows)) throw new Error('Invalid JSON structure');
+        // preserve the original behavior: ignore first two rows, use from index 2 onward
+        allRows = data.rows.slice(2).filter(r => Array.isArray(r));
+        if (allRows.length === 0){
+          renderEmpty('No data available after skipping the first two rows.');
+          typeSelect.innerHTML = '<option value="">No types</option>';
+          return;
+        }
+
+        // build unique types from column D (index 3)
+        const types = Array.from(new Set(allRows.map(r => toStr(r[3]).trim()).filter(Boolean)))
+                           .sort((a,b)=> a.localeCompare(b, undefined, {sensitivity:'base'}));
+
+        // populate dropdown (include "All types")
+        typeSelect.innerHTML = '';
+        const allOpt = document.createElement('option');
+        allOpt.value = '__ALL__'; allOpt.textContent = 'All types';
+        typeSelect.appendChild(allOpt);
+        types.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t; opt.textContent = t;
+          typeSelect.appendChild(opt);
+        });
+
+        typeSelect.value = '__ALL__';
+        applyTypeFilter();
+      })
+      .catch(err => {
+        console.error(err);
+        renderEmpty('Error loading data: ' + (err.message || err));
+        typeSelect.innerHTML = '<option value="">Error</option>';
+      });
+
+    // Filters & render (search over desc & code)
+    function applyTypeFilter(){
+      const sel = typeSelect.value;
+      if (!sel || sel === '__ALL__') displayedRows = allRows.slice();
+      else displayedRows = allRows.filter(r => toStr(r[3]).trim() === sel);
+      applySearch();
+    }
+
+    function applySearch(){
+      const q = toStr(searchBox.value).trim().toLowerCase();
+      const filtered = q ? displayedRows.filter(r => {
+        // Note: keep same columns as before: description at r[1], code at r[2]
+        const desc = toStr(r[1]).toLowerCase();
+        const code = toStr(r[2]).toLowerCase();
+        return desc.includes(q) || code.includes(q);
+      }) : displayedRows;
+      renderTable(filtered);
+    }
+
+    function renderTable(rows){
+      resultsTbody.innerHTML = '';
+      if (!rows || rows.length === 0){
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td class="empty" colspan="2">No matching rows.</td>';
+        resultsTbody.appendChild(tr);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = toStr(r[1]);
+        const td2 = document.createElement('td');
+        td2.textContent = toStr(r[2]);
+        td2.classList.add('clickable');
+        td2.setAttribute('role','button');
+        td2.setAttribute('tabindex','0');
+        // on click or Enter key open popup with matches by column C (index 2)
+        const codeVal = toStr(r[2]);
+        td2.addEventListener('click', () => openMaterialPopup(codeVal));
+        td2.addEventListener('keydown', (e) => { if (e.key === 'Enter') openMaterialPopup(codeVal); });
+        tr.appendChild(td1); tr.appendChild(td2);
+        frag.appendChild(tr);
+      });
+      resultsTbody.appendChild(frag);
+    }
+
+    function renderEmpty(msg){
+      resultsTbody.innerHTML = '<tr><td class="empty" colspan="2">'+msg+'</td></tr>';
+    }
+
+    // --- Popup logic ---
+    function openMaterialPopup(materialCode) {
+      if (!materialCode) return;
+      // Find all rows in allRows where column C (index 2) matches materialCode (exact match)
+      const matches = allRows.filter(r => toStr(r[2]) === materialCode);
+      if (!matches || matches.length === 0) {
+        alert('No matching rows found for ' + materialCode);
+        return;
+      }
+
+      // Header info from first matched row: MaterialCode (col C -> index 2) & Material Description (col D -> index 3)
+      const first = matches[0];
+      const headerText = `MaterialCode :- ${toStr(first[2])} \u00A0 & \u00A0 Material Description :- ${toStr(first[3])}`;
+
+      // prepare sorted rows by date (column G -> index 6) descending
+      const sorted = matches.slice().sort((a,b) => {
+        const da = parseFlexibleDate(a[6]);
+        const db = parseFlexibleDate(b[6]);
+        if (da && db) return db - da;
+        if (da && !db) return -1;
+        if (!da && db) return 1;
+        return 0;
+      });
+
+      // build modal DOM
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      backdrop.tabIndex = -1;
+
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.setAttribute('role','dialog');
+      modal.setAttribute('aria-modal','true');
+      modal.setAttribute('aria-label','Material details');
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'close';
+      closeBtn.innerHTML = '✕';
+      closeBtn.title = 'Close';
+      closeBtn.addEventListener('click', () => closeModal(backdrop));
+      closeBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter') closeModal(backdrop); });
+
+      const h2 = document.createElement('h2');
+      h2.textContent = headerText;
+
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      thead.innerHTML = '<tr><th>Date</th><th>Quantity</th></tr>';
+      const tbody = document.createElement('tbody');
+
+      // populate rows: Date from column G (index 6) formatted dd-mm-yyyy, Quantity from column H (index 7)
+      sorted.forEach(r => {
+        const tr = document.createElement('tr');
+        const tdDate = document.createElement('td');
+        const dt = parseFlexibleDate(r[6]);
+        tdDate.textContent = dt ? formatDateDDMMYYYY(dt) : toStr(r[6]);
+        const tdQty = document.createElement('td');
+        tdQty.textContent = toStr(r[7]);
+        tr.appendChild(tdDate);
+        tr.appendChild(tdQty);
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+
+      // assemble modal
+      modal.appendChild(closeBtn);
+      modal.appendChild(h2);
+      modal.appendChild(table);
+      backdrop.appendChild(modal);
+      document.body.appendChild(backdrop);
+
+      // close when clicking backdrop outside modal
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal(backdrop);
+      });
+
+      // focus management
+      closeBtn.focus();
+    }
+
+    function closeModal(backdrop) {
+      if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }
+
+    // Events
+    typeSelect.addEventListener('change', applyTypeFilter);
+    searchBox.addEventListener('input', applySearch);
+
+    backBtn.addEventListener('click', () => {
+      if (window.history && window.history.length > 1) window.history.back();
+      else window.location.href = HOME_URL;
+    });
+    homeBtn.addEventListener('click', () => { window.location.href = HOME_URL; });
+    infoBtn.addEventListener('click', () => { window.location.href = INFO_URL; });
+
+    // accessibility: allow Enter to focus first result
+    searchBox.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const first = resultsTbody.querySelector('tr td');
+        if (first) first.focus();
+      }
+    });
+  </script>
+</body>
+</html>
