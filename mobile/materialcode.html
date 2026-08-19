@@ -163,6 +163,7 @@
     const MATERIAL_CODE_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialcode.json';
     const MATERIAL_DRAWN_URL = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json';
     const HOME_URL = 'https://08electricaldata.github.io/index_mob.html';
+    const INFO_URL = 'https://08electricaldata.github.io/drive-viewer/mobile/info.html';
 
     // DOM refs
     const typeSelect = document.getElementById('typeSelect');
@@ -439,6 +440,7 @@
       else window.location.href = HOME_URL;
     });
     homeBtn.addEventListener('click', () => { window.location.href = HOME_URL; });
+    infoBtn.addEventListener('click', () => { window.location.href = INFO_URL; });
 
   </script>
 </body>
