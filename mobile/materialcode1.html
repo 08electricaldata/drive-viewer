@@ -25,7 +25,6 @@
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
       padding:14px;
-      -webkit-font-smoothing:antialiased;
     }
 
     /* App header */
@@ -55,7 +54,6 @@
     }
 
     .controls{display:flex;flex-direction:column;gap:10px}
-    .controls-row{display:flex;gap:8px;align-items:center}
     label{font-size:13px;color:var(--muted);font-weight:700}
     select, input[type="search"]{
       width:100%;padding:12px;border-radius:10px;border:1px solid #e5f0ff;background:#fff;font-size:14px;
@@ -64,7 +62,7 @@
 
     /* Table (mobile-friendly) */
     .table-wrap{overflow:auto;margin-top:12px; -webkit-overflow-scrolling:touch;}
-    table{width:100%;border-collapse:collapse;min-width:600px;background:var(--card);box-shadow:0 0 0 1px #edf5ff;border-radius:8px}
+    table{width:100%;border-collapse:collapse;min-width:420px;background:var(--card);box-shadow:0 0 0 1px #edf5ff;border-radius:8px}
     thead th{position:sticky;top:0;background:#f4f9ff;padding:10px 12px;text-align:left;font-weight:700;color:var(--accent);border-bottom:1px solid #e9f2ff}
     tbody td{padding:12px;border-top:1px solid #f7fbff;font-size:14px;color:#082635;vertical-align:top}
     tbody tr:nth-child(even) td{background:#fcfeff}
@@ -74,9 +72,9 @@
 
     .note{font-size:12px;color:var(--muted);margin-top:6px}
 
-    /* Modal responsive */
-    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
-    .modal{width:100%;max-width:960px;max-height:92vh;overflow:auto;background:#fff;border-radius:12px;padding:14px;box-shadow:0 20px 60px rgba(2,40,80,0.3)}
+    /* Modal responsive: made narrower for mobile */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:12px}
+    .modal{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:#fff;border-radius:12px;padding:12px;box-shadow:0 20px 60px rgba(2,40,80,0.3)}
     .modal header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
     .modal h2{margin:0;font-size:16px;color:#073169}
     .modal .meta{margin-left:auto;color:#556;font-size:13px}
@@ -93,6 +91,7 @@
       select,input[type="search"]{padding:12px;font-size:15px}
       thead th{font-size:13px;padding:10px}
       tbody td{padding:12px;font-size:15px}
+      .modal{padding:10px;max-width:100%}
     }
 
     /* Desktop tweaks (keeps mobile styling but improves spacing) */
@@ -146,13 +145,12 @@
         <table id="resultsTable" aria-live="polite">
           <thead>
             <tr>
-              <th style="min-width:40%">Material desc.</th>
-              <th style="width:28%">Material code</th>
-              <th style="width:28%">Type of material</th>
+              <th style="min-width:60%">Material desc.</th>
+              <th style="width:40%">Material code</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td class="empty" colspan="3">Loading data…</td></tr>
+            <tr><td class="empty" colspan="2">Loading data…</td></tr>
           </tbody>
         </table>
       </div>
@@ -227,12 +225,12 @@
     ]).then(([codeJson, drawnJson]) => {
       // materialcode.json processing
       if (!codeJson || !Array.isArray(codeJson.rows)) throw new Error('materialcode.json invalid');
-      allRows = codeJson.rows.slice(2).filter(r => Array.isArray(r) && r.length >= 4);
+      allRows = codeJson.rows.slice(2).filter(r => Array.isArray(r) && r.length >= 3);
       if (allRows.length === 0) {
         renderEmpty('No data found after skipping the first two rows.');
         typeSelect.innerHTML = '<option value="">No types</option>';
       } else {
-        // Build unique types from column D (index 3)
+        // Build unique types from column D (index 3) if present
         const typesSet = new Set();
         allRows.forEach(r => {
           const val = toStr(r[3]).trim();
@@ -300,18 +298,18 @@
     function applySearchFilter() {
       const q = toStr(searchBox.value).trim().toLowerCase();
       const filtered = q ? displayedRows.filter(r => {
-        // columns B (index1), C (index2), D (index3)
+        // columns B (index1) and C (index2) and D (index3 if exists)
         return [1,2,3].some(i => toStr(r[i]).toLowerCase().includes(q));
       }) : displayedRows;
       renderTable(filtered);
     }
 
-    // Render table rows
+    // Render table rows (now only 2 columns: desc and code)
     function renderTable(rows) {
       resultsTbody.innerHTML = '';
       if (!rows || rows.length === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td class="empty" colspan="3">No matching rows.</td>';
+        tr.innerHTML = '<td class="empty" colspan="2">No matching rows.</td>';
         resultsTbody.appendChild(tr);
         return;
       }
@@ -321,7 +319,6 @@
         const tr = document.createElement('tr');
         const desc = toStr(r[1]);
         const code = toStr(r[2]);
-        const type = toStr(r[3]);
 
         const td1 = document.createElement('td'); td1.textContent = desc;
         const td2 = document.createElement('td');
@@ -334,9 +331,7 @@
         td2.addEventListener('click', () => openTransactionsModal(code));
         td2.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTransactionsModal(code); } });
 
-        const td3 = document.createElement('td'); td3.textContent = type;
-
-        tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+        tr.appendChild(td1); tr.appendChild(td2);
         frag.appendChild(tr);
       });
       resultsTbody.appendChild(frag);
@@ -344,11 +339,11 @@
 
     // Render a single-row empty message
     function renderEmpty(msg) {
-      resultsTbody.innerHTML = '<tr><td class="empty" colspan="3">' + msg + '</td></tr>';
+      resultsTbody.innerHTML = '<tr><td class="empty" colspan="2">' + msg + '</td></tr>';
     }
 
     // Open modal showing transactions for a specific material code
-    // Modified: popup shows ONLY two columns — Requirements date (col G index 6) and Requirement Quantity (col H index 7)
+    // Modified: popup shows ONLY two columns — Date (col G index 6) and Qty. (col H index 7)
     function openTransactionsModal(materialCode) {
       const rows = drawnIndexByCode.get(materialCode) || [];
       const backdrop = document.createElement('div');
@@ -389,13 +384,13 @@
         summary.textContent = `Showing ${rows.length} transactions — latest: ${firstDate} → earliest: ${lastDate}`;
         bodyDiv.appendChild(summary);
 
-        // Build a compact two-column table: Requirements date (G) and Requirement Quantity (H)
+        // Build a compact two-column table: Date (G) and Qty. (H)
         const txTable = document.createElement('table');
         txTable.className = 'tx-table';
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
-        const thDate = document.createElement('th'); thDate.textContent = 'Requirements date';
-        const thQty = document.createElement('th'); thQty.textContent = 'Requirement Quantity';
+        const thDate = document.createElement('th'); thDate.textContent = 'Date';
+        const thQty = document.createElement('th'); thQty.textContent = 'Qty.';
         trHead.appendChild(thDate); trHead.appendChild(thQty);
         thead.appendChild(trHead);
         txTable.appendChild(thead);
