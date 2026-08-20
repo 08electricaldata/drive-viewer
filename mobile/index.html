@@ -275,6 +275,10 @@ const HISTORY_BASE =
 let drawingAvailableMap = {};
 let plcAvailableMap = {};
 
+// SLD maps
+let sldBoardMap = {}; // normalized breakerId -> boardId (for boards_sld.json)
+let sldLTMap = {};    // normalized drive token -> boardId (for lt_sld.json)
+
 /* ===== NORMALIZE ===== */
 function normalize(v){
   return String(v || "")
@@ -327,6 +331,30 @@ function openPLCLadder(){
   encodeURIComponent(id);
 }
 
+/* ===== SLD OPEN ===== */
+function openSLD(){
+  const id = normalize(new URLSearchParams(location.search).get("id"));
+  if(!id) return;
+
+  // Priority 1: boards_sld.json (breakerId mapping)
+  if(sldBoardMap[id]){
+    location.href =
+      "https://08electricaldata.github.io/drive-viewer/mobile/sld.html?id=" +
+      encodeURIComponent(sldBoardMap[id]);
+    return;
+  }
+
+  // Priority 2: lt_sld.json (drive mapping)
+  if(sldLTMap[id]){
+    location.href =
+      "https://08electricaldata.github.io/drive-viewer/mobile/sld3.html?id=" +
+      encodeURIComponent(sldLTMap[id]);
+    return;
+  }
+
+  alert("No SLD found for this ID.");
+}
+
 /* ===== PRELOAD DRAWINGS ===== */
 async function preloadDrawings(){
   try{
@@ -354,6 +382,116 @@ async function preloadPLC(){
       plcAvailableMap[normalize(id)] = true;
     });
   }catch(e){}
+}
+
+/* ===== PRELOAD SLDs (robust) ===== */
+async function preloadSLD(){
+  const BOARDS_SLD_JSON =
+    "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+  const LT_SLD_JSON =
+    "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
+
+  // Helper to split and normalize tokens from a possibly multiline/compound string
+  function extractTokens(value){
+    if(!value) return [];
+    return String(value)
+      .split(/[\n,\/;]+/) // split by newline, comma, slash, semicolon
+      .map(t=>t.trim())
+      .filter(Boolean)
+      .map(t=>normalize(t));
+  }
+
+  // 1) Parse boards_sld.json -> map breakerId (from outgoings/incomers/busCouplers/linePT/busPT etc) to boardId
+  try{
+    const jb = await (await fetch(BOARDS_SLD_JSON)).json();
+    const boardsObj = jb.boards || jb.rows || jb;
+    if(boardsObj && typeof boardsObj === "object"){
+      Object.keys(boardsObj).forEach(boardKey=>{
+        const board = boardsObj[boardKey];
+        const boardId = board.boardId || board.id || boardKey;
+        if(!board) return;
+
+        const arraysToScan = [
+          "outgoings", "incomers", "dgIncomers", "emergencyIncomers",
+          "busCouplers", "busPT", "linePT", "devices", "feeders"
+        ];
+
+        arraysToScan.forEach(field=>{
+          const arr = board[field];
+          if(Array.isArray(arr)){
+            arr.forEach(entry=>{
+              if(!entry) return;
+              const possible = entry.breakerId || entry.breaker || entry.id || entry.BREAKERID || "";
+              const tokens = extractTokens(possible);
+              tokens.forEach(tok => sldBoardMap[tok] = boardId);
+            });
+          }
+        });
+
+        // broad scan for token-like strings inside the board
+        try{
+          const txt = JSON.stringify(board);
+          const matches = txt.match(/\b[A-Z0-9]+(?:[-_][A-Z0-9]+)+\b/g);
+          if(matches && matches.length){
+            matches.forEach(m=>{
+              const t = normalize(m);
+              if(t.length > 2) sldBoardMap[t] = boardId;
+            });
+          }
+        }catch(e){}
+      });
+    }
+  }catch(e){
+    // silent
+  }
+
+  // 2) Parse lt_sld.json -> boards -> sections -> items -> driveid tokens map to boardId
+  try{
+    const jl = await (await fetch(LT_SLD_JSON)).json();
+    const boards = jl.boards || jl.rows || jl;
+    if(boards && typeof boards === "object"){
+      Object.keys(boards).forEach(boardKey=>{
+        const board = boards[boardKey];
+        const boardId = board.boardId || board.id || boardKey;
+        if(!board) return;
+
+        const sections = board.sections || board.section || {};
+        Object.values(sections).forEach(sectionArr=>{
+          if(!Array.isArray(sectionArr)) return;
+          sectionArr.forEach(item=>{
+            if(!item) return;
+            const drv = item.driveid || item.driveId || item.drive || item.DRIVEID || "";
+            const tokens = extractTokens(drv);
+            tokens.forEach(tok => sldLTMap[tok] = boardId);
+          });
+        });
+
+        const devices = board.devices || board.feeders || [];
+        if(Array.isArray(devices)){
+          devices.forEach(d=>{
+            if(!d) return;
+            const drv = d.driveid || d.driveId || d.drive || "";
+            const tokens = extractTokens(drv);
+            tokens.forEach(tok => sldLTMap[tok] = boardId);
+          });
+        }
+
+        // broad scan for tokens inside board JSON
+        try{
+          const txt = JSON.stringify(board);
+          const matches = txt.match(/\b[A-Z0-9]+(?:[-_][A-Z0-9]+)+\b/g);
+          if(matches && matches.length){
+            matches.forEach(m=>{
+              const t = normalize(m);
+              if(t.length > 2) sldLTMap[t] = boardId;
+            });
+          }
+        }catch(e){}
+      });
+    }
+  }catch(e){
+    // silent
+  }
 }
 
 function parseDate(v){
@@ -441,6 +579,7 @@ async function loadData(){
 function applyButtonState(id){
   const drawBtn = document.getElementById("drawBtn");
   const plcBtn = document.getElementById("plcBtn");
+  const sldBtn = document.getElementById("sldBtn");
 
   if(drawBtn && !drawingAvailableMap[id]){
     drawBtn.disabled = true;
@@ -456,6 +595,16 @@ function applyButtonState(id){
     badge.className="badge";
     badge.innerText="No PLC Data";
     plcBtn.parentNode.insertBefore(badge, plcBtn.nextSibling);
+  }
+
+  if(sldBtn){
+    if(!sldBoardMap[id] && !sldLTMap[id]){
+      sldBtn.disabled = true;
+      const badge = document.createElement("div");
+      badge.className="badge";
+      badge.innerText="No SLD";
+      sldBtn.parentNode.insertBefore(badge, sldBtn.nextSibling);
+    }
   }
 }
 
@@ -498,6 +647,7 @@ async function showMotor(c,id){
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
       <button class="action-btn" onclick="openPLCLadder()">⚙ Ladder</button>
       <button class="action-btn" onclick="openMotorData()">🛠 Motor</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
       <button class="action-btn" onclick="addJob()">➕ Job</button>
     </div>
   </div>`;
@@ -538,9 +688,8 @@ async function showTransformer(c,id){
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Draw</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
       <button class="action-btn" onclick="addJob()">➕ Job</button>
-      <button class="action-btn" style="visibility: hidden;"></button>
-      <button class="action-btn" style="visibility: hidden;"></button>
     </div>
   </div>`;
 
@@ -569,9 +718,8 @@ async function showBreaker(c,id){
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Draw</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
       <button class="action-btn" onclick="addJob()">➕ Job</button>
-      <button class="action-btn" style="visibility: hidden;"></button>
-      <button class="action-btn" style="visibility: hidden;"></button>
     </div>
   </div>`;
 
@@ -582,6 +730,7 @@ async function showBreaker(c,id){
 (async function(){
   await preloadDrawings();
   await preloadPLC();
+  await preloadSLD();
   loadData();
 })();
 </script>
