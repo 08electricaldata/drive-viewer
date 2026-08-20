@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,79 +7,111 @@
 
 <style>
   .subtitle{
-  font-size:14px;
-  font-weight:600;
-  color:#cce0ff;
-  text-align:center;
-  margin-top:2px;
-}
-body{font-family:Arial;margin:0;background:#f2f6ff}
+    font-size:14px;
+    font-weight:600;
+    color:#cce0ff;
+    text-align:center;
+    margin-top:2px;
+  }
+  body{font-family:Arial;margin:0;background:#f2f6ff}
 
-/* HEADER */
-.header-bar{
-  position:sticky;top:0;z-index:1000;
-  background:#003f88;color:#fff;
-  display:flex;align-items:center;gap:10px;
-  padding:12px;
-}
-.header-bar button{
-  background:#fff;color:#003f88;border:none;
-  border-radius:6px;padding:8px 12px;
-  font-size:16px;cursor:pointer;
-}
-.header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
+  /* HEADER */
+  .header-bar{
+    position:sticky;top:0;z-index:1000;
+    background:#003f88;color:#fff;
+    display:flex;align-items:center;gap:10px;
+    padding:12px;
+  }
+  .header-bar button{
+    background:#fff;color:#003f88;border:none;
+    border-radius:6px;padding:8px 12px;
+    font-size:16px;cursor:pointer;
+  }
+  .header-title{flex:1;text-align:center;font-size:22px;font-weight:700}
 
-.container{padding:12px}
-.card{
-  background:#fff;border-radius:10px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-  padding:12px;
-}
+  .container{padding:12px}
+  .card{
+    background:#fff;border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+    padding:12px;
+  }
 
-/* ===== TABLE ===== */
-#columnTable{
-  width:auto;               /* auto expand */
-  border-collapse:collapse;
-  margin-bottom:15px;
-  table-layout:auto;        /* allow dynamic width */
-  white-space:nowrap;       /* prevent text wrap */
-}
-#columnTable th,#columnTable td{
-  border:1px solid #000;
-  padding:8px 10px;
-  text-align:center;
-  font-size:13px;
-  font-weight:600;
-  white-space:nowrap;
-  min-width:90px;
-}
+  /* ===== TABLE ===== */
+  #columnTable{
+    width:auto;               /* auto expand */
+    border-collapse:collapse;
+    margin-bottom:15px;
+    table-layout:auto;        /* allow dynamic width */
+    white-space:nowrap;       /* prevent text wrap */
+    overflow:auto;
+    display:block;
+  }
+  #columnTable th,#columnTable td{
+    border:1px solid #000;
+    padding:8px 10px;
+    text-align:center;
+    font-size:13px;
+    font-weight:600;
+    white-space:nowrap;
+    min-width:90px;
+  }
 
-.incomer{background:#d9f2d9}
-.outgoing{background:#d9e8ff}
-.coupler{background:#fff3b0}
+  .incomer{background:#d9f2d9}
+  .outgoing{background:#d9e8ff}
+  .coupler{background:#fff3b0}
 
-/* ===== SLD ===== */
-#wrap{
-  overflow:auto;
-  border:1px solid #ccc;
-  background:#fff;
-  height:70vh;
-}
-.bus{stroke:#000;stroke-width:4}
-.power-line{
-  stroke:#00cc44;stroke-width:4;
-  stroke-dasharray:10 6;
-  animation:flow 1s linear infinite;
-}
-@keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
+  /* ===== SLD ===== */
+  #wrap{
+    overflow:auto;
+    border:1px solid #ccc;
+    background:#fff;
+    height:70vh;
+  }
+  svg { width: 100%; height: auto; display: block; } /* responsive SVG */
+  .bus{stroke:#000;stroke-width:4}
+  .power-line{
+    stroke:#00cc44;stroke-width:4;
+    stroke-dasharray:10 6;
+    animation:flow 1s linear infinite;
+  }
+  @keyframes flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-32}}
 
-.label{font-size:16px;font-weight:600;text-anchor:middle}
-.cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
-.board-title{
-  font-size:24px;font-weight:900;
-  fill:#003f88;text-anchor:middle;
-}
-.info{font-weight:bold;color:#003f88;margin-bottom:8px}
+  .label{font-size:16px;font-weight:600;text-anchor:middle}
+  .cbtext{font-size:15px;font-weight:bold;text-anchor:middle}
+  .board-title{
+    font-size:24px;font-weight:900;
+    fill:#003f88;text-anchor:middle;
+  }
+  .info{font-weight:bold;color:#003f88;margin-bottom:8px}
+
+  /* MOBILE TUNING */
+  @media (max-width: 480px) {
+    .subtitle { font-size:12px; }
+    .header-bar { padding:8px; }
+    .header-bar button { padding:6px 8px; font-size:14px; }
+    .header-title { font-size:18px; }
+
+    .card { padding:8px; }
+    #columnTable th,#columnTable td{
+      font-size:11px;
+      padding:6px 8px;
+      min-width:60px;
+    }
+
+    .label { font-size:12px; }
+    .cbtext { font-size:12px; }
+    .board-title { font-size:18px; }
+
+    #wrap { height:55vh; }
+
+    /* thinner lines on mobile */
+    .bus{stroke-width:3}
+    .power-line{stroke-width:3; stroke-dasharray:6 4; animation:flow 1s linear infinite;}
+  }
+
+  @media (min-width: 768px) {
+    .container { max-width: 1100px; margin: 0 auto; }
+  }
 </style>
 </head>
 
@@ -90,9 +121,9 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   <button onclick="goHome()">🏠 Home</button>
   <button onclick="goBack()">⬅ Back</button>
   <div style="flex:1;text-align:center;">
-  <div class="header-title" id="title">HT BOARD SLD</div>
-  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
-</div>
+    <div class="header-title" id="title">HT BOARD SLD</div>
+    <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+  </div>
 </div>
 
 <div class="container">
@@ -101,11 +132,11 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
     <div class="info" id="boardInfo">Loading...</div>
 
     <!-- TABLE -->
-    <table id="columnTable"></table>
+    <table id="columnTable" role="table" aria-label="board table"></table>
 
     <!-- SLD -->
     <div id="wrap">
-      <svg id="sldCanvas" viewBox="0 0 1400 620"></svg>
+      <svg id="sldCanvas" viewBox="0 0 1400 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="single line diagram"></svg>
     </div>
 
   </div>
@@ -124,6 +155,8 @@ const columnTable=document.getElementById("columnTable");
 const boardInfoEl=document.getElementById("boardInfo");
 const titleEl=document.getElementById("title");
 const svg=document.getElementById("sldCanvas");
+
+let UI_SCALE = 1; // will be set per device in draw()
 
 function clearSVG(){svg.innerHTML=""}
 
@@ -221,16 +254,19 @@ function transformer(x,y,name,transformerNo){
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
   g.style.cursor="pointer";
 
+  const rOffset = 12 * UI_SCALE;
+  const rRadius = 10 * UI_SCALE;
+
   const c1=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c1.setAttribute("cx",x-12);c1.setAttribute("cy",y);
-  c1.setAttribute("r",10);c1.setAttribute("stroke","#000");c1.setAttribute("fill","none");
+  c1.setAttribute("cx",x - rOffset);c1.setAttribute("cy",y);
+  c1.setAttribute("r",rRadius);c1.setAttribute("stroke","#000");c1.setAttribute("fill","none");
 
   const c2=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  c2.setAttribute("cx",x+12);c2.setAttribute("cy",y);
-  c2.setAttribute("r",10);c2.setAttribute("stroke","#000");c2.setAttribute("fill","none");
+  c2.setAttribute("cx",x + rOffset);c2.setAttribute("cy",y);
+  c2.setAttribute("r",rRadius);c2.setAttribute("stroke","#000");c2.setAttribute("fill","none");
 
   const lbl=document.createElementNS("http://www.w3.org/2000/svg","text");
-  lbl.setAttribute("x",x);lbl.setAttribute("y",y-18);
+  lbl.setAttribute("x",x);lbl.setAttribute("y",y - (18 * UI_SCALE));
   lbl.setAttribute("class","label");
   lbl.textContent=name;
 
@@ -256,14 +292,16 @@ function breaker(x,y,label,side=null,isCoupler=false,isOutgoing=false){
     clickUrl = "https://08electricaldata.github.io/drive-viewer/history.html?id=Breaker-" + label;
   }
 
+  const rectW = 36 * UI_SCALE;
+  const rectH = 24 * UI_SCALE;
   const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
-  r.setAttribute("x",x-18);
-  r.setAttribute("y",y-12);
-  r.setAttribute("width",36);
-  r.setAttribute("height",24);
+  r.setAttribute("x",x - rectW/2);
+  r.setAttribute("y",y - rectH/2);
+  r.setAttribute("width",rectW);
+  r.setAttribute("height",rectH);
   r.setAttribute("fill","#fff");
   r.setAttribute("stroke","#000");
-  r.setAttribute("stroke-width","2");
+  r.setAttribute("stroke-width",Math.max(1,2 * UI_SCALE));
 
   if(clickUrl){
     r.style.cursor="pointer";
@@ -272,22 +310,23 @@ function breaker(x,y,label,side=null,isCoupler=false,isOutgoing=false){
 
   svg.appendChild(r);
 
-  text(x,y+5,"CB","middle","cbtext");
+  text(x,y + (5 * UI_SCALE),"CB","middle","cbtext");
 
   if(!label) return;
 
   if(isCoupler)
-    text(x,y-24,label,"middle","label");
+    text(x,y - (24 * UI_SCALE),label,"middle","label");
   else if(side==="left")
-    text(x-150,y+5,label,"end","label");
+    text(x - (150 * UI_SCALE), y + (5 * UI_SCALE),label,"end","label");
   else if(side==="right")
-    text(x+150,y+5,label,"start","label");
+    text(x + (150 * UI_SCALE), y + (5 * UI_SCALE),label,"start","label");
 }
 
 function arrowDown(x,y){
-  line(x,y,x,y+24,"bus");
+  line(x,y,x,y + (24 * UI_SCALE),"bus");
   const p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
-  p.setAttribute("points",`${x-6},${y+24} ${x+6},${y+24} ${x},${y+36}`);
+  const points = `${x - (6 * UI_SCALE)},${y + (24 * UI_SCALE)} ${x + (6 * UI_SCALE)},${y + (24 * UI_SCALE)} ${x},${y + (36 * UI_SCALE)}`;
+  p.setAttribute("points",points);
   p.setAttribute("fill","#000");
   svg.appendChild(p);
 }
@@ -296,92 +335,96 @@ function draw(board){
 
   clearSVG();
 
+  // Set UI scale based on width (smaller on phones)
+  UI_SCALE = window.innerWidth < 480 ? 0.75 : 1;
+
   const deviceCount = Math.max(
-  board.outgoings?.length || 0,
-  board.incomers?.length || 0,
-  10
-);
+    board.outgoings?.length || 0,
+    board.incomers?.length || 0,
+    6
+  );
 
-const W = deviceCount * 140;   // dynamic width
-svg.setAttribute("viewBox", `0 0 ${W} 620`);
-  const BUS_Y=280;
-  const GAP=120;
-  const mid=W/2;
+  const tileWidth = window.innerWidth < 480 ? 100 : 140; // smaller tile width on mobile
+  const W = Math.max(window.innerWidth * 0.95, deviceCount * tileWidth);   // dynamic width but not smaller than viewport
+  svg.setAttribute("viewBox", `0 0 ${W} 620`);
 
-  text(700,40,getParam("id"),"middle","board-title");
+  const BUS_Y = window.innerWidth < 480 ? 240 : 280;
+  const GAP = window.innerWidth < 480 ? 90 : 120;
+  const mid = W / 2;
 
-  line(100,BUS_Y,mid-GAP/2,BUS_Y);
-  line(mid+GAP/2,BUS_Y,W-100,BUS_Y);
+  // board title at top center (use viewBox coordinates)
+  text(W / 2, 40, getParam("id"), "middle", "board-title");
 
-if(board.busCouplers?.length){
+  line(100, BUS_Y, mid - GAP/2, BUS_Y);
+  line(mid + GAP/2, BUS_Y, W - 100, BUS_Y);
 
-  const couplers = board.busCouplers;
-  const count = couplers.length;
+  if(board.busCouplers?.length){
+    const couplers = board.busCouplers;
+    const count = couplers.length;
 
-  couplers.forEach((bc,i)=>{
+    couplers.forEach((bc,i)=>{
 
-    let x;
+      let x;
 
-    if(count === 1){
-      x = mid;
-    } else {
-      const start = mid - ((count-1) * GAP);
-      x = start + (i * GAP * 2);
-    }
+      if(count === 1){
+        x = mid;
+      } else {
+        const start = mid - ((count - 1) * GAP);
+        x = start + (i * GAP * 2);
+      }
 
-    breaker(x, BUS_Y, bc.breakerId, null, true);
-
-  });
-}
+      breaker(x, BUS_Y, bc.breakerId, null, true);
+    });
+  }
 
   const incomers=[...(board.incomers||[])];
-  const spacing=W/(incomers.length+1);
+  const spacing = W / (incomers.length + 1);
 
   incomers.forEach((inc,i)=>{
-    const x=spacing*(i+1);
-    transformer(x,120,inc.source,inc.transformer);
-    line(x,140,x,BUS_Y-30,"power-line");
-    breaker(x,BUS_Y-40,inc.breakerId,i===0?"left":"right");
+    const x = spacing * (i + 1);
+    transformer(x, 120 * UI_SCALE, inc.source, inc.transformer);
+    line(x, 140 * UI_SCALE, x, BUS_Y - (30 * UI_SCALE), "power-line");
+    breaker(x, BUS_Y - (40 * UI_SCALE), inc.breakerId, i===0 ? "left" : "right");
   });
 
   let maxPos=0;
   [...(board.outgoings||[])].forEach(r=>{if(r.position>maxPos) maxPos=r.position;});
-  const leftMargin=120;
-  const rightMargin=W-120;
-  const usableWidth=rightMargin-leftMargin;
+  const leftMargin = 120 * UI_SCALE;
+  const rightMargin = W - (120 * UI_SCALE);
+  const usableWidth = rightMargin - leftMargin;
 
   function posToX(pos){
-  if(maxPos <= 1) return leftMargin + usableWidth/2;
-  return leftMargin + (usableWidth * (pos-1) / (maxPos-1));
-}
+    if(maxPos <= 1) return leftMargin + usableWidth/2;
+    return leftMargin + (usableWidth * (pos - 1) / (maxPos - 1));
+  }
 
   (board.outgoings||[]).forEach((o,index)=>{
-    const x=posToX(o.position);
-    line(x,BUS_Y+6,x,BUS_Y+46);
-    breaker(x,BUS_Y+66,o.breakerId,null,false,true);
-    arrowDown(x,BUS_Y+82);
+    const x = posToX(o.position);
+    line(x, BUS_Y + (6 * UI_SCALE), x, BUS_Y + (46 * UI_SCALE));
+    breaker(x, BUS_Y + (66 * UI_SCALE), o.breakerId, null, false, true);
+    arrowDown(x, BUS_Y + (82 * UI_SCALE));
 
-    const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
+    const clickUrl = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + o.breakerId;
 
-   // 🔹 Split only at FIRST "-"
-let line1 = o.breakerId;
-let line2 = null;
+    // 🔹 Split only at FIRST "-" (display two lines if present)
+    let line1 = o.breakerId;
+    let line2 = null;
 
-if(o.breakerId && o.breakerId.includes("-")){
-  const parts = o.breakerId.split(/-(.+)/);  
-  line1 = parts[0];       // before first -
-  line2 = parts[1];       // after first -
-}
+    if(o.breakerId && o.breakerId.includes("-")){
+      const parts = o.breakerId.split(/-(.+)/);
+      line1 = parts[0];
+      line2 = parts[1];
+    }
 
-const baseY = (index%2===0) ? BUS_Y+150 : BUS_Y+195;
+    const baseY = (index % 2 === 0) ? BUS_Y + (150 * UI_SCALE) : BUS_Y + (195 * UI_SCALE);
 
-// First Line
-text(x, baseY, line1, "middle", "label", clickUrl);
+    // First Line
+    text(x, baseY, line1, "middle", "label", clickUrl);
 
-// Second Line (if exists)
-if(line2){
-  text(x, baseY+20, line2, "middle", "label", clickUrl);
-}
+    // Second Line (if exists)
+    if(line2){
+      text(x, baseY + (20 * UI_SCALE), line2, "middle", "label", clickUrl);
+    }
   });
 }
 
@@ -389,19 +432,26 @@ if(line2){
 
 async function loadSLD(){
   try{
-    const boardId=getParam("id");
-    if(!boardId){boardInfoEl.innerText="❌ Board id missing";return;}
-    titleEl.innerText=boardId+" — Professional SLD";
+    const boardId = getParam("id");
+    if(!boardId){ boardInfoEl.innerText="❌ Board id missing"; return; }
+    titleEl.innerText = boardId + " — Professional SLD";
 
-    const res=await fetch(JSON_URL);
-    const data=await res.json();
-    const board=data.boards?.[boardId];
-    if(!board){boardInfoEl.innerText="❌ Board not found";return;}
+    const res = await fetch(JSON_URL);
+    const data = await res.json();
+    const board = data.boards?.[boardId];
+    if(!board){ boardInfoEl.innerText="❌ Board not found"; return; }
 
-    boardInfoEl.innerText="Incomers: "+board.topology.totalIncomers;
+    boardInfoEl.innerText = "Incomers: " + (board.topology?.totalIncomers ?? (board.incomers?.length || 0));
 
     buildColumnTable(board);
     draw(board);
+
+    // re-draw on orientation change / resize to adapt UI_SCALE / tile width
+    window.addEventListener('resize', () => {
+      // small debounce to avoid excessive redraws
+      if (this._rd) clearTimeout(this._rd);
+      this._rd = setTimeout(()=> draw(board), 150);
+    });
 
   }catch(e){
     console.error(e);
