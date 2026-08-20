@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Equipment-Details</title>
+<title>Equipment Details</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -116,9 +116,9 @@ const HISTORY_BASE =
 let drawingAvailableMap = {};
 let plcAvailableMap = {};
 
-// New maps for SLD lookup
-let sldBoardMap = {}; // maps normalized breaker id -> board sld id (for boards_sld.json)
-let sldLTMap = {};    // maps normalized drive id -> lt sld id (for lt_sld.json)
+// SLD maps
+let sldBoardMap = {}; // normalized breakerId -> boardId (for boards_sld.json)
+let sldLTMap = {};    // normalized drive token -> boardId (for lt_sld.json)
 
 /* ===== NORMALIZE ===== */
 function normalize(v){
@@ -176,7 +176,7 @@ function openSLD(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
   if(!id) return;
 
-  // Priority 1: boards_sld.json (outgoings -> breakerId)
+  // Priority 1: boards_sld.json (breakerId mapping)
   if(sldBoardMap[id]){
     location.href =
       "https://08electricaldata.github.io/drive-viewer/sld.html?id=" +
@@ -184,7 +184,7 @@ function openSLD(){
     return;
   }
 
-  // Priority 2: lt_sld.json (driveId)
+  // Priority 2: lt_sld.json (drive mapping)
   if(sldLTMap[id]){
     location.href =
       "https://08electricaldata.github.io/drive-viewer/sld3.html?id=" +
@@ -192,7 +192,7 @@ function openSLD(){
     return;
   }
 
-  // No SLD found - do nothing or fallback to history
+  // Not found
   alert("No SLD found for this ID.");
 }
 
@@ -225,49 +225,119 @@ async function preloadPLC(){
   }catch(e){}
 }
 
-/* ===== PRELOAD SLDs ===== */
+/* ===== PRELOAD SLDs (robust) ===== */
 async function preloadSLD(){
-  // boards_sld.json: check outgoing.breakerId and map to board id
   const BOARDS_SLD_JSON =
     "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
   const LT_SLD_JSON =
     "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
 
+  // Helper to split and normalize tokens from a possibly multiline/compound string
+  function extractTokens(value){
+    if(!value) return [];
+    return String(value)
+      .split(/[\n,\/;]+/) // split by newline, comma, slash, semicolon
+      .map(t=>t.trim())
+      .filter(Boolean)
+      .map(t=>normalize(t));
+  }
+
+  // 1) Parse boards_sld.json -> map breakerId (from outgoings/incomers/busCouplers/linePT/busPT etc) to boardId
   try{
     const jb = await (await fetch(BOARDS_SLD_JSON)).json();
-    const rows = jb.rows || jb; // handle both top-level rows or array
-    if(Array.isArray(rows)){
-      rows.forEach(r=>{
-        // board id candidates
-        const boardId = r.id || r.boardId || r.board || r.name || r.boardName || null;
-        if(!boardId) return;
+    const boardsObj = jb.boards || jb.rows || jb;
+    // boardsObj might be an object keyed by boardId
+    if(boardsObj && typeof boardsObj === "object"){
+      Object.keys(boardsObj).forEach(boardKey=>{
+        const board = boardsObj[boardKey];
+        const boardId = board.boardId || board.id || boardKey;
+        if(!board) return;
 
-        // outgoings may be named 'outgoings' or 'outgoing'
-        const outArr = Array.isArray(r.outgoings) ? r.outgoings :
-                       Array.isArray(r.outgoing) ? r.outgoing : null;
-        if(!outArr) return;
+        // fields that commonly contain breakerId lists
+        const arraysToScan = [
+          "outgoings", "incomers", "dgIncomers", "emergencyIncomers",
+          "busCouplers", "busPT", "linePT", "incomers", "linePT", "busPT",
+          "devices", "feeders"
+        ];
 
-        outArr.forEach(o=>{
-          if(!o) return;
-          const breaker = o.breakerId || o.breaker || o.id || o.BREAKERID || null;
-          if(!breaker) return;
-          sldBoardMap[normalize(breaker)] = boardId;
+        arraysToScan.forEach(field=>{
+          const arr = board[field];
+          if(Array.isArray(arr)){
+            arr.forEach(entry=>{
+              if(!entry) return;
+              // breakerId might be breakerId, breaker, id, or similar
+              const possible = entry.breakerId || entry.breaker || entry.id || entry.BREAKERID || "";
+              const tokens = extractTokens(possible);
+              tokens.forEach(tok => sldBoardMap[tok] = boardId);
+            });
+          }
         });
+
+        // Some breakerIds may appear in other nested properties or strings; attempt a broad scan:
+        // stringify board and look for tokens like SOME-ID patterns (conservative: split words with - and underscores)
+        try{
+          const txt = JSON.stringify(board);
+          // match tokens that look like UPPER-ALNUM sequences with dashes or underscores, e.g., TANKAGE-P-194, US-08EX-...
+          const matches = txt.match(/\b[A-Z0-9]+(?:[-_][A-Z0-9]+)+\b/g);
+          if(matches && matches.length){
+            matches.forEach(m=>{
+              const t = normalize(m);
+              // avoid mapping plain numbers
+              if(t.length > 2) sldBoardMap[t] = boardId;
+            });
+          }
+        }catch(e){}
       });
     }
   }catch(e){
     // fail silently
   }
 
+  // 2) Parse lt_sld.json -> boards -> sections -> items -> driveid tokens map to boardId
   try{
     const jl = await (await fetch(LT_SLD_JSON)).json();
-    const rows = jl.rows || jl;
-    if(Array.isArray(rows)){
-      rows.forEach(r=>{
-        const drive = r.driveId || r.driveid || r.drive || r.DRIVEID || null;
-        const ltId = r.id || r.ltId || r.lt || r.name || r.boardId || null;
-        if(!drive || !ltId) return;
-        sldLTMap[normalize(drive)] = ltId;
+    const boards = jl.boards || jl.rows || jl;
+    if(boards && typeof boards === "object"){
+      // boards may be keyed by boardId
+      Object.keys(boards).forEach(boardKey=>{
+        const board = boards[boardKey];
+        const boardId = board.boardId || board.id || boardKey;
+        if(!board) return;
+
+        // sections: object with arrays of items
+        const sections = board.sections || board.section || {};
+        Object.values(sections).forEach(sectionArr=>{
+          if(!Array.isArray(sectionArr)) return;
+          sectionArr.forEach(item=>{
+            if(!item) return;
+            const drv = item.driveid || item.driveId || item.drive || item.DRIVEID || "";
+            const tokens = extractTokens(drv);
+            tokens.forEach(tok => sldLTMap[tok] = boardId);
+          });
+        });
+
+        // also check devices or feeders arrays
+        const devices = board.devices || board.feeders || [];
+        if(Array.isArray(devices)){
+          devices.forEach(d=>{
+            if(!d) return;
+            const drv = d.driveid || d.driveId || d.drive || "";
+            const tokens = extractTokens(drv);
+            tokens.forEach(tok => sldLTMap[tok] = boardId);
+          });
+        }
+
+        // lastly, scan entire board JSON string for probable drive tokens
+        try{
+          const txt = JSON.stringify(board);
+          const matches = txt.match(/\b[A-Z0-9]+(?:[-_][A-Z0-9]+)+\b/g);
+          if(matches && matches.length){
+            matches.forEach(m=>{
+              const t = normalize(m);
+              if(t.length > 2) sldLTMap[t] = boardId;
+            });
+          }
+        }catch(e){}
       });
     }
   }catch(e){
@@ -372,7 +442,6 @@ function applyButtonState(id){
     plcBtn.parentNode.appendChild(badge);
   }
 
-  // SLD button state: enable if either map has an entry
   if(sldBtn){
     if(!sldBoardMap[id] && !sldLTMap[id]){
       sldBtn.disabled = true;
