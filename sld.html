@@ -249,7 +249,7 @@ function breaker(x,y,label,side=null,isCoupler=false,isOutgoing=false){
 
   // 🔹 Outgoing CB → go to feeder index page (NO Breaker- prefix)
   if(isOutgoing && label){
-    clickUrl = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + label;
+    clickUrl = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + label;
   }
   // 🔹 Incomer & Bus Coupler CB → go to breaker history page
   else if(label){
@@ -361,7 +361,7 @@ if(board.busCouplers?.length){
     breaker(x,BUS_Y+66,o.breakerId,null,false,true);
     arrowDown(x,BUS_Y+82);
 
-    const clickUrl="https://08electricaldata.github.io/drive-viewer/index.html?id="+o.breakerId;
+    const clickUrl="https://08electricaldata.github.io/drive-viewer/index2.html?id="+o.breakerId;
 
    // 🔹 Split only at FIRST "-"
 let line1 = o.breakerId;
