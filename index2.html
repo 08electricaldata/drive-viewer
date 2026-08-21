@@ -447,7 +447,7 @@ function applyButtonState(id){
       sldBtn.disabled = true;
       const badge = document.createElement("div");
       badge.className="badge";
-      badge.innerText="🗺️ No SLD Available";
+      badge.innerText="🗺️ No LOCATION Available";
       sldBtn.parentNode.appendChild(badge);
     }
   }
@@ -502,7 +502,7 @@ async function showMotor(c,id){
   <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
   <button class="action-btn" onclick="openPLCLadder()">⚙ PLC-LDR</button>
   <button class="action-btn" onclick="openMotorData()">🛠 Motor Data</button>
-  <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
+  <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOCATION</button>
   <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
 </div>
 
@@ -545,7 +545,7 @@ async function showTransformer(c,id){
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
-      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOCATION</button>
       <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
@@ -576,7 +576,7 @@ async function showBreaker(c,id){
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
-      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOCATION</button>
       <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
