@@ -138,9 +138,9 @@ body{
   border:4px solid #00aa00 !important;
   background: linear-gradient(180deg, rgba(200,255,200,0.12), rgba(255,255,255,0.02));
   box-shadow:
-    0 8px 18px rgba(0,150,0,0.25),          /* outer shadow */
-    0 2px 6px rgba(0,0,0,0.25),             /* dark lift */
-    inset 0 6px 12px rgba(0,120,0,0.08),    /* inner glow */
+    0 8px 18px rgba(0,150,0,0.25),          
+    0 2px 6px rgba(0,0,0,0.25),             
+    inset 0 6px 12px rgba(0,120,0,0.08),    
     inset 0 -6px 10px rgba(255,255,255,0.04);
   position:relative;
   z-index:2;
@@ -173,7 +173,7 @@ body{
 
 /* DOL color — bright blue */
 .outgoing-dol{
-  background:#1e90ff; /* dodgerblue */
+  background:#1e90ff;
   color:#ffffff;
 }
 
@@ -182,22 +182,22 @@ body{
 
 /* SFU color — teal */
 .outgoing-sfu{
-  background:#0d9488; /* teal */
+  background:#0d9488;
   color:#ffffff;
 }
 
 /* Outgoing ACB — deep burgundy */
 .outgoing-acb{
-  background:#7b0f1a; /* deep burgundy */
+  background:#7b0f1a;
   color:#ffffff;
   box-shadow: 0 6px 14px rgba(123,15,26,0.18), inset 0 2px 8px rgba(255,255,255,0.02);
 }
 
 /* Control Transformer — olive/green distinct color */
 .control-transformer{
-  background:#3b6e3b; /* olive green */
+  background:#557a2b;
   color:#ffffff;
-  box-shadow: 0 6px 12px rgba(59,110,59,0.12), inset 0 2px 6px rgba(255,255,255,0.03);
+  box-shadow: 0 6px 12px rgba(85,122,43,0.12), inset 0 2px 6px rgba(255,255,255,0.03);
 }
 
 /* Spare variants */
@@ -276,6 +276,12 @@ function getParam(n){
   return new URL(location.href).searchParams.get(n);
 }
 
+/* helper to normalize type strings for robust matching */
+function norm(s){
+  if(!s && s!==0) return "";
+  return String(s).toUpperCase().replace(/[\s\-]+/g,'').replace(/_/g,'');
+}
+
 async function load(){
 
   const boardId=getParam("id");
@@ -299,12 +305,6 @@ async function load(){
   const sectionWidth=160;
   container.style.width=(sections.length*sectionWidth)+"px";
 
-  let maxDevices=0;
-  sections.forEach(sec=>{
-    const count=board.sections[sec].length;
-    if(count>maxDevices) maxDevices=count;
-  });
-
   sections.forEach((sec,index)=>{
 
     const secDiv=document.createElement("div");
@@ -324,17 +324,22 @@ async function load(){
       cell.className="cell";
 
       // status ON / OFF classes
-      if(d.status && d.status.toUpperCase()==="ON"){
+      if(d.status && String(d.status).toUpperCase()==="ON"){
         cell.classList.add("status-on");
       }else{
         cell.classList.add("status-off");
       }
 
-      // feeder types and drive types
-      if(d.feederType === "INCOMER"){
+      const feeder = norm(d.feederType);
+      const breaker = norm(d.breakerType);
+      const drive = norm(d.DriveType || d.deviceType || "");
+
+      // INCOMER
+      if(feeder === "INCOMER"){
         cell.classList.add("incomer","incomer-box","breaker-font");
       }
-      else if(d.feederType === "BUS_COUPLER"){
+      // BUS COUPLER
+      else if(feeder === "BUSCOUPLER" || feeder === "BUSCOUPLER"){
         cell.classList.add("coupler","breaker-font");
 
         const bridge=document.createElement("div");
@@ -342,15 +347,19 @@ async function load(){
         bridge.style.left=(index*sectionWidth + 78)+"px";
         container.appendChild(bridge);
       }
-      else if(d.feederType === "OUTGOING"){
+      // OUTGOING
+      else if(feeder === "OUTGOING"){
 
-        if(d.breakerType){
+        // If breakerType is ACB -> outgoing-acb (explicit)
+        if(breaker === "ACB"){
+          cell.classList.add("outgoing-acb","breaker-font");
+        }
+        // other breaker types present -> outgoing-breaker
+        else if(breaker){
           cell.classList.add("outgoing-breaker","breaker-font");
         }
-        else{
-          // Prefer DriveType, fallback to deviceType when present
-          const drive = d.DriveType || d.deviceType || "";
-
+        else {
+          // No breakerType: decide by DriveType / deviceType
           if(drive === "DOL"){
             cell.classList.add("outgoing-dol");
           }
@@ -361,9 +370,11 @@ async function load(){
             cell.classList.add("outgoing-sfu");
           }
           else if(drive === "ACB"){
+            // drive labelled as ACB rather than breakerType
             cell.classList.add("outgoing-acb","breaker-font");
           }
-          else if(drive === "CONTROL_TRANSFORMER" || drive === "CT" || d.deviceType === "CONTROL_TRANSFORMER"){
+          else if(drive === "CONTROLTRANSFORMER" || drive === "CT" || drive === "CONTROLTRANSFORMER"){
+            // If the device itself is a control transformer
             cell.classList.add("control-transformer");
           }
           else{
@@ -371,20 +382,31 @@ async function load(){
           }
         }
       }
+      // SPARE or other (not incomer/bus/outgoing)
       else{
-        // spare handling: give different color based on DriveType if present
-        if(d.DriveType === "DOL" || d.deviceType === "DOL"){
+        // spare handling: prefer DriveType/deviceType to pick spare variant
+        if(drive === "DOL"){
           cell.classList.add("spare","spare-dol");
-        } else if(d.DriveType === "SFU" || d.deviceType === "SFU"){
+        } else if(drive === "SFU"){
           cell.classList.add("spare","spare-sfu");
         } else {
           cell.classList.add("spare");
         }
       }
 
-      // content: if truly spare (no DriveType and feeder not set), show 'SPARE' clearly
+      // Additionally, if DriveType specifically indicates CONTROL TRANSFORMER anywhere, ensure its color
+      if(d.DriveType && norm(d.DriveType).includes("CONTROLTRANSFORMER")){
+        cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+        cell.classList.add("control-transformer");
+      } else if(d.deviceType && norm(d.deviceType).includes("CONTROLTRANSFORMER")){
+        cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+        cell.classList.add("control-transformer");
+      }
+
+      // content: if truly spare (no DriveType/deviceType and no feeder info), show 'SPARE' clearly
       let contentText;
-      if(cell.classList.contains("spare") && !(d.DriveType || d.deviceType)){
+      const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
+      if(cell.classList.contains("spare") && !hasDriveOrDevice && !d.feederType){
         contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
       } else {
         contentText =
