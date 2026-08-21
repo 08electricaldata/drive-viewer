@@ -133,34 +133,72 @@ body{
   font-weight:bold;
 }
 
+/* STATUS - stronger, thicker border and layered 3D effect */
 .status-on{
-  border-color:#00aa00;
+  border:4px solid #00aa00 !important;
+  background: linear-gradient(180deg, rgba(200,255,200,0.12), rgba(255,255,255,0.02));
   box-shadow:
-    0 0 12px rgba(0,255,0,.7),
-    0 6px 14px rgba(0,0,0,.3);
-}
-
-@keyframes glowPulse{
-  0%{box-shadow:0 0 6px rgba(0,255,0,.6);}
-  50%{box-shadow:0 0 16px rgba(0,255,0,1);}
-  100%{box-shadow:0 0 6px rgba(0,255,0,.6);}
-}
-.status-on{
+    0 8px 18px rgba(0,150,0,0.25),          /* outer shadow */
+    0 2px 6px rgba(0,0,0,0.25),             /* dark lift */
+    inset 0 6px 12px rgba(0,120,0,0.08),    /* inner glow */
+    inset 0 -6px 10px rgba(255,255,255,0.04);
+  position:relative;
+  z-index:2;
   animation:glowPulse 2s infinite;
 }
 
-.status-off{
-  border-color:#cc0000;
+@keyframes glowPulse{
+  0%{box-shadow:0 8px 18px rgba(0,150,0,0.18), inset 0 6px 12px rgba(0,120,0,0.06);}
+  50%{box-shadow:0 12px 28px rgba(0,180,0,0.30), inset 0 8px 16px rgba(0,140,0,0.10);}
+  100%{box-shadow:0 8px 18px rgba(0,150,0,0.18), inset 0 6px 12px rgba(0,120,0,0.06);}
 }
 
-.incomer{ background:#ff4d4d; }
-.coupler{ background:#ffd633; }
-.outgoing-breaker{ background:#ff944d; }
-.outgoing-dol{ background:#4d94ff; color:#000; }
-.outgoing-mccb{ background:#b366ff; }
-.outgoing-sfu{ background:#33ccff; }
-.spare{ background:#e0e0e0; }
+/* OFF state — thick red border + 3D "pressed" look */
+.status-off{
+  border:4px solid #cc0000 !important;
+  background: linear-gradient(180deg, rgba(255,220,220,0.06), rgba(0,0,0,0.02));
+  box-shadow:
+    0 6px 14px rgba(170,0,0,0.20),
+    0 2px 6px rgba(0,0,0,0.28),
+    inset 0 6px 10px rgba(0,0,0,0.12),
+    inset 0 -6px 10px rgba(255,255,255,0.03);
+  position:relative;
+  z-index:1;
+}
 
+/* Colors for feeder types */
+.incomer{ background:#ff4d4d; color:#fff; }
+.coupler{ background:#ffd633; color:#000; }
+.outgoing-breaker{ background:#ff944d; color:#000; }
+.outgoing-dol{ background:#4d94ff; color:#000; }
+.outgoing-mccb{ background:#b366ff; color:#fff; }
+
+/* SFU color changed from sky-blue to teal (distinct from others) */
+.outgoing-sfu{
+  background:#0d9488; /* teal */
+  color:#ffffff;
+}
+
+/* Spare variants */
+.spare{ background:#e0e0e0; color:#333; }
+
+/* Spare for DOL (pale warm) */
+.spare-dol{
+  background: linear-gradient(180deg,#fff3e0,#ffd6b3);
+  color:#6b3f00;
+  border:2px dashed #ffb86b;
+  box-shadow: 0 6px 12px rgba(255,160,80,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Spare for SFU (pale cool) */
+.spare-sfu{
+  background: linear-gradient(180deg,#e9f8ff,#cfefff);
+  color:#004862;
+  border:2px dashed #5fbfe6;
+  box-shadow: 0 6px 12px rgba(80,180,220,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* coupler bridge style (unchanged) */
 .coupler-bridge{
   position:absolute;
   width:6px;
@@ -264,12 +302,14 @@ async function load(){
       const cell=document.createElement("div");
       cell.className="cell";
 
+      // status ON / OFF classes
       if(d.status && d.status.toUpperCase()==="ON"){
         cell.classList.add("status-on");
       }else{
         cell.classList.add("status-off");
       }
 
+      // feeder types and drive types
       if(d.feederType === "INCOMER"){
         cell.classList.add("incomer","incomer-box","breaker-font");
       }
@@ -302,19 +342,34 @@ async function load(){
         }
       }
       else{
-        cell.classList.add("spare");
+        // spare handling: give different color based on DriveType if present
+        if(d.DriveType === "DOL"){
+          cell.classList.add("spare","spare-dol");
+        } else if(d.DriveType === "SFU"){
+          cell.classList.add("spare","spare-sfu");
+        } else {
+          cell.classList.add("spare");
+        }
       }
 
-      cell.innerHTML=
-      "<b>"+d.position+"</b><br>"+
-      (d.driveid || "")+"<br>"+
-      (
-        (d.feederType==="INCOMER" ||
-         d.feederType==="BUS_COUPLER" ||
-         d.breakerType)
-        ? (d.breakerType || "")
-        : (d.DriveType || "")
-      );
+      // content: if truly spare (no DriveType and feeder not set), show 'SPARE' clearly
+      let contentText;
+      if(cell.classList.contains("spare") && !(d.DriveType)){
+        contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
+      } else {
+        contentText =
+          "<b>"+(d.position || "")+"</b><br>"+
+          (d.driveid || "")+"<br>"+
+          (
+            (d.feederType==="INCOMER" ||
+             d.feederType==="BUS_COUPLER" ||
+             d.breakerType)
+            ? (d.breakerType || "")
+            : (d.DriveType || "")
+          );
+      }
+
+      cell.innerHTML = contentText;
 
       if(d.driveid){
         cell.onclick=function(){
@@ -327,13 +382,7 @@ async function load(){
       secDiv.appendChild(cell);
     });
 
-    const missing = maxDevices - devices.length;
-    for(let i=0;i<missing;i++){
-      const empty=document.createElement("div");
-      empty.className="cell spare";
-      empty.innerHTML="&nbsp;";
-      secDiv.appendChild(empty);
-    }
+    // Removed adding blank cells so empty placeholders are not shown.
 
     container.appendChild(secDiv);
   });
