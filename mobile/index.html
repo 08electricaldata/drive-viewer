@@ -352,7 +352,7 @@ function openSLD(){
     return;
   }
 
-  alert("No SLD found for this ID.");
+  alert("No LOC found for this ID.");
 }
 
 /* ===== PRELOAD DRAWINGS ===== */
@@ -602,7 +602,7 @@ function applyButtonState(id){
       sldBtn.disabled = true;
       const badge = document.createElement("div");
       badge.className="badge";
-      badge.innerText="No SLD";
+      badge.innerText="No LOC";
       sldBtn.parentNode.insertBefore(badge, sldBtn.nextSibling);
     }
   }
@@ -647,7 +647,7 @@ async function showMotor(c,id){
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
       <button class="action-btn" onclick="openPLCLadder()">⚙ Ladder</button>
       <button class="action-btn" onclick="openMotorData()">🛠 Motor</button>
-      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOC</button>
       <button class="action-btn" onclick="addJob()">➕ Job</button>
     </div>
   </div>`;
@@ -688,7 +688,7 @@ async function showTransformer(c,id){
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Draw</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
-      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOC</button>
       <button class="action-btn" onclick="addJob()">➕ Job</button>
     </div>
   </div>`;
@@ -718,7 +718,7 @@ async function showBreaker(c,id){
       <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Draw</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC</button>
-      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ SLD</button>
+      <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOC</button>
       <button class="action-btn" onclick="addJob()">➕ Job</button>
     </div>
   </div>`;
