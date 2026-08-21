@@ -170,13 +170,34 @@ body{
 .incomer{ background:#ff4d4d; color:#fff; }
 .coupler{ background:#ffd633; color:#000; }
 .outgoing-breaker{ background:#ff944d; color:#000; }
-.outgoing-dol{ background:#4d94ff; color:#000; }
+
+/* DOL color — bright blue */
+.outgoing-dol{
+  background:#1e90ff; /* dodgerblue */
+  color:#ffffff;
+}
+
+/* MCCB color */
 .outgoing-mccb{ background:#b366ff; color:#fff; }
 
-/* SFU color changed from sky-blue to teal (distinct from others) */
+/* SFU color — teal */
 .outgoing-sfu{
   background:#0d9488; /* teal */
   color:#ffffff;
+}
+
+/* Outgoing ACB — deep burgundy */
+.outgoing-acb{
+  background:#7b0f1a; /* deep burgundy */
+  color:#ffffff;
+  box-shadow: 0 6px 14px rgba(123,15,26,0.18), inset 0 2px 8px rgba(255,255,255,0.02);
+}
+
+/* Control Transformer — olive/green distinct color */
+.control-transformer{
+  background:#3b6e3b; /* olive green */
+  color:#ffffff;
+  box-shadow: 0 6px 12px rgba(59,110,59,0.12), inset 0 2px 6px rgba(255,255,255,0.03);
 }
 
 /* Spare variants */
@@ -327,14 +348,23 @@ async function load(){
           cell.classList.add("outgoing-breaker","breaker-font");
         }
         else{
-          if(d.DriveType === "DOL"){
+          // Prefer DriveType, fallback to deviceType when present
+          const drive = d.DriveType || d.deviceType || "";
+
+          if(drive === "DOL"){
             cell.classList.add("outgoing-dol");
           }
-          else if(d.DriveType === "MCCB"){
+          else if(drive === "MCCB"){
             cell.classList.add("outgoing-mccb");
           }
-          else if(d.DriveType === "SFU"){
+          else if(drive === "SFU"){
             cell.classList.add("outgoing-sfu");
+          }
+          else if(drive === "ACB"){
+            cell.classList.add("outgoing-acb","breaker-font");
+          }
+          else if(drive === "CONTROL_TRANSFORMER" || drive === "CT" || d.deviceType === "CONTROL_TRANSFORMER"){
+            cell.classList.add("control-transformer");
           }
           else{
             cell.classList.add("outgoing-dol");
@@ -343,9 +373,9 @@ async function load(){
       }
       else{
         // spare handling: give different color based on DriveType if present
-        if(d.DriveType === "DOL"){
+        if(d.DriveType === "DOL" || d.deviceType === "DOL"){
           cell.classList.add("spare","spare-dol");
-        } else if(d.DriveType === "SFU"){
+        } else if(d.DriveType === "SFU" || d.deviceType === "SFU"){
           cell.classList.add("spare","spare-sfu");
         } else {
           cell.classList.add("spare");
@@ -354,7 +384,7 @@ async function load(){
 
       // content: if truly spare (no DriveType and feeder not set), show 'SPARE' clearly
       let contentText;
-      if(cell.classList.contains("spare") && !(d.DriveType)){
+      if(cell.classList.contains("spare") && !(d.DriveType || d.deviceType)){
         contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
       } else {
         contentText =
@@ -365,7 +395,7 @@ async function load(){
              d.feederType==="BUS_COUPLER" ||
              d.breakerType)
             ? (d.breakerType || "")
-            : (d.DriveType || "")
+            : (d.DriveType || d.deviceType || "")
           );
       }
 
