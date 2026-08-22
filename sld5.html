@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Industrial LT MCC Layout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family:Arial;
+  margin:0;
+  background:#f2f6ff;
+}
+
+/* HEADER */
+.header{
+  background:#003f88;
+  color:white;
+  padding:10px;
+  text-align:center;
+  box-shadow:0 3px 10px rgba(0,0,0,.25);
+  position:relative;
+}
+
+.header-title{
+  font-size:22px;
+  font-weight:700;
+}
+
+.subtitle{
+  font-size:14px;
+  margin-top:3px;
+  font-weight:500;
+}
+
+/* NEW NAV BUTTONS */
+.nav-buttons{
+  position:absolute;
+  top:10px;
+  left:10px;
+  display:flex;
+  gap:10px;
+}
+
+.nav-btn{
+  background:white;
+  color:#003f88;
+  border:none;
+  padding:6px 12px;
+  border-radius:5px;
+  font-size:13px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 3px 8px rgba(0,0,0,.3);
+  transition:all .2s ease;
+}
+
+.nav-btn:hover{
+  background:#ffd633;
+  transform:scale(1.05);
+}
+
+/* BOARD AREA */
+#boardWrapper{
+  overflow:auto;
+  padding:20px;
+}
+
+#boardContainer{
+  display:flex;
+  align-items:flex-start;
+  position:relative;
+  min-height:500px;
+}
+
+/* SECTIONS */
+.section{
+  background:white;
+  border-radius:8px;
+  box-shadow:0 6px 15px rgba(0,0,0,.25);
+  margin-right:10px;
+  display:flex;
+  flex-direction:column;
+  width:160px;
+  height:600px;
+}
+
+.section-title{
+  background:#003f88;
+  color:white;
+  text-align:center;
+  font-weight:bold;
+  padding:8px;
+  font-size:14px;
+  letter-spacing:.5px;
+  flex-shrink:0;
+}
+
+/* BASE CELL */
+.cell{
+  border:2px solid #333;
+  padding:8px;
+  margin:6px;
+  font-size:12px;
+  border-radius:6px;
+  cursor:pointer;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+
+  box-shadow:
+    0 4px 8px rgba(0,0,0,.25),
+    inset 0 1px 2px rgba(255,255,255,.6);
+
+  transition:all .25s ease;
+}
+
+.cell:hover{
+  transform:scale(1.05);
+  box-shadow:
+    0 8px 16px rgba(0,0,0,.35),
+    inset 0 1px 2px rgba(255,255,255,.7);
+}
+
+.incomer-box{
+  font-size:14px;
+  font-weight:bold;
+}
+
+.breaker-font{
+  font-size:14px;
+  font-weight:bold;
+}
+
+/* STATUS - SWAPPED: OFF is GREEN, ON is RED */
+.status-on{
+  border:4px solid #cc0000 !important;
+  background: linear-gradient(180deg, rgba(255,220,220,0.12), rgba(255,255,255,0.02));
+  box-shadow:
+    0 8px 18px rgba(170,0,0,0.25),          
+    0 2px 6px rgba(0,0,0,0.25),             
+    inset 0 6px 12px rgba(200,0,0,0.08),    
+    inset 0 -6px 10px rgba(255,255,255,0.04);
+  position:relative;
+  z-index:2;
+  animation:glowPulseRed 2s infinite;
+}
+
+@keyframes glowPulseRed{
+  0%{box-shadow:0 8px 18px rgba(170,0,0,0.18), inset 0 6px 12px rgba(200,0,0,0.06);}
+  50%{box-shadow:0 12px 28px rgba(200,0,0,0.30), inset 0 8px 16px rgba(220,0,0,0.10);}
+  100%{box-shadow:0 8px 18px rgba(170,0,0,0.18), inset 0 6px 12px rgba(200,0,0,0.06);}
+}
+
+/* OFF state — thick GREEN border + 3D effect */
+.status-off{
+  border:4px solid #00aa00 !important;
+  background: linear-gradient(180deg, rgba(200,255,200,0.12), rgba(255,255,255,0.02));
+  box-shadow:
+    0 8px 18px rgba(0,150,0,0.25),
+    0 2px 6px rgba(0,0,0,0.28),
+    inset 0 6px 10px rgba(0,120,0,0.12),
+    inset 0 -6px 10px rgba(255,255,255,0.03);
+  position:relative;
+  z-index:1;
+  animation:glowPulseGreen 2s infinite;
+}
+
+@keyframes glowPulseGreen{
+  0%{box-shadow:0 8px 18px rgba(0,150,0,0.18), inset 0 6px 12px rgba(0,120,0,0.06);}
+  50%{box-shadow:0 12px 28px rgba(0,180,0,0.30), inset 0 8px 16px rgba(0,140,0,0.10);}
+  100%{box-shadow:0 8px 18px rgba(0,150,0,0.18), inset 0 6px 12px rgba(0,120,0,0.06);}
+}
+
+/* Colors for feeder types */
+.incomer{ background:#ff4d4d; color:#fff; }
+.coupler{ background:#ffd633; color:#000; }
+.outgoing-breaker{ background:#ff944d; color:#000; }
+
+/* DOL color — bright blue */
+.outgoing-dol{
+  background:#1e90ff;
+  color:#ffffff;
+}
+
+/* MCCB color */
+.outgoing-mccb{ background:#b366ff; color:#fff; }
+
+/* SFU color — teal */
+.outgoing-sfu{
+  background:#0d9488;
+  color:#ffffff;
+}
+
+/* Outgoing ACB — deep burgundy */
+.outgoing-acb{
+  background:#7b0f1a;
+  color:#ffffff;
+  box-shadow: 0 6px 14px rgba(123,15,26,0.18), inset 0 2px 8px rgba(255,255,255,0.02);
+}
+
+/* Control Transformer — olive/green distinct color */
+.control-transformer{
+  background:#557a2b;
+  color:#ffffff;
+  box-shadow: 0 6px 12px rgba(85,122,43,0.12), inset 0 2px 6px rgba(255,255,255,0.03);
+}
+
+/* Spare variants */
+.spare{ background:#e0e0e0; color:#333; }
+
+/* Spare for DOL (pale warm) */
+.spare-dol{
+  background: linear-gradient(180deg,#fff3e0,#ffd6b3);
+  color:#6b3f00;
+  border:2px dashed #ffb86b;
+  box-shadow: 0 6px 12px rgba(255,160,80,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Spare for SFU (pale cool) */
+.spare-sfu{
+  background: linear-gradient(180deg,#e9f8ff,#cfefff);
+  color:#004862;
+  border:2px dashed #5fbfe6;
+  box-shadow: 0 6px 12px rgba(80,180,220,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* coupler bridge style (unchanged) */
+.coupler-bridge{
+  position:absolute;
+  width:6px;
+  background:red;
+  top:50px;
+  height:70px;
+  z-index:1;
+  background:linear-gradient(to bottom, red 0%, yellow 50%, red 100%);
+  background-size:100% 200%;
+  animation:flowAnimation 1.5s linear infinite;
+}
+
+@keyframes flowAnimation{
+  0%{background-position:0% 0%;}
+  100%{background-position:0% 200%;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+  <!-- NEW BUTTONS -->
+  <div class="nav-buttons">
+    <button class="nav-btn" onclick="goHome()">Home</button>
+    <button class="nav-btn" onclick="goBack()">Back</button>
+  </div>
+
+  <div class="header-title" id="title">Industrial LT MCC Layout</div>
+  <div class="subtitle">
+    Designed and Maintained by Rakesh Chandra Sethy
+  </div>
+</div>
+
+<div id="boardWrapper">
+  <div id="boardContainer"></div>
+</div>
+
+<script>
+
+function goHome(){
+  window.location.href="https://08electricaldata.github.io/";
+}
+
+function goBack(){
+  window.history.back();
+}
+
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
+
+function getParam(n){
+  return new URL(location.href).searchParams.get(n);
+}
+
+/* helper to normalize type strings for robust matching */
+function norm(s){
+  if(!s && s!==0) return "";
+  return String(s).toUpperCase().replace(/[\s\-]+/g,'').replace(/_/g,'');
+}
+
+async function load(){
+
+  const boardId=getParam("id");
+  if(!boardId) return;
+
+  document.getElementById("title").innerText =
+  "Industrial LT MCC Layout - " + boardId;
+
+  const res=await fetch(JSON_URL);
+  const data=await res.json();
+
+  const board=data.boards[boardId];
+  if(!board) return;
+
+  const container=document.getElementById("boardContainer");
+  container.innerHTML="";
+
+  const sections=Object.keys(board.sections)
+    .sort((a,b)=>Number(a)-Number(b));
+
+  const sectionWidth=160;
+  container.style.width=(sections.length*sectionWidth)+"px";
+
+  sections.forEach((sec,index)=>{
+
+    const secDiv=document.createElement("div");
+    secDiv.className="section";
+
+    const title=document.createElement("div");
+    title.className="section-title";
+    title.innerText="SECTION "+sec;
+    secDiv.appendChild(title);
+
+    const devices=board.sections[sec]
+      .sort((a,b)=>a.level.localeCompare(b.level));
+
+    devices.forEach(d=>{
+
+      const cell=document.createElement("div");
+      cell.className="cell";
+
+      // status ON / OFF classes
+      if(d.status && String(d.status).toUpperCase()==="ON"){
+        cell.classList.add("status-on");
+      }else{
+        cell.classList.add("status-off");
+      }
+
+      const feeder = norm(d.feederType);
+      const breaker = norm(d.breakerType);
+      const drive = norm(d.DriveType || d.deviceType || "");
+
+      // INCOMER
+      if(feeder === "INCOMER"){
+        cell.classList.add("incomer","incomer-box","breaker-font");
+      }
+      // BUS COUPLER
+      else if(feeder === "BUSCOUPLER" || feeder === "BUSCOUPLER"){
+        cell.classList.add("coupler","breaker-font");
+
+        const bridge=document.createElement("div");
+        bridge.className="coupler-bridge";
+        bridge.style.left=(index*sectionWidth + 78)+"px";
+        container.appendChild(bridge);
+      }
+      // OUTGOING
+      else if(feeder === "OUTGOING"){
+
+        // If breakerType is ACB -> outgoing-acb (explicit)
+        if(breaker === "ACB"){
+          cell.classList.add("outgoing-acb","breaker-font");
+        }
+        // other breaker types present -> outgoing-breaker
+        else if(breaker){
+          cell.classList.add("outgoing-breaker","breaker-font");
+        }
+        else {
+          // No breakerType: decide by DriveType / deviceType
+          if(drive === "DOL"){
+            cell.classList.add("outgoing-dol");
+          }
+          else if(drive === "MCCB"){
+            cell.classList.add("outgoing-mccb");
+          }
+          else if(drive === "SFU"){
+            cell.classList.add("outgoing-sfu");
+          }
+          else if(drive === "ACB"){
+            // drive labelled as ACB rather than breakerType
+            cell.classList.add("outgoing-acb","breaker-font");
+          }
+          else if(drive === "CONTROLTRANSFORMER" || drive === "CT" || drive === "CONTROLTRANSFORMER"){
+            // If the device itself is a control transformer
+            cell.classList.add("control-transformer");
+          }
+          else{
+            cell.classList.add("outgoing-dol");
+          }
+        }
+      }
+      // SPARE or other (not incomer/bus/outgoing)
+      else{
+        // spare handling: prefer DriveType/deviceType to pick spare variant
+        if(drive === "DOL"){
+          cell.classList.add("spare","spare-dol");
+        } else if(drive === "SFU"){
+          cell.classList.add("spare","spare-sfu");
+        } else {
+          cell.classList.add("spare");
+        }
+      }
+
+      // Additionally, if DriveType specifically indicates CONTROL TRANSFORMER anywhere, ensure its color
+      if(d.DriveType && norm(d.DriveType).includes("CONTROLTRANSFORMER")){
+        cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+        cell.classList.add("control-transformer");
+      } else if(d.deviceType && norm(d.deviceType).includes("CONTROLTRANSFORMER")){
+        cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+        cell.classList.add("control-transformer");
+      }
+
+      // content: if truly spare (no DriveType/deviceType and no feeder info), show 'SPARE' clearly
+      let contentText;
+      const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
+      if(cell.classList.contains("spare") && !hasDriveOrDevice && !d.feederType){
+        contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
+      } else {
+        contentText =
+          "<b>"+(d.position || "")+"</b><br>"+
+          (d.driveid || "")+"<br>"+
+          (
+            (d.feederType==="INCOMER" ||
+             d.feederType==="BUS_COUPLER" ||
+             d.breakerType)
+            ? (d.breakerType || "")
+            : (d.DriveType || d.deviceType || "")
+          );
+      }
+
+      cell.innerHTML = contentText;
+
+      if(d.driveid){
+        cell.onclick=function(){
+          location.href=
+          "https://08electricaldata.github.io/drive-viewer/index2.html?id="+
+          d.driveid;
+        };
+      }
+
+      secDiv.appendChild(cell);
+    });
+
+    container.appendChild(secDiv);
+  });
+}
+
+load();
+
+</script>
+</body>
+</html>
