@@ -371,6 +371,10 @@ async function load(){
       const breaker = norm(d.breakerType);
       const drive = norm(d.DriveType || d.deviceType || "");
 
+      // parse driveid now so we can inspect display text for 'ACB'
+      const parsedDriveId = parseDriveId(d.driveid);
+      const displayDriveRaw = (parsedDriveId.displayText || "").toUpperCase();
+
       // INCOMER
       if(feeder === "INCOMER"){
         cell.classList.add("incomer","incomer-box","breaker-font");
@@ -387,8 +391,12 @@ async function load(){
       // OUTGOING
       else if(feeder === "OUTGOING"){
 
+        // NEW: If drive display (outside <>) contains 'ACB' anywhere, treat as ACB and use outgoing-acb
+        if(displayDriveRaw.includes("ACB")){
+          cell.classList.add("outgoing-acb","breaker-font");
+        }
         // If breakerType is ACB -> outgoing-acb (explicit)
-        if(breaker === "ACB"){
+        else if(breaker === "ACB"){
           cell.classList.add("outgoing-acb","breaker-font");
         }
         // other breaker types present -> outgoing-breaker
@@ -441,9 +449,9 @@ async function load(){
       }
 
       // --- new parsing behavior for driveid in column D ---
-      const parsed = parseDriveId(d.driveid);
+      const parsed = parsedDriveId;
       const displayDrive = escapeHtml(parsed.displayText || "");
-      const linkDrive = parsed.linkId; // now null if no <...>
+      const linkDrive = parsed.linkId; // null if no <...>
 
       // content: build using parsed displayDrive
       let contentText;
