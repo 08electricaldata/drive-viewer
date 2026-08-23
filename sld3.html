@@ -290,6 +290,35 @@ function norm(s){
   return String(s).toUpperCase().replace(/[\s\-]+/g,'').replace(/_/g,'');
 }
 
+/* escape HTML for safe insertion */
+function escapeHtml(str){
+  if(!str) return "";
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+/* parse driveid: returns { displayText, linkId }
+   - if raw contains <SOME-ID> the linkId is SOME-ID and displayText is raw with the <...> removed
+   - otherwise displayText is the raw trimmed string and linkId is null (so no navigation)
+*/
+function parseDriveId(raw){
+  if(raw === null || raw === undefined) return { displayText: "", linkId: null };
+  const s = String(raw).trim();
+  const m = s.match(/<\s*([^>]+)\s*>/); // find first <...>
+  if(m){
+    const linkId = m[1].trim();
+    const display = s.replace(/<\s*[^>]+\s*>/g, "") // remove all <> parts
+                     .replace(/\s+/g," ").trim();   // collapse whitespace
+    return { displayText: display || linkId, linkId: linkId };
+  } else {
+    return { displayText: s, linkId: null };
+  }
+}
+
 async function load(){
 
   const boardId=getParam("id");
@@ -323,8 +352,8 @@ async function load(){
     title.innerText="SECTION "+sec;
     secDiv.appendChild(title);
 
-    const devices=board.sections[sec]
-      .sort((a,b)=>a.level.localeCompare(b.level));
+    const devices=(board.sections[sec]||[])
+      .sort((a,b)=> (a.level||"").localeCompare(b.level||""));
 
     devices.forEach(d=>{
 
@@ -411,32 +440,45 @@ async function load(){
         cell.classList.add("control-transformer");
       }
 
-      // content: if truly spare (no DriveType/deviceType and no feeder info), show 'SPARE' clearly
+      // --- new parsing behavior for driveid in column D ---
+      const parsed = parseDriveId(d.driveid);
+      const displayDrive = escapeHtml(parsed.displayText || "");
+      const linkDrive = parsed.linkId; // now null if no <...>
+
+      // content: build using parsed displayDrive
       let contentText;
       const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
+
       if(cell.classList.contains("spare") && !hasDriveOrDevice && !d.feederType){
         contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
       } else {
         contentText =
           "<b>"+(d.position || "")+"</b><br>"+
-          (d.driveid || "")+"<br>"+
+          "<div style='font-size:13px;line-height:1.1;min-height:28px;'>"+ displayDrive + "</div>"+
+          "<div style='margin-top:6px;font-weight:600;color:#222;'>"+
           (
             (d.feederType==="INCOMER" ||
              d.feederType==="BUS_COUPLER" ||
              d.breakerType)
             ? (d.breakerType || "")
             : (d.DriveType || d.deviceType || "")
-          );
+          ) + "</div>";
       }
 
       cell.innerHTML = contentText;
 
-      if(d.driveid){
+      // set click target only if linkDrive exists (i.e., <...> was present)
+      if(linkDrive){
+        cell.style.cursor = "pointer";
         cell.onclick=function(){
+          const id = encodeURIComponent(linkDrive);
           location.href=
-          "https://08electricaldata.github.io/drive-viewer/index2.html?id="+
-          d.driveid;
+          "https://08electricaldata.github.io/drive-viewer/index2.html?id="+ id;
         };
+      } else {
+        // remove any pointer cursor if present and prevent navigation
+        cell.style.cursor = "default";
+        cell.onclick = null;
       }
 
       secDiv.appendChild(cell);
