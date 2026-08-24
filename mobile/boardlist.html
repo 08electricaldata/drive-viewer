@@ -123,17 +123,12 @@
     <table id="boardTable" aria-live="polite">
       <thead>
         <tr>
-          <th>Sl. No</th>
           <th>Substation</th>
-          <th>Voltage Level</th>
-          <th>Board Type</th>
           <th>Board No</th>
           <th>Board UID</th>
           <th>Primary Source IC1</th>
           <th>Secondary Source IC2</th>
           <th>Tertiary Source IC3</th>
-          <th>Emergency Source</th>
-          <th>Remarks</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -192,27 +187,22 @@ function buildTable(data){
   data.forEach(row=>{
     const tr = document.createElement("tr");
 
-    // create cells in safe manner
+    // create cells in safe manner (removed: Sl. No, Voltage Level, Board Type, Emergency Source, Remarks)
     const cells = [
-      row["Sl. No"] || "",
       row["Substation"] || "",
-      row["Voltage Level"] || "",
-      row["Board Type"] || "",
       row["Board No"] || "",
       row["Board UID"] || "",
       row["Primary Source IC1  (Trf/Board No.)"] || "",
       row["Secondary Source IC2 (Trf/Board No.)"] || "",
-      row["Tertiary Source IC3 (If Any)"] || "",
-      row["Emergency Source (If Any)"] || "",
-      row["Remarks"] || ""
+      row["Tertiary Source IC3 (If Any)"] || ""
     ];
 
     cells.forEach((c, i)=>{
       const td = document.createElement("td");
       td.textContent = c;
       // add classes for clickable columns
-      if(i === 5) td.classList.add("clickable","uid"); // Board UID column
-      if(i >= 6 && i <= 9) td.classList.add("clickable","source");
+      if(i === 2) td.classList.add("clickable","uid"); // Board UID column (now index 2)
+      if(i >= 3 && i <= 5) td.classList.add("clickable","source");
       tr.appendChild(td);
     });
 
