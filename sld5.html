@@ -506,43 +506,35 @@ async function downloadExcel(){
   }
 }
 
-/* Print A4 portrait: open a new window with the board content and print it in A4 portrait.
-   Keeps existing styles and adds @page A4 portrait declaration.
+/* Print A4 landscape: open a new window with the board content and print it in A4 landscape.
+   Keeps existing styles and adds @page A4 landscape declaration and scales to fit.
 */
 function printA4(){
   const boardWrapper = document.getElementById('boardWrapper');
   if(!boardWrapper) { alert('Board not found'); return; }
 
-  // collect styles from the current document (all <style> and <link rel="stylesheet">)
+  // collect styles from the current document (all <style> elements)
   let headHtml = '';
-  // inline style elements
   const styles = document.querySelectorAll('style');
   styles.forEach(s=>{
     headHtml += '<style>' + s.innerHTML + '</style>';
   });
-  // do not try to in-lining external links; copying document.head.innerHTML would work but may include scripts.
-  // add print specific CSS to force A4 portrait and scale to fit
-  headHtml += `<style>
-    @page { size: A4 portrait; margin: 10mm; }
-    html, body { width:210mm; height:297mm; margin:0; padding:0; }
-    /* Hide header nav buttons in print window */
-    .nav-buttons { display:none !important; }
-    /* reduce shadows for print and ensure visible borders */
-    .section, .cell { box-shadow:none !important; }
-    /* ensure board fits width */
-    #boardContainer { transform-origin: top left; }
-    /* responsiveness: reduce overall scale if too wide */
-    </style>`;
 
-  // Build new window content
-  const newWin = window.open('', '_blank', 'top=50,left=50,width=900,height=1100');
+  // A4 landscape: width 297mm, height 210mm. Use small margins and scale to fit width.
+  headHtml += `<style>
+    @page { size: A4 landscape; margin: 10mm; }
+    html, body { width:297mm; height:210mm; margin:0; padding:0; }
+    .nav-buttons { display:none !important; }
+    .section, .cell { box-shadow:none !important; }
+    #boardContainer { transform-origin: top left; }
+  </style>`;
+
+  const newWin = window.open('', '_blank', 'top=50,left=50,width=1200,height=900');
   if(!newWin){
     alert('Popup blocked: allow popups for this site to print.');
     return;
   }
 
-  // place the boardWrapper inner HTML into a container, but we also want the header title visible,
-  // so include the header and boardWrapper contents.
   const headerHtml = document.querySelector('.header').outerHTML;
   const bodyHtml = headerHtml + '<div style="padding:8px 12px;"><strong>' + escapeHtml(document.getElementById('title').innerText) + '</strong></div>' + boardWrapper.outerHTML;
 
@@ -550,17 +542,15 @@ function printA4(){
   newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print - ' + escapeHtml(document.getElementById('title').innerText) + '</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
   newWin.document.close();
 
-  // after content loads, attempt to scale the board to fit available A4 width
+  // after content loads, attempt to scale the board to fit available A4 width (landscape)
   newWin.onload = function(){
     try {
       const bc = newWin.document.getElementById('boardContainer');
       if(bc){
-        // compute scale so that boardContainer width fits 190mm (A4 width minus margins)
-        const mmToPx = (mm) => {
-          // approximate conversion using 96dpi: 96px = 25.4mm => 1mm ~ 3.78px
-          return mm * 3.78;
-        };
-        const targetPx = mmToPx(190); // approx printable width
+        // approximate px/mm conversion (96dpi): 1mm ≈ 3.78px
+        const mmToPx = (mm) => mm * 3.78;
+        // printable width = A4 width (297mm) - left/right margins (2 * 10mm)
+        const targetPx = mmToPx(297 - 20); // 277mm printable width
         const currentW = bc.scrollWidth || bc.offsetWidth || bc.getBoundingClientRect().width;
         const scale = Math.min(1, targetPx / currentW);
         bc.style.transform = 'scale(' + scale + ')';
