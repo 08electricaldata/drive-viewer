@@ -244,6 +244,13 @@ body{
   0%{background-position:0% 0%;}
   100%{background-position:0% 200%;}
 }
+
+/* print helper: hide nav buttons and shrink box shadows for print if needed */
+@media print {
+  .nav-buttons { display:none !important; }
+  .header { box-shadow:none !important; }
+  .section { box-shadow:none !important; }
+}
 </style>
 </head>
 
@@ -255,6 +262,8 @@ body{
   <div class="nav-buttons">
     <button class="nav-btn" onclick="goHome()">Home</button>
     <button class="nav-btn" onclick="goBack()">Back</button>
+    <button class="nav-btn" onclick="downloadExcel()">Download Excel</button>
+    <button class="nav-btn" onclick="printA4()">Print A4</button>
   </div>
 
   <div class="header-title" id="title">Industrial LT MCC Layout</div>
@@ -268,7 +277,6 @@ body{
 </div>
 
 <script>
-
 function goHome(){
   window.location.href="https://08electricaldata.github.io/";
 }
@@ -319,6 +327,240 @@ function parseDriveId(raw){
   }
 }
 
+/* ---------- Helpers for Excel export & Print ---------- */
+
+/* convert hex to ARGB style for XLSX */
+function hexToARGB(hex){
+  if(!hex) return "FFFFFFFF";
+  hex = hex.trim();
+  if(hex[0]==='#') hex = hex.slice(1);
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  hex = hex.toUpperCase();
+  return "FF" + hex;
+}
+
+/* map visual class to representative color */
+function visualColorForDeviceByClasses(classes){
+  if(classes.includes('incomer')) return '#ff4d4d';
+  if(classes.includes('coupler')) return '#ffd633';
+  if(classes.includes('outgoing-breaker')) return '#ff944d';
+  if(classes.includes('outgoing-dol')) return '#1e90ff';
+  if(classes.includes('outgoing-mccb')) return '#b366ff';
+  if(classes.includes('outgoing-sfu')) return '#0d9488';
+  if(classes.includes('outgoing-acb')) return '#7b0f1a';
+  if(classes.includes('control-transformer')) return '#557a2b';
+  if(classes.includes('spare-dol')) return '#ffd6b3';
+  if(classes.includes('spare-sfu')) return '#e9f8ff';
+  if(classes.includes('spare')) return '#e0e0e0';
+  return '#ffffff';
+}
+
+function statusBorderColorByClasses(classes){
+  return classes.includes('status-on') ? '#cc0000' : '#00aa00';
+}
+
+/* ---------- Robust SheetJS loader with fallback ---------- */
+function loadScript(src, timeoutMs = 10000){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    let timedOut = false;
+    const to = setTimeout(()=>{ timedOut = true; s.onerror = s.onload = null; s.remove(); reject(new Error('timeout')); }, timeoutMs);
+    s.onload = ()=>{ if(timedOut) return; clearTimeout(to); resolve(); };
+    s.onerror = (e)=>{ if(timedOut) return; clearTimeout(to); reject(new Error('error')); };
+    s.src = src;
+    document.head.appendChild(s);
+  });
+}
+async function ensureXLSX(){
+  if(window.XLSX) return window.XLSX;
+  const cdns = [
+    "https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js",
+    "https://unpkg.com/xlsx@0.18.7/dist/xlsx.full.min.js"
+  ];
+  let lastErr = null;
+  for(const url of cdns){
+    try{
+      await loadScript(url, 10000);
+      if(window.XLSX) return window.XLSX;
+    }catch(e){ lastErr = e; /* try next */ }
+  }
+  throw new Error('Failed to load SheetJS: ' + (lastErr && lastErr.message ? lastErr.message : String(lastErr)));
+}
+
+/* ---------- Fallback: export as HTML table (.xls) ---------- */
+function exportAsHtmlXls(filename, sections){
+  let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>';
+  html += 'table{ border-collapse:collapse; } td, th { border:1px solid #444; padding:6px; vertical-align:middle; text-align:center; } ';
+  html += '</style></head><body>';
+  html += '<table><thead><tr>';
+  for(const sec of sections){
+    html += '<th style="background:#003f88;color:#fff;">' + escapeHtml(sec.title) + '</th>';
+  }
+  html += '</tr></thead><tbody>';
+  const maxRows = Math.max(0, ...sections.map(s=>s.cells.length));
+  for(let r=0;r<maxRows;r++){
+    html += '<tr>';
+    for(const sec of sections){
+      const cell = sec.cells[r];
+      if(!cell){ html += '<td></td>'; continue; }
+      const bg = visualColorForDeviceByClasses(cell.classes);
+      const borderColor = statusBorderColorByClasses(cell.classes);
+      const style = 'background:' + bg + '; border:2px solid ' + borderColor + ';';
+      const content = escapeHtml(cell.text).replace(/\n/g,'<br/>');
+      html += '<td style="' + style + '">' + content + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></body></html>';
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.xls') ? filename : (filename + '.xls');
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 2000);
+}
+
+/* ---------- downloadExcel: tries SheetJS, falls back to HTML .xls ---------- */
+async function downloadExcel(){
+  const boardId = getParam('id');
+  if(!boardId){ alert('Board id missing in URL'); return; }
+
+  // Collect sections & cells from rendered DOM
+  const secEls = Array.from(document.querySelectorAll('#boardContainer > .section'));
+  if(secEls.length === 0){
+    alert('Nothing rendered yet to export.');
+    return;
+  }
+  const sections = secEls.map((secEl, idx)=> {
+    const titleEl = secEl.querySelector('.section-title');
+    const title = titleEl ? titleEl.innerText : ('SECTION ' + (idx+1));
+    const cells = Array.from(secEl.querySelectorAll('.cell')).map(c => ({ text: c.innerText || c.textContent || '', classes: Array.from(c.classList || []) }));
+    return { title, cells };
+  });
+
+  // Try primary path: XLSX via SheetJS
+  try{
+    await ensureXLSX();
+    const ws = {};
+    const colsCount = sections.length;
+    const maxRows = Math.max(0, ...sections.map(s=>s.cells.length));
+    const range = { s: { c:0, r:0 }, e: { c: Math.max(0, colsCount-1), r: Math.max(0, maxRows) } };
+    ws['!cols'] = sections.map(()=> ({ wch: 28 }) );
+
+    sections.forEach((sec, cidx)=>{
+      const addr = XLSX.utils.encode_cell({c:cidx, r:0});
+      ws[addr] = { v: sec.title, t: 's', s: {
+        font: { bold: true, color: { rgb: hexToARGB('#FFFFFF') } },
+        fill: { fgColor: { rgb: hexToARGB('#003f88') } },
+        alignment: { horizontal:'center', vertical:'center', wrapText:true }
+      }};
+      for(let r=0;r<maxRows;r++){
+        const a = XLSX.utils.encode_cell({c:cidx, r: r+1});
+        const cell = sec.cells[r];
+        if(!cell){
+          ws[a] = { v:"", t:'s', s: { alignment: { horizontal:'center', vertical:'center' } } };
+          continue;
+        }
+        const bg = visualColorForDeviceByClasses(cell.classes);
+        const border = statusBorderColorByClasses(cell.classes);
+        ws[a] = { v: cell.text, t: 's', s: {
+          alignment:{ horizontal:'center', vertical:'center', wrapText:true },
+          fill: { fgColor: { rgb: hexToARGB(bg) } },
+          border: {
+            top: { style:'thin', color:{ rgb: hexToARGB(border) } },
+            bottom: { style:'thin', color:{ rgb: hexToARGB(border) } },
+            left: { style:'thin', color:{ rgb: hexToARGB(border) } },
+            right: { style:'thin', color:{ rgb: hexToARGB(border) } }
+          },
+          font: { bold:true, color:{ rgb: hexToARGB('#222222') } }
+        }};
+      }
+    });
+
+    ws['!ref'] = XLSX.utils.encode_range(range);
+    const rows = [{ hpt:22 }];
+    for(let i=0;i<maxRows;i++) rows.push({ hpt:48 });
+    ws['!rows'] = rows;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Board-' + boardId);
+    const filename = 'Board-' + boardId + '.xlsx';
+    XLSX.writeFile(wb, filename);
+    return;
+  }catch(err){
+    console.warn('SheetJS failed, falling back to HTML .xls export:', err);
+    try{
+      const filename = 'Board-' + boardId + '.xls';
+      exportAsHtmlXls(filename, sections);
+      return;
+    }catch(e2){
+      console.error('Fallback export failed', e2);
+      alert('Failed to generate Excel: ' + (e2 && e2.message ? e2.message : e2));
+      return;
+    }
+  }
+}
+
+/* ---------- Print A4 landscape with two-row distribution ---------- */
+function printA4(){
+  const boardWrapper = document.getElementById('boardWrapper');
+  if(!boardWrapper){ alert('Board not found'); return; }
+
+  const sections = Array.from(document.querySelectorAll('#boardContainer > .section')).map(s=>s.cloneNode(true));
+  if(sections.length === 0){ alert('No sections to print.'); return; }
+
+  // top row gets ~55% of sections
+  const topCount = Math.max(1, Math.ceil(sections.length * 0.55));
+  const topSections = sections.slice(0, topCount);
+  const bottomSections = sections.slice(topCount);
+
+  let headHtml = '';
+  document.querySelectorAll('style').forEach(s=> headHtml += '<style>' + s.innerHTML + '</style>');
+  headHtml += `<style>
+    @page { size: A4 landscape; margin: 8mm; }
+    html, body { width:297mm; height:210mm; margin:0; padding:0; }
+    .print-header { padding:8px 12px; font-family: Arial; text-align:center; }
+    .print-board { display:flex; flex-direction:column; gap:6px; padding:6px; transform-origin: top left; }
+    .print-row { display:flex; gap:10px; align-items:flex-start; }
+    .print-row .section { width:160px; height:540px; margin-right:6px; box-sizing:border-box; }
+    .nav-buttons{ display:none !important; }
+    .section, .cell { box-shadow:none !important; }
+  </style>`;
+
+  const newWin = window.open('', '_blank', 'top=50,left=50,width=1200,height=900');
+  if(!newWin){ alert('Popup blocked: allow popups for this site to print.'); return; }
+
+  const topHtml = '<div class="print-row">' + topSections.map(s=> s.outerHTML).join('') + '</div>';
+  const bottomHtml = bottomSections.length ? ('<div class="print-row">' + bottomSections.map(s=> s.outerHTML).join('') + '</div>') : '';
+  const headerHtml = document.querySelector('.header').outerHTML;
+  const titleText = escapeHtml(document.getElementById('title').innerText || '');
+  const bodyHtml = '<div class="print-header">' + headerHtml + '<div style="margin-top:6px;font-weight:700;">' + titleText + '</div></div>' +
+                   '<div class="print-board" id="printBoard">' + topHtml + bottomHtml + '</div>';
+
+  newWin.document.open();
+  newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print - ' + titleText + '</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
+  newWin.document.close();
+
+  newWin.onload = function(){
+    try {
+      const pb = newWin.document.getElementById('printBoard');
+      if(pb){
+        const mmToPx = (mm)=> mm * 3.78;
+        const printableWidthPx = mmToPx(297 - 16);
+        const topRow = pb.querySelector('.print-row');
+        const curW = topRow ? (topRow.scrollWidth || topRow.getBoundingClientRect().width) : pb.scrollWidth;
+        const scale = Math.min(1, printableWidthPx / Math.max(1, curW));
+        pb.style.transform = 'scale(' + scale + ')';
+      }
+    } catch(e){ /* ignore */ }
+    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 500);
+  };
+}
+
+/* ---------- Main load (original logic preserved) ---------- */
 async function load(){
 
   const boardId=getParam("id");
