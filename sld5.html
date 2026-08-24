@@ -40,6 +40,7 @@ body{
   left:10px;
   display:flex;
   gap:10px;
+  z-index:50;
 }
 
 .nav-btn{
@@ -83,6 +84,7 @@ body{
   flex-direction:column;
   width:160px;
   height:600px;
+  box-sizing:border-box;
 }
 
 .section-title{
@@ -262,7 +264,7 @@ body{
   <div class="nav-buttons">
     <button class="nav-btn" onclick="goHome()">Home</button>
     <button class="nav-btn" onclick="goBack()">Back</button>
-    <!-- Added buttons: Download Excel and Print A4 -->
+    <!-- Added buttons: Download Excel and Print A4 (landscape with two-row layout) -->
     <button class="nav-btn" onclick="downloadExcel()">Download Excel</button>
     <button class="nav-btn" onclick="printA4()">Print A4</button>
   </div>
@@ -277,33 +279,18 @@ body{
   <div id="boardContainer"></div>
 </div>
 
-<!-- SheetJS (xlsx) library for Excel export -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js"></script>
-
 <script>
+/* ---------- Utility & data ---------- */
+function goHome(){ window.location.href="https://08electricaldata.github.io/"; }
+function goBack(){ window.history.back(); }
 
-function goHome(){
-  window.location.href="https://08electricaldata.github.io/";
-}
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
+function getParam(n){ return new URL(location.href).searchParams.get(n); }
 
-function goBack(){
-  window.history.back();
-}
-
-const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
-
-function getParam(n){
-  return new URL(location.href).searchParams.get(n);
-}
-
-/* helper to normalize type strings for robust matching */
 function norm(s){
   if(!s && s!==0) return "";
   return String(s).toUpperCase().replace(/[\s\-]+/g,'').replace(/_/g,'');
 }
-
-/* escape HTML for safe insertion */
 function escapeHtml(str){
   if(!str) return "";
   return String(str)
@@ -313,26 +300,36 @@ function escapeHtml(str){
     .replace(/"/g,"&quot;")
     .replace(/'/g,"&#039;");
 }
-
-/* parse driveid: returns { displayText, linkId }
-   - if raw contains <SOME-ID> the linkId is SOME-ID and displayText is raw with the <...> removed
-   - otherwise displayText is the raw trimmed string and linkId is null (so no navigation)
-*/
 function parseDriveId(raw){
   if(raw === null || raw === undefined) return { displayText: "", linkId: null };
   const s = String(raw).trim();
-  const m = s.match(/<\s*([^>]+)\s*>/); // find first <...>
+  const m = s.match(/<\s*([^>]+)\s*>/);
   if(m){
     const linkId = m[1].trim();
-    const display = s.replace(/<\s*[^>]+\s*>/g, "") // remove all <> parts
-                     .replace(/\s+/g," ").trim();   // collapse whitespace
+    const display = s.replace(/<\s*[^>]+\s*>/g, "").replace(/\s+/g," ").trim();
     return { displayText: display || linkId, linkId: linkId };
   } else {
     return { displayText: s, linkId: null };
   }
 }
 
-/* Helper: convert hex color like "#ff4d4d" to XLSX ARGB "FFFF4D4D" */
+/* ---------- SheetJS loader (ensures XLSX exists) ---------- */
+function ensureXLSX(){
+  return new Promise((resolve, reject)=>{
+    if(window.XLSX) return resolve(window.XLSX);
+    const script = document.createElement('script');
+    // use a stable version
+    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js";
+    script.onload = ()=> {
+      if(window.XLSX) resolve(window.XLSX);
+      else reject(new Error('XLSX failed to load'));
+    };
+    script.onerror = (e)=> reject(new Error('Failed to load SheetJS: '+e.message));
+    document.head.appendChild(script);
+  });
+}
+
+/* ---------- Excel export helpers ---------- */
 function hexToARGB(hex){
   if(!hex) return "FFFFFFFF";
   hex = hex.trim();
@@ -341,10 +338,7 @@ function hexToARGB(hex){
   hex = hex.toUpperCase();
   return "FF" + hex;
 }
-
-/* Map visual class to representative solid hex color (gradients mapped to a single color) */
 function visualColorForDevice(cellElement){
-  // check classes in order
   if(cellElement.classList.contains('incomer')) return '#ff4d4d';
   if(cellElement.classList.contains('coupler')) return '#ffd633';
   if(cellElement.classList.contains('outgoing-breaker')) return '#ff944d';
@@ -356,122 +350,85 @@ function visualColorForDevice(cellElement){
   if(cellElement.classList.contains('spare-dol')) return '#ffd6b3';
   if(cellElement.classList.contains('spare-sfu')) return '#e9f8ff';
   if(cellElement.classList.contains('spare')) return '#e0e0e0';
-  // fallback
   return '#ffffff';
 }
 
-/* Download the current board as an Excel workbook.
-   Layout: each SECTION is a column; row 1 = SECTION title; subsequent rows are stacked devices.
-   Colors and border are applied per device status and type for an approximate visual match.
-*/
+/* ---------- downloadExcel: ensure XLSX loaded, then build workbook ---------- */
 async function downloadExcel(){
   const boardId = getParam('id');
   if(!boardId) { alert('Board id missing in URL'); return; }
 
   try {
-    const res = await fetch(JSON_URL);
-    const data = await res.json();
-    const board = data.boards[boardId];
-    if(!board) { alert('Board not found'); return; }
+    await ensureXLSX(); // will throw if cannot load
 
-    const sections = Object.keys(board.sections).sort((a,b)=>Number(a)-Number(b));
-    // determine max devices in any section (to set rows)
-    let maxDevices = 0;
-    sections.forEach(sec=>{
-      const list = (board.sections[sec]||[]);
-      if(list.length > maxDevices) maxDevices = list.length;
-    });
+    // prefer reading rendered DOM to match exactly what user sees
+    const sectionEls = Array.from(document.querySelectorAll('#boardContainer > .section'));
+    if(sectionEls.length === 0){
+      // fallback to fetch data if DOM not rendered
+      const res = await fetch(JSON_URL);
+      const data = await res.json();
+      const board = data.boards[boardId];
+      if(!board){ alert('Board not found'); return; }
+      // create virtual sections from JSON
+      const sections = Object.keys(board.sections).sort((a,b)=>Number(a)-Number(b));
+      sectionEls.length = 0;
+      sections.forEach(sec=>{
+        const wrapper = document.createElement('div');
+        wrapper.dataset.section = sec;
+        (board.sections[sec] || []).forEach(d=>{
+          const c = document.createElement('div');
+          c.className = 'cell';
+          // set text
+          const parsed = parseDriveId(d.driveid);
+          const displayDrive = parsed.displayText || "";
+          const pos = d.position || "";
+          const lower = (d.feederType==="INCOMER" || d.feederType==="BUS_COUPLER" || d.breakerType) ? (d.breakerType || "") : (d.DriveType || d.deviceType || "");
+          c.textContent = (pos ? pos + "\n" : "") + (displayDrive ? displayDrive + "\n" : "") + (lower || "");
+          wrapper.appendChild(c);
+        });
+        sectionEls.push(wrapper);
+      });
+    }
 
-    // prepare worksheet object (A1-based)
+    // prepare workbook
     const ws = {};
+    const sections = sectionEls.map((se, idx)=> ({
+      title: (se.querySelector('.section-title') ? se.querySelector('.section-title').innerText : ('SECTION ' + (se.dataset.section || (idx+1)))),
+      // collect cell texts and classes
+      cells: Array.from(se.querySelectorAll('.cell')).map(cell=>{
+        return {
+          text: cell.innerText || cell.textContent || '',
+          classes: Array.from(cell.classList || [])
+        };
+      })
+    }));
+
+    const maxDevices = Math.max(0, ...sections.map(s=>s.cells.length));
     const range = { s: {c:0, r:0}, e: {c: Math.max(0, sections.length-1), r: Math.max(0, maxDevices)} };
+    const cols = sections.map(()=>({ wch: 28 }));
 
-    // set column widths
-    const cols = sections.map(()=>({ wch: 28 })); // width in characters
-
-    // fill sheet: section titles (row 0)
     sections.forEach((sec, colIdx)=>{
       const addr = XLSX.utils.encode_cell({c: colIdx, r: 0});
-      const titleVal = "SECTION " + sec;
-      ws[addr] = { v: titleVal, t: 's', s: {
+      ws[addr] = { v: sec.title, t: 's', s: {
         font: { bold: true, color: { rgb: hexToARGB('#FFFFFF') } },
         fill: { fgColor: { rgb: hexToARGB('#003f88') } },
         alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
       }};
-    });
-
-    // populate device rows
-    sections.forEach((sec, colIdx)=>{
-      const devices = (board.sections[sec] || []).slice(); // array of device objects
       for(let rowIdx=0; rowIdx<maxDevices; rowIdx++){
-        const addr = XLSX.utils.encode_cell({c: colIdx, r: rowIdx+1});
-        const dev = devices[rowIdx];
-        if(!dev){
-          // empty cell
-          ws[addr] = { v: "", t: 's', s: { alignment: { horizontal: 'center', vertical: 'center' } } };
+        const a = XLSX.utils.encode_cell({c: colIdx, r: rowIdx+1});
+        const cellData = sec.cells[rowIdx];
+        if(!cellData){
+          ws[a] = { v: "", t: 's', s: { alignment: { horizontal: 'center', vertical: 'center' } } };
           continue;
         }
+        // reconstruct a temp element to decide color/status
+        const tmp = document.createElement('div');
+        tmp.className = 'cell';
+        cellData.classes.forEach(ccl=> tmp.classList.add(ccl));
+        const bg = visualColorForDevice(tmp);
+        const borderColor = tmp.classList.contains('status-on') ? '#cc0000' : '#00aa00';
 
-        // build text similar to on-screen content
-        const parsedDriveId = parseDriveId(dev.driveid);
-        const displayDrive = (parsedDriveId.displayText || "");
-        const position = dev.position || "";
-        const hasDriveOrDevice = Boolean(dev.DriveType || dev.deviceType);
-
-        let lowerLine;
-        if((dev.feederType==="INCOMER" || dev.feederType==="BUS_COUPLER" || dev.breakerType) ){
-          lowerLine = (dev.breakerType || "");
-        } else {
-          lowerLine = (dev.DriveType || dev.deviceType || "");
-        }
-
-        let text;
-        if(!dev.feederType && !hasDriveOrDevice && (ws[addr].v === undefined)){
-          text = (position ? position + "\n" : "") + "SPARE";
-        } else {
-          text = (position ? position + "\n" : "") +
-                 (displayDrive ? displayDrive + "\n" : "") +
-                 (lowerLine ? lowerLine : "");
-        }
-
-        // Create the cell with style approximating on-screen appearance
-        const tempDiv = document.createElement('div');
-        tempDiv.className = 'cell'; // to use visualColorForDevice detection
-        // replicate classes used earlier for type detection
-        const feeder = norm(dev.feederType);
-        const breaker = norm(dev.breakerType);
-        const drive = norm(dev.DriveType || dev.deviceType || "");
-        if(dev.feederType && feeder === "INCOMER"){ tempDiv.classList.add('incomer'); }
-        else if(feeder === "BUSCOUPLER"){ tempDiv.classList.add('coupler'); }
-        else if(feeder === "OUTGOING"){
-          if(String(dev.driveid||"").toUpperCase().includes("ACB") || breaker === "ACB" || drive === "ACB"){
-            tempDiv.classList.add('outgoing-acb');
-          } else if(breaker){
-            tempDiv.classList.add('outgoing-breaker');
-          } else if(drive === "DOL"){ tempDiv.classList.add('outgoing-dol'); }
-          else if(drive === "MCCB"){ tempDiv.classList.add('outgoing-mccb'); }
-          else if(drive === "SFU"){ tempDiv.classList.add('outgoing-sfu'); }
-          else if(drive === "CONTROLTRANSFORMER" || drive === "CT"){
-            tempDiv.classList.add('control-transformer');
-          } else { tempDiv.classList.add('outgoing-dol'); }
-        } else {
-          // spare variants
-          if(drive === "DOL") tempDiv.classList.add('spare-dol');
-          else if(drive === "SFU") tempDiv.classList.add('spare-sfu');
-          else tempDiv.classList.add('spare');
-        }
-        // set status class
-        if(dev.status && String(dev.status).toUpperCase()==="ON"){
-          tempDiv.classList.add('status-on');
-        } else {
-          tempDiv.classList.add('status-off');
-        }
-
-        const bg = visualColorForDevice(tempDiv);
-        // border color depending on status
-        const borderColor = tempDiv.classList.contains('status-on') ? '#cc0000' : '#00aa00';
-
-        ws[addr] = { v: text, t: 's', s: {
+        ws[a] = { v: cellData.text, t: 's', s: {
           alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
           fill: { fgColor: { rgb: hexToARGB(bg) } },
           border: {
@@ -485,48 +442,55 @@ async function downloadExcel(){
       }
     });
 
-    // set sheet range
     ws['!ref'] = XLSX.utils.encode_range(range);
     ws['!cols'] = cols;
-    // set row heights: first row (title) shorter, devices taller
-    const rows = [{ hpt: 22 }]; // hpt in points
-    for(let i=0;i<maxDevices;i++){
-      rows.push({ hpt: 48 });
-    }
+    const rows = [{ hpt: 22 }];
+    for(let i=0;i<maxDevices;i++) rows.push({ hpt: 48 });
     ws['!rows'] = rows;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Board-' + boardId);
-
     const filename = 'Board-' + boardId + '.xlsx';
     XLSX.writeFile(wb, filename);
-  } catch (err) {
+
+  } catch(err){
     console.error(err);
-    alert('Failed to generate Excel: ' + err.message);
+    alert('Failed to generate Excel: ' + (err && err.message ? err.message : err));
   }
 }
 
-/* Print A4 landscape: open a new window with the board content and print it in A4 landscape.
-   Keeps existing styles and adds @page A4 landscape declaration and scales to fit.
-*/
+/* ---------- Print A4 landscape (two-row optimized layout) ---------- */
 function printA4(){
   const boardWrapper = document.getElementById('boardWrapper');
-  if(!boardWrapper) { alert('Board not found'); return; }
+  if(!boardWrapper){ alert('Board not found'); return; }
 
-  // collect styles from the current document (all <style> elements)
+  // clone and collect sections from the DOM
+  const sections = Array.from(document.querySelectorAll('#boardContainer > .section')).map(s=>s.cloneNode(true));
+  if(sections.length === 0){
+    alert('No sections to print.');
+    return;
+  }
+
+  // decide top row count: slightly favor top (55%) so the top row will have more columns
+  const topCount = Math.max(1, Math.ceil(sections.length * 0.55));
+  const topSections = sections.slice(0, topCount);
+  const bottomSections = sections.slice(topCount);
+
+  // construct printable HTML: header + two rows container
   let headHtml = '';
   const styles = document.querySelectorAll('style');
-  styles.forEach(s=>{
-    headHtml += '<style>' + s.innerHTML + '</style>';
-  });
+  styles.forEach(s=> headHtml += '<style>' + s.innerHTML + '</style>');
 
-  // A4 landscape: width 297mm, height 210mm. Use small margins and scale to fit width.
   headHtml += `<style>
-    @page { size: A4 landscape; margin: 10mm; }
+    @page { size: A4 landscape; margin: 8mm; }
     html, body { width:297mm; height:210mm; margin:0; padding:0; }
-    .nav-buttons { display:none !important; }
+    body { background: white; }
+    .print-header { padding:8px 12px; font-family: Arial; text-align:center; }
+    .print-board { display:flex; flex-direction:column; gap:6px; padding:6px; transform-origin: top left; }
+    .print-row { display:flex; gap:10px; align-items:flex-start; }
+    .print-row .section { width:160px; height:540px; margin-right:6px; }
+    .nav-buttons{ display:none !important; }
     .section, .cell { box-shadow:none !important; }
-    #boardContainer { transform-origin: top left; }
   </style>`;
 
   const newWin = window.open('', '_blank', 'top=50,left=50,width=1200,height=900');
@@ -535,80 +499,76 @@ function printA4(){
     return;
   }
 
+  // build rows markup
+  const topHtml = '<div class="print-row">' + topSections.map(s=> s.outerHTML).join('') + '</div>';
+  const bottomHtml = bottomSections.length ? ('<div class="print-row">' + bottomSections.map(s=> s.outerHTML).join('') + '</div>') : '';
   const headerHtml = document.querySelector('.header').outerHTML;
-  const bodyHtml = headerHtml + '<div style="padding:8px 12px;"><strong>' + escapeHtml(document.getElementById('title').innerText) + '</strong></div>' + boardWrapper.outerHTML;
+  const titleText = escapeHtml(document.getElementById('title').innerText || '');
+
+  const bodyHtml = '<div class="print-header">' + headerHtml + '<div style="margin-top:6px;font-weight:700;">' + titleText + '</div></div>' +
+                   '<div class="print-board" id="printBoard">' + topHtml + bottomHtml + '</div>';
 
   newWin.document.open();
-  newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print - ' + escapeHtml(document.getElementById('title').innerText) + '</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
+  newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print - ' + titleText + '</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
   newWin.document.close();
 
-  // after content loads, attempt to scale the board to fit available A4 width (landscape)
   newWin.onload = function(){
     try {
-      const bc = newWin.document.getElementById('boardContainer');
-      if(bc){
-        // approximate px/mm conversion (96dpi): 1mm ≈ 3.78px
-        const mmToPx = (mm) => mm * 3.78;
-        // printable width = A4 width (297mm) - left/right margins (2 * 10mm)
-        const targetPx = mmToPx(297 - 20); // 277mm printable width
-        const currentW = bc.scrollWidth || bc.offsetWidth || bc.getBoundingClientRect().width;
-        const scale = Math.min(1, targetPx / currentW);
-        bc.style.transform = 'scale(' + scale + ')';
+      const pb = newWin.document.getElementById('printBoard');
+      if(pb){
+        // target printable width in pixels (A4 landscape width minus margins)
+        const mmToPx = (mm)=> mm * 3.78; // approx
+        const printableWidthPx = mmToPx(297 - 16); // margins = 8mm left+right
+        // compute current width of top row
+        const topRow = pb.querySelector('.print-row');
+        const curW = topRow ? (topRow.scrollWidth || topRow.getBoundingClientRect().width) : pb.scrollWidth;
+        const scale = Math.min(1, printableWidthPx / Math.max(1, curW));
+        pb.style.transform = 'scale(' + scale + ')';
       }
-    } catch(e){
-      // ignore
-    }
-    // small timeout to let layout settle
-    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 400);
+    } catch(e){ /* ignore */ }
+
+    // give the page a moment to layout, then print
+    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 500);
   };
 }
 
-/* Main load function (unchanged logic) */
+/* ---------- Original rendering logic (unchanged but uses the same DOM structure) ---------- */
 async function load(){
-
-  const boardId=getParam("id");
+  const boardId = getParam("id");
   if(!boardId) return;
 
-  document.getElementById("title").innerText =
-  "Industrial LT MCC Layout - " + boardId;
+  document.getElementById("title").innerText = "Industrial LT MCC Layout - " + boardId;
 
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
-
-  const board=data.boards[boardId];
+  const res = await fetch(JSON_URL);
+  const data = await res.json();
+  const board = data.boards[boardId];
   if(!board) return;
 
-  const container=document.getElementById("boardContainer");
-  container.innerHTML="";
+  const container = document.getElementById("boardContainer");
+  container.innerHTML = "";
 
-  const sections=Object.keys(board.sections)
-    .sort((a,b)=>Number(a)-Number(b));
-
-  const sectionWidth=160;
-  container.style.width=(sections.length*sectionWidth)+"px";
+  const sections = Object.keys(board.sections).sort((a,b)=>Number(a)-Number(b));
+  const sectionWidth = 160;
+  container.style.width = (sections.length * sectionWidth) + "px";
 
   sections.forEach((sec,index)=>{
+    const secDiv = document.createElement("div");
+    secDiv.className = "section";
 
-    const secDiv=document.createElement("div");
-    secDiv.className="section";
-
-    const title=document.createElement("div");
-    title.className="section-title";
-    title.innerText="SECTION "+sec;
+    const title = document.createElement("div");
+    title.className = "section-title";
+    title.innerText = "SECTION "+sec;
     secDiv.appendChild(title);
 
-    const devices=(board.sections[sec]||[])
-      .sort((a,b)=> (a.level||"").localeCompare(b.level||""));
+    const devices = (board.sections[sec]||[]).sort((a,b)=> (a.level||"").localeCompare(b.level||""));
 
     devices.forEach(d=>{
+      const cell = document.createElement("div");
+      cell.className = "cell";
 
-      const cell=document.createElement("div");
-      cell.className="cell";
-
-      // status ON / OFF classes
       if(d.status && String(d.status).toUpperCase()==="ON"){
         cell.classList.add("status-on");
-      }else{
+      } else {
         cell.classList.add("status-off");
       }
 
@@ -616,65 +576,46 @@ async function load(){
       const breaker = norm(d.breakerType);
       const drive = norm(d.DriveType || d.deviceType || "");
 
-      // parse driveid now so we can inspect display text for 'ACB'
       const parsedDriveId = parseDriveId(d.driveid);
       const displayDriveRaw = (parsedDriveId.displayText || "").toUpperCase();
 
-      // INCOMER
       if(feeder === "INCOMER"){
         cell.classList.add("incomer","incomer-box","breaker-font");
       }
-      // BUS COUPLER
       else if(feeder === "BUSCOUPLER" || feeder === "BUSCOUPLER"){
         cell.classList.add("coupler","breaker-font");
-
-        const bridge=document.createElement("div");
-        bridge.className="coupler-bridge";
-        bridge.style.left=(index*sectionWidth + 78)+"px";
+        const bridge = document.createElement("div");
+        bridge.className = "coupler-bridge";
+        bridge.style.left = (index*sectionWidth + 78) + "px";
         container.appendChild(bridge);
       }
-      // OUTGOING
       else if(feeder === "OUTGOING"){
-
-        // NEW: If drive display (outside <>) contains 'ACB' anywhere, treat as ACB and use outgoing-acb
         if(displayDriveRaw.includes("ACB")){
           cell.classList.add("outgoing-acb","breaker-font");
         }
-        // If breakerType is ACB -> outgoing-acb (explicit)
         else if(breaker === "ACB"){
           cell.classList.add("outgoing-acb","breaker-font");
         }
-        // other breaker types present -> outgoing-breaker
         else if(breaker){
           cell.classList.add("outgoing-breaker","breaker-font");
         }
         else {
-          // No breakerType: decide by DriveType / deviceType
           if(drive === "DOL"){
             cell.classList.add("outgoing-dol");
-          }
-          else if(drive === "MCCB"){
+          } else if(drive === "MCCB"){
             cell.classList.add("outgoing-mccb");
-          }
-          else if(drive === "SFU"){
+          } else if(drive === "SFU"){
             cell.classList.add("outgoing-sfu");
-          }
-          else if(drive === "ACB"){
-            // drive labelled as ACB rather than breakerType
+          } else if(drive === "ACB"){
             cell.classList.add("outgoing-acb","breaker-font");
-          }
-          else if(drive === "CONTROLTRANSFORMER" || drive === "CT" || drive === "CONTROLTRANSFORMER"){
-            // If the device itself is a control transformer
+          } else if(drive === "CONTROLTRANSFORMER" || drive === "CT"){
             cell.classList.add("control-transformer");
-          }
-          else{
+          } else {
             cell.classList.add("outgoing-dol");
           }
         }
       }
-      // SPARE or other (not incomer/bus/outgoing)
-      else{
-        // spare handling: prefer DriveType/deviceType to pick spare variant
+      else {
         if(drive === "DOL"){
           cell.classList.add("spare","spare-dol");
         } else if(drive === "SFU"){
@@ -684,7 +625,6 @@ async function load(){
         }
       }
 
-      // Additionally, if DriveType specifically indicates CONTROL TRANSFORMER anywhere, ensure its color
       if(d.DriveType && norm(d.DriveType).includes("CONTROLTRANSFORMER")){
         cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
         cell.classList.add("control-transformer");
@@ -693,12 +633,10 @@ async function load(){
         cell.classList.add("control-transformer");
       }
 
-      // --- new parsing behavior for driveid in column D ---
       const parsed = parsedDriveId;
       const displayDrive = escapeHtml(parsed.displayText || "");
-      const linkDrive = parsed.linkId; // null if no <...>
+      const linkDrive = parsed.linkId;
 
-      // content: build using parsed displayDrive
       let contentText;
       const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
 
@@ -720,16 +658,13 @@ async function load(){
 
       cell.innerHTML = contentText;
 
-      // set click target only if linkDrive exists (i.e., <...> was present)
       if(linkDrive){
         cell.style.cursor = "pointer";
-        cell.onclick=function(){
+        cell.onclick = function(){
           const id = encodeURIComponent(linkDrive);
-          location.href=
-          "https://08electricaldata.github.io/drive-viewer/index2.html?id="+ id;
+          location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id="+ id;
         };
       } else {
-        // remove any pointer cursor if present and prevent navigation
         cell.style.cursor = "default";
         cell.onclick = null;
       }
@@ -742,7 +677,6 @@ async function load(){
 }
 
 load();
-
 </script>
 </body>
 </html>
