@@ -244,6 +244,13 @@ body{
   0%{background-position:0% 0%;}
   100%{background-position:0% 200%;}
 }
+
+/* print helper: hide nav buttons and shrink box shadows for print if needed */
+@media print {
+  .nav-buttons { display:none !important; }
+  .header { box-shadow:none !important; }
+  .section { box-shadow:none !important; }
+}
 </style>
 </head>
 
@@ -255,6 +262,9 @@ body{
   <div class="nav-buttons">
     <button class="nav-btn" onclick="goHome()">Home</button>
     <button class="nav-btn" onclick="goBack()">Back</button>
+    <!-- Added buttons: Download Excel and Print A4 -->
+    <button class="nav-btn" onclick="downloadExcel()">Download Excel</button>
+    <button class="nav-btn" onclick="printA4()">Print A4</button>
   </div>
 
   <div class="header-title" id="title">Industrial LT MCC Layout</div>
@@ -266,6 +276,9 @@ body{
 <div id="boardWrapper">
   <div id="boardContainer"></div>
 </div>
+
+<!-- SheetJS (xlsx) library for Excel export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js"></script>
 
 <script>
 
@@ -319,6 +332,248 @@ function parseDriveId(raw){
   }
 }
 
+/* Helper: convert hex color like "#ff4d4d" to XLSX ARGB "FFFF4D4D" */
+function hexToARGB(hex){
+  if(!hex) return "FFFFFFFF";
+  hex = hex.trim();
+  if(hex[0]==='#') hex = hex.slice(1);
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  hex = hex.toUpperCase();
+  return "FF" + hex;
+}
+
+/* Map visual class to representative solid hex color (gradients mapped to a single color) */
+function visualColorForDevice(cellElement){
+  // check classes in order
+  if(cellElement.classList.contains('incomer')) return '#ff4d4d';
+  if(cellElement.classList.contains('coupler')) return '#ffd633';
+  if(cellElement.classList.contains('outgoing-breaker')) return '#ff944d';
+  if(cellElement.classList.contains('outgoing-dol')) return '#1e90ff';
+  if(cellElement.classList.contains('outgoing-mccb')) return '#b366ff';
+  if(cellElement.classList.contains('outgoing-sfu')) return '#0d9488';
+  if(cellElement.classList.contains('outgoing-acb')) return '#7b0f1a';
+  if(cellElement.classList.contains('control-transformer')) return '#557a2b';
+  if(cellElement.classList.contains('spare-dol')) return '#ffd6b3';
+  if(cellElement.classList.contains('spare-sfu')) return '#e9f8ff';
+  if(cellElement.classList.contains('spare')) return '#e0e0e0';
+  // fallback
+  return '#ffffff';
+}
+
+/* Download the current board as an Excel workbook.
+   Layout: each SECTION is a column; row 1 = SECTION title; subsequent rows are stacked devices.
+   Colors and border are applied per device status and type for an approximate visual match.
+*/
+async function downloadExcel(){
+  const boardId = getParam('id');
+  if(!boardId) { alert('Board id missing in URL'); return; }
+
+  try {
+    const res = await fetch(JSON_URL);
+    const data = await res.json();
+    const board = data.boards[boardId];
+    if(!board) { alert('Board not found'); return; }
+
+    const sections = Object.keys(board.sections).sort((a,b)=>Number(a)-Number(b));
+    // determine max devices in any section (to set rows)
+    let maxDevices = 0;
+    sections.forEach(sec=>{
+      const list = (board.sections[sec]||[]);
+      if(list.length > maxDevices) maxDevices = list.length;
+    });
+
+    // prepare worksheet object (A1-based)
+    const ws = {};
+    const range = { s: {c:0, r:0}, e: {c: Math.max(0, sections.length-1), r: Math.max(0, maxDevices)} };
+
+    // set column widths
+    const cols = sections.map(()=>({ wch: 28 })); // width in characters
+
+    // fill sheet: section titles (row 0)
+    sections.forEach((sec, colIdx)=>{
+      const addr = XLSX.utils.encode_cell({c: colIdx, r: 0});
+      const titleVal = "SECTION " + sec;
+      ws[addr] = { v: titleVal, t: 's', s: {
+        font: { bold: true, color: { rgb: hexToARGB('#FFFFFF') } },
+        fill: { fgColor: { rgb: hexToARGB('#003f88') } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+      }};
+    });
+
+    // populate device rows
+    sections.forEach((sec, colIdx)=>{
+      const devices = (board.sections[sec] || []).slice(); // array of device objects
+      for(let rowIdx=0; rowIdx<maxDevices; rowIdx++){
+        const addr = XLSX.utils.encode_cell({c: colIdx, r: rowIdx+1});
+        const dev = devices[rowIdx];
+        if(!dev){
+          // empty cell
+          ws[addr] = { v: "", t: 's', s: { alignment: { horizontal: 'center', vertical: 'center' } } };
+          continue;
+        }
+
+        // build text similar to on-screen content
+        const parsedDriveId = parseDriveId(dev.driveid);
+        const displayDrive = (parsedDriveId.displayText || "");
+        const position = dev.position || "";
+        const hasDriveOrDevice = Boolean(dev.DriveType || dev.deviceType);
+
+        let lowerLine;
+        if((dev.feederType==="INCOMER" || dev.feederType==="BUS_COUPLER" || dev.breakerType) ){
+          lowerLine = (dev.breakerType || "");
+        } else {
+          lowerLine = (dev.DriveType || dev.deviceType || "");
+        }
+
+        let text;
+        if(!dev.feederType && !hasDriveOrDevice && (ws[addr].v === undefined)){
+          text = (position ? position + "\n" : "") + "SPARE";
+        } else {
+          text = (position ? position + "\n" : "") +
+                 (displayDrive ? displayDrive + "\n" : "") +
+                 (lowerLine ? lowerLine : "");
+        }
+
+        // Create the cell with style approximating on-screen appearance
+        const tempDiv = document.createElement('div');
+        tempDiv.className = 'cell'; // to use visualColorForDevice detection
+        // replicate classes used earlier for type detection
+        const feeder = norm(dev.feederType);
+        const breaker = norm(dev.breakerType);
+        const drive = norm(dev.DriveType || dev.deviceType || "");
+        if(dev.feederType && feeder === "INCOMER"){ tempDiv.classList.add('incomer'); }
+        else if(feeder === "BUSCOUPLER"){ tempDiv.classList.add('coupler'); }
+        else if(feeder === "OUTGOING"){
+          if(String(dev.driveid||"").toUpperCase().includes("ACB") || breaker === "ACB" || drive === "ACB"){
+            tempDiv.classList.add('outgoing-acb');
+          } else if(breaker){
+            tempDiv.classList.add('outgoing-breaker');
+          } else if(drive === "DOL"){ tempDiv.classList.add('outgoing-dol'); }
+          else if(drive === "MCCB"){ tempDiv.classList.add('outgoing-mccb'); }
+          else if(drive === "SFU"){ tempDiv.classList.add('outgoing-sfu'); }
+          else if(drive === "CONTROLTRANSFORMER" || drive === "CT"){
+            tempDiv.classList.add('control-transformer');
+          } else { tempDiv.classList.add('outgoing-dol'); }
+        } else {
+          // spare variants
+          if(drive === "DOL") tempDiv.classList.add('spare-dol');
+          else if(drive === "SFU") tempDiv.classList.add('spare-sfu');
+          else tempDiv.classList.add('spare');
+        }
+        // set status class
+        if(dev.status && String(dev.status).toUpperCase()==="ON"){
+          tempDiv.classList.add('status-on');
+        } else {
+          tempDiv.classList.add('status-off');
+        }
+
+        const bg = visualColorForDevice(tempDiv);
+        // border color depending on status
+        const borderColor = tempDiv.classList.contains('status-on') ? '#cc0000' : '#00aa00';
+
+        ws[addr] = { v: text, t: 's', s: {
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          fill: { fgColor: { rgb: hexToARGB(bg) } },
+          border: {
+            top: { style: 'thin', color: { rgb: hexToARGB(borderColor) } },
+            bottom: { style: 'thin', color: { rgb: hexToARGB(borderColor) } },
+            left: { style: 'thin', color: { rgb: hexToARGB(borderColor) } },
+            right: { style: 'thin', color: { rgb: hexToARGB(borderColor) } }
+          },
+          font: { bold: true, color: { rgb: hexToARGB('#222222') } }
+        }};
+      }
+    });
+
+    // set sheet range
+    ws['!ref'] = XLSX.utils.encode_range(range);
+    ws['!cols'] = cols;
+    // set row heights: first row (title) shorter, devices taller
+    const rows = [{ hpt: 22 }]; // hpt in points
+    for(let i=0;i<maxDevices;i++){
+      rows.push({ hpt: 48 });
+    }
+    ws['!rows'] = rows;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Board-' + boardId);
+
+    const filename = 'Board-' + boardId + '.xlsx';
+    XLSX.writeFile(wb, filename);
+  } catch (err) {
+    console.error(err);
+    alert('Failed to generate Excel: ' + err.message);
+  }
+}
+
+/* Print A4 portrait: open a new window with the board content and print it in A4 portrait.
+   Keeps existing styles and adds @page A4 portrait declaration.
+*/
+function printA4(){
+  const boardWrapper = document.getElementById('boardWrapper');
+  if(!boardWrapper) { alert('Board not found'); return; }
+
+  // collect styles from the current document (all <style> and <link rel="stylesheet">)
+  let headHtml = '';
+  // inline style elements
+  const styles = document.querySelectorAll('style');
+  styles.forEach(s=>{
+    headHtml += '<style>' + s.innerHTML + '</style>';
+  });
+  // do not try to in-lining external links; copying document.head.innerHTML would work but may include scripts.
+  // add print specific CSS to force A4 portrait and scale to fit
+  headHtml += `<style>
+    @page { size: A4 portrait; margin: 10mm; }
+    html, body { width:210mm; height:297mm; margin:0; padding:0; }
+    /* Hide header nav buttons in print window */
+    .nav-buttons { display:none !important; }
+    /* reduce shadows for print and ensure visible borders */
+    .section, .cell { box-shadow:none !important; }
+    /* ensure board fits width */
+    #boardContainer { transform-origin: top left; }
+    /* responsiveness: reduce overall scale if too wide */
+    </style>`;
+
+  // Build new window content
+  const newWin = window.open('', '_blank', 'top=50,left=50,width=900,height=1100');
+  if(!newWin){
+    alert('Popup blocked: allow popups for this site to print.');
+    return;
+  }
+
+  // place the boardWrapper inner HTML into a container, but we also want the header title visible,
+  // so include the header and boardWrapper contents.
+  const headerHtml = document.querySelector('.header').outerHTML;
+  const bodyHtml = headerHtml + '<div style="padding:8px 12px;"><strong>' + escapeHtml(document.getElementById('title').innerText) + '</strong></div>' + boardWrapper.outerHTML;
+
+  newWin.document.open();
+  newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print - ' + escapeHtml(document.getElementById('title').innerText) + '</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
+  newWin.document.close();
+
+  // after content loads, attempt to scale the board to fit available A4 width
+  newWin.onload = function(){
+    try {
+      const bc = newWin.document.getElementById('boardContainer');
+      if(bc){
+        // compute scale so that boardContainer width fits 190mm (A4 width minus margins)
+        const mmToPx = (mm) => {
+          // approximate conversion using 96dpi: 96px = 25.4mm => 1mm ~ 3.78px
+          return mm * 3.78;
+        };
+        const targetPx = mmToPx(190); // approx printable width
+        const currentW = bc.scrollWidth || bc.offsetWidth || bc.getBoundingClientRect().width;
+        const scale = Math.min(1, targetPx / currentW);
+        bc.style.transform = 'scale(' + scale + ')';
+      }
+    } catch(e){
+      // ignore
+    }
+    // small timeout to let layout settle
+    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 400);
+  };
+}
+
+/* Main load function (unchanged logic) */
 async function load(){
 
   const boardId=getParam("id");
