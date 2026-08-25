@@ -32,9 +32,18 @@ body{
 .navbar{
   display:flex;
   justify-content:space-between;
+  align-items:center;
   padding:10px 20px;
   background:white;
   box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  gap:10px;
+}
+
+/* left group and right group to keep layout tidy */
+.nav-left, .nav-right {
+  display:flex;
+  gap:10px;
+  align-items:center;
 }
 
 .navbar button{
@@ -44,6 +53,16 @@ body{
   background:#0f3057;
   color:white;
   cursor:pointer;
+  font-weight:600;
+}
+
+.navbar .btn-secondary{
+  background:#2b6b9b;
+}
+
+/* small icon-only style for mobile */
+.navbar .small{
+  padding:6px 8px;
 }
 
 .container{
@@ -107,6 +126,10 @@ tr:hover{
   .controls{
     flex-direction:column;
   }
+  .navbar{
+    flex-direction:column;
+    align-items:stretch;
+  }
 }
 </style>
 </head>
@@ -119,8 +142,15 @@ tr:hover{
 </div>
 
 <div class="navbar">
-  <button onclick="history.back()">⬅ Back</button>
-  <button onclick="window.location.href='https://08electricaldata.github.io/'">🏠 Home</button>
+  <div class="nav-left">
+    <button onclick="history.back()">⬅ Back</button>
+    <button onclick="window.location.href='https://08electricaldata.github.io/'">🏠 Home</button>
+  </div>
+
+  <div class="nav-right">
+    <button class="btn-secondary" onclick="downloadExcel()">📥 Export Excel</button>
+    <button onclick="printA4()">🖨️ Print A4</button>
+  </div>
 </div>
 
 <div class="container">
@@ -158,7 +188,6 @@ tr:hover{
 </div>
 
 <script>
-
 // ================= URLs =================
 const BOARD_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/board.json";
 const SLD_JSON   = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
@@ -214,6 +243,8 @@ function buildTable(data){
 
 function populateSubstation(){
   const select=document.getElementById("substationFilter");
+  // clear previous options except default
+  select.querySelectorAll('option:not([value=""])').forEach(o=>o.remove());
   const subs=[...new Set(masterData.map(d=>d["Substation"]))];
   subs.sort().forEach(s=>{
     const opt=document.createElement("option");
@@ -227,7 +258,7 @@ function updateStats(data){
   const total=data.length;
   const voltageCount={};
   data.forEach(d=>{
-    const v=d["Voltage Level"];
+    const v=d["Voltage Level"] || "Unknown";
     voltageCount[v]=(voltageCount[v]||0)+1;
   });
 
@@ -308,6 +339,167 @@ async function searchAndRedirect(boardId){
 }
 
 loadBoardData();
+
+/* ================= Export to Excel & Print A4 ================= */
+
+/* Robust dynamic loader for SheetJS (XLSX) */
+function loadScript(src, timeoutMs = 10000){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    let timedOut = false;
+    const to = setTimeout(()=>{ timedOut = true; s.onerror = s.onload = null; s.remove(); reject(new Error('timeout')); }, timeoutMs);
+    s.onload = ()=>{ if(timedOut) return; clearTimeout(to); resolve(); };
+    s.onerror = (e)=>{ if(timedOut) return; clearTimeout(to); reject(new Error('error')); };
+    s.src = src;
+    document.head.appendChild(s);
+  });
+}
+async function ensureXLSX(){
+  if(window.XLSX) return window.XLSX;
+  const cdns = [
+    "https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js",
+    "https://unpkg.com/xlsx@0.18.7/dist/xlsx.full.min.js"
+  ];
+  let lastErr = null;
+  for(const url of cdns){
+    try{
+      await loadScript(url, 10000);
+      if(window.XLSX) return window.XLSX;
+    }catch(e){ lastErr = e; /* try next */ }
+  }
+  throw new Error('Failed to load SheetJS: ' + (lastErr && lastErr.message ? lastErr.message : String(lastErr)));
+}
+
+/* Fallback: export as HTML table (.xls) */
+function exportAsHtmlXls(filename, tableEl){
+  let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>';
+  html += 'table{ border-collapse:collapse; font-family: Arial, sans-serif; } td, th { border:1px solid #444; padding:6px; vertical-align:middle; text-align:left; } ';
+  html += '</style></head><body>';
+  html += tableEl.outerHTML;
+  html += '</body></html>';
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.xls') ? filename : (filename + '.xls');
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 2000);
+}
+
+/* Primary export: try XLSX, fallback to .xls HTML export */
+async function downloadExcel(){
+  try{
+    const table = document.getElementById('boardTable');
+    if(!table) { alert('Table not found'); return; }
+
+    // Gather data: header + rows
+    const data = [];
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
+    data.push(headers);
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    rows.forEach(tr=>{
+      const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+      data.push(cells);
+    });
+
+    // Try SheetJS
+    try {
+      await ensureXLSX();
+      // create worksheet and workbook
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Boards');
+      const filename = 'Board-Master-List.xlsx';
+      XLSX.writeFile(wb, filename);
+      return;
+    } catch(xlsxErr){
+      console.warn('SheetJS not available, falling back to HTML .xls export', xlsxErr);
+      exportAsHtmlXls('Board-Master-List.xls', table.cloneNode(true));
+      return;
+    }
+
+  } catch(e){
+    console.error('Export failed', e);
+    alert('Failed to export: ' + (e && e.message ? e.message : e));
+  }
+}
+
+/* Print A4: opens a print preview scaled to A4 landscape and hides UI elements */
+function printA4(){
+  const table = document.getElementById('boardTable');
+  if(!table){ alert('Table not found'); return; }
+  const headerHtml = document.querySelector('.header').outerHTML;
+  const styleEls = Array.from(document.querySelectorAll('style')).map(s=>s.innerHTML).join('\n');
+
+  const printStyle = `
+    @page { size: A4 landscape; margin: 10mm; }
+    html, body { width:297mm; height:210mm; margin:0; padding:0; }
+    body { font-family: Arial, sans-serif; font-size:12px; color:#222; }
+    .header { margin-bottom:8px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border:1px solid #bbb; padding:6px; font-size:11px; }
+    th { background:#1f4e79; color:#fff; position:sticky; top:0; }
+    tr:nth-child(even) { background:#fafbfd; }
+    .no-print { display:none !important; }
+  `;
+
+  const newWin = window.open('', '_blank', 'top=50,left=50,width=1200,height=900');
+  if(!newWin){ alert('Popup blocked: allow popups for this site to print.'); return; }
+
+  // Build content: include header and a cloned table
+  const cloneTable = table.cloneNode(true);
+  // Remove interactive elements content if any (like buttons inside cells) — keep text only
+  cloneTable.querySelectorAll('button, a').forEach(el=>{
+    const span = newWin.document ? newWin.document.createElement('span') : document.createElement('span');
+    span.textContent = el.innerText || el.textContent || '';
+    el.parentNode.replaceChild(span, el);
+  });
+
+  const title = 'Board Master List';
+
+  newWin.document.open();
+  newWin.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Print - ${title}</title>
+        <style>${styleEls}\n${printStyle}</style>
+      </head>
+      <body>
+        <div class="header-print">
+          ${headerHtml}
+          <div style="text-align:center;font-weight:700;margin:6px 0;">${title}</div>
+        </div>
+        <div class="table-wrap">
+          ${cloneTable.outerHTML}
+        </div>
+      </body>
+    </html>
+  `);
+  newWin.document.close();
+
+  newWin.onload = function(){
+    try {
+      // Try to scale table to fit width
+      const mmToPx = (mm)=> mm * 3.78;
+      const printableWidthPx = mmToPx(297 - 20); // page width minus margins (10mm each)
+      const tbl = newWin.document.querySelector('table');
+      const curW = tbl ? (tbl.scrollWidth || tbl.getBoundingClientRect().width) : 0;
+      if(curW && curW > printableWidthPx){
+        const scale = printableWidthPx / curW;
+        const wrapper = newWin.document.querySelector('.table-wrap');
+        wrapper.style.transformOrigin = 'top left';
+        wrapper.style.transform = 'scale(' + scale + ')';
+      }
+    } catch(e) { /* ignore */ }
+
+    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 500);
+  };
+}
 
 </script>
 
