@@ -299,40 +299,145 @@ function addJob(){
   encodeURIComponent(id);
 }
 
-/* ===== DRAWING OPEN ===== */
-function openDrawings(){
+/* ===== DRAWING OPEN (on-demand check) ===== */
+async function openDrawings(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/mobile/drawing.html?id=" +
-  encodeURIComponent(id);
+  if(!id) return;
+
+  // If we already checked availability for this id
+  if(drawingAvailableMap.hasOwnProperty(id)){
+    if(drawingAvailableMap[id]){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/drawing.html?id=" +
+        encodeURIComponent(id);
+    } else {
+      alert("No Drawing Available");
+    }
+    return;
+  }
+
+  // Otherwise check DRAWING_JSON on demand
+  try{
+    const j = await (await fetch(DRAWING_JSON)).json();
+    let hasDrawing = false;
+    j.rows.forEach(item=>{
+      const iid = normalize(item.id);
+      if(iid !== id) return;
+
+      const found = Object.keys(item).some(k=>{
+        if(k==="id") return false;
+        if(!Array.isArray(item[k])) return false;
+        return item[k].some(link=>link && link.trim()!=="");
+      });
+
+      if(found) hasDrawing = true;
+    });
+
+    drawingAvailableMap[id] = hasDrawing;
+
+    if(hasDrawing){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/drawing.html?id=" +
+        encodeURIComponent(id);
+    } else {
+      alert("No Drawing Available");
+    }
+  }catch(e){
+    alert("Error checking drawings");
+  }
 }
 
-/* ===== PLC OPEN ===== */
-function openPLC(){
+/* ===== PLC OPEN (on-demand check) ===== */
+async function openPLC(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/mobile/plc.html?id=" +
-  encodeURIComponent(id);
+  if(!id) return;
+
+  if(plcAvailableMap.hasOwnProperty(id)){
+    if(plcAvailableMap[id]){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/plc.html?id=" +
+        encodeURIComponent(id);
+    } else {
+      alert("No PLC Address Available");
+    }
+    return;
+  }
+
+  try{
+    const j = await (await fetch(PLC_JSON)).json();
+    const exists = Object.keys(j.drives || {}).some(k => normalize(k) === id);
+    plcAvailableMap[id] = exists;
+
+    if(exists){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/plc.html?id=" +
+        encodeURIComponent(id);
+    } else {
+      alert("No PLC Address Available");
+    }
+  }catch(e){
+    alert("Error checking PLC availability");
+  }
 }
 
-/* ===== MOTOR DATA OPEN ===== */
-function openMotorData(){
+/* ===== MOTOR DATA OPEN (on-demand check) ===== */
+async function openMotorData(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/mobile/motordata.html?id=" +
-  encodeURIComponent(id);
+  if(!id) return;
+
+  try{
+    const j = await (await fetch(DRIVE_JSON)).json();
+    const c = j.rows.find(
+      r => normalize(`${r[1]}-${r[2]}`) === id
+    );
+
+    if(c){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/motordata.html?id=" +
+        encodeURIComponent(id);
+    } else {
+      alert("No Motor Data Available");
+    }
+  }catch(e){
+    alert("Error checking Motor Data");
+  }
 }
 
-/* ===== PLC LADDER OPEN ===== */
-function openPLCLadder(){
+/* ===== PLC LADDER OPEN (on-demand check) ===== */
+async function openPLCLadder(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/mobile/plcladder.html?id=" +
-  encodeURIComponent(id);
+  if(!id) return;
+
+  if(plcAvailableMap.hasOwnProperty(id)){
+    if(plcAvailableMap[id]){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/plcladder.html?id=" +
+        encodeURIComponent(id);
+    } else {
+      alert("No PLC Ladder Available");
+    }
+    return;
+  }
+
+  try{
+    const j = await (await fetch(PLC_JSON)).json();
+    const exists = Object.keys(j.drives || {}).some(k => normalize(k) === id);
+    plcAvailableMap[id] = exists;
+
+    if(exists){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/plcladder.html?id=" +
+        encodeURIComponent(id);
+    } else {
+      alert("No PLC Ladder Available");
+    }
+  }catch(e){
+    alert("Error checking PLC ladder availability");
+  }
 }
 
-/* ===== SLD OPEN ===== */
-function openSLD(){
+/* ===== SLD OPEN (on-demand check) ===== */
+async function openSLD(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
   if(!id) return;
 
@@ -352,7 +457,32 @@ function openSLD(){
     return;
   }
 
-  alert("No LOC found for this ID.");
+  // If we already have map entries but not this id, show not found
+  const mapsHaveEntries = Object.keys(sldBoardMap).length > 0 || Object.keys(sldLTMap).length > 0;
+  if(mapsHaveEntries && !sldBoardMap[id] && !sldLTMap[id]){
+    alert("No LOC found for this ID.");
+    return;
+  }
+
+  // Otherwise load SLD maps on demand then check again
+  try{
+    await preloadSLD();
+    if(sldBoardMap[id]){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/sld.html?id=" +
+        encodeURIComponent(sldBoardMap[id]);
+      return;
+    }
+    if(sldLTMap[id]){
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/mobile/sld3.html?id=" +
+        encodeURIComponent(sldLTMap[id]);
+      return;
+    }
+    alert("No LOC found for this ID.");
+  }catch(e){
+    alert("Error checking LOC availability");
+  }
 }
 
 /* ===== PRELOAD DRAWINGS ===== */
@@ -581,7 +711,8 @@ function applyButtonState(id){
   const plcBtn = document.getElementById("plcBtn");
   const sldBtn = document.getElementById("sldBtn");
 
-  if(drawBtn && !drawingAvailableMap[id]){
+  // Only disable if we explicitly know availability=false
+  if(drawBtn && drawingAvailableMap.hasOwnProperty(id) && !drawingAvailableMap[id]){
     drawBtn.disabled = true;
     const badge = document.createElement("div");
     badge.className="badge";
@@ -589,7 +720,7 @@ function applyButtonState(id){
     drawBtn.parentNode.insertBefore(badge, drawBtn.nextSibling);
   }
 
-  if(plcBtn && !plcAvailableMap[id]){
+  if(plcBtn && plcAvailableMap.hasOwnProperty(id) && !plcAvailableMap[id]){
     plcBtn.disabled = true;
     const badge = document.createElement("div");
     badge.className="badge";
@@ -598,12 +729,18 @@ function applyButtonState(id){
   }
 
   if(sldBtn){
-    if(!sldBoardMap[id] && !sldLTMap[id]){
-      sldBtn.disabled = true;
-      const badge = document.createElement("div");
-      badge.className="badge";
-      badge.innerText="No LOC";
-      sldBtn.parentNode.insertBefore(badge, sldBtn.nextSibling);
+    const boardKnown = sldBoardMap.hasOwnProperty(id);
+    const ltKnown = sldLTMap.hasOwnProperty(id);
+    if(boardKnown || ltKnown){
+      const hasBoard = !!sldBoardMap[id];
+      const hasLT = !!sldLTMap[id];
+      if(!hasBoard && !hasLT){
+        sldBtn.disabled = true;
+        const badge = document.createElement("div");
+        badge.className="badge";
+        badge.innerText="No LOC";
+        sldBtn.parentNode.insertBefore(badge, sldBtn.nextSibling);
+      }
     }
   }
 }
@@ -727,10 +864,11 @@ async function showBreaker(c,id){
 }
 
 /* ===== INIT ===== */
-(async function(){
-  await preloadDrawings();
-  await preloadPLC();
-  await preloadSLD();
+(function(){
+  // start preloads in background (non-blocking) so page renders immediately
+  preloadDrawings();
+  preloadPLC();
+  // do NOT preload SLD by default to keep first load light; openSLD will fetch on demand
   loadData();
 })();
 </script>
