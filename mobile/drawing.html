@@ -3,214 +3,376 @@
 <head>
 <meta charset="UTF-8">
 <title>Equipment Drawings</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <style>
-body{font-family:Arial;margin:0;background:#f2f6ff}
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;margin:0;background:#f2f6ff;overflow-x:hidden}
+html,body{width:100%}
 
-/* HEADER */
+/* HEADER - STICKY & MOBILE OPTIMIZED */
 .header{
   background:#003f88;
   color:white;
-  padding:12px 15px;
+  padding:10px 8px;
   display:flex;
-  align-items:center;
-  gap:10px;
+  flex-direction:column;
+  gap:8px;
+  position:sticky;
+  top:0;
+  z-index:100;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+
+.header-nav{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  justify-content:center;
 }
 
 .header-title{
-  flex:1;
   text-align:center;
 }
 
 .header-title h2{
   margin:0;
+  font-size:18px;
 }
 
 .header-title small{
   display:block;
-  font-size:14px;
-  font-weight:500;
-  opacity:.9;
+  font-size:11px;
+  opacity:.85;
+  font-weight:normal;
 }
 
-/* HEADER BUTTONS */
+/* MOBILE BUTTONS */
 .header-btn{
   background:white;
   color:#003f88;
-  border:1px solid #003f88;
-  border-radius:6px;
-  padding:6px 10px;
+  border:none;
+  border-radius:4px;
+  padding:6px 8px;
   cursor:pointer;
   font-weight:bold;
+  font-size:12px;
+  flex:1;
+  min-width:60px;
+  max-width:80px;
+  white-space:nowrap;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
 }
 
-.container{padding:20px}
+.header-btn:active{
+  opacity:.8;
+  transform:scale(0.98);
+}
+
+.container{
+  padding:12px 8px;
+  max-width:100%;
+}
 
 .card{
-  background:white;padding:20px;
-  border-radius:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15)
+  background:white;
+  padding:15px;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  margin-bottom:15px;
+}
+
+.card h3{
+  margin:0 0 15px 0;
+  color:#003f88;
+  font-size:16px;
+  font-weight:bold;
 }
 
 /* GROUP TITLE */
 .group-title{
-  margin-top:25px;
+  margin:20px 0 12px 0;
   font-weight:bold;
   color:#003f88;
-  font-size:18px;
+  font-size:14px;
   border-bottom:2px solid #003f88;
-  padding-bottom:5px
+  padding-bottom:6px;
 }
 
-/* GRID */
+/* GRID - MOBILE SINGLE COLUMN */
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-  gap:18px;
-  margin-top:15px
+  grid-template-columns:1fr;
+  gap:12px;
+  margin:0;
 }
 
-/* TILE */
+/* RESPONSIVE GRID */
+@media(min-width:480px){
+  .grid{
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+}
+
+@media(min-width:768px){
+  .grid{
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+  }
+}
+
+/* TILE - IMPROVED FOR TOUCH */
 .tile{
   background:#f8fbff;
-  padding:12px;
-  border-radius:10px;
+  padding:10px;
+  border-radius:8px;
   box-shadow:0 2px 5px rgba(0,0,0,.1);
   cursor:pointer;
   text-align:center;
-  transition:.2s
+  transition:all .2s ease;
+  border:1px solid #e0e8f5;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
 }
-.tile:hover{transform:scale(1.03)}
+
+.tile:active{
+  transform:scale(0.98);
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
 
 .tile img{
   width:100%;
-  height:150px;
+  height:120px;
   object-fit:cover;
-  border-radius:8px;
-  margin-bottom:8px
+  border-radius:6px;
+  background:#e0e8f5;
 }
 
 .tile h4{
-  margin:5px 0;
-  font-size:14px;
-  color:#003f88
+  margin:0;
+  font-size:13px;
+  color:#003f88;
+  font-weight:bold;
 }
 
-.tile small{
-  font-size:12px;color:#666
+.tile-info{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:11px;
+  color:#666;
+  gap:6px;
 }
 
 /* VIEWER */
 .viewer{
-  margin-top:30px;
-  height:650px;
+  margin-top:15px;
+  height:400px;
   border:1px solid #ccc;
-  border-radius:10px;
+  border-radius:8px;
   overflow:hidden;
   display:none;
-  position:relative
+  position:relative;
+  background:#f9f9f9;
 }
+
 .viewer iframe{
   width:100%;
   height:100%;
-  border:none
+  border:none;
 }
 
-/* CONTROLS */
+.viewer-loading{
+  text-align:center;
+  padding:40px 15px;
+  color:#666;
+  font-size:12px;
+}
+
+/* VIEWER CONTROLS */
 .viewer-controls{
   margin-top:10px;
-  text-align:right
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
 }
+
 .viewer-controls button{
-  padding:8px 14px;
+  padding:8px 12px;
   border:none;
   background:#003f88;
   color:white;
-  border-radius:6px;
+  border-radius:4px;
   cursor:pointer;
-  margin-left:8px
+  font-size:12px;
+  font-weight:bold;
+  flex:1;
+  min-height:36px;
+  touch-action:manipulation;
+}
+
+.viewer-controls button:active{
+  opacity:.8;
+  transform:scale(0.98);
 }
 
 /* FULLSCREEN */
 .viewer.fullscreen{
   position:fixed;
-  top:0;left:0;
+  top:0;
+  left:0;
   width:100%;
   height:100%;
+  z-index:9998;
+  background:white;
+  border-radius:0;
+  border:none;
+  margin-top:0;
+}
+
+.viewer.fullscreen~.viewer-controls{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  width:100%;
   z-index:9999;
   background:white;
-  border-radius:0
+  border-top:1px solid #ccc;
+  border-radius:0;
+  gap:0;
+  margin:0;
+}
+
+.viewer.fullscreen~.viewer-controls button{
+  flex:1;
+  margin:0;
+  border-radius:0;
 }
 
 .no-data{
-  color:red;
+  color:#d32f2f;
   text-align:center;
-  font-weight:bold
+  font-weight:bold;
+  padding:30px 15px;
+  font-size:14px;
 }
 
+/* DOWNLOAD BUTTON */
+.download-btn{
+  background:#28a745;
+  color:white;
+  border:none;
+  padding:8px 10px;
+  border-radius:4px;
+  cursor:pointer;
+  font-size:11px;
+  font-weight:bold;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+.download-btn:active{
+  opacity:.8;
+  transform:scale(0.98);
+}
+
+/* LOADING SPINNER */
+.spinner{
+  display:inline-block;
+  width:16px;
+  height:16px;
+  border:2px solid #f3f3f3;
+  border-top:2px solid #003f88;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(360deg)}
+}
+
+/* MOBILE SPECIFIC */
+@media(max-width:480px){
+  .header{padding:8px 6px;gap:6px}
+  .header-title h2{font-size:16px}
+  .header-title small{font-size:10px}
+  .header-btn{font-size:11px;padding:5px 6px}
+  .container{padding:10px 6px}
+  .card{padding:12px;margin-bottom:12px}
+  .viewer{height:350px}
+  .viewer-controls{gap:6px}
+}
+
+/* PREVENT ZOOM ON INPUT FOCUS */
 @media(max-width:768px){
-  .viewer{height:450px}
+  input,button,select,textarea{
+    font-size:16px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<!-- UPDATED HEADER -->
+<!-- MOBILE OPTIMIZED HEADER -->
 <div class="header">
-  <button class="header-btn" onclick="goHome()">🏠 Home</button>
-  <button class="header-btn" onclick="goBack()">⬅ Back</button>
-  <button class="header-btn" onclick="goDriveInfo()">ℹ️ Drive Info</button>
-  <button class="header-btn" onclick="goHistory()">📜 History</button>
-  <button class="header-btn" onclick="goPLC()">⚡ PLC-ADD</button>
-
+  <div class="header-nav">
+    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+    <button class="header-btn" onclick="goBack()">⬅ Back</button>
+    <button class="header-btn" onclick="goDriveInfo()">ℹ️ Info</button>
+    <button class="header-btn" onclick="goHistory()">📜 History</button>
+    <button class="header-btn" onclick="goPLC()">⚡ PLC</button>
+  </div>
   <div class="header-title">
-    <h2>Equipment Drawings</h2>
-    <small>Designed and maintained by Rakesh Chandra Sethy</small>
+    <h2>📋 Drawings</h2>
+    <small>By Rakesh Chandra Sethy</small>
   </div>
 </div>
 
 <div class="container">
-  <div id="content">Loading drawings...</div>
+  <div id="content">
+    <div class="card">
+      <div class="viewer-loading">Loading drawings... <div class="spinner"></div></div>
+    </div>
+  </div>
 </div>
 
 <script>
-const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
 
 /* ===== NAVIGATION ===== */
 function goHome(){
   location.href="https://08electricaldata.github.io/index_mob.html";
 }
+
 function goBack(){
   history.back();
 }
 
-/* ✅ NEW NAVIGATION BUTTONS */
 function getCurrentID(){
   return new URLSearchParams(location.search).get("id");
 }
 
 function goDriveInfo(){
   const id = getCurrentID();
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
-  encodeURIComponent(id);
+  location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id);
 }
 
 function goHistory(){
   const id = getCurrentID();
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" +
-  encodeURIComponent(id);
+  location.href = "https://08electricaldata.github.io/drive-viewer/mobile/history.html?id=" + encodeURIComponent(id);
 }
 
 function goPLC(){
   const id = getCurrentID();
-  location.href =
-  "https://08electricaldata.github.io/drive-viewer/mobile/plc.html?id=" +
-  encodeURIComponent(id);
+  location.href = "https://08electricaldata.github.io/drive-viewer/mobile/plc.html?id=" + encodeURIComponent(id);
 }
 
 function normalize(v){
@@ -223,18 +385,18 @@ function getFileId(link){
   return match ? match[0] : null;
 }
 
-/* ===== Proper Google Drive Embed ===== */
+/* ===== Convert to Embed URL ===== */
 function convertToEmbed(link){
   const fileId = getFileId(link);
   if(!fileId) return link;
   return "https://drive.google.com/file/d/"+fileId+"/preview";
 }
 
-/* ===== Thumbnail ===== */
+/* ===== Convert to Thumbnail ===== */
 function convertToThumbnail(link){
   const fileId = getFileId(link);
   if(!fileId) return "";
-  return "https://drive.google.com/thumbnail?id="+fileId;
+  return "https://drive.google.com/thumbnail?id="+fileId+"&sz=w200";
 }
 
 /* ===== Download Counter ===== */
@@ -245,8 +407,26 @@ function incrementDownload(id,index){
   localStorage.setItem(key,count);
   return count;
 }
+
 function getDownload(id,index){
   return localStorage.getItem("draw_"+id+"_"+index)||0;
+}
+
+/* ===== Download File ===== */
+function downloadFile(link, drawingName){
+  const fileId = getFileId(link);
+  if(!fileId) {
+    alert("Cannot download: Invalid file link");
+    return;
+  }
+  // Direct download from Google Drive
+  const downloadUrl = "https://drive.google.com/uc?export=download&id="+fileId;
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = drawingName || "drawing.pdf";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 /* ===== LOAD PAGE ===== */
@@ -254,80 +434,100 @@ async function load(){
   const id = normalize(getCurrentID());
   if(!id) return;
 
-  const j = await (await fetch(JSON_URL)).json();
-  const item = j.rows.find(r=>normalize(r.id)===id);
+  try{
+    const j = await (await fetch(JSON_URL)).json();
+    const item = j.rows.find(r=>normalize(r.id)===id);
 
-  if(!item){
-    content.innerHTML =
-      "<div class='card no-data'>No Drawings Available</div>";
-    return;
-  }
+    if(!item){
+      content.innerHTML = "<div class='card no-data'>❌ No Drawings Available</div>";
+      return;
+    }
 
-  let html=`<div class="card">
-              <h3>${id}</h3>`;
+    let html = `<div class="card"><h3>📋 ${id}</h3>`;
 
-  Object.keys(item).forEach(group=>{
-    if(group==="id") return;
-    if(!Array.isArray(item[group])) return;
+    Object.keys(item).forEach(group=>{
+      if(group==="id") return;
+      if(!Array.isArray(item[group])) return;
 
-    html+=`<div class="group-title">${group.toUpperCase()}</div>
-           <div class="grid">`;
+      html += `<div class="group-title">${group.toUpperCase()}</div><div class="grid">`;
 
-    item[group].forEach((link,i)=>{
-      if(!link) return;
+      item[group].forEach((link,i)=>{
+        if(!link) return;
 
-      const thumb = convertToThumbnail(link);
-      const count = getDownload(id,i);
+        const thumb = convertToThumbnail(link);
+        const count = getDownload(id,i);
+        const drawingName = `${id}_${group}_${i+1}.pdf`;
 
-      html+=`
-        <div class="tile"
-             onclick="openDrawing('${id}',${i},'${link}')">
-          <img src="${thumb}"
-               onerror="this.src='https://via.placeholder.com/300x200?text=PDF'">
-          <h4>Drawing ${i+1}</h4>
-          <small id="count_${i}">Downloads: ${count}</small>
-        </div>`;
+        html += `
+          <div class="tile" onclick="openDrawing('${id}',${i},'${link}')">
+            <img src="${thumb}" 
+                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23e0e8f5%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23003f88%22 text-anchor=%22middle%22 dy=%22.3em%22%3EPDF%3C/text%3E%3C/svg%3E'">
+            <h4>Drawing ${i+1}</h4>
+            <div class="tile-info">
+              <span id="count_${i}">📥 ${count}</span>
+              <button class="download-btn" onclick="event.stopPropagation(); downloadFile('${link}', '${drawingName}')">⬇️ Download</button>
+            </div>
+          </div>`;
+      });
+
+      html += `</div>`;
     });
 
-    html+=`</div>`;
-  });
+    html += `
+      <div class="viewer" id="viewerBox">
+        <div class="viewer-loading">Loading... <div class="spinner"></div></div>
+        <iframe id="pdfFrame" style="display:none;"></iframe>
+      </div>
+      <div class="viewer-controls">
+        <button onclick="closeViewer()">✕ Close</button>
+        <button onclick="toggleFullScreen()">📱 Full Screen</button>
+        <button onclick="printDrawing()">🖨 Print</button>
+      </div>
+      </div>`;
 
-  html+=`
-        <div class="viewer" id="viewerBox">
-          <iframe id="pdfFrame"></iframe>
-        </div>
-
-        <div class="viewer-controls">
-          <button onclick="toggleFullScreen()">📱 Full Screen</button>
-          <button onclick="printDrawing()">🖨 Print</button>
-        </div>
-        </div>`;
-
-  content.innerHTML=html;
+    content.innerHTML = html;
+  }catch(err){
+    content.innerHTML = "<div class='card no-data'>❌ Error loading drawings</div>";
+    console.error(err);
+  }
 }
 
 function openDrawing(id,index,link){
   const embed = convertToEmbed(link);
   const frame = document.getElementById("pdfFrame");
   const viewer = document.getElementById("viewerBox");
-
+  const loading = viewer.querySelector('.viewer-loading');
+  
+  frame.style.display = "none";
+  loading.style.display = "block";
+  
+  frame.onload = ()=>{
+    loading.style.display = "none";
+    frame.style.display = "block";
+  };
+  
   frame.src = embed;
-  viewer.style.display="block";
+  viewer.style.display = "block";
+  viewer.scrollIntoView({behavior:'smooth'});
 
   const newCount = incrementDownload(id,index);
-  document.getElementById("count_"+index).innerText =
-    "Downloads: "+newCount;
+  document.getElementById("count_"+index).innerText = "📥 "+newCount;
+}
+
+function closeViewer(){
+  const viewer = document.getElementById("viewerBox");
+  viewer.style.display = "none";
 }
 
 function printDrawing(){
-  const frame=document.getElementById("pdfFrame");
+  const frame = document.getElementById("pdfFrame");
   if(frame && frame.contentWindow){
     frame.contentWindow.print();
   }
 }
 
 function toggleFullScreen(){
-  const viewer=document.getElementById("viewerBox");
+  const viewer = document.getElementById("viewerBox");
   viewer.classList.toggle("fullscreen");
 }
 
