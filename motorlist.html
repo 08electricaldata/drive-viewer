@@ -148,68 +148,75 @@ tr:hover {
 </div>
 
 <script>
-// 🔥 FAST JSON SOURCE
+/* ===== JSDELIVR CDN URL ===== */
 const JSON_URL =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motors.json";
+  "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/motors.json";
 
 async function loadMotors() {
   const cache = localStorage.getItem("motorJSON");
   let data;
 
-  if (cache) {
-    data = JSON.parse(cache);
-  } else {
-    const res = await fetch(JSON_URL);
-    data = await res.json();
-    localStorage.setItem("motorJSON", JSON.stringify(data));
-  }
+  try {
+    if (cache) {
+      data = JSON.parse(cache);
+    } else {
+      const res = await fetch(JSON_URL);
+      if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      data = await res.json();
+      localStorage.setItem("motorJSON", JSON.stringify(data));
+    }
 
-  const headers = data.headers;
-  const rows = data.rows;
+    const headers = data.headers;
+    const rows = data.rows;
 
-  const headerRow = document.getElementById("headerRow");
-  const filterRow = document.getElementById("filterRow");
-  const tbody = document.querySelector("#motorTable tbody");
+    const headerRow = document.getElementById("headerRow");
+    const filterRow = document.getElementById("filterRow");
+    const tbody = document.querySelector("#motorTable tbody");
 
-  headerRow.innerHTML = "";
-  filterRow.innerHTML = "";
-  tbody.innerHTML = "";
+    headerRow.innerHTML = "";
+    filterRow.innerHTML = "";
+    tbody.innerHTML = "";
 
-  /* ===== HEADERS ===== */
-  headers.forEach(h => {
-    const th = document.createElement("th");
-    th.textContent = h;
-    headerRow.appendChild(th);
+    /* ===== HEADERS ===== */
+    headers.forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      headerRow.appendChild(th);
 
-    const fh = document.createElement("th");
-    fh.innerHTML = "<input placeholder='🔍'>";
-    filterRow.appendChild(fh);
-  });
-
-  /* ===== DATA ===== */
-  rows.forEach(r => {
-    if (!r[1]) return;
-
-    const tr = document.createElement("tr");
-    if (!r[0]) tr.classList.add("section-row");
-
-    r.forEach(v => {
-      const td = document.createElement("td");
-      td.textContent = v ?? "";
-      tr.appendChild(td);
+      const fh = document.createElement("th");
+      fh.innerHTML = "<input placeholder='🔍'>";
+      filterRow.appendChild(fh);
     });
 
-    tr.onclick = () => {
-      const id = r[1] + "-" + r[2];
-      window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/index2.html?id=" +
-        encodeURIComponent(id);
-    };
+    /* ===== DATA ===== */
+    rows.forEach(r => {
+      if (!r[1]) return;
 
-    tbody.appendChild(tr);
-  });
+      const tr = document.createElement("tr");
+      if (!r[0]) tr.classList.add("section-row");
 
-  setupFilters();
+      r.forEach(v => {
+        const td = document.createElement("td");
+        td.textContent = v ?? "";
+        tr.appendChild(td);
+      });
+
+      tr.onclick = () => {
+        const id = r[1] + "-" + r[2];
+        window.location.href =
+          "https://08electricaldata.github.io/drive-viewer/index2.html?id=" +
+          encodeURIComponent(id);
+      };
+
+      tbody.appendChild(tr);
+    });
+
+    setupFilters();
+  } catch(err) {
+    console.error("Error loading motor data:", err);
+    document.querySelector("#motorTable tbody").innerHTML =
+      "<tr><td colspan='10' style='text-align:center;color:red;'>Error loading motor data. Please refresh the page.</td></tr>";
+  }
 }
 
 function setupFilters() {
