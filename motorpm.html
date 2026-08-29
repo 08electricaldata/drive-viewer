@@ -229,8 +229,9 @@ tbody tr:hover { background: #eef5ff; }
 </div>
 
 <script>
+/* ===== JSDELIVR CDN URL ===== */
 const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/2026_oct_mar.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/2026_oct_mar.json";
 
 /* NAV */
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
@@ -272,77 +273,82 @@ function getDriveColor(key){
 
 /* LOAD */
 async function loadData(){
+  try{
+    const r = await fetch(JSON_URL);
+    if(!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+    const j = await r.json();
 
-  const r = await fetch(JSON_URL);
-  const j = await r.json();
+    const tbody=document.querySelector("#pmTable tbody");
+    const today=new Date(); today.setHours(0,0,0,0);
 
-  const tbody=document.querySelector("#pmTable tbody");
-  const today=new Date(); today.setHours(0,0,0,0);
+    let total=0, overS=0, overT=0;
 
-  let total=0, overS=0, overT=0;
+    j.rows.forEach(row=>{
 
-  j.rows.forEach(row=>{
+      if(String(row[4]||"").toUpperCase()!=="S") return;
+      if(!row[1] || !row[2]) return;
 
-    if(String(row[4]||"").toUpperCase()!=="S") return;
-    if(!row[1] || !row[2]) return;
+      total++;
 
-    total++;
+      const m=parseISO(row[12]);
+      const n=parseISO(row[13]);
+      const o=parseISO(row[14]);
+      const p=parseISO(row[15]);
+      const s=parseISO(row[18]);
+      const t=parseISO(row[19]);
 
-    const m=parseISO(row[12]);
-    const n=parseISO(row[13]);
-    const o=parseISO(row[14]);
-    const p=parseISO(row[15]);
-    const s=parseISO(row[18]);
-    const t=parseISO(row[19]);
+      const sOver=!s || s<today;
+      const tOver=!t || t<today;
 
-    const sOver=!s || s<today;
-    const tOver=!t || t<today;
+      if(sOver) overS++;
+      if(tOver) overT++;
 
-    if(sOver) overS++;
-    if(tOver) overT++;
+      const drive=row[1]||"";
+      const bandColor=getDriveColor(drive);
 
-    const drive=row[1]||"";
-    const bandColor=getDriveColor(drive);
+      const tr=document.createElement("tr");
+      tr.dataset.moduleOver = sOver ? "1" : "0";
+      tr.dataset.motorOver  = tOver ? "1" : "0";
 
-    const tr=document.createElement("tr");
-tr.dataset.moduleOver = sOver ? "1" : "0";
-tr.dataset.motorOver  = tOver ? "1" : "0";
+      tr.onclick=()=> {
+        const id=`${row[1]}-${row[2]}`;
+        location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
+      };
 
-    tr.onclick=()=> {
-      const id=`${row[1]}-${row[2]}`;
-      location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
-    };
+      tr.innerHTML=`
+        <td>${row[0]||""}</td>
+        <td class="drive-band" style="background:${bandColor}">${drive}</td>
+        <td>${row[2]||""}</td>
+        <td>${row[3]||""}</td>
+        <td>${row[5]||""}</td>
+        <td>${fmt(m)}</td>
+        <td>${fmt(n)}</td>
+        <td>${fmt(o)}</td>
+        <td>${fmt(p)}</td>
+        <td class="${sOver?'overdue-cell':'ok'}">${fmt(s)}</td>
+        <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
+      `;
 
-    tr.innerHTML=`
-      <td>${row[0]||""}</td>
-      <td class="drive-band" style="background:${bandColor}">${drive}</td>
-      <td>${row[2]||""}</td>
-      <td>${row[3]||""}</td>
-      <td>${row[5]||""}</td>
-      <td>${fmt(m)}</td>
-      <td>${fmt(n)}</td>
-      <td>${fmt(o)}</td>
-      <td>${fmt(p)}</td>
-      <td class="${sOver?'overdue-cell':'ok'}">${fmt(s)}</td>
-      <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  totalMotors.innerText=total;
-  overdueModules.innerText=overS;
-  overdueMotors.innerText=overT;
-
-  search.onkeyup=function(){
-    const q=this.value.toLowerCase();
-    document.querySelectorAll("#pmTable tbody tr").forEach(tr=>{
-      tr.style.display=
-        tr.children[1].innerText.toLowerCase().includes(q)||
-        tr.children[2].innerText.toLowerCase().includes(q)
-        ? "":"none";
+      tbody.appendChild(tr);
     });
-  };
+
+    totalMotors.innerText=total;
+    overdueModules.innerText=overS;
+    overdueMotors.innerText=overT;
+
+    search.onkeyup=function(){
+      const q=this.value.toLowerCase();
+      document.querySelectorAll("#pmTable tbody tr").forEach(tr=>{
+        tr.style.display=
+          tr.children[1].innerText.toLowerCase().includes(q)||
+          tr.children[2].innerText.toLowerCase().includes(q)
+          ? "":"none";
+      });
+    };
+  }catch(err){
+    console.error("Error loading PM data:", err);
+    document.querySelector("#pmTable tbody").innerHTML="<tr><td colspan='11' style='text-align:center;color:red;padding:20px;'>Error loading data. Please refresh the page.</td></tr>";
+  }
 }
 
 function exportExcel(){
@@ -355,8 +361,8 @@ function exportExcel(){
   a.download="motor_module_pm_status.csv";
   a.click();
 }
-  function filterRows(type){
 
+function filterRows(type){
   const rows = document.querySelectorAll("#pmTable tbody tr");
 
   rows.forEach(tr=>{
@@ -377,7 +383,6 @@ function exportExcel(){
     }
 
   });
-
 }
 
 loadData();
