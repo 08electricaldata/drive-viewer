@@ -148,7 +148,8 @@ input{
 
 <script>
 
-const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/plcladder.json";
+/* ===== JSDELIVR CDN URL ===== */
+const JSON_URL="https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/plcladder.json";
 
 let pages=[];
 let currentIndex=0;
@@ -203,28 +204,36 @@ async function load(){
     return;
   }
 
-  const response=await fetch(JSON_URL);
-  const j=await response.json();
+  try{
+    const response=await fetch(JSON_URL);
+    if(!response.ok){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const j=await response.json();
 
-  const row=j.rows.find(r=>normalize(r.id)===id);
+    const row=j.rows.find(r=>normalize(r.id)===id);
 
-  if(!row){
-    document.getElementById("content").innerHTML="<h3>No PLC Ladder Found</h3>";
-    return;
+    if(!row){
+      document.getElementById("content").innerHTML="<h3>No PLC Ladder Found</h3>";
+      return;
+    }
+
+    pdfURL=row.url;
+    pages=[...row.pages].sort((a,b)=>a-b);
+
+    let html="<div class='grid'>";
+
+    pages.forEach((p,i)=>{
+      html+=`<div class="tile" onclick="openPage(${i})">Page ${p}</div>`;
+    });
+
+    html+="</div>";
+
+    document.getElementById("content").innerHTML=html;
+  }catch(err){
+    document.getElementById("content").innerHTML="<h3>Error loading PLC Ladder data</h3>";
+    console.error("Error loading PLC Ladder:", err);
   }
-
-  pdfURL=row.url;
-  pages=[...row.pages].sort((a,b)=>a-b);
-
-  let html="<div class='grid'>";
-
-  pages.forEach((p,i)=>{
-    html+=`<div class="tile" onclick="openPage(${i})">Page ${p}</div>`;
-  });
-
-  html+="</div>";
-
-  document.getElementById("content").innerHTML=html;
 }
 
 function openPage(index){
