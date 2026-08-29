@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal Block Details</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #003f88 0%, #0066cc 100%);
+      color: white;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .button-bar {
+      display: flex;
+      gap: 10px;
+      padding: 15px 20px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+    }
+
+    .button-bar button {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .button-bar button:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    .no-data {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 20px;
+      text-align: center;
+      color: #856404;
+      margin: 20px 0;
+    }
+
+    .error-data {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 4px;
+      padding: 20px;
+      text-align: center;
+      color: #721c24;
+      margin: 20px 0;
+    }
+
+    .tb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .tb-card {
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+    }
+
+    .tb-card:hover {
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+      border-color: #0066cc;
+      transform: translateY(-2px);
+    }
+
+    .tb-card.control {
+      border-left: 5px solid #28a745;
+    }
+
+    .tb-card.run {
+      border-left: 5px solid #007bff;
+    }
+
+    .tb-card.trip {
+      border-left: 5px solid #dc3545;
+    }
+
+    .tb-card.ready {
+      border-left: 5px solid #ffc107;
+    }
+
+    .tb-card.ammeter {
+      border-left: 5px solid #6f42c1;
+    }
+
+    .tb-card.other {
+      border-left: 5px solid #6c757d;
+    }
+
+    .tb-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #003f88;
+      margin-bottom: 10px;
+    }
+
+    .tb-purpose {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tb-category {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .tb-category.control {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .tb-category.run {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .tb-category.trip {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .tb-category.ready {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .tb-category.ammeter {
+      background: #e7d4f5;
+      color: #663399;
+    }
+
+    .tb-category.other {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+
+    .tb-details {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .tb-details p {
+      margin-bottom: 8px;
+    }
+
+    .updated {
+      text-align: center;
+      color: #999;
+      font-size: 12px;
+      margin: 20px 0;
+    }
+
+    .summary {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .summary-item {
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+      background: #f9f9f9;
+    }
+
+    .summary-item .count {
+      font-size: 24px;
+      font-weight: bold;
+      color: #003f88;
+    }
+
+    .summary-item .label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      text-transform: uppercase;
+    }
+
+    @media print {
+      .button-bar {
+        display: none;
+      }
+      .tb-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .tb-grid {
+        grid-template-columns: 1fr;
+      }
+      .header h1 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔌 TERMINAL BLOCK (TB) DETAILS</h1>
+  <p id="driveTitle">Loading drive information...</p>
+</div>
+
+<div class="button-bar">
+  <button onclick="goBack()">⬅ Back</button>
+  <button onclick="goHome()">🏠 Home</button>
+  <button onclick="goDriveInfo()">ℹ️ Drive Info</button>
+  <button onclick="printPage()">🖨️ Print</button>
+  <button onclick="exportCSV()">📥 Export CSV</button>
+</div>
+
+<div class="container">
+  <div id="app"></div>
+</div>
+
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+
+// TB Mapping: TB numbers to their purposes and categories
+const TB_MAPPING = {
+  1: { purpose: "CONTROL SUPPLY", category: "control", description: "Control Circuit Supply (Phase 1)" },
+  2: { purpose: "CONTROL SUPPLY", category: "control", description: "Control Circuit Supply (Phase 2)" },
+  3: { purpose: "CONTROL SUPPLY", category: "control", description: "Control Circuit Supply Return" },
+  4: { purpose: "CONTROL SUPPLY", category: "control", description: "Control Supply Neutral" },
+  5: { purpose: "CONTROL SUPPLY", category: "control", description: "Control Ground/Earth" },
+  6: { purpose: "CONTROL SUPPLY", category: "control", description: "Auxiliary Control Supply" },
+  
+  11: { purpose: "RUN SIGNAL", category: "run", description: "Run Command Signal (Input 1)" },
+  12: { purpose: "RUN SIGNAL", category: "run", description: "Run Command Signal (Input 2)" },
+  13: { purpose: "TRIP SIGNAL", category: "trip", description: "Trip/Stop Signal (Input 1)" },
+  14: { purpose: "TRIP SIGNAL", category: "trip", description: "Trip/Stop Signal (Input 2)" },
+  15: { purpose: "READY TO START", category: "ready", description: "Ready to Start Indication" },
+  16: { purpose: "READY TO START", category: "ready", description: "Ready Status Signal" },
+  17: { purpose: "FEEDBACK", category: "other", description: "Motor Feedback Signal" },
+  18: { purpose: "FEEDBACK", category: "other", description: "Contactor Feedback" },
+  19: { purpose: "AMMETER", category: "ammeter", description: "Ammeter Input (Phase 1)" },
+  20: { purpose: "AMMETER", category: "ammeter", description: "Ammeter Input (Phase 2)" },
+  21: { purpose: "AMMETER", category: "ammeter", description: "Ammeter Input (Phase 3)" },
+  22: { purpose: "AMMETER", category: "ammeter", description: "Ammeter Common/Ground" },
+  23: { purpose: "INDICATION LAMP", category: "other", description: "Red Indication Lamp (Alarm)" },
+  24: { purpose: "INDICATION LAMP", category: "other", description: "Amber Indication Lamp (Warning)" },
+  25: { purpose: "INDICATION LAMP", category: "other", description: "Green Indication Lamp (Run)" },
+  26: { purpose: "INDICATION LAMP", category: "other", description: "Lamp Common Return" },
+  27: { purpose: "AUXILIARY", category: "other", description: "Auxiliary Contact 1" },
+  28: { purpose: "AUXILIARY", category: "other", description: "Auxiliary Contact 2" },
+};
+
+function getDriveFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id") || null;
+}
+
+function goBack() {
+  history.back();
+}
+
+function goHome() {
+  location.href = "https://08electricaldata.github.io/";
+}
+
+function goDriveInfo() {
+  const driveID = getDriveFromURL();
+  if (driveID) {
+    location.href = `drive.html?id=${encodeURIComponent(driveID)}`;
+  }
+}
+
+function printPage() {
+  window.print();
+}
+
+function exportCSV() {
+  const app = document.getElementById("app");
+  const title = document.getElementById("driveTitle").innerText;
+  
+  let csv = "TB No,Purpose,Category,Description\n";
+  document.querySelectorAll(".tb-card").forEach(card => {
+    const tbNum = card.querySelector(".tb-number").innerText.match(/\d+/)[0];
+    const purpose = card.querySelector(".tb-purpose").innerText;
+    const category = card.querySelector(".tb-category").innerText;
+    const desc = card.querySelector(".tb-details")?.innerText || "";
+    
+    csv += `${tbNum},"${purpose}","${category}","${desc}"\n`;
+  });
+  
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `tb-details-${getDriveFromURL()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadTBDetails() {
+  const app = document.getElementById("app");
+  const driveID = getDriveFromURL();
+
+  if (!driveID) {
+    app.innerHTML = "<div class='error-data'>❌ No Drive ID provided in URL.</div>";
+    return;
+  }
+
+  try {
+    const response = await fetch(JSON_URL);
+    const data = await response.json();
+    
+    // Find drive in data
+    let driveData = null;
+    for (const row of data.rows) {
+      if (row[3] && String(row[3]).toUpperCase() === String(driveID).toUpperCase()) {
+        driveData = row;
+        break;
+      }
+    }
+
+    if (!driveData) {
+      app.innerHTML = `<div class='error-data'>❌ No data found for Drive: <strong>${driveID}</strong></div>`;
+      document.getElementById("driveTitle").innerText = `Drive: ${driveID} - Not Found`;
+      return;
+    }
+
+    document.getElementById("driveTitle").innerText = `Drive: ${driveID} | Equipment: ${driveData[4] || "N/A"}`;
+
+    // Build TB cards
+    const tbsByCategory = {};
+    
+    Object.entries(TB_MAPPING).forEach(([tbNum, tbInfo]) => {
+      const category = tbInfo.category;
+      if (!tbsByCategory[category]) {
+        tbsByCategory[category] = [];
+      }
+      tbsByCategory[category].push({
+        num: tbNum,
+        ...tbInfo
+      });
+    });
+
+    // Summary
+    let html = `
+      <div class="updated">Last Updated: ${new Date(data.updated).toLocaleString("en-GB")}</div>
+      
+      <div class="summary">
+        <div class="summary-item">
+          <div class="count">${Object.keys(TB_MAPPING).length}</div>
+          <div class="label">Total TB Points</div>
+        </div>
+        <div class="summary-item">
+          <div class="count">${tbsByCategory['control']?.length || 0}</div>
+          <div class="label">Control Supply</div>
+        </div>
+        <div class="summary-item">
+          <div class="count">${(tbsByCategory['run']?.length || 0) + (tbsByCategory['trip']?.length || 0)}</div>
+          <div class="label">Run/Trip</div>
+        </div>
+        <div class="summary-item">
+          <div class="count">${tbsByCategory['ammeter']?.length || 0}</div>
+          <div class="label">Ammeter Inputs</div>
+        </div>
+      </div>
+    `;
+
+    html += `<div class="tb-grid">`;
+
+    // Render TB cards sorted by number
+    const allTBs = [];
+    Object.values(tbsByCategory).forEach(items => {
+      allTBs.push(...items);
+    });
+    allTBs.sort((a, b) => Number(a.num) - Number(b.num));
+
+    allTBs.forEach(tb => {
+      html += `
+        <div class="tb-card ${tb.category}">
+          <div class="tb-number">TB ${tb.num}</div>
+          <div class="tb-category ${tb.category}">${tb.purpose}</div>
+          <div class="tb-purpose">${tb.purpose}</div>
+          <div class="tb-details">
+            <p>${tb.description}</p>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+
+    app.innerHTML = html;
+
+  } catch (err) {
+    app.innerHTML = "<div class='error-data'>❌ Error loading terminal block data.</div>";
+    console.error(err);
+  }
+}
+
+// Load on page ready
+loadTBDetails();
+</script>
+
+</body>
+</html>
