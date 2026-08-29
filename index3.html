@@ -73,6 +73,7 @@ body {
   box-shadow: var(--shadow);
   border: 1px solid var(--card-border);
   overflow: hidden;
+  position: relative;
 }
 
 /* Card header */
@@ -147,7 +148,7 @@ body {
   margin-top: 18px;
 }
 
-/* Primary action button style */
+/* Primary action button style (used by LOCATION and now for all actions) */
 .action-btn {
   display:inline-flex;
   align-items:center;
@@ -168,26 +169,34 @@ body {
 .action-btn:hover { transform: translateY(-3px); box-shadow: 0 18px 32px rgba(21,101,216,0.14); }
 .action-btn:active { transform: translateY(-1px); }
 
-/* Secondary style for less-critical actions */
+/* Keep the secondary class for structure but it now shares primary look */
 .action-btn.secondary {
-  background: linear-gradient(180deg, #fff, #fbfdff);
-  color: var(--accent);
-  border: 1px solid rgba(21,101,216,0.10);
+  background: linear-gradient(90deg, var(--accent), #0b79d0);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 20px rgba(21,101,216,0.10);
+}
+
+/* Ghost also uses primary color now (keeps lighter border for contrast) */
+.action-btn.ghost {
+  background: linear-gradient(90deg, var(--accent), #0b79d0);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 6px 14px rgba(11,37,64,0.04);
 }
-.action-btn.secondary:hover { transform: translateY(-2px); }
 
-/* Small subtle button for add-job */
-.action-btn.ghost {
-  background: transparent;
-  color: var(--accent);
-  border: 1px dashed rgba(21,101,216,0.14);
-  box-shadow: none;
+/* Specific background tweak for Drawings button to keep it highlighted but cohesive:
+   slightly different gradient stops and inner glow so it "feels" special.
+*/
+.action-btn#drawBtn {
+  background: linear-gradient(90deg, #1e88e5 0%, #1565d8 60%);
+  box-shadow: 0 12px 30px rgba(21,101,216,0.14);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 /* Disabled */
 .action-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.75;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -781,13 +790,13 @@ async function showMotor(c,id){
     </div>
 
   <div class="action-row">
-  <button class="action-btn secondary" onclick="openHistory()">📜 History</button>
+  <button class="action-btn" onclick="openHistory()">📜 History</button>
   <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
   <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
-  <button class="action-btn secondary" onclick="openPLCLadder()">⚙ PLC-LDR</button>
-  <button class="action-btn secondary" onclick="openMotorData()">🛠 Motor Data</button>
+  <button class="action-btn" onclick="openPLCLadder()">⚙ PLC-LDR</button>
+  <button class="action-btn" onclick="openMotorData()">🛠 Motor Data</button>
   <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOCATION</button>
-  <button class="action-btn ghost" onclick="addJob()">➕ ADD JOB</button>
+  <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
 </div>
 
   </div>`;
@@ -829,11 +838,11 @@ async function showTransformer(c,id){
     </div>
 
     <div class="action-row">
-      <button class="action-btn secondary" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
       <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOCATION</button>
-      <button class="action-btn ghost" onclick="addJob()">➕ ADD JOB</button>
+      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
 
@@ -863,11 +872,11 @@ async function showBreaker(c,id){
     </div>
 
     <div class="action-row">
-      <button class="action-btn secondary" onclick="openHistory()">📜 History</button>
+      <button class="action-btn" onclick="openHistory()">📜 History</button>
       <button class="action-btn" id="drawBtn" onclick="openDrawings()">📐 Drawings</button>
       <button class="action-btn" id="plcBtn" onclick="openPLC()">⚡ PLC-ADD</button>
       <button class="action-btn" id="sldBtn" onclick="openSLD()">🗺️ LOCATION</button>
-      <button class="action-btn ghost" onclick="addJob()">➕ ADD JOB</button>
+      <button class="action-btn" onclick="addJob()">➕ ADD JOB</button>
     </div>
   </div>`;
 
