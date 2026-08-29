@@ -159,72 +159,79 @@ tr:hover {
 </div>
 
 <script>
-// 🔥 FAST JSON SOURCE
+/* ===== JSDELIVR CDN URL ===== */
 const JSON_URL =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/transformers.json";
+  "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformers.json";
 
 async function loadTransformers() {
   const cache = localStorage.getItem("xfmrJSON");
   let data;
 
-  if (cache) {
-    data = JSON.parse(cache);
-  } else {
-    const res = await fetch(JSON_URL);
-    data = await res.json();
-    localStorage.setItem("xfmrJSON", JSON.stringify(data));
+  try {
+    if (cache) {
+      data = JSON.parse(cache);
+    } else {
+      const res = await fetch(JSON_URL);
+      if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      data = await res.json();
+      localStorage.setItem("xfmrJSON", JSON.stringify(data));
+    }
+
+    const headers = data.headers;
+    const rows = data.rows;
+
+    const headerRow = document.getElementById("headerRow");
+    const filterRow = document.getElementById("filterRow");
+    const tbody = document.querySelector("#xfmrTable tbody");
+
+    headerRow.innerHTML = "";
+    filterRow.innerHTML = "";
+    tbody.innerHTML = "";
+
+    /* ===== HEADERS FROM FIRST DATA ROW ===== */
+    const headingRow = rows[1];
+
+    headingRow.forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h || "";
+      headerRow.appendChild(th);
+
+      const fh = document.createElement("th");
+      fh.innerHTML = "<input placeholder='🔍'>";
+      filterRow.appendChild(fh);
+    });
+
+    /* ===== DATA ROWS ===== */
+    rows.slice(1).forEach(r => {
+      if (!r[1]) return;
+
+      const tr = document.createElement("tr");
+      if (!r[0]) tr.classList.add("section-row");
+
+      r.forEach(v => {
+        const td = document.createElement("td");
+        td.textContent = v ?? "";
+        tr.appendChild(td);
+      });
+
+      tr.onclick = () => {
+        const transformerNo = r[2];
+        if (!transformerNo) return;
+
+        window.location.href =
+          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+          encodeURIComponent("Transformer-" + transformerNo);
+      };
+
+      tbody.appendChild(tr);
+    });
+
+    setupFilters();
+  } catch(err) {
+    console.error("Error loading transformer data:", err);
+    document.querySelector("#xfmrTable tbody").innerHTML =
+      "<tr><td colspan='10' style='text-align:center;color:red;'>Error loading transformer data. Please refresh the page.</td></tr>";
   }
-
-  const headers = data.headers;
-  const rows = data.rows;
-
-  const headerRow = document.getElementById("headerRow");
-  const filterRow = document.getElementById("filterRow");
-  const tbody = document.querySelector("#xfmrTable tbody");
-
-  headerRow.innerHTML = "";
-  filterRow.innerHTML = "";
-  tbody.innerHTML = "";
-
-/* ===== HEADERS FROM FIRST DATA ROW ===== */
-const headingRow = rows[1];
-
-headingRow.forEach(h => {
-  const th = document.createElement("th");
-  th.textContent = h || "";
-  headerRow.appendChild(th);
-
-  const fh = document.createElement("th");
-  fh.innerHTML = "<input placeholder='🔍'>";
-  filterRow.appendChild(fh);
-});
-
-/* ===== DATA ROWS ===== */
-rows.slice(1).forEach(r => {
-  if (!r[1]) return;
-
-  const tr = document.createElement("tr");
-  if (!r[0]) tr.classList.add("section-row");
-
-  r.forEach(v => {
-    const td = document.createElement("td");
-    td.textContent = v ?? "";
-    tr.appendChild(td);
-  });
-
-  tr.onclick = () => {
-    const transformerNo = r[2];
-    if (!transformerNo) return;
-
-    window.location.href =
-      "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-      encodeURIComponent("Transformer-" + transformerNo);
-  };
-
-  tbody.appendChild(tr);
-});
-
-  setupFilters();
 }
 
 /* ===== FILTER ===== */
