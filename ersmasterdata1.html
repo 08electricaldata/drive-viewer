@@ -212,10 +212,11 @@ th{
 </div>
 
 <script>
+/* ===== JSDELIVR CDN URLS ===== */
 const JSON_FILES={
-  rewinding:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/rewinding.json",
-  overhauling:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/overhauling.json",
-  scrap:"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/scrap.json"
+  rewinding:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/rewinding.json",
+  overhauling:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/overhauling.json",
+  scrap:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/scrap.json"
 };
 
 let currentData=[];
@@ -254,6 +255,7 @@ async function loadData(type){
   currentType = type; // set current selection type
   try{
     const res=await fetch(JSON_FILES[type]);
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const json=await res.json();
     currentData = json.data || [];
     if(currentData.length === 0){
@@ -266,10 +268,11 @@ async function loadData(type){
     // find priority key by matching desired 'PRIORITY'
     priorityKey = findKeyMatch("PRIORITY") || headers[0] || "";
   }catch(err){
-    console.error(err);
+    console.error("Error loading data:", err);
     currentData = [];
     headers = [];
     priorityKey = "";
+    alert("Error loading data. Please refresh the page.");
   }
   render();
 }
