@@ -105,8 +105,9 @@ tbody tr:hover { background:#eef5ff; }
 </div>
 
 <script>
+/* ===== JSDELIVR CDN URL ===== */
 const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/motor_transaction.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/motor_transaction.json";
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ window.history.back(); }
@@ -122,64 +123,66 @@ function fmt(d){
 }
 
 async function load(){
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
-  let rows=data.rows;
+  try{
+    const res=await fetch(JSON_URL);
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data=await res.json();
+    let rows=data.rows;
 
-  // Sort by Column A descending
-  rows.sort((a,b)=>(b[0]||0)-(a[0]||0));
+    // Sort by Column A descending
+    rows.sort((a,b)=>(b[0]||0)-(a[0]||0));
 
-  const tbody=document.querySelector("#tbl tbody");
-  const areaFilter=document.getElementById("areaFilter");
-  const statusFilter=document.getElementById("statusFilter");
-  const ersFilter=document.getElementById("ersFilter");
-  const search=document.getElementById("search");
+    const tbody=document.querySelector("#tbl tbody");
+    const areaFilter=document.getElementById("areaFilter");
+    const statusFilter=document.getElementById("statusFilter");
+    const ersFilter=document.getElementById("ersFilter");
+    const search=document.getElementById("search");
 
-  const shiftedColors={}, statusColors={};
-  let h1=0, h2=180;
+    const shiftedColors={}, statusColors={};
+    let h1=0, h2=180;
 
-  const areas=new Set();
-  const statuses=new Set();
-  const ersStatuses=new Set();
-
-  rows.forEach(r=>{
-    if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
-    if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
-
-    if(r[13]) areas.add(r[13]);
-    if(r[4]) statuses.add(r[4]);
-    if(r[3]) ersStatuses.add(r[3]);
-  });
-
-  // Fill dropdowns
-  areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-  statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-  ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
-
-  function render(){
-    tbody.innerHTML="";
-    const q=search.value.toLowerCase();
-    const areaVal=areaFilter.value;
-    const statusVal=statusFilter.value;
-    const ersVal=ersFilter.value;
+    const areas=new Set();
+    const statuses=new Set();
+    const ersStatuses=new Set();
 
     rows.forEach(r=>{
+      if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
+      if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
 
-      // Hide if Column C & T both blank
-      if(!r[2] && !r[19]) return;
+      if(r[13]) areas.add(r[13]);
+      if(r[4]) statuses.add(r[4]);
+      if(r[3]) ersStatuses.add(r[3]);
+    });
 
-      if(q && !r.join(" ").toLowerCase().includes(q)) return;
-      if(areaVal && r[13]!==areaVal) return;
-      if(statusVal && r[4]!==statusVal) return;
-      if(ersVal && r[3]!==ersVal) return;
+    // Fill dropdowns
+    areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+    statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+    ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
 
-      let ersColor="";
-      if(r[3]){
-        ersColor=r[3].toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
-      }
+    function render(){
+      tbody.innerHTML="";
+      const q=search.value.toLowerCase();
+      const areaVal=areaFilter.value;
+      const statusVal=statusFilter.value;
+      const ersVal=ersFilter.value;
 
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
+      rows.forEach(r=>{
+
+        // Hide if Column C & T both blank
+        if(!r[2] && !r[19]) return;
+
+        if(q && !r.join(" ").toLowerCase().includes(q)) return;
+        if(areaVal && r[13]!==areaVal) return;
+        if(statusVal && r[4]!==statusVal) return;
+        if(ersVal && r[3]!==ersVal) return;
+
+        let ersColor="";
+        if(r[3]){
+          ersColor=r[3].toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
+        }
+
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
 <td>${r[0]||""}</td>
 <td>${fmt(parseDate(r[1]))}</td>
 <td>${r[2]||""}</td>
@@ -206,16 +209,21 @@ async function load(){
 <td>${r[23]||""}</td>
 <td>${r[24]||""}</td>
 <td>${r[25]||""}</td>`;
-      tbody.appendChild(tr);
-    });
+        tbody.appendChild(tr);
+      });
+    }
+
+    search.onkeyup=render;
+    areaFilter.onchange=render;
+    statusFilter.onchange=render;
+    ersFilter.onchange=render;
+
+    render();
+  }catch(err){
+    console.error("Error loading ERS data:", err);
+    document.querySelector("#tbl tbody").innerHTML =
+      `<tr><td colspan="26" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
   }
-
-  search.onkeyup=render;
-  areaFilter.onchange=render;
-  statusFilter.onchange=render;
-  ersFilter.onchange=render;
-
-  render();
 }
 
 load();
