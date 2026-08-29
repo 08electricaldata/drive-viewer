@@ -138,11 +138,12 @@ tr:hover{
 
 <script>
 
+/* ===== JSDELIVR CDN URLS ===== */
 const JSON_URL =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/plc/plc.json";
 
 const DRAWING_JSON =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
 
 let drawingAvailable = false;
 
@@ -186,6 +187,7 @@ async function checkDrawingAvailability(id){
     );
     drawingAvailable = !!found;
   }catch(e){
+    console.error("Error checking drawing availability:", e);
     drawingAvailable = false;
   }
 }
@@ -265,6 +267,9 @@ async function loadPLC(){
     `;
 
     const response = await fetch(JSON_URL);
+    if(!response.ok){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const data = await response.json();
     const drive = data.drives[driveID.toUpperCase()];
 
@@ -305,7 +310,7 @@ async function loadPLC(){
 
   }catch(err){
     app.innerHTML = "<div class='no-data'>Error loading PLC JSON file.</div>";
-    console.error(err);
+    console.error("Error loading PLC data:", err);
   }
 
 }
