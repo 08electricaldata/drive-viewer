@@ -40,9 +40,6 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 
 .card h3 {
   margin: 0 0 20px 0;
-  color: #003f88;
-  font-size: 18px;
-  font-weight: bold;
   display: flex;
   gap: 20px;
   align-items: baseline;
@@ -52,19 +49,28 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 
 .drive-id {
   flex: 0 0 auto;
+  font-size: 20px;
+  font-weight: bold;
+  color: #1976d2;
 }
 
 .drive-location {
   flex: 0 0 auto;
   font-size: 18px;
+  font-weight: normal;
+}
+
+.drive-location .location-label {
+  font-size: 18px;
   font-weight: bold;
   color: #003f88;
 }
 
-.drive-location .label {
+.drive-location .location-value {
   font-size: 18px;
   font-weight: bold;
-  color: #003f88;
+  color: #d32f2f;
+  margin-left: 8px;
 }
 
 .label { font-weight: bold; color: #003f88; }
@@ -649,7 +655,7 @@ async function showMotor(c,id){
   <div class="card">
     <h3>
       <span class="drive-id">${c[1]} – ${c[2]}</span>
-      <span class="drive-location"><span class="label">Drive Location:</span> ${c[42]}</span>
+      <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42]}</span></span>
     </h3>
     <div class="grid">
       <p><span class="label">Rating:</span> ${c[5]} KW</p>
@@ -701,7 +707,7 @@ async function showTransformer(c,id){
   <div class="card">
     <h3>
       <span class="drive-id">Transformer – ${c[2]}</span>
-      <span class="drive-location"><span class="label">Drive Location:</span> ${c[42] || 'N/A'}</span>
+      <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
     </h3>
     <div class="grid">
       <p><span class="label">TR Sl No:</span> ${c[3]}</p>
@@ -740,7 +746,7 @@ async function showBreaker(c,id){
   <div class="card">
     <h3>
       <span class="drive-id">Breaker – ${c[2]}</span>
-      <span class="drive-location"><span class="label">Drive Location:</span> ${c[42] || 'N/A'}</span>
+      <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
     </h3>
     <div class="grid">
       <p><span class="label">Compartment No:</span> ${c[3]}</p>
