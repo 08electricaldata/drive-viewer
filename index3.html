@@ -15,6 +15,8 @@
   --accent: #1565d8;         /* primary accent */
   --accent-2: #00b894;       /* secondary accent */
   --card-border: rgba(21,101,216,0.12);
+  --pill-border: rgba(21,101,216,0.22); /* stronger box border */
+  --pill-bg: linear-gradient(180deg,#f8fbff,#eef6ff); /* box background */
   --glass: rgba(255,255,255,0.7);
   --danger: #d32f2f;
   --success: #16a34a;
@@ -128,16 +130,44 @@ body {
   margin-top: 8px;
 }
 
-/* info pill style */
+/* UPDATED: visible bordered boxes with background and hover */
 .grid p {
   margin: 0;
-  padding: 12px;
-  background: linear-gradient(180deg,#fff,#fbfdff);
-  border: 1px solid rgba(11,37,64,0.04);
-  border-radius: 10px;
-  color: #102233;
-  box-shadow: 0 2px 8px rgba(11,37,64,0.03);
+  padding: 14px;
+  background: var(--pill-bg);                 /* visible background */
+  border: 1.6px solid var(--pill-border);     /* stronger border for visibility */
+  border-radius: 12px;
+  color: #0f2333;
+  box-shadow: 0 8px 18px rgba(11,37,64,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
   font-size: 14px;
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+  min-height: 56px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+/* slight accent line at left of each box */
+.grid p::before{
+  content: "";
+  width: 6px;
+  height: 40px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--accent), #0b79d0);
+  margin-right: 10px;
+  display:inline-block;
+  flex: 0 0 auto;
+}
+
+/* make label and value layout nicer */
+.grid p .label { display:block; margin-bottom:6px; color:var(--accent); font-weight:800; }
+.grid p span.value { color: #102233; font-weight:600; margin-top:6px; }
+
+/* hover/highlight to feel interactive and more prominent */
+.grid p:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 18px 36px rgba(11,37,64,0.10), inset 0 1px 0 rgba(255,255,255,0.8);
+  border-color: rgba(21,101,216,0.34);
 }
 
 /* action buttons row */
@@ -169,32 +199,14 @@ body {
 .action-btn:hover { transform: translateY(-3px); box-shadow: 0 18px 32px rgba(21,101,216,0.14); }
 .action-btn:active { transform: translateY(-1px); }
 
-/* Keep the secondary class for structure but it now shares primary look */
-.action-btn.secondary {
-  background: linear-gradient(90deg, var(--accent), #0b79d0);
-  color: white;
-  border: none;
-  box-shadow: 0 8px 20px rgba(21,101,216,0.10);
-}
-
-/* Ghost also uses primary color now (keeps lighter border for contrast) */
-.action-btn.ghost {
-  background: linear-gradient(90deg, var(--accent), #0b79d0);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 6px 14px rgba(11,37,64,0.04);
-}
-
-/* Specific background tweak for Drawings button to keep it highlighted but cohesive:
-   slightly different gradient stops and inner glow so it "feels" special.
-*/
+/* Drawings gets a slight variation but still cohesive */
 .action-btn#drawBtn {
   background: linear-gradient(90deg, #1e88e5 0%, #1565d8 60%);
   box-shadow: 0 12px 30px rgba(21,101,216,0.14);
   border: 1px solid rgba(255,255,255,0.06);
 }
 
-/* Disabled */
+/* disabled state */
 .action-btn:disabled {
   opacity: 0.75;
   cursor: not-allowed;
@@ -769,24 +781,24 @@ async function showMotor(c,id){
       <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42]}</span></span>
     </h3>
     <div class="grid">
-      <p><span class="label">Rating:</span><br>${c[5] || '—'} KW</p>
-      <p><span class="label">FLC:</span><br>${c[10] || '—'} A</p>
-      <p><span class="label">SFU:</span><br>${c[14] || '—'}</p>
-      <p><span class="label">Fuse:</span><br>${c[15] || '—'}</p>
-      <p><span class="label">Contactor:</span><br>${c[16] || '—'}</p>
-      <p><span class="label">Relay/VFD:</span><br>${c[17] || '—'}</p>
-      <p><span class="label">CT (M):</span><br>${c[18] || '—'}</p>
-      <p><span class="label">CT (P):</span><br>${c[19] || '—'}</p>
-      <p><span class="label">Aux Contactor:</span><br>${c[20] || '—'}</p>
-      <p><span class="label">Ammeter:</span><br>${c[21] || '—'}</p>
-      <p><span class="label">Ind Lamp:</span><br>${c[22] || '—'}</p>
-      <p><span class="label">No of Spare Motors:</span><br>${c[23] || '—'}</p>
+      <p><span class="label">Rating:</span><span class="value">${c[5] || '—'} KW</span></p>
+      <p><span class="label">FLC:</span><span class="value">${c[10] || '—'} A</span></p>
+      <p><span class="label">SFU:</span><span class="value">${c[14] || '—'}</span></p>
+      <p><span class="label">Fuse:</span><span class="value">${c[15] || '—'}</span></p>
+      <p><span class="label">Contactor:</span><span class="value">${c[16] || '—'}</span></p>
+      <p><span class="label">Relay/VFD:</span><span class="value">${c[17] || '—'}</span></p>
+      <p><span class="label">CT (M):</span><span class="value">${c[18] || '—'}</span></p>
+      <p><span class="label">CT (P):</span><span class="value">${c[19] || '—'}</span></p>
+      <p><span class="label">Aux Contactor:</span><span class="value">${c[20] || '—'}</span></p>
+      <p><span class="label">Ammeter:</span><span class="value">${c[21] || '—'}</span></p>
+      <p><span class="label">Ind Lamp:</span><span class="value">${c[22] || '—'}</span></p>
+      <p><span class="label">No of Spare Motors:</span><span class="value">${c[23] || '—'}</span></p>
 
-     <p><span class="label">Last Motor Replacement:</span><br>${formatDDMMYYYY(c[37])}</p>
-     <p><span class="label">Last Motor PM:</span><br>${formatDDMMYYYY(c[38])}</p>
-     <p><span class="label">Last Module PM:</span><br>${formatDDMMYYYY(c[39])}</p>
-     <p><span class="label">Last VFD PM:</span><br>${formatDDMMYYYY(c[40])}</p>
-     <p><span class="label">Low Current Trip:</span><br>${c[41] || '—'}</p>
+     <p><span class="label">Last Motor Replacement:</span><span class="value">${formatDDMMYYYY(c[37])}</span></p>
+     <p><span class="label">Last Motor PM:</span><span class="value">${formatDDMMYYYY(c[38])}</span></p>
+     <p><span class="label">Last Module PM:</span><span class="value">${formatDDMMYYYY(c[39])}</span></p>
+     <p><span class="label">Last VFD PM:</span><span class="value">${formatDDMMYYYY(c[40])}</span></p>
+     <p><span class="label">Low Current Trip:</span><span class="value">${c[41] || '—'}</span></p>
     </div>
 
   <div class="action-row">
@@ -821,20 +833,20 @@ async function showTransformer(c,id){
       <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
     </h3>
     <div class="grid">
-      <p><span class="label">TR Sl No:</span><br> ${c[3] || '—'}</p>
-      <p><span class="label">Make:</span><br> ${c[4] || '—'}</p>
-      <p><span class="label">Rating:</span><br> ${c[5] || '—'} KVA</p>
-      <p><span class="label">From S/S:</span><br> ${c[6] || '—'}</p>
-      <p><span class="label">Unit S/S:</span><br> ${c[7] || '—'}</p>
-      <p><span class="label">% Impedance:</span><br> ${c[8] || '—'}</p>
-      <p><span class="label">LT SWBD:</span><br> ${c[9] || '—'}</p>
-      <p><span class="label">Panel Rating:</span><br> ${c[10] || '—'}</p>
+      <p><span class="label">TR Sl No:</span><span class="value">${c[3] || '—'}</span></p>
+      <p><span class="label">Make:</span><span class="value">${c[4] || '—'}</span></p>
+      <p><span class="label">Rating:</span><span class="value">${c[5] || '—'} KVA</span></p>
+      <p><span class="label">From S/S:</span><span class="value">${c[6] || '—'}</span></p>
+      <p><span class="label">Unit S/S:</span><span class="value">${c[7] || '—'}</span></p>
+      <p><span class="label">% Impedance:</span><span class="value">${c[8] || '—'}</span></p>
+      <p><span class="label">LT SWBD:</span><span class="value">${c[9] || '—'}</span></p>
+      <p><span class="label">Panel Rating:</span><span class="value">${c[10] || '—'}</span></p>
 
-      <p><span class="label">Last Transformer PM:</span><br> ${t.pm}</p>
-      <p><span class="label">Last Transformer O/H:</span><br> ${t.oh}</p>
-      <p><span class="label">Last Oil Leakage Arrest:</span><br> ${t.leak}</p>
-      <p><span class="label">Last Oil Top-up:</span><br> ${t.top}</p>
-      <p><span class="label">Last Oil Checked:</span><br> ${t.chk}</p>
+      <p><span class="label">Last Transformer PM:</span><span class="value">${t.pm}</span></p>
+      <p><span class="label">Last Transformer O/H:</span><span class="value">${t.oh}</span></p>
+      <p><span class="label">Last Oil Leakage Arrest:</span><span class="value">${t.leak}</span></p>
+      <p><span class="label">Last Oil Top-up:</span><span class="value">${t.top}</span></p>
+      <p><span class="label">Last Oil Checked:</span><span class="value">${t.chk}</span></p>
     </div>
 
     <div class="action-row">
@@ -860,15 +872,15 @@ async function showBreaker(c,id){
       <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
     </h3>
     <div class="grid">
-      <p><span class="label">Compartment No:</span><br> ${c[3] || '—'}</p>
-      <p><span class="label">Breaker Desc:</span><br> ${c[4] || '—'}</p>
-      <p><span class="label">Make:</span><br> ${c[5] || '—'}</p>
-      <p><span class="label">Rating:</span><br> ${c[6] || '—'} A</p>
-      <p><span class="label">Type:</span><br> ${c[7] || '—'}</p>
-      <p><span class="label">LT SWBD:</span><br> ${c[9] || '—'}</p>
-      <p><span class="label">Panel Rating:</span><br> ${c[10] || '—'}</p>
+      <p><span class="label">Compartment No:</span><span class="value">${c[3] || '—'}</span></p>
+      <p><span class="label">Breaker Desc:</span><span class="value">${c[4] || '—'}</span></p>
+      <p><span class="label">Make:</span><span class="value">${c[5] || '—'}</span></p>
+      <p><span class="label">Rating:</span><span class="value">${c[6] || '—'} A</span></p>
+      <p><span class="label">Type:</span><span class="value">${c[7] || '—'}</span></p>
+      <p><span class="label">LT SWBD:</span><span class="value">${c[9] || '—'}</span></p>
+      <p><span class="label">Panel Rating:</span><span class="value">${c[10] || '—'}</span></p>
 
-      <p><span class="label">Last Breaker PM:</span><br> ${b.pm}</p>
+      <p><span class="label">Last Breaker PM:</span><span class="value">${b.pm}</span></p>
     </div>
 
     <div class="action-row">
