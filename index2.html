@@ -6,121 +6,228 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
+/* Theme variables */
+:root{
+  --bg: #f4f7fb;
+  --panel: #ffffff;
+  --muted: #6b7280;
+  --text: #0b2540;
+  --accent: #1565d8;         /* primary accent */
+  --accent-2: #00b894;       /* secondary accent */
+  --card-border: rgba(21,101,216,0.12);
+  --glass: rgba(255,255,255,0.7);
+  --danger: #d32f2f;
+  --success: #16a34a;
+  --shadow: 0 8px 20px rgba(11,37,64,0.06);
+}
 
+/* Base */
+*{box-sizing:border-box}
+html,body{height:100%}
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  margin: 0; background: linear-gradient(180deg, #f6f9ff 0%, var(--bg) 100%);
+  color: var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+
+/* Sticky header */
 .header-bar {
   position: sticky; top: 0; z-index: 1000;
-  background: #f2f6ff; padding: 10px 12px;
-  display: flex; align-items: center; gap: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  background: linear-gradient(90deg, rgba(21,101,216,0.06), rgba(0,184,148,0.03));
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid rgba(11,37,64,0.04);
+  backdrop-filter: blur(6px);
 }
 
+/* Header title */
 .header-title { flex: 1; text-align: center; }
-.header-title h2 { margin: 0; color: #003f88; }
-.header-title small { display: block; font-size: 15px; font-weight: 600; }
+.header-title h2 { margin: 0; color: var(--accent); font-size: 1.05rem; letter-spacing:0.2px; }
+.header-title small { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-top:2px; }
 
+/* Icon buttons in header */
 .icon-btn {
-  background: #ffffff;
-  color: #003f88;
-  border: 1px solid #003f88;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 18px;
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+  color: var(--accent);
+  border: 1px solid rgba(21,101,216,0.14);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 15px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
+  display: inline-flex; gap:8px; align-items:center; justify-content:center;
+  box-shadow: 0 4px 12px rgba(16,24,40,0.04);
+  transition: transform .14s ease, box-shadow .14s ease;
 }
+.icon-btn:hover{ transform: translateY(-2px); box-shadow: 0 10px 26px rgba(16,24,40,0.06); }
+.icon-btn:active{ transform: translateY(0); }
 
-.container { padding: 20px; }
+/* Page container */
+.container { padding: 22px; max-width: 1100px; margin: 0 auto; }
 
+/* Card */
 .card {
-  background: #fff; padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  background: var(--panel);
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+  position: relative;
 }
 
+/* Card header */
 .card h3 {
-  margin: 0 0 20px 0;
+  margin: 0 0 18px 0;
   display: flex;
-  gap: 20px;
+  gap: 14px;
   align-items: baseline;
   flex-wrap: wrap;
   word-break: break-word;
 }
 
+/* Accent stripe on left of card */
+.card::before{
+  content: "";
+  display:block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 6px;
+  border-top-left-radius:14px;
+  border-bottom-left-radius:14px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  transform-origin:left;
+}
+
+/* drive id and location */
 .drive-id {
   flex: 0 0 auto;
   font-size: 20px;
-  font-weight: bold;
-  color: #1976d2;
+  font-weight: 700;
+  color: #05203a;
+  background: linear-gradient(90deg, rgba(21,101,216,0.06), rgba(0,184,148,0.03));
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(21,101,216,0.06);
+  box-shadow: 0 2px 8px rgba(21,101,216,0.04) inset;
 }
 
-.drive-location {
-  flex: 0 0 auto;
-  font-size: 18px;
-  font-weight: normal;
-}
+/* location badge */
+.drive-location { flex: 1 1 auto; display:flex; gap:8px; align-items:center; justify-content:flex-end; }
+.location-label { font-size: 15px; font-weight:700; color:var(--muted); }
+.location-value { font-size: 15px; font-weight:800; color:var(--danger); background: rgba(211,47,47,0.06); padding:6px 10px; border-radius:8px; border:1px solid rgba(211,47,47,0.06); }
 
-.drive-location .location-label {
-  font-size: 18px;
-  font-weight: bold;
-  color: #003f88;
-}
-
-.drive-location .location-value {
-  font-size: 18px;
-  font-weight: bold;
-  color: #d32f2f;
-  margin-left: 8px;
-}
-
-.label { font-weight: bold; color: #003f88; }
-
+/* labels and grid */
+.label { font-weight: 700; color: var(--accent); display:inline-block; margin-bottom:6px; }
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  margin-top: 8px;
 }
 
+/* info pill style */
+.grid p {
+  margin: 0;
+  padding: 12px;
+  background: linear-gradient(180deg,#fff,#fbfdff);
+  border: 1px solid rgba(11,37,64,0.04);
+  border-radius: 10px;
+  color: #102233;
+  box-shadow: 0 2px 8px rgba(11,37,64,0.03);
+  font-size: 14px;
+}
+
+/* action buttons row */
+.action-row {
+  display:flex;
+  flex-wrap:wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+/* Primary action button style (used by LOCATION and now for all actions) */
 .action-btn {
-  margin-top: 20px;
-  padding: 10px 18px;
-  background: #003f88;
-  color: #fff;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, var(--accent), #0b79d0);
+  color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(21,101,216,0.12);
+  transition: transform .14s ease, box-shadow .14s ease, opacity .12s ease;
+  min-width: 120px;
+  justify-content: center;
+}
+.action-btn svg { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.08)); }
+.action-btn:hover { transform: translateY(-3px); box-shadow: 0 18px 32px rgba(21,101,216,0.14); }
+.action-btn:active { transform: translateY(-1px); }
+
+/* Keep the secondary class for structure but it now shares primary look */
+.action-btn.secondary {
+  background: linear-gradient(90deg, var(--accent), #0b79d0);
+  color: white;
+  border: none;
+  box-shadow: 0 8px 20px rgba(21,101,216,0.10);
 }
 
+/* Ghost also uses primary color now (keeps lighter border for contrast) */
+.action-btn.ghost {
+  background: linear-gradient(90deg, var(--accent), #0b79d0);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 6px 14px rgba(11,37,64,0.04);
+}
+
+/* Specific background tweak for Drawings button to keep it highlighted but cohesive:
+   slightly different gradient stops and inner glow so it "feels" special.
+*/
+.action-btn#drawBtn {
+  background: linear-gradient(90deg, #1e88e5 0%, #1565d8 60%);
+  box-shadow: 0 12px 30px rgba(21,101,216,0.14);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Disabled */
 .action-btn:disabled {
-  background:#ccc;
-  cursor:not-allowed;
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
+/* badge */
 .badge {
-  color:red;
-  font-weight:bold;
-  margin-top:10px;
+  color: var(--danger);
+  font-weight: 800;
+  margin-left: 8px;
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:8px;
+  background: rgba(211,47,47,0.06);
+  border: 1px solid rgba(211,47,47,0.06);
+  font-size:13px;
 }
 
-@media(max-width:768px){
+/* responsive */
+@media(max-width:980px){
+  .grid { grid-template-columns: 1fr 1fr; }
+  .drive-location{ justify-content:flex-start; gap:10px; }
+}
+@media(max-width:640px){
   .grid { grid-template-columns: 1fr; }
-  
-  .card h3 {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-
-  .action-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 18px;
-  }
-  .action-row .action-btn {
-    margin-top: 0;
-    width: 100%;
-  }
+  .card::before{ width:5px; }
+  .drive-id{ font-size:18px; }
+  .header-bar{ padding:10px; }
+  .header-title small{ font-size:12px; }
+  .action-row{ justify-content:stretch; }
+  .action-btn{ width:100%; min-width: unset; justify-content:center; }
 }
 </style>
 </head>
@@ -655,32 +762,31 @@ function applyButtonState(id){
 /* ===== MOTOR ===== */
 async function showMotor(c,id){
 
-
   content.innerHTML = `
-  <div class="card">
+  <div class="card" style="position:relative;">
     <h3>
       <span class="drive-id">${c[1]} – ${c[2]}</span>
       <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42]}</span></span>
     </h3>
     <div class="grid">
-      <p><span class="label">Rating:</span> ${c[5]} KW</p>
-      <p><span class="label">FLC:</span> ${c[10]} A</p>
-      <p><span class="label">SFU:</span> ${c[14]}</p>
-      <p><span class="label">Fuse:</span> ${c[15]}</p>
-      <p><span class="label">Contactor:</span> ${c[16]}</p>
-      <p><span class="label">Relay/VFD:</span> ${c[17]}</p>
-      <p><span class="label">CT (M):</span> ${c[18]}</p>
-      <p><span class="label">CT (P):</span> ${c[19]}</p>
-      <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
-      <p><span class="label">Ammeter:</span> ${c[21]}</p>
-      <p><span class="label">Ind Lamp:</span> ${c[22]}</p>
-      <p><span class="label">No of Spare Motors:</span> ${c[23]}</p>
+      <p><span class="label">Rating:</span><br>${c[5] || '—'} KW</p>
+      <p><span class="label">FLC:</span><br>${c[10] || '—'} A</p>
+      <p><span class="label">SFU:</span><br>${c[14] || '—'}</p>
+      <p><span class="label">Fuse:</span><br>${c[15] || '—'}</p>
+      <p><span class="label">Contactor:</span><br>${c[16] || '—'}</p>
+      <p><span class="label">Relay/VFD:</span><br>${c[17] || '—'}</p>
+      <p><span class="label">CT (M):</span><br>${c[18] || '—'}</p>
+      <p><span class="label">CT (P):</span><br>${c[19] || '—'}</p>
+      <p><span class="label">Aux Contactor:</span><br>${c[20] || '—'}</p>
+      <p><span class="label">Ammeter:</span><br>${c[21] || '—'}</p>
+      <p><span class="label">Ind Lamp:</span><br>${c[22] || '—'}</p>
+      <p><span class="label">No of Spare Motors:</span><br>${c[23] || '—'}</p>
 
-     <p><span class="label">Last Motor Replacement:</span> ${formatDDMMYYYY(c[37])}</p>
-<p><span class="label">Last Motor PM:</span> ${formatDDMMYYYY(c[38])}</p>
-<p><span class="label">Last Module PM:</span> ${formatDDMMYYYY(c[39])}</p>
-<p><span class="label">Last VFD PM:</span> ${formatDDMMYYYY(c[40])}</p>
-<p><span class="label">Low Current Trip:</span> ${c[41]} </p>
+     <p><span class="label">Last Motor Replacement:</span><br>${formatDDMMYYYY(c[37])}</p>
+     <p><span class="label">Last Motor PM:</span><br>${formatDDMMYYYY(c[38])}</p>
+     <p><span class="label">Last Module PM:</span><br>${formatDDMMYYYY(c[39])}</p>
+     <p><span class="label">Last VFD PM:</span><br>${formatDDMMYYYY(c[40])}</p>
+     <p><span class="label">Low Current Trip:</span><br>${c[41] || '—'}</p>
     </div>
 
   <div class="action-row">
@@ -709,26 +815,26 @@ async function showTransformer(c,id){
   });
 
   content.innerHTML = `
-  <div class="card">
+  <div class="card" style="position:relative;">
     <h3>
       <span class="drive-id">Transformer – ${c[2]}</span>
       <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
     </h3>
     <div class="grid">
-      <p><span class="label">TR Sl No:</span> ${c[3]}</p>
-      <p><span class="label">Make:</span> ${c[4]}</p>
-      <p><span class="label">Rating:</span> ${c[5]} KVA</p>
-      <p><span class="label">From S/S:</span> ${c[6]}</p>
-      <p><span class="label">Unit S/S:</span> ${c[7]}</p>
-      <p><span class="label">% Impedance:</span> ${c[8]}</p>
-      <p><span class="label">LT SWBD:</span> ${c[9]}</p>
-      <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+      <p><span class="label">TR Sl No:</span><br> ${c[3] || '—'}</p>
+      <p><span class="label">Make:</span><br> ${c[4] || '—'}</p>
+      <p><span class="label">Rating:</span><br> ${c[5] || '—'} KVA</p>
+      <p><span class="label">From S/S:</span><br> ${c[6] || '—'}</p>
+      <p><span class="label">Unit S/S:</span><br> ${c[7] || '—'}</p>
+      <p><span class="label">% Impedance:</span><br> ${c[8] || '—'}</p>
+      <p><span class="label">LT SWBD:</span><br> ${c[9] || '—'}</p>
+      <p><span class="label">Panel Rating:</span><br> ${c[10] || '—'}</p>
 
-      <p><span class="label">Last Transformer PM:</span> ${t.pm}</p>
-      <p><span class="label">Last Transformer O/H:</span> ${t.oh}</p>
-      <p><span class="label">Last Oil Leakage Arrest:</span> ${t.leak}</p>
-      <p><span class="label">Last Oil Top-up:</span> ${t.top}</p>
-      <p><span class="label">Last Oil Checked:</span> ${t.chk}</p>
+      <p><span class="label">Last Transformer PM:</span><br> ${t.pm}</p>
+      <p><span class="label">Last Transformer O/H:</span><br> ${t.oh}</p>
+      <p><span class="label">Last Oil Leakage Arrest:</span><br> ${t.leak}</p>
+      <p><span class="label">Last Oil Top-up:</span><br> ${t.top}</p>
+      <p><span class="label">Last Oil Checked:</span><br> ${t.chk}</p>
     </div>
 
     <div class="action-row">
@@ -748,21 +854,21 @@ async function showBreaker(c,id){
   const b = await lastDates(id,{ pm:"BREAKER PM" });
 
   content.innerHTML = `
-  <div class="card">
+  <div class="card" style="position:relative;">
     <h3>
       <span class="drive-id">Breaker – ${c[2]}</span>
       <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
     </h3>
     <div class="grid">
-      <p><span class="label">Compartment No:</span> ${c[3]}</p>
-      <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
-      <p><span class="label">Make:</span> ${c[5]}</p>
-      <p><span class="label">Rating:</span> ${c[6]} A</p>
-      <p><span class="label">Type:</span> ${c[7]}</p>
-      <p><span class="label">LT SWBD:</span> ${c[9]}</p>
-      <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+      <p><span class="label">Compartment No:</span><br> ${c[3] || '—'}</p>
+      <p><span class="label">Breaker Desc:</span><br> ${c[4] || '—'}</p>
+      <p><span class="label">Make:</span><br> ${c[5] || '—'}</p>
+      <p><span class="label">Rating:</span><br> ${c[6] || '—'} A</p>
+      <p><span class="label">Type:</span><br> ${c[7] || '—'}</p>
+      <p><span class="label">LT SWBD:</span><br> ${c[9] || '—'}</p>
+      <p><span class="label">Panel Rating:</span><br> ${c[10] || '—'}</p>
 
-      <p><span class="label">Last Breaker PM:</span> ${b.pm}</p>
+      <p><span class="label">Last Breaker PM:</span><br> ${b.pm}</p>
     </div>
 
     <div class="action-row">
