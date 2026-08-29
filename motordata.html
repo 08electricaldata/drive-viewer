@@ -39,7 +39,8 @@ tr:nth-child(even){background:#f8f9ff;}
 </div>
 
 <script>
-const JSON_URL="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+/* ===== JSDELIVR CDN URL ===== */
+const JSON_URL="https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
 
 function getID(){ return new URLSearchParams(window.location.search).get("id"); }
 function goBack(){ history.back(); }
@@ -203,7 +204,7 @@ html += "</table>";
     app.innerHTML=html;
 
   } catch(err){
-    console.error(err);
+    console.error("Error loading motor details:", err);
     app.innerHTML=`<div class="no-data">Unable to load Motor Details.<br><br>${err.message}</div>`;
   }
 }
