@@ -38,6 +38,41 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
   box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 
+.card h3 {
+  margin: 0 0 20px 0;
+  display: flex;
+  gap: 20px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  word-break: break-word;
+}
+
+.drive-id {
+  flex: 0 0 auto;
+  font-size: 20px;
+  font-weight: bold;
+  color: #1976d2;
+}
+
+.drive-location {
+  flex: 0 0 auto;
+  font-size: 18px;
+  font-weight: normal;
+}
+
+.drive-location .location-label {
+  font-size: 18px;
+  font-weight: bold;
+  color: #003f88;
+}
+
+.drive-location .location-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #d32f2f;
+  margin-left: 8px;
+}
+
 .label { font-weight: bold; color: #003f88; }
 
 .grid {
@@ -69,6 +104,13 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 
 @media(max-width:768px){
   .grid { grid-template-columns: 1fr; }
+  
+  .card h3 {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
   .action-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -611,7 +653,10 @@ async function showMotor(c,id){
 
   content.innerHTML = `
   <div class="card">
-    <h3>${c[1]} – ${c[2]}</h3>
+    <h3>
+      <span class="drive-id">${c[1]} – ${c[2]}</span>
+      <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42]}</span></span>
+    </h3>
     <div class="grid">
       <p><span class="label">Rating:</span> ${c[5]} KW</p>
       <p><span class="label">FLC:</span> ${c[10]} A</p>
@@ -631,7 +676,6 @@ async function showMotor(c,id){
 <p><span class="label">Last Module PM:</span> ${formatDDMMYYYY(c[39])}</p>
 <p><span class="label">Last VFD PM:</span> ${formatDDMMYYYY(c[40])}</p>
 <p><span class="label">Low Current Trip:</span> ${c[41]} </p>
-<p><span class="label">Drive Location:</span> ${c[42]} </p>
     </div>
 
   <div class="action-row">
@@ -661,7 +705,10 @@ async function showTransformer(c,id){
 
   content.innerHTML = `
   <div class="card">
-    <h3>Transformer – ${c[2]}</h3>
+    <h3>
+      <span class="drive-id">Transformer – ${c[2]}</span>
+      <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
+    </h3>
     <div class="grid">
       <p><span class="label">TR Sl No:</span> ${c[3]}</p>
       <p><span class="label">Make:</span> ${c[4]}</p>
@@ -697,7 +744,10 @@ async function showBreaker(c,id){
 
   content.innerHTML = `
   <div class="card">
-    <h3>Breaker – ${c[2]}</h3>
+    <h3>
+      <span class="drive-id">Breaker – ${c[2]}</span>
+      <span class="drive-location"><span class="location-label">Drive Location:</span> <span class="location-value">${c[42] || 'N/A'}</span></span>
+    </h3>
     <div class="grid">
       <p><span class="label">Compartment No:</span> ${c[3]}</p>
       <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
