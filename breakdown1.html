@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Drive History — JOB TYPE BD (Desktop)</title>
+<title>Drive History — JOB TYPE BD </title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   *{box-sizing:border-box}
@@ -103,10 +103,10 @@
 </div>
 
 <script>
-/* Config */
+/* ===== JSDELIVR CDN URLS ===== */
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
-const HISTORY_BASE = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
-const JOBBOOK_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/jobbook.json";
+const HISTORY_BASE = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
+const JOBBOOK_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/jobbook.json";
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 /* Utilities */
@@ -370,8 +370,13 @@ function exportCSV(){
 
 /* Init: load jobbook then history */
 async function init(){
-  await loadJobBook();
-  await loadAllHistory();
+  try{
+    await loadJobBook();
+    await loadAllHistory();
+  }catch(e){
+    console.error("Initialization error:", e);
+    document.querySelector("#historyTable tbody").innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
+  }
 }
 
 /* Wire UI events */
