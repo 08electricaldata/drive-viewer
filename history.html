@@ -215,67 +215,71 @@ function goDriveInfo(){
 async function loadDriveInfo(){
   if(!id) return;
 
-  const url="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
-  const r=await fetch(url);
-  const j=await r.json();
+  const url="https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
+  try {
+    const r=await fetch(url);
+    const j=await r.json();
 
-  let c=null;
-  j.rows.forEach(r=>{
-    if(normalize(`${r[1]}-${r[2]}`) === id) c=r;
-  });
+    let c=null;
+    j.rows.forEach(r=>{
+      if(normalize(`${r[1]}-${r[2]}`) === id) c=r;
+    });
 
-  if(!c){
-    driveInfo.innerHTML="Drive not found.";
-    return;
-  }
+    if(!c){
+      driveInfo.innerHTML="Drive not found.";
+      return;
+    }
 
-  const type=normalize(c[1]);
+    const type=normalize(c[1]);
 
-  if(type==="TRANSFORMER"){
+    if(type==="TRANSFORMER"){
+      driveInfo.innerHTML=`
+        <h3>Transformer No: ${c[2]}</h3>
+        <div class="grid">
+          <p><span class="label">TR Sl No:</span> ${c[3]}</p>
+          <p><span class="label">Make:</span> ${c[4]}</p>
+          <p><span class="label">Rating:</span> ${c[5]} KVA</p>
+          <p><span class="label">From S/S:</span> ${c[6]}</p>
+          <p><span class="label">Unit S/S:</span> ${c[7]}</p>
+          <p><span class="label">% Impedance:</span> ${c[8]}</p>
+          <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+          <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+        </div>`;
+      return;
+    }
+
+    if(type==="BREAKER"){
+      driveInfo.innerHTML=`
+        <h3>Breaker – ${c[2]}</h3>
+        <div class="grid">
+          <p><span class="label">Compartment No:</span> ${c[3]}</p>
+          <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
+          <p><span class="label">Make:</span> ${c[5]}</p>
+          <p><span class="label">Rating:</span> ${c[6]} A</p>
+          <p><span class="label">Type:</span> ${c[7]}</p>
+          <p><span class="label">LT SWBD:</span> ${c[9]}</p>
+          <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+        </div>`;
+      return;
+    }
+
     driveInfo.innerHTML=`
-      <h3>Transformer No: ${c[2]}</h3>
+      <h3>${c[1]} – ${c[2]}</h3>
+      <p><span class="label">Pump Type:</span> ${c[4]}</p>
       <div class="grid">
-        <p><span class="label">TR Sl No:</span> ${c[3]}</p>
-        <p><span class="label">Make:</span> ${c[4]}</p>
-        <p><span class="label">Rating:</span> ${c[5]} KVA</p>
-        <p><span class="label">From S/S:</span> ${c[6]}</p>
-        <p><span class="label">Unit S/S:</span> ${c[7]}</p>
-        <p><span class="label">% Impedance:</span> ${c[8]}</p>
-        <p><span class="label">LT SWBD:</span> ${c[9]}</p>
-        <p><span class="label">Panel Rating:</span> ${c[10]}</p>
+        <p><span class="label">Rating:</span> ${c[5]} KW</p>
+        <p><span class="label">FLC:</span> ${c[10]} A</p>
+        <p><span class="label">SFU:</span> ${c[14]}</p>
+        <p><span class="label">Fuse:</span> ${c[15]}</p>
+        <p><span class="label">Contactor:</span> ${c[16]}</p>
+        <p><span class="label">Relay:</span> ${c[17]}</p>
+        <p><span class="label">CT (M):</span> ${c[18]}</p>
+        <p><span class="label">CT (P):</span> ${c[19]}</p>
+        <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
       </div>`;
-    return;
+  } catch(e) {
+    driveInfo.innerHTML="Error loading drive information.";
   }
-
-  if(type==="BREAKER"){
-    driveInfo.innerHTML=`
-      <h3>Breaker – ${c[2]}</h3>
-      <div class="grid">
-        <p><span class="label">Compartment No:</span> ${c[3]}</p>
-        <p><span class="label">Breaker Desc:</span> ${c[4]}</p>
-        <p><span class="label">Make:</span> ${c[5]}</p>
-        <p><span class="label">Rating:</span> ${c[6]} A</p>
-        <p><span class="label">Type:</span> ${c[7]}</p>
-        <p><span class="label">LT SWBD:</span> ${c[9]}</p>
-        <p><span class="label">Panel Rating:</span> ${c[10]}</p>
-      </div>`;
-    return;
-  }
-
-  driveInfo.innerHTML=`
-    <h3>${c[1]} – ${c[2]}</h3>
-    <p><span class="label">Pump Type:</span> ${c[4]}</p>
-    <div class="grid">
-      <p><span class="label">Rating:</span> ${c[5]} KW</p>
-      <p><span class="label">FLC:</span> ${c[10]} A</p>
-      <p><span class="label">SFU:</span> ${c[14]}</p>
-      <p><span class="label">Fuse:</span> ${c[15]}</p>
-      <p><span class="label">Contactor:</span> ${c[16]}</p>
-      <p><span class="label">Relay:</span> ${c[17]}</p>
-      <p><span class="label">CT (M):</span> ${c[18]}</p>
-      <p><span class="label">CT (P):</span> ${c[19]}</p>
-      <p><span class="label">Aux Contactor:</span> ${c[20]}</p>
-    </div>`;
 }
 
 /* ===== DATE NORMALIZER (UNCHANGED) ===== */
@@ -303,22 +307,26 @@ function formatDate(v){
 
 /* ===== JOB BOOK ===== */
 const JOBBOOK_JSON =
-  "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/jobbook.json";
+  "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/jobbook.json";
 
 let jobBookMap = {};
 
 async function loadJobBook(){
-  const r = await fetch(JOBBOOK_JSON);
-  const j = await r.json();
-  j.rows.forEach(r=>{
-    const key = normalizeDateKey(r[0]);
-    if(key && r[1]) jobBookMap[key] = r[1];
-  });
+  try {
+    const r = await fetch(JOBBOOK_JSON);
+    const j = await r.json();
+    j.rows.forEach(r=>{
+      const key = normalizeDateKey(r[0]);
+      if(key && r[1]) jobBookMap[key] = r[1];
+    });
+  } catch(e) {
+    console.error("Error loading job book:", e);
+  }
 }
 
 /* ===== HISTORY ===== */
 const HISTORY_YEARS=[2026,2025,2024,2023,2022,2021,2020,2019];
-const HISTORY_BASE="https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+const HISTORY_BASE="https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
 
 async function loadHistory(){
   let all=[];
