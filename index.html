@@ -273,17 +273,17 @@ body {
 
 <script>
 const DRIVE_JSON =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
 
 const DRAWING_JSON =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
 
 const PLC_JSON =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/plc/plc.json";
 
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
 
 let drawingAvailableMap = {};
 let plcAvailableMap = {};
@@ -530,9 +530,9 @@ async function preloadPLC(){
 /* ===== PRELOAD SLDs (robust) ===== */
 async function preloadSLD(){
   const BOARDS_SLD_JSON =
-    "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
+    "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/boards_sld.json";
   const LT_SLD_JSON =
-    "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
+    "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
 
   // Helper to split and normalize tokens from a possibly multiline/compound string
   function extractTokens(value){
