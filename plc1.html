@@ -166,8 +166,17 @@ tr:hover td{ background:#f2f6ff; }
 /* visible small board column width */
 table th:nth-child(5),
 table td:nth-child(5) { width:120px; }
+
+/* TB No column — keep single line, no wrap, ellipsis if too long */
 table th:nth-child(6),
-table td:nth-child(6) { width:80px; }
+table td:nth-child(6) {
+  width:120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  text-align: center;
+}
 
 /* small badge link style */
 .table-link{
@@ -246,7 +255,7 @@ function goHome(){
 function goDriveInfo(){
   const id = getDriveFromURL();
   window.location.href =
-  "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+  "https://08electricaldata.github.io/drive-viewer/index2.html?id=" +
   encodeURIComponent(id);
 }
 
