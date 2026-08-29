@@ -188,25 +188,30 @@ tr:hover{
 </div>
 
 <script>
-// ================= URLs =================
-const BOARD_JSON = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/master/board.json";
-const SLD_JSON   = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
-const LT_JSON    = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
-// ========================================
+/* ===== JSDELIVR CDN URLS ===== */
+const BOARD_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/board.json";
+const SLD_JSON   = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/boards_sld.json";
+const LT_JSON    = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
 
 let masterData = [];
 
 // ⚡ Ultra-fast Cache
 async function loadBoardData(){
-  if(sessionStorage.getItem("boardCache")){
-    masterData = JSON.parse(sessionStorage.getItem("boardCache"));
-    initializePage();
-  }else{
-    const res = await fetch(BOARD_JSON);
-    const json = await res.json();
-    masterData = json.data;
-    sessionStorage.setItem("boardCache", JSON.stringify(masterData));
-    initializePage();
+  try {
+    if(sessionStorage.getItem("boardCache")){
+      masterData = JSON.parse(sessionStorage.getItem("boardCache"));
+      initializePage();
+    }else{
+      const res = await fetch(BOARD_JSON);
+      if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const json = await res.json();
+      masterData = json.data;
+      sessionStorage.setItem("boardCache", JSON.stringify(masterData));
+      initializePage();
+    }
+  } catch(err) {
+    console.error("Error loading board data:", err);
+    document.getElementById("statsBox").innerHTML = "<div style='color:red;'>Error loading data. Please refresh the page.</div>";
   }
 }
 
@@ -314,28 +319,34 @@ function addClickEvents(){
 }
 
 async function searchAndRedirect(boardId){
+  try {
+    const [sldRes, ltRes]=await Promise.all([
+      fetch(SLD_JSON),
+      fetch(LT_JSON)
+    ]);
 
-  const [sldRes, ltRes]=await Promise.all([
-    fetch(SLD_JSON),
-    fetch(LT_JSON)
-  ]);
+    if(!sldRes.ok || !ltRes.ok) throw new Error("Failed to fetch SLD data");
 
-  const sld=await sldRes.json();
-  const lt=await ltRes.json();
+    const sld=await sldRes.json();
+    const lt=await ltRes.json();
 
-  if(sld.boards && sld.boards[boardId]){
-    window.location.href=
-      "https://08electricaldata.github.io/drive-viewer/sld.html?id="+boardId;
-    return;
+    if(sld.boards && sld.boards[boardId]){
+      window.location.href=
+        "https://08electricaldata.github.io/drive-viewer/sld.html?id="+boardId;
+      return;
+    }
+
+    if(lt.boards && lt.boards[boardId]){
+      window.location.href=
+        "https://08electricaldata.github.io/drive-viewer/sld3.html?id="+boardId;
+      return;
+    }
+
+    alert("Board not found in SLD database");
+  } catch(err) {
+    console.error("Error searching board:", err);
+    alert("Error searching board. Please try again.");
   }
-
-  if(lt.boards && lt.boards[boardId]){
-    window.location.href=
-      "https://08electricaldata.github.io/drive-viewer/sld3.html?id="+boardId;
-    return;
-  }
-
-  alert("Board not found in SLD database");
 }
 
 loadBoardData();
