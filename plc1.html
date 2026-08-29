@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLC Address Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg: #f6f9ff;
+  --panel: #ffffff;
+  --text: #0b2540;
+  --muted: #6b7280;
+  --accent: #1565d8;
+  --accent-2: #0b79d0;
+  --pill-border: rgba(21,101,216,0.18);
+  --pill-bg: linear-gradient(180deg,#f8fbff,#eef6ff);
+  --card-border: rgba(21,101,216,0.08);
+  --shadow: 0 12px 30px rgba(11,37,64,0.06);
+  --danger: #d32f2f;
+}
+
+/* Reset/base */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  background: linear-gradient(180deg,#f7fbff 0%, var(--bg) 100%);
+  color:var(--text);
+  line-height:1.45;
+}
+
+/* Top credit stripe */
+.top-credit{
+  text-align:center;
+  padding:10px;
+  font-size:13px;
+  background: linear-gradient(90deg,var(--accent),var(--accent-2));
+  color:#fff;
+  letter-spacing:0.4px;
+  font-weight:700;
+}
+
+/* Page container */
+.container{ max-width:1100px; margin:20px auto; padding:0 16px; }
+
+/* Header area */
+.header {
+  text-align:center;
+  margin:18px 0;
+}
+.header h2{
+  margin:0;
+  font-size:20px;
+  font-weight:800;
+  color:var(--accent);
+}
+.updated {
+  margin-top:6px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+/* Button bar with modern buttons */
+.button-bar{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+.icon-btn {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 14px;
+  border-radius:10px;
+  background: linear-gradient(90deg,var(--accent),var(--accent-2));
+  color:#fff;
+  border:none;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow: 0 10px 26px rgba(21,101,216,0.12);
+  transition: transform .14s ease, box-shadow .14s ease, opacity .12s;
+}
+.icon-btn:hover{ transform: translateY(-3px); box-shadow: 0 18px 36px rgba(21,101,216,0.14); }
+.icon-btn.ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed rgba(21,101,216,0.12);
+  box-shadow:none;
+  font-weight:700;
+}
+
+/* Card container for content */
+.card{
+  position:relative;
+  background:var(--panel);
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow);
+  border: 1px solid var(--card-border);
+}
+
+/* Accent stripe on left (cards) */
+.card::before{
+  content:"";
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:6px;
+  border-top-left-radius:12px;
+  border-bottom-left-radius:12px;
+  background: linear-gradient(180deg,var(--accent),var(--accent-2));
+}
+
+/* Section title (for tables) */
+.section-title{
+  font-weight:800;
+  margin:12px 0;
+  padding:10px 12px;
+  border-radius:8px;
+  background: linear-gradient(180deg,#f2f7ff,#eef6ff);
+  border-left:4px solid var(--accent);
+  color:var(--accent);
+}
+
+/* Loader / no-data */
+.loader, .no-data {
+  text-align:center;
+  padding:36px;
+  font-weight:700;
+  color:var(--muted);
+}
+
+/* Signals table styles */
+.table-wrap{ overflow:auto; border-radius:10px; border:1px solid rgba(11,37,64,0.04); }
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:900px;
+  font-size:14px;
+}
+thead th{
+  position:sticky;
+  top:0;
+  background: linear-gradient(180deg,var(--accent),var(--accent-2));
+  color:#fff;
+  padding:10px 12px;
+  font-weight:800;
+  text-align:left;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+tbody td{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(11,37,64,0.04);
+  background:#fff;
+  vertical-align:middle;
+}
+tbody tr:nth-child(even) td{ background:#fbfeff; }
+tr:hover td{ background:#f2f6ff; }
+
+/* visible small board column width */
+table th:nth-child(5),
+table td:nth-child(5) { width:120px; }
+table th:nth-child(6),
+table td:nth-child(6) { width:80px; }
+
+/* small badge link style */
+.table-link{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:8px;
+  background: rgba(21,101,216,0.08);
+  color:var(--accent);
+  font-weight:700;
+  text-decoration:none;
+  border:1px solid rgba(21,101,216,0.08);
+}
+
+/* Data pills (if you want to present small blocks) */
+.pills {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap:12px;
+  margin-top:8px;
+}
+.pill {
+  padding:12px;
+  border-radius:10px;
+  background: var(--pill-bg);
+  border: 1.4px solid var(--pill-border);
+  box-shadow: 0 8px 18px rgba(11,37,64,0.04), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+.pill .k { color:var(--accent); font-weight:800; display:block; margin-bottom:6px; }
+.pill .v { font-weight:700; color:#0f2333; }
+
+/* Responsive adjustments */
+@media (max-width:980px){
+  .container{ padding:0 12px; }
+  table{ min-width:700px; font-size:13px; }
+}
+@media (max-width:640px){
+  .header h2{ font-size:18px; }
+  .icon-btn{ padding:8px 12px; font-size:13px; }
+  table{ min-width:600px; font-size:12px; }
+  .pills{ grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="top-credit">Designed and Maintained by RAKESH CHANDRA SETHY</div>
+
+<div class="container">
+  <div id="app" class="card">
+    <div class="loader">Loading PLC data…</div>
+  </div>
+</div>
+
+<script>
+/* ===== JSDELIVR CDN URLS ===== */
+const JSON_URL =
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/plc/plc.json";
+
+const DRAWING_JSON =
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
+
+let drawingAvailable = false;
+
+function getDriveFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
+}
+
+function goBack(){ window.history.back(); }
+
+function goHome(){
+  window.location.href = "https://08electricaldata.github.io/";
+}
+
+function goDriveInfo(){
+  const id = getDriveFromURL();
+  window.location.href =
+  "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+  encodeURIComponent(id);
+}
+
+function goHistory(){
+  const id = getDriveFromURL();
+  window.location.href =
+  "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+  encodeURIComponent(id);
+}
+
+function goDrawing(){
+  const id = getDriveFromURL();
+  window.location.href =
+  "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" +
+  encodeURIComponent(id);
+}
+
+async function checkDrawingAvailability(id){
+  try{
+    const j = await (await fetch(DRAWING_JSON)).json();
+    const found = j.rows.find(r =>
+      String(r.id || "").toUpperCase() === id.toUpperCase()
+    );
+    drawingAvailable = !!found;
+  }catch(e){
+    console.error("Error checking drawing availability:", e);
+    drawingAvailable = false;
+  }
+}
+
+function createTable(title, dataArray){
+  const showBoard = dataArray.some(row =>
+    row.board && row.board.trim() !== ""
+  );
+
+  let html = `
+    <div class="section-title">${title}</div>
+    <div class="table-wrap card" style="padding:0;">
+      <table aria-label="${title}">
+        <thead>
+          <tr>
+            <th>Signal</th>
+            <th>Tag</th>
+            <th>Address</th>
+            <th>Description</th>
+            <th>Panel</th>
+            <th>TB No</th>
+            <th>RL</th>
+            ${showBoard ? "<th>Board</th>" : ""}
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  dataArray.forEach(row=>{
+    html += `
+      <tr>
+        <td>${escapeHtml(row.signal||"")}</td>
+        <td>${escapeHtml(row.tag||"")}</td>
+        <td>${escapeHtml(row.address||"")}</td>
+        <td>${escapeHtml(row.description||"")}</td>
+        <td>${escapeHtml(row.panel||"")}</td>
+        <td>${escapeHtml(row.tb||"")}</td>
+        <td>${escapeHtml(row.rl||"")}</td>
+        ${showBoard ? `<td>${escapeHtml(row.board||"")}</td>` : ""}
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+function escapeHtml(s){
+  if(!s) return "";
+  return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+
+async function loadPLC(){
+
+  const app = document.getElementById("app");
+  const driveID = getDriveFromURL();
+
+  if(!driveID){
+    app.innerHTML = "<div class='no-data'>No Drive ID provided in URL.</div>";
+    return;
+  }
+
+  try{
+
+    await checkDrawingAvailability(driveID);
+
+    // Header + Buttons ALWAYS visible
+    let html = `
+      <div class="header">
+        <h2>PLC ADDRESS OF DRIVE — ${escapeHtml(driveID)}</h2>
+      </div>
+
+      <div class="button-bar" style="justify-content:center;margin-bottom:8px;">
+        <button class="icon-btn ghost" onclick="goBack()">⬅ Back</button>
+        <button class="icon-btn ghost" onclick="goHome()">🏠 Home</button>
+        <button class="icon-btn ghost" onclick="goDriveInfo()">ℹ️ Drive Info</button>
+        <button class="icon-btn ghost" onclick="goHistory()">📜 History</button>
+        <button id="drawBtn" class="icon-btn" onclick="goDrawing()">📐 Drawings</button>
+      </div>
+    `;
+
+    const response = await fetch(JSON_URL);
+    if(!response.ok){
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    const drive = data.drives[driveID.toUpperCase()];
+
+    if(!drive){
+      html += `
+        <div class="no-data">No PLC data found for: ${escapeHtml(driveID)}</div>
+      `;
+      app.innerHTML = html;
+
+      if(!drawingAvailable){
+        setTimeout(()=>{ const b = document.getElementById("drawBtn"); if(b) b.disabled = true; }, 0);
+      }
+
+      return;
+    }
+
+    html += `
+      <div class="updated" style="text-align:center;margin-bottom:12px;">
+        Last Updated: ${new Date(data.updated).toLocaleString("en-GB")}
+      </div>
+    `;
+
+    // Optional summary pills (Drive meta) if present
+    const meta = drive.meta || {};
+    const metaEntries = [];
+    if(meta.model) metaEntries.push({k:"Model", v:meta.model});
+    if(meta.manufacturer) metaEntries.push({k:"Manufacturer", v:meta.manufacturer});
+    if(meta.note) metaEntries.push({k:"Note", v:meta.note});
+    if(meta.address) metaEntries.push({k:"PLC Address", v:meta.address});
+
+    if(metaEntries.length){
+      html += `<div class="pills">`;
+      metaEntries.forEach(e=>{
+        html += `<div class="pill"><div class="k">${escapeHtml(e.k)}</div><div class="v">${escapeHtml(e.v)}</div></div>`;
+      });
+      html += `</div>`;
+    }
+
+    if(drive.inputs && drive.inputs.length){
+      html += createTable("INPUT SIGNALS", drive.inputs);
+    } else {
+      html += `<div class="card"><div class="no-data">No input signals available</div></div>`;
+    }
+
+    if(drive.outputs && drive.outputs.length){
+      html += createTable("OUTPUT SIGNALS", drive.outputs);
+    } else {
+      html += `<div class="card"><div class="no-data">No output signals available</div></div>`;
+    }
+
+    app.innerHTML = html;
+
+    if(!drawingAvailable){
+      const btn = document.getElementById("drawBtn");
+      if(btn) btn.disabled = true;
+    }
+
+  }catch(err){
+    app.innerHTML = "<div class='no-data'>Error loading PLC JSON file.</div>";
+    console.error("Error loading PLC data:", err);
+  }
+
+}
+
+loadPLC();
+</script>
+
+</body>
+</html>
