@@ -142,18 +142,25 @@ body { font-family: Arial, sans-serif; margin: 0; background: #f2f6ff; }
 </div>
 
 <script>
+// ===== JSDELIVR CDN URLS =====
 const DRIVE_JSON =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
 
 const DRAWING_JSON =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drawings.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
 
 const PLC_JSON =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/plc/plc.json";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/plc/plc.json";
 
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE =
-"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/history/";
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
+
+const BOARDS_SLD_JSON =
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/boards_sld.json";
+
+const LT_SLD_JSON =
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
 
 let drawingAvailableMap = {};
 let plcAvailableMap = {};
@@ -400,11 +407,6 @@ async function preloadPLC(){
 
 /* ===== PRELOAD SLDs (robust) ===== */
 async function preloadSLD(){
-  const BOARDS_SLD_JSON =
-    "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/boards_sld.json";
-  const LT_SLD_JSON =
-    "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/sld/lt_sld.json";
-
   // Helper to split and normalize tokens from a possibly multiline/compound string
   function extractTokens(value){
     if(!value) return [];
@@ -566,31 +568,34 @@ async function loadData(){
   const id = normalize(new URLSearchParams(location.search).get("id"));
   if(!id) return;
 
-  const j = await (await fetch(DRIVE_JSON)).json();
-  const c = j.rows.find(
-    r => normalize(`${r[1]}-${r[2]}`) === id
-  );
+  try {
+    const j = await (await fetch(DRIVE_JSON)).json();
+    const c = j.rows.find(
+      r => normalize(`${r[1]}-${r[2]}`) === id
+    );
 
-if(!c){
+    if(!c){
+      content.innerHTML =
+        "<div class='card'>Drive data not found… opening history…</div>";
 
-  content.innerHTML =
-    "<div class='card'>Drive data not found… opening history…</div>";
+      setTimeout(()=>{
+        location.href =
+          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+          encodeURIComponent(id);
+      }, 800);
 
-  setTimeout(()=>{
-    location.href =
-      "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-      encodeURIComponent(id);
-  }, 800);
+      return;
+    }
 
-  return;
-}
+    const TYPE = normalize(c[1]);
 
-
-  const TYPE = normalize(c[1]);
-
-  if(TYPE === "TRANSFORMER") showTransformer(c,id);
-  else if(TYPE === "BREAKER") showBreaker(c,id);
-  else showMotor(c,id);
+    if(TYPE === "TRANSFORMER") showTransformer(c,id);
+    else if(TYPE === "BREAKER") showBreaker(c,id);
+    else showMotor(c,id);
+  } catch(e) {
+    content.innerHTML =
+      "<div class='card'>Error loading data. Please refresh the page.</div>";
+  }
 }
 
 /* ===== APPLY BUTTON STATE ===== */
