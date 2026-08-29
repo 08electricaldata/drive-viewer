@@ -103,6 +103,14 @@ body {
   font-size: 13px;
 }
 
+.location-info {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+  color: #555;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -203,6 +211,11 @@ body {
 
   .card h3 {
     font-size: 15px;
+    margin-bottom: 10px;
+  }
+
+  .location-info {
+    font-size: 12px;
     margin-bottom: 10px;
   }
 
@@ -757,6 +770,9 @@ async function showMotor(c,id){
   content.innerHTML = `
   <div class="card">
     <h3>${c[1]} – ${c[2]}</h3>
+    <p class="location-info">
+      <span class="label">Location:</span> ${c[42]}
+    </p>
     <div class="grid">
       <p><span class="label">Rating:</span> ${c[5]} KW</p>
       <p><span class="label">FLC:</span> ${c[10]} A</p>
@@ -775,7 +791,6 @@ async function showMotor(c,id){
       <p><span class="label">Module PM:</span> ${formatDDMMYYYY(c[39])}</p>
       <p><span class="label">VFD PM:</span> ${formatDDMMYYYY(c[40])}</p>
       <p><span class="label">Low Current:</span> ${c[41]} A</p>
-      <p><span class="label">Location:</span> ${c[42]}</p>
     </div>
 
     <div class="action-row">
@@ -805,6 +820,9 @@ async function showTransformer(c,id){
   content.innerHTML = `
   <div class="card">
     <h3>Transformer – ${c[2]}</h3>
+    <p class="location-info">
+      <span class="label">Location:</span> ${c[42] || 'N/A'}
+    </p>
     <div class="grid">
       <p><span class="label">TR Sl No:</span> ${c[3]}</p>
       <p><span class="label">Make:</span> ${c[4]}</p>
@@ -840,6 +858,9 @@ async function showBreaker(c,id){
   content.innerHTML = `
   <div class="card">
     <h3>Breaker – ${c[2]}</h3>
+    <p class="location-info">
+      <span class="label">Location:</span> ${c[42] || 'N/A'}
+    </p>
     <div class="grid">
       <p><span class="label">Compartment:</span> ${c[3]}</p>
       <p><span class="label">Description:</span> ${c[4]}</p>
