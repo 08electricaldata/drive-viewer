@@ -42,17 +42,17 @@ table {
   border-collapse:collapse;
   background:#fff;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
-  width:max-content;     /* expand based on content */
-  min-width:100%;        /* but not smaller than screen */
-  table-layout:auto;     /* auto adjust column width */
+  width:max-content;
+  min-width:100%;
+  table-layout:auto;
 }
 
 th,td {
   border:1px solid #ccc;
-  padding:10px 14px;
+  padding:5px 6px;
   text-align:center;
-  white-space:nowrap;    /* NO WRAP */
-  font-size:13px;
+  white-space:nowrap;
+  font-size:11px;
 }
 
 th {
@@ -66,14 +66,20 @@ th {
 th .th-content{
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:2px;
 }
 
-th input, th select{
+th span {
   font-size:10px;
-  padding:3px 4px;
+  font-weight:bold;
+}
+
+th input {
+  font-size:9px;
+  padding:2px 3px;
   border:1px solid #ddd;
   border-radius:3px;
+  width:100%;
 }
 
 tbody tr:hover { background:#eef5ff; }
@@ -111,32 +117,32 @@ tbody tr:hover { background:#eef5ff; }
 <table id="tbl">
 <thead>
 <tr>
-<th><div class="th-content"><span>SL</span><input type="text" class="col-filter" data-col="0" placeholder="Search"></div></th>
-<th><div class="th-content"><span>DATE</span><input type="text" class="col-filter" data-col="1" placeholder="Search"></div></th>
-<th><div class="th-content"><span>W.O NO</span><input type="text" class="col-filter" data-col="2" placeholder="Search"></div></th>
-<th><div class="th-content"><span>ERS STATUS</span><input type="text" class="col-filter" data-col="3" placeholder="Search"></div></th>
-<th><div class="th-content"><span>STATUS</span><input type="text" class="col-filter" data-col="4" placeholder="Search"></div></th>
-<th><div class="th-content"><span>SHIFTED TO</span><input type="text" class="col-filter" data-col="5" placeholder="Search"></div></th>
-<th><div class="th-content"><span>USE STATUS</span><input type="text" class="col-filter" data-col="6" placeholder="Search"></div></th>
-<th><div class="th-content"><span>KW</span><input type="text" class="col-filter" data-col="7" placeholder="Search"></div></th>
-<th><div class="th-content"><span>MAKE</span><input type="text" class="col-filter" data-col="8" placeholder="Search"></div></th>
-<th><div class="th-content"><span>FRAME</span><input type="text" class="col-filter" data-col="9" placeholder="Search"></div></th>
-<th><div class="th-content"><span>RPM</span><input type="text" class="col-filter" data-col="10" placeholder="Search"></div></th>
-<th><div class="th-content"><span>MOUNT</span><input type="text" class="col-filter" data-col="11" placeholder="Search"></div></th>
-<th><div class="th-content"><span>MOTOR SL</span><input type="text" class="col-filter" data-col="12" placeholder="Search"></div></th>
-<th><div class="th-content"><span>AREA</span><input type="text" class="col-filter" data-col="13" placeholder="Search"></div></th>
-<th><div class="th-content"><span>EQPT DETAILS</span><input type="text" class="col-filter" data-col="14" placeholder="Search"></div></th>
-<th><div class="th-content"><span>TYPE</span><input type="text" class="col-filter" data-col="15" placeholder="Search"></div></th>
-<th><div class="th-content"><span>DRIVE1</span><input type="text" class="col-filter" data-col="16" placeholder="Search"></div></th>
-<th><div class="th-content"><span>DRIVE2</span><input type="text" class="col-filter" data-col="17" placeholder="Search"></div></th>
-<th><div class="th-content"><span>DATE2</span><input type="text" class="col-filter" data-col="18" placeholder="Search"></div></th>
-<th><div class="th-content"><span>W.O2</span><input type="text" class="col-filter" data-col="19" placeholder="Search"></div></th>
-<th><div class="th-content"><span>KW2</span><input type="text" class="col-filter" data-col="20" placeholder="Search"></div></th>
-<th><div class="th-content"><span>MAKE2</span><input type="text" class="col-filter" data-col="21" placeholder="Search"></div></th>
-<th><div class="th-content"><span>MOUNT2</span><input type="text" class="col-filter" data-col="22" placeholder="Search"></div></th>
-<th><div class="th-content"><span>M/C NO</span><input type="text" class="col-filter" data-col="23" placeholder="Search"></div></th>
-<th><div class="th-content"><span>AREA2</span><input type="text" class="col-filter" data-col="24" placeholder="Search"></div></th>
-<th><div class="th-content"><span>LAST MOTORTR</span><input type="text" class="col-filter" data-col="25" placeholder="Search"></div></th>
+<th><div class="th-content"><span>SL</span><input type="text" class="col-filter" data-col="0" placeholder="S"></div></th>
+<th><div class="th-content"><span>DATE</span><input type="text" class="col-filter" data-col="1" placeholder="S"></div></th>
+<th><div class="th-content"><span>W.O NO</span><input type="text" class="col-filter" data-col="2" placeholder="S"></div></th>
+<th><div class="th-content"><span>ERS STATUS</span><input type="text" class="col-filter" data-col="3" placeholder="S"></div></th>
+<th><div class="th-content"><span>STATUS</span><input type="text" class="col-filter" data-col="4" placeholder="S"></div></th>
+<th><div class="th-content"><span>SHIFTED</span><input type="text" class="col-filter" data-col="5" placeholder="S"></div></th>
+<th><div class="th-content"><span>USE</span><input type="text" class="col-filter" data-col="6" placeholder="S"></div></th>
+<th><div class="th-content"><span>KW</span><input type="text" class="col-filter" data-col="7" placeholder="S"></div></th>
+<th><div class="th-content"><span>MAKE</span><input type="text" class="col-filter" data-col="8" placeholder="S"></div></th>
+<th><div class="th-content"><span>FRAME</span><input type="text" class="col-filter" data-col="9" placeholder="S"></div></th>
+<th><div class="th-content"><span>RPM</span><input type="text" class="col-filter" data-col="10" placeholder="S"></div></th>
+<th><div class="th-content"><span>MOUNT</span><input type="text" class="col-filter" data-col="11" placeholder="S"></div></th>
+<th><div class="th-content"><span>M.SL</span><input type="text" class="col-filter" data-col="12" placeholder="S"></div></th>
+<th><div class="th-content"><span>AREA</span><input type="text" class="col-filter" data-col="13" placeholder="S"></div></th>
+<th><div class="th-content"><span>EQPT</span><input type="text" class="col-filter" data-col="14" placeholder="S"></div></th>
+<th><div class="th-content"><span>TYPE</span><input type="text" class="col-filter" data-col="15" placeholder="S"></div></th>
+<th><div class="th-content"><span>DR1</span><input type="text" class="col-filter" data-col="16" placeholder="S"></div></th>
+<th><div class="th-content"><span>DR2</span><input type="text" class="col-filter" data-col="17" placeholder="S"></div></th>
+<th><div class="th-content"><span>DATE2</span><input type="text" class="col-filter" data-col="18" placeholder="S"></div></th>
+<th><div class="th-content"><span>W.O2</span><input type="text" class="col-filter" data-col="19" placeholder="S"></div></th>
+<th><div class="th-content"><span>KW2</span><input type="text" class="col-filter" data-col="20" placeholder="S"></div></th>
+<th><div class="th-content"><span>MAKE2</span><input type="text" class="col-filter" data-col="21" placeholder="S"></div></th>
+<th><div class="th-content"><span>MT2</span><input type="text" class="col-filter" data-col="22" placeholder="S"></div></th>
+<th><div class="th-content"><span>M/C</span><input type="text" class="col-filter" data-col="23" placeholder="S"></div></th>
+<th><div class="th-content"><span>AR2</span><input type="text" class="col-filter" data-col="24" placeholder="S"></div></th>
+<th><div class="th-content"><span>LAST</span><input type="text" class="col-filter" data-col="25" placeholder="S"></div></th>
 </tr>
 </thead>
 <tbody></tbody>
