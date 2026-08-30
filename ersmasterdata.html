@@ -61,9 +61,29 @@ th {
   position:sticky;
   top:0;
   z-index:2;
+  padding:6px 4px;
+}
+
+th .th-content{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+th input, th select{
+  font-size:10px;
+  padding:3px 4px;
+  border:1px solid #ddd;
+  border-radius:3px;
 }
 
 tbody tr:hover { background:#eef5ff; }
+
+@media print {
+  .header, .controls, .no-print { display:none; }
+  body { background:#fff; }
+  table { box-shadow:none; }
+}
 
 </style>
 </head>
@@ -76,10 +96,12 @@ tbody tr:hover { background:#eef5ff; }
     <div class="header-center">
       <h1>ERS MASTER DATA</h1>
     </div>
+    <button class="header-btn no-print" onclick="printTable()">🖨️ Print</button>
+    <button class="header-btn no-print" onclick="downloadExcel()">📥 Excel</button>
   </div>
 </div>
 
-<div class="controls">
+<div class="controls no-print">
   <input id="search" placeholder="Search any field">
   <select id="areaFilter"><option value="">All Areas</option></select>
   <select id="statusFilter"><option value="">All Status</option></select>
@@ -90,14 +112,32 @@ tbody tr:hover { background:#eef5ff; }
 <table id="tbl">
 <thead>
 <tr>
-<th>SL</th><th>DATE</th><th>W.O NO</th><th>ERS STATUS</th>
-<th>STATUS</th><th>SHIFTED TO</th><th>USE STATUS</th>
-<th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th>
-<th>MOUNT</th><th>MOTOR SL</th><th>AREA</th>
-<th>EQPT DETAILS</th><th>TYPE</th><th>DRIVE1</th><th>DRIVE2</th>
-<th>DATE2</th><th>W.O2</th><th>KW2</th><th>MAKE2</th>
-<th>MOUNT2</th><th>M/C NO</th><th>AREA2</th>
-<th>LAST MOTORTR</th>
+<th><div class="th-content"><span>SL</span><input type="text" class="col-filter" data-col="0" placeholder="Search"></div></th>
+<th><div class="th-content"><span>DATE</span><input type="text" class="col-filter" data-col="1" placeholder="Search"></div></th>
+<th><div class="th-content"><span>W.O NO</span><input type="text" class="col-filter" data-col="2" placeholder="Search"></div></th>
+<th><div class="th-content"><span>ERS STATUS</span><input type="text" class="col-filter" data-col="3" placeholder="Search"></div></th>
+<th><div class="th-content"><span>STATUS</span><input type="text" class="col-filter" data-col="4" placeholder="Search"></div></th>
+<th><div class="th-content"><span>SHIFTED TO</span><input type="text" class="col-filter" data-col="5" placeholder="Search"></div></th>
+<th><div class="th-content"><span>USE STATUS</span><input type="text" class="col-filter" data-col="6" placeholder="Search"></div></th>
+<th><div class="th-content"><span>KW</span><input type="text" class="col-filter" data-col="7" placeholder="Search"></div></th>
+<th><div class="th-content"><span>MAKE</span><input type="text" class="col-filter" data-col="8" placeholder="Search"></div></th>
+<th><div class="th-content"><span>FRAME</span><input type="text" class="col-filter" data-col="9" placeholder="Search"></div></th>
+<th><div class="th-content"><span>RPM</span><input type="text" class="col-filter" data-col="10" placeholder="Search"></div></th>
+<th><div class="th-content"><span>MOUNT</span><input type="text" class="col-filter" data-col="11" placeholder="Search"></div></th>
+<th><div class="th-content"><span>MOTOR SL</span><input type="text" class="col-filter" data-col="12" placeholder="Search"></div></th>
+<th><div class="th-content"><span>AREA</span><input type="text" class="col-filter" data-col="13" placeholder="Search"></div></th>
+<th><div class="th-content"><span>EQPT DETAILS</span><input type="text" class="col-filter" data-col="14" placeholder="Search"></div></th>
+<th><div class="th-content"><span>TYPE</span><input type="text" class="col-filter" data-col="15" placeholder="Search"></div></th>
+<th><div class="th-content"><span>DRIVE1</span><input type="text" class="col-filter" data-col="16" placeholder="Search"></div></th>
+<th><div class="th-content"><span>DRIVE2</span><input type="text" class="col-filter" data-col="17" placeholder="Search"></div></th>
+<th><div class="th-content"><span>DATE2</span><input type="text" class="col-filter" data-col="18" placeholder="Search"></div></th>
+<th><div class="th-content"><span>W.O2</span><input type="text" class="col-filter" data-col="19" placeholder="Search"></div></th>
+<th><div class="th-content"><span>KW2</span><input type="text" class="col-filter" data-col="20" placeholder="Search"></div></th>
+<th><div class="th-content"><span>MAKE2</span><input type="text" class="col-filter" data-col="21" placeholder="Search"></div></th>
+<th><div class="th-content"><span>MOUNT2</span><input type="text" class="col-filter" data-col="22" placeholder="Search"></div></th>
+<th><div class="th-content"><span>M/C NO</span><input type="text" class="col-filter" data-col="23" placeholder="Search"></div></th>
+<th><div class="th-content"><span>AREA2</span><input type="text" class="col-filter" data-col="24" placeholder="Search"></div></th>
+<th><div class="th-content"><span>LAST MOTORTR</span><input type="text" class="col-filter" data-col="25" placeholder="Search"></div></th>
 </tr>
 </thead>
 <tbody></tbody>
@@ -122,15 +162,57 @@ function fmt(d){
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
+function printTable(){
+  window.print();
+}
+
+function downloadExcel(){
+  const table = document.getElementById('tbl');
+  const rows = [];
+  
+  // Get headers
+  const headerRow = [];
+  table.querySelectorAll('thead th').forEach(th => {
+    const text = th.querySelector('span') ? th.querySelector('span').textContent : th.textContent;
+    headerRow.push(text);
+  });
+  rows.push(headerRow);
+  
+  // Get visible rows
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    const rowData = [];
+    tr.querySelectorAll('td').forEach(td => {
+      rowData.push(td.textContent.trim());
+    });
+    rows.push(rowData);
+  });
+  
+  // Convert to CSV
+  let csv = rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+  
+  // Download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'ERS_MASTER_DATA.csv');
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+let allRows = [];
+
 async function load(){
   try{
     const res=await fetch(JSON_URL);
     if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data=await res.json();
-    let rows=data.rows;
+    allRows=data.rows;
 
     // Sort by Column A descending
-    rows.sort((a,b)=>(b[0]||0)-(a[0]||0));
+    allRows.sort((a,b)=>(b[0]||0)-(a[0]||0));
 
     const tbody=document.querySelector("#tbl tbody");
     const areaFilter=document.getElementById("areaFilter");
@@ -145,7 +227,7 @@ async function load(){
     const statuses=new Set();
     const ersStatuses=new Set();
 
-    rows.forEach(r=>{
+    allRows.forEach(r=>{
       if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
       if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
 
@@ -165,8 +247,16 @@ async function load(){
       const areaVal=areaFilter.value;
       const statusVal=statusFilter.value;
       const ersVal=ersFilter.value;
+      
+      // Get column filters
+      const colFilters = {};
+      document.querySelectorAll('.col-filter').forEach(inp => {
+        const col = parseInt(inp.getAttribute('data-col'));
+        const val = inp.value.toLowerCase();
+        if(val) colFilters[col] = val;
+      });
 
-      rows.forEach(r=>{
+      allRows.forEach(r=>{
 
         // Hide if Column C & T both blank
         if(!r[2] && !r[19]) return;
@@ -175,6 +265,12 @@ async function load(){
         if(areaVal && r[13]!==areaVal) return;
         if(statusVal && r[4]!==statusVal) return;
         if(ersVal && r[3]!==ersVal) return;
+        
+        // Column-level filters
+        for(const col in colFilters){
+          const val = String(r[col]||'').toLowerCase();
+          if(!val.includes(colFilters[col])) return;
+        }
 
         let ersColor="";
         if(r[3]){
@@ -217,6 +313,10 @@ async function load(){
     areaFilter.onchange=render;
     statusFilter.onchange=render;
     ersFilter.onchange=render;
+    
+    document.querySelectorAll('.col-filter').forEach(inp => {
+      inp.addEventListener('input', render);
+    });
 
     render();
   }catch(err){
