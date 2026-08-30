@@ -9,33 +9,33 @@
 body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
 
 /* HEADER */
-.header { background:#003f88; color:#fff; padding:14px 16px; }
-.header-bar { display:flex; align-items:center; justify-content:space-between; }
+.header { background:#003f88; color:#fff; padding:10px 12px; }
+.header-bar { display:flex; align-items:center; gap:8px; }
 .header-btn {
   background:#fff; color:#003f88; border:none;
-  padding:6px 10px; border-radius:6px;
-  font-size:16px; cursor:pointer;
+  padding:5px 8px; border-radius:6px;
+  font-size:14px; cursor:pointer;
 }
 .header-center { text-align:center; flex:1; }
-.header-center h1 { margin:0; font-size:26px; }
+.header-center h1 { margin:0; font-size:20px; }
 
 /* CONTROLS */
 .controls {
-  padding:15px;
+  padding:10px;
   display:flex;
-  gap:10px;
+  gap:8px;
   flex-wrap:wrap;
 }
 .controls input, .controls select{
-  padding:6px 8px;
-  font-size:14px;
+  padding:5px 6px;
+  font-size:12px;
 }
 
 /* TABLE */
 .table-wrapper {
   overflow:auto;
   height:75vh;
-  padding:10px;
+  padding:8px;
 }
 
 table {
@@ -49,10 +49,10 @@ table {
 
 th,td {
   border:1px solid #ccc;
-  padding:10px 14px;
+  padding:6px 8px;
   text-align:center;
   white-space:nowrap;    /* NO WRAP */
-  font-size:15px;        /* bigger text */
+  font-size:11px;        /* smaller text */
 }
 
 th {
@@ -72,10 +72,10 @@ tbody tr:hover { background:#eef5ff; }
 <div class="header">
   <div class="header-bar">
     <button class="header-btn" onclick="goBack()">⬅ Back</button>
+    <button class="header-btn" onclick="goHome()">🏠 Home</button>
     <div class="header-center">
       <h1>ERS MASTER DATA</h1>
     </div>
-    <button class="header-btn" onclick="goHome()">🏠 Home</button>
   </div>
 </div>
 
