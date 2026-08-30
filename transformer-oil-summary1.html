@@ -94,23 +94,24 @@ tr:hover{background:#eef5ff;cursor:pointer}
   z-index:1000;
 }
 .popup-content{
-  background:white;width:80%;max-width:800px;
+  background:white;width:90%;max-width:900px;
   padding:20px;border-radius:10px;
   position:relative;
-  max-height:80vh;
+  max-height:85vh;
   overflow-y:auto;
 }
 .close-btn{
   position:absolute;right:15px;top:10px;
   font-size:18px;cursor:pointer;
   font-weight:bold;
+  z-index:1001;
 }
 
 .level-popup-title{
   font-size:18px;
   font-weight:bold;
   color:#003f88;
-  margin-bottom:15px;
+  margin-bottom:20px;
   text-align:center;
 }
 
@@ -150,6 +151,20 @@ tr:hover{background:#eef5ff;cursor:pointer}
   font-size:12px;
   color:#666;
   margin-top:5px;
+}
+
+.level-chart-section{
+  margin-top:25px;
+  padding-top:20px;
+  border-top:2px solid #ddd;
+}
+
+.chart-title{
+  font-size:16px;
+  font-weight:bold;
+  color:#003f88;
+  margin-bottom:15px;
+  text-align:center;
 }
 
 .footer{text-align:center;padding:15px;color:#555}
@@ -214,6 +229,10 @@ tr:hover{background:#eef5ff;cursor:pointer}
     <span class="close-btn" onclick="closeLevelPopup()">✖</span>
     <div class="level-popup-title" id="levelPopupTitle">Last 3 Level Checks</div>
     <div class="last3-container" id="last3Container"></div>
+    <div class="level-chart-section">
+      <div class="chart-title">Oil Level Percentage Comparison</div>
+      <canvas id="last3LevelChart" height="80"></canvas>
+    </div>
   </div>
 </div>
 
@@ -237,7 +256,7 @@ function openTrafoPM(){
   location.href="https://08electricaldata.github.io/drive-viewer/trafopm.html";
 }
 
-let fullData=[], headers=[], mainChart=null, trendChart=null, last3Data=[];
+let fullData=[], headers=[], mainChart=null, trendChart=null, last3Data=[], last3LevelChart=null;
 
 async function load(){
   const res=await fetch(JSON_URL);
@@ -409,8 +428,8 @@ function buildTable(){
 function showLast3Levels(row){
   const trafoNo=row[2];
   
-  // Find all matching records from last3Data
-  const matchingRecords=last3Data.filter(r=>r[2]===trafoNo).slice(0,3);
+  // Find all matching records from last3Data (get all records, not just first 3)
+  const matchingRecords=last3Data.filter(r=>r[2]===trafoNo);
 
   document.getElementById("levelPopupTitle").textContent=`Last 3 Level Checks - Transformer ${trafoNo}`;
   
@@ -459,7 +478,63 @@ function showLast3Levels(row){
     });
   }
 
+  // Build bar chart with all data
+  createLast3LevelChart(matchingRecords);
+
   document.getElementById("levelPopup").style.display="flex";
+}
+
+function createLast3LevelChart(records){
+  const dates=records.map(r=>r[3]||"N/A");
+  const levels=records.map(r=>parseFloat(r[4])||0);
+
+  if(last3LevelChart) last3LevelChart.destroy();
+
+  const colors=levels.map(level=>{
+    if(level<30) return "#ff4d4d";
+    else if(level<50) return "#ffb84d";
+    else if(level<70) return "#ffff66";
+    else return "#33cc33";
+  });
+
+  last3LevelChart=new Chart(
+    document.getElementById("last3LevelChart"),
+    {
+      type:"bar",
+      data:{
+        labels:dates,
+        datasets:[{
+          label:"Oil Level (%)",
+          data:levels,
+          backgroundColor:colors,
+          borderColor:"#003f88",
+          borderWidth:2
+        }]
+      },
+      options:{
+        indexAxis:'x',
+        responsive:true,
+        maintainAspectRatio:true,
+        plugins:{
+          legend:{
+            display:true,
+            position:'top'
+          }
+        },
+        scales:{
+          y:{
+            beginAtZero:true,
+            max:100,
+            ticks:{
+              callback:function(value){
+                return value+"%";
+              }
+            }
+          }
+        }
+      }
+    }
+  );
 }
 
 function closeLevelPopup(){
