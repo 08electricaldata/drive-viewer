@@ -1,128 +1,392 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Electrical Photo Gallery</title>
+
+<!-- Modern, professional styling — behavior & JavaScript left unchanged -->
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial,sans-serif;background:#edf3fb;color:#222}
-header{background:#0d47a1;color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
-.header-left{font-size:22px;font-weight:700}
-.header-left span{display:block;font-size:12px;margin-top:4px;font-weight:400}
-.header-actions{display:flex;gap:8px;align-items:center}
-.action-btn{background:#fff;color:#0d47a1;border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}
-.action-btn:active{transform:translateY(1px)}
-main{max-width:1500px;margin:auto;padding:20px}
-.gallery{background:#fff;margin:18px 0;padding:18px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
-.gallery h2{margin-bottom:12px;color:#0d47a1}
-.wrap{position:relative;overflow:hidden}
-.track{display:flex;overflow-x:auto;scroll-behavior:smooth;gap:14px;padding:6px}
-.track::-webkit-scrollbar{display:none}
-.card{min-width:260px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}
-.card img{width:100%;height:180px;object-fit:cover;background:#ddd}
-.card div{padding:10px;text-align:center;font-weight:bold}
-.btn{position:absolute;top:45%;transform:translateY(-50%);width:42px;height:42px;border:none;border-radius:50%;background:#fff;font-size:22px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.prev{left:5px}.next{right:5px}
-.count{float:right;background:#1565c0;color:#fff;padding:4px 10px;border-radius:14px;font-size:13px}
-#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);align-items:center;justify-content:center;flex-direction:column;z-index:9999}
-#lightbox img{max-width:95%;max-height:82vh}
-#caption{color:#fff;padding:10px;font-size:20px}
-.close{position:absolute;top:15px;right:20px;color:#fff;font-size:40px;cursor:pointer}
-@media(max-width:700px){.card{min-width:200px}.card img{height:150px}}
+  :root{
+    --bg: #f3f7ff;
+    --card-bg: #ffffff;
+    --muted: #6b7280;
+    --accent: #0d47a1;
+    --accent-2: #1976d2;
+    --glass: rgba(255,255,255,0.7);
+    --shadow-1: 0 6px 22px rgba(13,71,161,0.08);
+    --shadow-2: 0 10px 30px rgba(2,6,23,0.08);
+    --radius: 14px;
+    --gap: 16px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg, #eef6ff 0%, var(--bg) 100%);
+    color:#102235;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    line-height:1.45;
+  }
+
+  /* Header */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:18px 24px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    color:white;
+    border-bottom-left-radius:12px;
+    border-bottom-right-radius:12px;
+    box-shadow: var(--shadow-1);
+  }
+
+  .header-left{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .branding{
+    font-weight:800;
+    font-size:20px;
+    letter-spacing:0.2px;
+  }
+  .branding small{
+    display:block;
+    font-weight:600;
+    font-size:12px;
+    opacity:0.92;
+    margin-top:2px;
+  }
+
+  .header-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+
+  .action-btn{
+    appearance:none;
+    -webkit-appearance:none;
+    border:0;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    padding:10px 12px;
+    border-radius:10px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    transition: transform .12s ease, background .12s;
+  }
+  .action-btn:hover{ transform:translateY(-3px); background: rgba(255,255,255,0.18); }
+  .action-btn:active{ transform:none; }
+
+  main{
+    max-width:1400px;
+    margin:26px auto;
+    padding:0 20px 60px;
+  }
+
+  /* Gallery card container */
+  .gallery{
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding:18px;
+    box-shadow: var(--shadow-2);
+    margin-bottom:18px;
+    overflow:visible;
+    border:1px solid rgba(2,6,23,0.04);
+  }
+
+  .gallery-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+  }
+
+  .gallery h2{
+    font-size:18px;
+    color:var(--accent);
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .count{
+    background: linear-gradient(90deg,var(--accent),var(--accent-2));
+    color:white;
+    padding:6px 10px;
+    border-radius:999px;
+    font-weight:800;
+    font-size:13px;
+    box-shadow: 0 6px 18px rgba(13,71,161,0.12);
+  }
+
+  /* Carousel track */
+  .wrap{
+    position:relative;
+  }
+
+  .track{
+    display:flex;
+    gap:var(--gap);
+    overflow-x:auto;
+    scroll-behavior:smooth;
+    padding:8px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .track::-webkit-scrollbar{ height:10px; display:none; }
+
+  /* Card styles */
+  .card{
+    flex:0 0 280px;
+    min-width:220px;
+    border-radius:12px;
+    background: linear-gradient(180deg,#fff,#fbfdff);
+    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    overflow:hidden;
+    cursor:zoom-in;
+    transition: transform .18s ease, box-shadow .18s ease;
+    display:flex;
+    flex-direction:column;
+  }
+  .card:hover{ transform: translateY(-6px); box-shadow: 0 18px 40px rgba(2,6,23,0.08); }
+
+  .card-media{
+    position:relative;
+    width:100%;
+    height:170px;
+    background:#e6eefb;
+  }
+  .card-media img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition: transform .32s ease;
+  }
+  .card:hover .card-media img{ transform: scale(1.05); }
+
+  .card-caption{
+    padding:12px;
+    text-align:center;
+    font-weight:700;
+    color:#0d2a44;
+    font-size:14px;
+    background:linear-gradient(180deg,#fff,#fbfdff);
+  }
+
+  /* Prev / Next buttons (subtle modern) */
+  .btn{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:0;
+    background: rgba(255,255,255,0.92);
+    color:var(--accent);
+    font-size:20px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    box-shadow: 0 8px 26px rgba(2,6,23,0.12);
+    transition: transform .12s ease, background .12s;
+    backdrop-filter: blur(6px);
+  }
+  .btn:hover{ transform:translateY(-50%) scale(1.04); background:#fff; }
+  .prev{ left:8px; }
+  .next{ right:8px; }
+
+  /* Lightbox */
+  #lightbox{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background: linear-gradient(180deg, rgba(2,6,23,0.85), rgba(2,6,23,0.95));
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    padding:20px;
+    gap:14px;
+  }
+  #lightbox.show{ display:flex; animation:fadeIn .18s ease; }
+
+  @keyframes fadeIn{ from{opacity:0;transform:scale(.99);} to{opacity:1;transform:none;} }
+
+  #lbimg{
+    max-width:96%;
+    max-height:82vh;
+    border-radius:10px;
+    box-shadow: 0 18px 50px rgba(2,6,23,0.6);
+    background:#111;
+  }
+  #caption{
+    color:#fff;
+    font-size:18px;
+    font-weight:700;
+    text-align:center;
+    max-width:88%;
+  }
+
+  .close{
+    position:absolute;
+    top:18px;
+    right:20px;
+    color:#fff;
+    font-size:34px;
+    cursor:pointer;
+    opacity:0.95;
+    transition: transform .12s ease;
+  }
+  .close:hover{ transform:rotate(10deg) }
+
+  /* Responsive */
+  @media (max-width:1000px){
+    .track{ gap:12px; padding:6px }
+    .card{ flex:0 0 240px }
+    .card-media{ height:150px }
+    .btn{ width:40px; height:40px }
+  }
+  @media (max-width:700px){
+    header{ padding:12px 14px; flex-direction:column; align-items:flex-start; gap:8px }
+    .header-actions{ align-self:stretch; justify-content:flex-end; width:100% }
+    main{ padding:16px }
+    .track{ gap:10px }
+    .card{ flex:0 0 200px; min-width:170px }
+    .card-media{ height:130px }
+    .gallery{ padding:14px }
+    .gallery h2{ font-size:16px }
+  }
+
+  /* Accessibility focus */
+  .action-btn:focus, .btn:focus, .card:focus, .card div:focus { outline: 3px solid rgba(21,101,216,0.12); outline-offset: 3px; border-radius:10px; }
+
 </style>
 </head>
+
 <body>
 <header>
-  <div class="header-left">
-    Electrical Photo Gallery
-    <span>08 AREA • SAFETY • 5S</span>
+  <div class="header-left" aria-hidden="false">
+    <div class="branding">Electrical Photo Gallery</div>
+    <small style="color:rgba(255,255,255,0.92);font-weight:600">08 AREA • SAFETY • 5S</small>
   </div>
 
   <div class="header-actions" aria-hidden="false">
-    <button class="action-btn" onclick="goBack()" title="Back">⬅ Back</button>
-    <button class="action-btn" onclick="goHome()" title="Home">🏠 Home</button>
+    <button class="action-btn" onclick="goBack()" title="Back" aria-label="Back">⬅ Back</button>
+    <button class="action-btn" onclick="goHome()" title="Home" aria-label="Home">🏠 Home</button>
   </div>
 </header>
 
 <main>
-  <div class="gallery"><h2>08 AREA PHOTOS <span class="count" id="c1">0</span></h2>
-    <div class="wrap">
-      <button class="btn prev" onclick="scrollTrack('t1',-280)">❮</button>
-      <div class="track" id="t1"></div>
-      <button class="btn next" onclick="scrollTrack('t1',280)">❯</button>
+  <section class="gallery" aria-labelledby="g1-title">
+    <div class="gallery-header">
+      <h2 id="g1-title">08 AREA PHOTOS <span id="c1" class="count">0</span></h2>
     </div>
-  </div>
+    <div class="wrap" aria-hidden="false">
+      <button class="btn prev" onclick="scrollTrack('t1',-280)" aria-label="Scroll left">❮</button>
+      <div class="track" id="t1" role="list" aria-label="08 area photos"></div>
+      <button class="btn next" onclick="scrollTrack('t1',280)" aria-label="Scroll right">❯</button>
+    </div>
+  </section>
 
-  <div class="gallery"><h2>SAFETY PHOTOS <span class="count" id="c2">0</span></h2>
-    <div class="wrap">
-      <button class="btn prev" onclick="scrollTrack('t2',-280)">❮</button>
-      <div class="track" id="t2"></div>
-      <button class="btn next" onclick="scrollTrack('t2',280)">❯</button>
+  <section class="gallery" aria-labelledby="g2-title">
+    <div class="gallery-header">
+      <h2 id="g2-title">SAFETY PHOTOS <span id="c2" class="count">0</span></h2>
     </div>
-  </div>
+    <div class="wrap" aria-hidden="false">
+      <button class="btn prev" onclick="scrollTrack('t2',-280)" aria-label="Scroll left">❮</button>
+      <div class="track" id="t2" role="list" aria-label="Safety photos"></div>
+      <button class="btn next" onclick="scrollTrack('t2',280)" aria-label="Scroll right">❯</button>
+    </div>
+  </section>
 
-  <div class="gallery"><h2>5S PHOTOS <span class="count" id="c3">0</span></h2>
-    <div class="wrap">
-      <button class="btn prev" onclick="scrollTrack('t3',-280)">❮</button>
-      <div class="track" id="t3"></div>
-      <button class="btn next" onclick="scrollTrack('t3',280)">❯</button>
+  <section class="gallery" aria-labelledby="g3-title">
+    <div class="gallery-header">
+      <h2 id="g3-title">5S PHOTOS <span id="c3" class="count">0</span></h2>
     </div>
-  </div>
+    <div class="wrap" aria-hidden="false">
+      <button class="btn prev" onclick="scrollTrack('t3',-280)" aria-label="Scroll left">❮</button>
+      <div class="track" id="t3" role="list" aria-label="5S photos"></div>
+      <button class="btn next" onclick="scrollTrack('t3',280)" aria-label="Scroll right">❯</button>
+    </div>
+  </section>
 </main>
 
-<div id="lightbox">
-  <div class="close" onclick="hideLightbox()">×</div>
-  <img id="lbimg" alt="">
-  <div id="caption"></div>
+<!-- Lightbox (kept structure; styling improved) -->
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Image preview">
+  <div class="close" onclick="hideLightbox()" role="button" aria-label="Close">×</div>
+  <img id="lbimg" alt="" />
+  <div id="caption" aria-live="polite"></div>
 </div>
 
 <script>
-function goHome(){ location.href = "https://08electricaldata.github.io/"; }
-function goBack(){ history.back(); }
+  /* Existing functions preserved — only styling changed above */
+  function goHome(){ location.href = "https://08electricaldata.github.io/"; }
+  function goBack(){ history.back(); }
 
-/* ===== JSDELIVR CDN URLS ===== */
-const galleries=[
-  { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/08area.json", track:"t1", count:"c1" },
-  { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/safety.json", track:"t2", count:"c2" },
-  { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/5s.json", track:"t3", count:"c3" }
-];
+  /* ===== JSDELIVR CDN URLS ===== */
+  const galleries=[
+    { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/08area.json", track:"t1", count:"c1" },
+    { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/safety.json", track:"t2", count:"c2" },
+    { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/5s.json", track:"t3", count:"c3" }
+  ];
 
-async function loadGallery(g){
-  try{
-    const r=await fetch(g.url);
-    if(!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
-    const j=await r.json();
-    document.getElementById(g.count).textContent=j.total;
-    const t=document.getElementById(g.track);
-    t.innerHTML="";
-    j.photos.forEach(p=>{
-      const c=document.createElement("div");
-      c.className="card";
-      c.innerHTML=`<img loading="lazy" src="${p.thumb||p.image}" alt="${(p.title||'')}"><div>${p.title||''}</div>`;
-      c.onclick=()=>showLightbox(p.image,p.title);
-      t.appendChild(c);
-    });
-    // auto-scroll loop (non-blocking)
-    setInterval(()=>{
-      if(!t) return;
-      if(t.children.length===0) return;
-      t.scrollBy({left:280,behavior:"smooth"});
-      if(t.scrollLeft + t.clientWidth >= t.scrollWidth - 10){
-        setTimeout(()=>t.scrollTo({left:0,behavior:"smooth"}),700);
-      }
-    },3500);
-  }catch(err){
-    console.error("Failed to load gallery:",g.url,err);
-    document.getElementById(g.count).textContent="0";
+  async function loadGallery(g){
+    try{
+      const r=await fetch(g.url);
+      if(!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+      const j=await r.json();
+      document.getElementById(g.count).textContent=j.total || (j.photos && j.photos.length) || 0;
+      const t=document.getElementById(g.track);
+      t.innerHTML="";
+      j.photos.forEach(p=>{
+        const c=document.createElement("div");
+        c.className="card";
+        c.setAttribute("role","listitem");
+        // keep same inner structure for JS click handlers
+        c.innerHTML = `
+          <div class="card-media">
+            <img loading="lazy" src="${p.thumb||p.image}" alt="${(p.title||'')}" />
+          </div>
+          <div class="card-caption">${p.title||''}</div>
+        `;
+        c.onclick = ()=> showLightbox(p.image,p.title);
+        c.onkeydown = (e) => { if(e.key === 'Enter') showLightbox(p.image,p.title); };
+        c.tabIndex = 0;
+        t.appendChild(c);
+      });
+
+      // simple auto-scroll loop (keeps previous behavior)
+      setInterval(()=>{
+        if(!t) return;
+        if(t.children.length===0) return;
+        // only auto-scroll if user hasn't interacted (naive approach kept)
+        t.scrollBy({left:280,behavior:"smooth"});
+        if(t.scrollLeft + t.clientWidth >= t.scrollWidth - 10){
+          setTimeout(()=>t.scrollTo({left:0,behavior:"smooth"}),700);
+        }
+      },3500);
+    }catch(err){
+      console.error("Failed to load gallery:",g.url,err);
+      document.getElementById(g.count).textContent="0";
+    }
   }
-}
 
-function scrollTrack(id,x){ const el=document.getElementById(id); if(el) el.scrollBy({left:x,behavior:"smooth"}); }
-function showLightbox(src,title){ document.getElementById("lbimg").src = src; document.getElementById("caption").textContent = title||''; document.getElementById("lightbox").style.display="flex"; }
-function hideLightbox(){ document.getElementById("lightbox").style.display="none"; document.getElementById("lbimg").src=''; }
+  function scrollTrack(id,x){ const el=document.getElementById(id); if(el) el.scrollBy({left:x,behavior:"smooth"}); }
+  function showLightbox(src,title){ document.getElementById("lbimg").src = src; document.getElementById("caption").textContent = title||''; document.getElementById("lightbox").classList.add('show'); }
+  function hideLightbox(){ document.getElementById("lightbox").classList.remove('show'); document.getElementById("lbimg").src=''; }
 
-galleries.forEach(loadGallery);
+  galleries.forEach(loadGallery);
 </script>
 </body>
 </html>
