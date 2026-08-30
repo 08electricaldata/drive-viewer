@@ -35,7 +35,7 @@
   header{
     display:flex;
     align-items:center;
-    justify-content:space-between;
+    justify-content:flex-start; /* left controls on left */
     gap:12px;
     padding:18px 24px;
     background:linear-gradient(90deg,var(--accent),var(--accent-2));
@@ -43,30 +43,15 @@
     border-bottom-left-radius:12px;
     border-bottom-right-radius:12px;
     box-shadow: var(--shadow-1);
+    position:relative;
   }
 
-  .header-left{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-  }
-  .branding{
-    font-weight:800;
-    font-size:20px;
-    letter-spacing:0.2px;
-  }
-  .branding small{
-    display:block;
-    font-weight:600;
-    font-size:12px;
-    opacity:0.92;
-    margin-top:2px;
-  }
-
-  .header-actions{
+  /* left-side top buttons */
+  .left-controls{
     display:flex;
     gap:10px;
     align-items:center;
+    z-index:5;
   }
 
   .action-btn{
@@ -84,6 +69,30 @@
   }
   .action-btn:hover{ transform:translateY(-3px); background: rgba(255,255,255,0.18); }
   .action-btn:active{ transform:none; }
+
+  /* center title fixed in center of header */
+  .header-center{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    text-align:center;
+    z-index:4;
+    pointer-events:none; /* keep buttons clickable below if overlap */
+  }
+  .branding{
+    font-weight:800;
+    font-size:20px;
+    letter-spacing:0.2px;
+    pointer-events:auto;
+  }
+  .branding small{
+    display:block;
+    font-weight:600;
+    font-size:12px;
+    margin-top:6px;
+    color: rgba(255,255,255,0.95);
+    pointer-events:auto;
+  }
 
   main{
     max-width:1400px;
@@ -258,8 +267,9 @@
     .btn{ width:40px; height:40px }
   }
   @media (max-width:700px){
-    header{ padding:12px 14px; flex-direction:column; align-items:flex-start; gap:8px }
-    .header-actions{ align-self:stretch; justify-content:flex-end; width:100% }
+    header{ padding:12px 14px; align-items:flex-start; }
+    .left-controls{ gap:8px; }
+    .header-center{ position:static; transform:none; text-align:center; margin:8px auto 0; }
     main{ padding:16px }
     .track{ gap:10px }
     .card{ flex:0 0 200px; min-width:170px }
@@ -276,14 +286,16 @@
 
 <body>
 <header>
-  <div class="header-left" aria-hidden="false">
-    <div class="branding">Electrical Photo Gallery</div>
-    <small style="color:rgba(255,255,255,0.92);font-weight:600">08 AREA • SAFETY • 5S</small>
-  </div>
-
-  <div class="header-actions" aria-hidden="false">
+  <!-- Left top buttons -->
+  <div class="left-controls">
     <button class="action-btn" onclick="goBack()" title="Back" aria-label="Back">⬅ Back</button>
     <button class="action-btn" onclick="goHome()" title="Home" aria-label="Home">🏠 Home</button>
+  </div>
+
+  <!-- Centered branding (kept visually centered regardless of left controls) -->
+  <div class="header-center" aria-hidden="false">
+    <div class="branding">Electrical Photo Gallery Of 08 AREA</div>
+    <small>08 AREA • SAFETY • 5S</small>
   </div>
 </header>
 
