@@ -80,27 +80,86 @@ th,td{
 th{background:#003f88;color:white}
 tr:hover{background:#eef5ff;cursor:pointer}
 
-.low{background:#ff4d4d;color:white}
-.mediumLevel{background:#ffb84d}
-.normal{background:#ffff66}
-.good{background:#99e699}
-.excellent{background:#33cc33;color:white}
+.low{background:#ff4d4d;color:white;cursor:pointer}
+.mediumLevel{background:#ffb84d;cursor:pointer}
+.normal{background:#ffff66;cursor:pointer}
+.good{background:#99e699;cursor:pointer}
+.excellent{background:#33cc33;color:white;cursor:pointer}
 
 .popup{
   display:none;position:fixed;
   top:0;left:0;width:100%;height:100%;
   background:rgba(0,0,0,.5);
   justify-content:center;align-items:center;
+  z-index:1000;
 }
 .popup-content{
-  background:white;width:80%;max-width:800px;
-  padding:20px;border-radius:10px;
+  background:white;width:90%;max-width:1000px;
+  padding:30px;border-radius:10px;
   position:relative;
+  max-height:85vh;
+  overflow-y:auto;
 }
 .close-btn{
-  position:absolute;right:15px;top:10px;
-  font-size:18px;cursor:pointer
+  position:absolute;right:20px;top:15px;
+  font-size:24px;cursor:pointer;
+  font-weight:bold;
+  color:#003f88;
 }
+
+.level-popup-title{
+  font-size:20px;
+  font-weight:bold;
+  color:#003f88;
+  margin-bottom:30px;
+  text-align:center;
+}
+
+.last3-container{
+  display:flex;gap:20px;justify-content:center;flex-wrap:nowrap;
+}
+
+.last3-card{
+  background:white;
+  border:3px solid #003f88;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 4px 8px rgba(0,0,0,.2);
+  flex:1;min-width:200px;
+  text-align:center;
+}
+
+.last3-date{
+  font-weight:bold;
+  color:#333;
+  font-size:16px;
+  margin-bottom:15px;
+  background:#f0f0f0;
+  padding:10px;
+  border-radius:5px;
+}
+
+.last3-level{
+  font-size:48px;
+  font-weight:bold;
+  padding:20px;
+  border-radius:8px;
+  margin:15px 0;
+}
+
+.last3-check-num{
+  font-size:14px;
+  color:#666;
+  font-weight:bold;
+  margin-top:15px;
+  padding-top:10px;
+  border-top:2px solid #ddd;
+}
+
+.low-level{background:#ff4d4d;color:white}
+.mediumLevel-level{background:#ffb84d;color:black}
+.normal-level{background:#ffff66;color:black}
+.excellent-level{background:#33cc33;color:white}
 
 .footer{text-align:center;padding:15px;color:#555}
 </style>
@@ -159,6 +218,14 @@ tr:hover{background:#eef5ff;cursor:pointer}
   </div>
 </div>
 
+<div class="popup" id="levelPopup">
+  <div class="popup-content">
+    <span class="close-btn" onclick="closeLevelPopup()">✖</span>
+    <div class="level-popup-title" id="levelPopupTitle">Last 3 Level Checks</div>
+    <div class="last3-container" id="last3Container"></div>
+  </div>
+</div>
+
 <div class="footer">
 © 08 Electrical Data | Transformer Oil Dashboard
 </div>
@@ -168,6 +235,9 @@ tr:hover{background:#eef5ff;cursor:pointer}
 const JSON_URL =
 "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformeroil.json";
 
+const LAST3_JSON_URL =
+"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/last3transformeroil.json";
+
 /* ✅ NEW NAV FUNCTIONS */
 function openTrafoList(){
   location.href="https://08electricaldata.github.io/drive-viewer/trafolist.html";
@@ -176,13 +246,18 @@ function openTrafoPM(){
   location.href="https://08electricaldata.github.io/drive-viewer/trafopm.html";
 }
 
-let fullData=[], headers=[], mainChart=null, trendChart=null;
+let fullData=[], headers=[], mainChart=null, trendChart=null, last3Data=[];
 
 async function load(){
   const res=await fetch(JSON_URL);
   const data=await res.json();
   headers=data.headers;
   fullData=data.rows;
+
+  // Load last3 data
+  const res3=await fetch(LAST3_JSON_URL);
+  const data3=await res3.json();
+  last3Data=data3.rows;
 
   buildYearDropdown();
   buildTable();
@@ -303,6 +378,13 @@ function buildTable(){
         else if(v<50)td.classList.add("mediumLevel");
         else if(v<70)td.classList.add("normal");
         else td.classList.add("excellent");
+        
+        // Add click handler for level column
+        td.style.cursor="pointer";
+        td.onclick=function(e){
+          e.stopPropagation();
+          showLast3Levels(r);
+        };
       }
       else if([6,8,10,12,14,16,18,20,22].includes(i)){
         let v=parseFloat(r[i])||0;
@@ -331,6 +413,76 @@ function buildTable(){
 
     tbody.appendChild(tr);
   });
+}
+
+function parseOilData(dataStr){
+  // Parse "02-06-2026 ,70" format
+  if(!dataStr || dataStr.trim()==="") return {date:"N/A", level:"N/A"};
+  
+  const parts=dataStr.split(',');
+  const date=parts[0].trim();
+  const level=parts[1].trim();
+  
+  return {date:date, level:level};
+}
+
+function showLast3Levels(row){
+  const trafoNo=row[2];
+  
+  // Find all matching records from last3Data
+  const matchingRecords=last3Data.filter(r=>r[2]===trafoNo);
+
+  document.getElementById("levelPopupTitle").textContent=`Last 3 Level Checks - Transformer ${trafoNo}`;
+  
+  const container=document.getElementById("last3Container");
+  container.innerHTML="";
+
+  if(matchingRecords.length===0){
+    container.innerHTML="<p style='text-align:center;color:#999;width:100%;'>No historical data available</p>";
+  } else {
+    // Get the first 3 columns with data (indices 3, 4, 5 typically contain date/level pairs)
+    const dataIndices=[3, 4, 5];
+    let checkNum=1;
+    
+    dataIndices.forEach((idx)=>{
+      if(idx<matchingRecords[0].length){
+        const dataStr=matchingRecords[0][idx]||"";
+        const parsed=parseOilData(dataStr);
+        const date=parsed.date;
+        const levelStr=parsed.level;
+        const level=parseFloat(levelStr);
+
+        if(date!=="N/A"){
+          let levelClass="excellent-level";
+          if(level<30){
+            levelClass="low-level";
+          } else if(level<50){
+            levelClass="mediumLevel-level";
+          } else if(level<70){
+            levelClass="normal-level";
+          } else {
+            levelClass="excellent-level";
+          }
+
+          const card=document.createElement("div");
+          card.className="last3-card";
+          card.innerHTML=`
+            <div class="last3-date">📅 ${date}</div>
+            <div class="last3-level ${levelClass}">${levelStr}%</div>
+            <div class="last3-check-num">Check #${checkNum}</div>
+          `;
+          container.appendChild(card);
+          checkNum++;
+        }
+      }
+    });
+  }
+
+  document.getElementById("levelPopup").style.display="flex";
+}
+
+function closeLevelPopup(){
+  document.getElementById("levelPopup").style.display="none";
 }
 
 function showTrend(row){
