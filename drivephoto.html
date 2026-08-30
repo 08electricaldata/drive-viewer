@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+
+<title>Equipment Photos</title>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<style>
+
+/* =========================
+   BODY
+========================= */
+
+body{
+  font-family:Arial,sans-serif;
+  margin:0;
+  background:#f2f6ff;
+  color:#222;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header{
+  background:#003f88;
+  color:white;
+  padding:12px 15px;
+
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  position:sticky;
+  top:0;
+
+  z-index:1000;
+
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+
+.header-title{
+  flex:1;
+  text-align:center;
+}
+
+.header-title h2{
+  margin:0;
+  font-size:21px;
+}
+
+.header-title small{
+  display:block;
+  font-size:13px;
+  font-weight:500;
+  opacity:.9;
+}
+
+
+/* =========================
+   HEADER BUTTONS
+========================= */
+
+.header-btn{
+  background:white;
+  color:#003f88;
+
+  border:1px solid #003f88;
+
+  border-radius:6px;
+
+  padding:7px 11px;
+
+  cursor:pointer;
+
+  font-weight:bold;
+
+  white-space:nowrap;
+}
+
+.header-btn:hover{
+  background:#eaf2ff;
+}
+
+
+/* =========================
+   CONTAINER
+========================= */
+
+.container{
+  padding:20px;
+  max-width:1400px;
+  margin:auto;
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.card{
+  background:white;
+
+  padding:20px;
+
+  border-radius:12px;
+
+  box-shadow:
+    0 2px 8px rgba(0,0,0,.15);
+}
+
+
+/* =========================
+   TITLE
+========================= */
+
+.page-title{
+  margin:0 0 5px 0;
+
+  color:#003f88;
+
+  text-align:center;
+
+  font-size:22px;
+}
+
+.subtitle{
+  text-align:center;
+
+  color:#666;
+
+  margin-bottom:20px;
+
+  font-size:14px;
+}
+
+
+/* =========================
+   PHOTO GRID
+========================= */
+
+.photo-grid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(auto-fill,minmax(230px,1fr));
+
+  gap:18px;
+
+  margin-top:20px;
+}
+
+
+/* =========================
+   PHOTO TILE
+========================= */
+
+.photo-tile{
+
+  background:#f8fbff;
+
+  padding:10px;
+
+  border-radius:12px;
+
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.12);
+
+  cursor:pointer;
+
+  transition:.2s;
+
+  text-align:center;
+}
+
+.photo-tile:hover{
+
+  transform:translateY(-3px);
+
+  box-shadow:
+    0 5px 12px rgba(0,0,0,.2);
+}
+
+
+/* =========================
+   PHOTO
+========================= */
+
+.photo-tile img{
+
+  width:100%;
+
+  height:190px;
+
+  object-fit:cover;
+
+  border-radius:9px;
+
+  display:block;
+
+  background:#eee;
+}
+
+
+/* =========================
+   DATE CAPTION
+========================= */
+
+.photo-date{
+
+  margin-top:9px;
+
+  font-size:15px;
+
+  font-weight:bold;
+
+  color:#003f88;
+}
+
+.photo-name{
+
+  margin-top:4px;
+
+  font-size:11px;
+
+  color:#777;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+
+/* =========================
+   VIEWER
+========================= */
+
+.viewer{
+
+  display:none;
+
+  margin-top:25px;
+
+  background:#111;
+
+  border-radius:12px;
+
+  overflow:hidden;
+
+  position:relative;
+
+  text-align:center;
+}
+
+.viewer img{
+
+  max-width:100%;
+
+  max-height:650px;
+
+  width:auto;
+
+  height:auto;
+
+  display:block;
+
+  margin:auto;
+}
+
+
+/* =========================
+   VIEWER CAPTION
+========================= */
+
+.viewer-caption{
+
+  background:#111;
+
+  color:white;
+
+  padding:10px;
+
+  font-size:15px;
+
+  font-weight:bold;
+}
+
+
+/* =========================
+   VIEWER CONTROLS
+========================= */
+
+.viewer-controls{
+
+  display:flex;
+
+  justify-content:center;
+
+  gap:10px;
+
+  padding:12px;
+
+  background:#111;
+}
+
+.viewer-controls button{
+
+  padding:8px 15px;
+
+  border:none;
+
+  background:#003f88;
+
+  color:white;
+
+  border-radius:6px;
+
+  cursor:pointer;
+
+  font-weight:bold;
+}
+
+.viewer-controls button:hover{
+
+  background:#0058bd;
+}
+
+
+/* =========================
+   FULLSCREEN
+========================= */
+
+.viewer.fullscreen{
+
+  position:fixed;
+
+  top:0;
+  left:0;
+
+  width:100%;
+  height:100%;
+
+  z-index:9999;
+
+  margin:0;
+
+  border-radius:0;
+
+  display:flex;
+
+  flex-direction:column;
+
+  justify-content:center;
+}
+
+.viewer.fullscreen img{
+
+  max-height:calc(100vh - 120px);
+
+}
+
+
+/* =========================
+   NO DATA
+========================= */
+
+.no-data{
+
+  color:red;
+
+  text-align:center;
+
+  font-weight:bold;
+
+  padding:30px;
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+.loading{
+
+  text-align:center;
+
+  color:#003f88;
+
+  font-weight:bold;
+
+  padding:30px;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:768px){
+
+  .header{
+
+    flex-wrap:wrap;
+
+  }
+
+  .header-title{
+
+    order:-1;
+
+    width:100%;
+
+    flex:none;
+
+    margin-bottom:8px;
+
+  }
+
+  .header-title h2{
+
+    font-size:18px;
+
+  }
+
+  .header-btn{
+
+    font-size:12px;
+
+    padding:6px 8px;
+
+  }
+
+  .container{
+
+    padding:10px;
+
+  }
+
+  .card{
+
+    padding:12px;
+
+  }
+
+  .photo-grid{
+
+    grid-template-columns:
+      repeat(2,1fr);
+
+    gap:10px;
+
+  }
+
+  .photo-tile{
+
+    padding:7px;
+
+  }
+
+  .photo-tile img{
+
+    height:140px;
+
+  }
+
+  .photo-date{
+
+    font-size:13px;
+
+  }
+
+}
+
+
+/* Very small phones */
+
+@media(max-width:400px){
+
+  .photo-grid{
+
+    grid-template-columns:1fr;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =================================================
+     HEADER
+================================================= -->
+
+<div class="header">
+
+  <button
+    class="header-btn"
+    onclick="goHome()">
+    🏠 Home
+  </button>
+
+  <button
+    class="header-btn"
+    onclick="goBack()">
+    ⬅ Back
+  </button>
+
+  <div class="header-title">
+
+    <h2>Equipment Photos</h2>
+
+    <small>
+      Designed and maintained by Rakesh Chandra Sethy
+    </small>
+
+  </div>
+
+</div>
+
+
+<!-- =================================================
+     CONTENT
+================================================= -->
+
+<div class="container">
+
+  <div class="card">
+
+    <div id="content">
+
+      <div class="loading">
+        Loading photos...
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+
+/* =================================================
+   JSON SOURCE
+================================================= */
+
+const JSON_URL =
+"https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drawings/drivephotos.json";
+
+
+/* =================================================
+   NAVIGATION
+================================================= */
+
+function goHome(){
+
+  location.href =
+  "https://08electricaldata.github.io/";
+
+}
+
+
+function goBack(){
+
+  history.back();
+
+}
+
+
+/* =================================================
+   GET ID FROM URL
+================================================= */
+
+function getCurrentID(){
+
+  return new URLSearchParams(
+    location.search
+  ).get("id");
+
+}
+
+
+/* =================================================
+   NORMALIZE
+================================================= */
+
+function normalize(value){
+
+  return String(value || "")
+    .trim()
+    .toUpperCase();
+
+}
+
+
+/* =================================================
+   EXTRACT GOOGLE DRIVE FILE ID
+================================================= */
+
+function getFileId(url){
+
+  if(!url) return null;
+
+  const match =
+    url.match(/[-\w]{25,}/);
+
+  return match
+    ? match[0]
+    : null;
+
+}
+
+
+/* =================================================
+   DRIVE IMAGE URL
+================================================= */
+
+function convertToImage(url){
+
+  const fileId =
+    getFileId(url);
+
+  if(!fileId){
+
+    return url;
+
+  }
+
+  /*
+    Google Drive thumbnail.
+    This allows the image to be displayed
+    inside the webpage.
+  */
+
+  return (
+    "https://drive.google.com/thumbnail" +
+    "?id=" +
+    encodeURIComponent(fileId) +
+    "&sz=w1200"
+  );
+
+}
+
+
+/* =================================================
+   SPLIT URL + DATE
+================================================= */
+
+function parsePhotoValue(value){
+
+  if(!value){
+
+    return null;
+
+  }
+
+  value =
+    String(value).trim();
+
+  if(!value){
+
+    return null;
+
+  }
+
+  /*
+    Expected:
+
+    URL, 21-08-26
+  */
+
+  const comma =
+    value.lastIndexOf(",");
+
+  if(comma === -1){
+
+    return {
+
+      url:value,
+
+      date:""
+
+    };
+
+  }
+
+  const url =
+    value
+      .substring(0,comma)
+      .trim();
+
+  const date =
+    value
+      .substring(comma + 1)
+      .trim();
+
+  if(!url){
+
+    return null;
+
+  }
+
+  return {
+
+    url:url,
+
+    date:date
+
+  };
+
+}
+
+
+/* =================================================
+   ESCAPE HTML
+================================================= */
+
+function escapeHTML(value){
+
+  return String(value || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+}
+
+
+/* =================================================
+   GLOBAL PHOTO ARRAY
+================================================= */
+
+let photos = [];
+
+let currentPhoto = 0;
+
+
+/* =================================================
+   LOAD JSON
+================================================= */
+
+async function load(){
+
+  const id =
+    normalize(getCurrentID());
+
+
+  if(!id){
+
+    content.innerHTML =
+
+      "<div class='no-data'>" +
+      "No equipment ID specified" +
+      "</div>";
+
+    return;
+
+  }
+
+
+  try{
+
+    /*
+      Cache buster ensures the latest
+      GitHub JSON is requested.
+    */
+
+    const response =
+      await fetch(
+        JSON_URL +
+        "?v=" +
+        Date.now()
+      );
+
+
+    if(!response.ok){
+
+      throw new Error(
+        "HTTP " +
+        response.status
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    /*
+      JSON format:
+
+      [
+        [
+          "WWT-P-HT001",
+          "URL, date",
+          "URL, date",
+          ...
+        ]
+      ]
+    */
+
+
+    const row =
+      data.find(function(r){
+
+        return normalize(r[0]) === id;
+
+      });
+
+
+    if(!row){
+
+      content.innerHTML =
+
+        "<div class='no-data'>" +
+        "No photos available for " +
+        escapeHTML(id) +
+        "</div>";
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------
+       GET ALL PHOTOS FROM B:BX
+    ----------------------------------------- */
+
+    photos = [];
+
+
+    for(
+      let i = 1;
+      i < row.length;
+      i++
+    ){
+
+      const photo =
+        parsePhotoValue(row[i]);
+
+
+      if(!photo){
+
+        continue;
+
+      }
+
+
+      photos.push({
+
+        url:photo.url,
+
+        date:photo.date,
+
+        column:i + 1
+
+      });
+
+    }
+
+
+    /* -----------------------------------------
+       NO PHOTOS
+    ----------------------------------------- */
+
+    if(photos.length === 0){
+
+      content.innerHTML =
+
+        "<div class='no-data'>" +
+        "No photos available for " +
+        escapeHTML(id) +
+        "</div>";
+
+      return;
+
+    }
+
+
+    /* -----------------------------------------
+       BUILD PAGE
+    ----------------------------------------- */
+
+    let html =
+
+      "<h2 class='page-title'>" +
+      escapeHTML(id) +
+      "</h2>" +
+
+      "<div class='subtitle'>" +
+      photos.length +
+      " photo" +
+      (photos.length !== 1 ? "s" : "") +
+      " available" +
+      "</div>" +
+
+      "<div class='photo-grid'>";
+
+
+    photos.forEach(function(photo,index){
+
+      const image =
+        convertToImage(photo.url);
+
+
+      html +=
+
+        "<div class='photo-tile' " +
+
+        "onclick='openPhoto(" +
+        index +
+        ")'>" +
+
+        "<img src='" +
+        escapeHTML(image) +
+        "' " +
+
+        "loading='lazy' " +
+
+        "onerror=\"this.src='https://via.placeholder.com/400x250?text=Image+Unavailable'\">" +
+
+        "<div class='photo-date'>" +
+
+        escapeHTML(
+          photo.date || "Date not available"
+        ) +
+
+        "</div>" +
+
+        "</div>";
+
+    });
+
+
+    html +=
+
+      "</div>" +
+
+      /*
+        PHOTO VIEWER
+      */
+
+      "<div class='viewer' id='viewerBox'>" +
+
+        "<img id='viewerImage'>" +
+
+        "<div class='viewer-caption' " +
+             "id='viewerCaption'>" +
+        "</div>" +
+
+        "<div class='viewer-controls'>" +
+
+          "<button onclick='previousPhoto()'>" +
+          "⬅ Previous" +
+          "</button>" +
+
+          "<button onclick='toggleFullScreen()'>" +
+          "⛶ Full Screen" +
+          "</button>" +
+
+          "<button onclick='nextPhoto()'>" +
+          "Next ➡" +
+          "</button>" +
+
+          "<button onclick='closeViewer()'>" +
+          "✖ Close" +
+          "</button>" +
+
+        "</div>" +
+
+      "</div>";
+
+
+    content.innerHTML =
+      html;
+
+
+  }
+  catch(error){
+
+    console.error(error);
+
+    content.innerHTML =
+
+      "<div class='no-data'>" +
+
+      "Unable to load photos.<br><br>" +
+
+      escapeHTML(
+        error.message
+      ) +
+
+      "</div>";
+
+  }
+
+}
+
+
+/* =================================================
+   OPEN PHOTO
+================================================= */
+
+function openPhoto(index){
+
+  currentPhoto = index;
+
+  const photo =
+    photos[currentPhoto];
+
+
+  if(!photo){
+
+    return;
+
+  }
+
+
+  const viewer =
+    document.getElementById(
+      "viewerBox"
+    );
+
+  const image =
+    document.getElementById(
+      "viewerImage"
+    );
+
+  const caption =
+    document.getElementById(
+      "viewerCaption"
+    );
+
+
+  image.src =
+    convertToImage(
+      photo.url
+    );
+
+
+  caption.innerText =
+    photo.date ||
+    "Date not available";
+
+
+  viewer.style.display =
+    "block";
+
+
+  viewer.scrollIntoView({
+
+    behavior:"smooth",
+
+    block:"center"
+
+  });
+
+}
+
+
+/* =================================================
+   PREVIOUS
+================================================= */
+
+function previousPhoto(){
+
+  if(photos.length === 0){
+
+    return;
+
+  }
+
+
+  currentPhoto--;
+
+  if(currentPhoto < 0){
+
+    currentPhoto =
+      photos.length - 1;
+
+  }
+
+
+  openPhoto(currentPhoto);
+
+}
+
+
+/* =================================================
+   NEXT
+================================================= */
+
+function nextPhoto(){
+
+  if(photos.length === 0){
+
+    return;
+
+  }
+
+
+  currentPhoto++;
+
+  if(
+    currentPhoto >=
+    photos.length
+  ){
+
+    currentPhoto = 0;
+
+  }
+
+
+  openPhoto(currentPhoto);
+
+}
+
+
+/* =================================================
+   CLOSE
+================================================= */
+
+function closeViewer(){
+
+  const viewer =
+    document.getElementById(
+      "viewerBox"
+    );
+
+
+  viewer.style.display =
+    "none";
+
+}
+
+
+/* =================================================
+   FULLSCREEN
+================================================= */
+
+function toggleFullScreen(){
+
+  const viewer =
+    document.getElementById(
+      "viewerBox"
+    );
+
+
+  viewer.classList.toggle(
+    "fullscreen"
+  );
+
+}
+
+
+/* =================================================
+   KEYBOARD CONTROLS
+================================================= */
+
+document.addEventListener(
+  "keydown",
+  function(event){
+
+    const viewer =
+      document.getElementById(
+        "viewerBox"
+      );
+
+
+    if(
+      !viewer ||
+      viewer.style.display === "none"
+    ){
+
+      return;
+
+    }
+
+
+    if(event.key === "ArrowLeft"){
+
+      previousPhoto();
+
+    }
+
+
+    if(event.key === "ArrowRight"){
+
+      nextPhoto();
+
+    }
+
+
+    if(event.key === "Escape"){
+
+      closeViewer();
+
+    }
+
+  }
+);
+
+
+/* =================================================
+   START
+================================================= */
+
+load();
+
+</script>
+
+</body>
+</html>
