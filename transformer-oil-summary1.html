@@ -116,56 +116,46 @@ tr:hover{background:#eef5ff;cursor:pointer}
 }
 
 .last3-container{
-  display:flex;flex-direction:column;gap:15px;
+  display:flex;gap:15px;justify-content:center;flex-wrap:wrap;
 }
 
 .last3-card{
-  background:#f9f9f9;
-  border-left:5px solid #003f88;
+  background:white;
+  border:2px solid #003f88;
   padding:15px;
-  border-radius:5px;
-  box-shadow:0 2px 4px rgba(0,0,0,.1);
-}
-
-.last3-card-header{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:10px;
+  border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  flex:1;min-width:180px;
+  max-width:220px;
+  text-align:center;
 }
 
 .last3-date{
   font-weight:bold;
   color:#333;
-  font-size:14px;
+  font-size:13px;
+  margin-bottom:10px;
 }
 
 .last3-level{
-  font-size:16px;
+  font-size:28px;
   font-weight:bold;
-  padding:5px 15px;
-  border-radius:5px;
-  text-align:center;
-  min-width:80px;
+  padding:10px;
+  border-radius:8px;
+  margin-bottom:10px;
 }
 
-.last3-description{
+.last3-check-num{
   font-size:12px;
   color:#666;
-  margin-top:5px;
-}
-
-.level-chart-section{
-  margin-top:25px;
-  padding-top:20px;
-  border-top:2px solid #ddd;
-}
-
-.chart-title{
-  font-size:16px;
   font-weight:bold;
-  color:#003f88;
-  margin-bottom:15px;
-  text-align:center;
+  margin-top:8px;
 }
+
+.low-level{background:#ff4d4d;color:white}
+.mediumLevel-level{background:#ffb84d}
+.normal-level{background:#ffff66}
+.excellent-level{background:#33cc33;color:white}
 
 .footer{text-align:center;padding:15px;color:#555}
 </style>
@@ -229,10 +219,6 @@ tr:hover{background:#eef5ff;cursor:pointer}
     <span class="close-btn" onclick="closeLevelPopup()">✖</span>
     <div class="level-popup-title" id="levelPopupTitle">Last 3 Level Checks</div>
     <div class="last3-container" id="last3Container"></div>
-    <div class="level-chart-section">
-      <div class="chart-title">Oil Level Percentage Comparison</div>
-      <canvas id="last3LevelChart" height="80"></canvas>
-    </div>
   </div>
 </div>
 
@@ -256,7 +242,7 @@ function openTrafoPM(){
   location.href="https://08electricaldata.github.io/drive-viewer/trafopm.html";
 }
 
-let fullData=[], headers=[], mainChart=null, trendChart=null, last3Data=[], last3LevelChart=null;
+let fullData=[], headers=[], mainChart=null, trendChart=null, last3Data=[];
 
 async function load(){
   const res=await fetch(JSON_URL);
@@ -428,7 +414,7 @@ function buildTable(){
 function showLast3Levels(row){
   const trafoNo=row[2];
   
-  // Find all matching records from last3Data (get all records, not just first 3)
+  // Find all matching records from last3Data
   const matchingRecords=last3Data.filter(r=>r[2]===trafoNo);
 
   document.getElementById("levelPopupTitle").textContent=`Last 3 Level Checks - Transformer ${trafoNo}`;
@@ -437,104 +423,36 @@ function showLast3Levels(row){
   container.innerHTML="";
 
   if(matchingRecords.length===0){
-    container.innerHTML="<p style='text-align:center;color:#999;'>No historical data available</p>";
+    container.innerHTML="<p style='text-align:center;color:#999;width:100%;'>No historical data available</p>";
   } else {
     matchingRecords.forEach((record,index)=>{
       const dateStr=record[3]||"N/A";
       const levelStr=record[4]||"N/A";
       const level=parseFloat(levelStr);
 
-      let levelClass="excellent";
-      let statusText="Excellent";
+      let levelClass="excellent-level";
       if(level<30){
-        levelClass="low";
-        statusText="🔴 Critical";
+        levelClass="low-level";
       } else if(level<50){
-        levelClass="mediumLevel";
-        statusText="🟡 Warning";
+        levelClass="mediumLevel-level";
       } else if(level<70){
-        levelClass="normal";
-        statusText="🟠 Medium";
+        levelClass="normal-level";
       } else {
-        levelClass="excellent";
-        statusText="🟢 Good";
+        levelClass="excellent-level";
       }
 
       const card=document.createElement("div");
       card.className="last3-card";
       card.innerHTML=`
-        <div class="last3-card-header">
-          <div>
-            <div class="last3-date">📅 ${dateStr}</div>
-            <div class="last3-description">Check #${index+1}</div>
-          </div>
-          <div class="last3-level ${levelClass}">${levelStr}%</div>
-        </div>
-        <div style="text-align:center;font-weight:bold;color:#555;">
-          ${statusText}
-        </div>
+        <div class="last3-date">📅 ${dateStr}</div>
+        <div class="last3-level ${levelClass}">${levelStr}%</div>
+        <div class="last3-check-num">Check #${index+1}</div>
       `;
       container.appendChild(card);
     });
   }
 
-  // Build bar chart with all data
-  createLast3LevelChart(matchingRecords);
-
   document.getElementById("levelPopup").style.display="flex";
-}
-
-function createLast3LevelChart(records){
-  const dates=records.map(r=>r[3]||"N/A");
-  const levels=records.map(r=>parseFloat(r[4])||0);
-
-  if(last3LevelChart) last3LevelChart.destroy();
-
-  const colors=levels.map(level=>{
-    if(level<30) return "#ff4d4d";
-    else if(level<50) return "#ffb84d";
-    else if(level<70) return "#ffff66";
-    else return "#33cc33";
-  });
-
-  last3LevelChart=new Chart(
-    document.getElementById("last3LevelChart"),
-    {
-      type:"bar",
-      data:{
-        labels:dates,
-        datasets:[{
-          label:"Oil Level (%)",
-          data:levels,
-          backgroundColor:colors,
-          borderColor:"#003f88",
-          borderWidth:2
-        }]
-      },
-      options:{
-        indexAxis:'x',
-        responsive:true,
-        maintainAspectRatio:true,
-        plugins:{
-          legend:{
-            display:true,
-            position:'top'
-          }
-        },
-        scales:{
-          y:{
-            beginAtZero:true,
-            max:100,
-            ticks:{
-              callback:function(value){
-                return value+"%";
-              }
-            }
-          }
-        }
-      }
-    }
-  );
 }
 
 function closeLevelPopup(){
