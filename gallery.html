@@ -259,6 +259,17 @@
   }
   .close:hover{ transform:rotate(10deg) }
 
+  /* Loading indicator */
+  .loading{
+    display:inline-block;
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:#1976d2;
+    animation:pulse 1.5s infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:0.3} 50%{opacity:1} }
+
   /* Responsive */
   @media (max-width:1000px){
     .track{ gap:12px; padding:6px }
@@ -302,7 +313,7 @@
 <main>
   <section class="gallery" aria-labelledby="g1-title">
     <div class="gallery-header">
-      <h2 id="g1-title">08 AREA PHOTOS <span id="c1" class="count">0</span></h2>
+      <h2 id="g1-title">08 AREA PHOTOS <span id="c1" class="count"><span class="loading"></span></span></h2>
     </div>
     <div class="wrap" aria-hidden="false">
       <button class="btn prev" onclick="scrollTrack('t1',-280)" aria-label="Scroll left">❮</button>
@@ -313,7 +324,7 @@
 
   <section class="gallery" aria-labelledby="g2-title">
     <div class="gallery-header">
-      <h2 id="g2-title">SAFETY PHOTOS <span id="c2" class="count">0</span></h2>
+      <h2 id="g2-title">SAFETY PHOTOS <span id="c2" class="count"><span class="loading"></span></span></h2>
     </div>
     <div class="wrap" aria-hidden="false">
       <button class="btn prev" onclick="scrollTrack('t2',-280)" aria-label="Scroll left">❮</button>
@@ -324,7 +335,7 @@
 
   <section class="gallery" aria-labelledby="g3-title">
     <div class="gallery-header">
-      <h2 id="g3-title">5S PHOTOS <span id="c3" class="count">0</span></h2>
+      <h2 id="g3-title">5S PHOTOS <span id="c3" class="count"><span class="loading"></span></span></h2>
     </div>
     <div class="wrap" aria-hidden="false">
       <button class="btn prev" onclick="scrollTrack('t3',-280)" aria-label="Scroll left">❮</button>
@@ -342,63 +353,112 @@
 </div>
 
 <script>
-  /* Existing functions preserved — only styling changed above */
+  /* Existing functions preserved */
   function goHome(){ location.href = "https://08electricaldata.github.io/"; }
   function goBack(){ history.back(); }
 
-  /* ===== JSDELIVR CDN URLS ===== */
-  const galleries=[
-    { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/08area.json", track:"t1", count:"c1" },
-    { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/safety.json", track:"t2", count:"c2" },
-    { url:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/5s.json", track:"t3", count:"c3" }
+  /* ===== VERSION FILE + JSDELIVR CDN URLS WITH CACHE BUSTING ===== */
+  const versionUrl = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/version.json";
+  
+  const galleryConfig = [
+    { name: "08area", track: "t1", count: "c1" },
+    { name: "safety", track: "t2", count: "c2" },
+    { name: "5s", track: "t3", count: "c3" }
   ];
 
-  async function loadGallery(g){
-    try{
-      const r=await fetch(g.url);
-      if(!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
-      const j=await r.json();
-      document.getElementById(g.count).textContent=j.total || (j.photos && j.photos.length) || 0;
-      const t=document.getElementById(g.track);
-      t.innerHTML="";
-      j.photos.forEach(p=>{
-        const c=document.createElement("div");
-        c.className="card";
-        c.setAttribute("role","listitem");
-        // keep same inner structure for JS click handlers
+  let currentVersion = "1.0.0";
+
+  /* Fetch version file to bust cache */
+  async function getVersion() {
+    try {
+      const res = await fetch(versionUrl + "?t=" + Date.now());
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      currentVersion = data.version || "1.0.0";
+      console.log("Loaded version:", currentVersion);
+    } catch (err) {
+      console.warn("Failed to load version file:", err);
+      currentVersion = "1.0.0";
+    }
+  }
+
+  /* Build gallery URL with version param */
+  function buildGalleryUrl(galleryName) {
+    return `https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/${galleryName}.json?v=${currentVersion}`;
+  }
+
+  async function loadGallery(config) {
+    try {
+      const url = buildGalleryUrl(config.name);
+      console.log("Loading:", url);
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+      const j = await r.json();
+      
+      document.getElementById(config.count).textContent = j.total || (j.photos && j.photos.length) || 0;
+      const t = document.getElementById(config.track);
+      t.innerHTML = "";
+      
+      j.photos.forEach(p => {
+        const c = document.createElement("div");
+        c.className = "card";
+        c.setAttribute("role", "listitem");
         c.innerHTML = `
           <div class="card-media">
-            <img loading="lazy" src="${p.thumb||p.image}" alt="${(p.title||'')}" />
+            <img loading="lazy" src="${p.thumb || p.image}" alt="${(p.title || '')}" />
           </div>
-          <div class="card-caption">${p.title||''}</div>
+          <div class="card-caption">${p.title || ''}</div>
         `;
-        c.onclick = ()=> showLightbox(p.image,p.title);
-        c.onkeydown = (e) => { if(e.key === 'Enter') showLightbox(p.image,p.title); };
+        c.onclick = () => showLightbox(p.image, p.title);
+        c.onkeydown = (e) => { if (e.key === 'Enter') showLightbox(p.image, p.title); };
         c.tabIndex = 0;
         t.appendChild(c);
       });
 
-      // simple auto-scroll loop (keeps previous behavior)
-      setInterval(()=>{
-        if(!t) return;
-        if(t.children.length===0) return;
-        // only auto-scroll if user hasn't interacted (naive approach kept)
-        t.scrollBy({left:280,behavior:"smooth"});
-        if(t.scrollLeft + t.clientWidth >= t.scrollWidth - 10){
-          setTimeout(()=>t.scrollTo({left:0,behavior:"smooth"}),700);
+      /* Auto-scroll loop */
+      setInterval(() => {
+        if (!t) return;
+        if (t.children.length === 0) return;
+        t.scrollBy({left: 280, behavior: "smooth"});
+        if (t.scrollLeft + t.clientWidth >= t.scrollWidth - 10) {
+          setTimeout(() => t.scrollTo({left: 0, behavior: "smooth"}), 700);
         }
-      },3500);
-    }catch(err){
-      console.error("Failed to load gallery:",g.url,err);
-      document.getElementById(g.count).textContent="0";
+      }, 3500);
+      
+    } catch (err) {
+      console.error("Failed to load gallery:", config.name, err);
+      document.getElementById(config.count).textContent = "0";
     }
   }
 
-  function scrollTrack(id,x){ const el=document.getElementById(id); if(el) el.scrollBy({left:x,behavior:"smooth"}); }
-  function showLightbox(src,title){ document.getElementById("lbimg").src = src; document.getElementById("caption").textContent = title||''; document.getElementById("lightbox").classList.add('show'); }
-  function hideLightbox(){ document.getElementById("lightbox").classList.remove('show'); document.getElementById("lbimg").src=''; }
+  function scrollTrack(id, x) { 
+    const el = document.getElementById(id); 
+    if (el) el.scrollBy({left: x, behavior: "smooth"}); 
+  }
+  
+  function showLightbox(src, title) { 
+    document.getElementById("lbimg").src = src; 
+    document.getElementById("caption").textContent = title || ''; 
+    document.getElementById("lightbox").classList.add('show'); 
+  }
+  
+  function hideLightbox() { 
+    document.getElementById("lightbox").classList.remove('show'); 
+    document.getElementById("lbimg").src = ''; 
+  }
 
-  galleries.forEach(loadGallery);
+  /* Initialize: load version first, then galleries */
+  (async () => {
+    await getVersion();
+    galleryConfig.forEach(loadGallery);
+  })();
+
+  /* Reload galleries every 5 minutes to check for updates */
+  setInterval(async () => {
+    await getVersion();
+    galleryConfig.forEach(loadGallery);
+  }, 5 * 60 * 1000);
+
 </script>
 </body>
 </html>
