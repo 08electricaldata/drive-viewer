@@ -19,6 +19,7 @@
   main{padding:12px;max-width:1400px;margin:0 auto}
   .meta{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .count{background:#fff;padding:10px;border-radius:8px;box-shadow:0 8px 20px rgba(3,63,136,0.04);font-weight:800}
+  .version-info{background:#fff;padding:10px;border-radius:8px;box-shadow:0 8px 20px rgba(3,63,136,0.04);font-weight:800;font-size:12px;color:#0b3b74}
   .filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
   .filter{
     display:flex;flex-direction:column;min-width:120px;
@@ -53,6 +54,10 @@
   tr:nth-child(even){background:#fbfdff}
   .no-data{padding:18px;text-align:center;color:#b91c1c;font-weight:800}
 
+  /* Loading spinner */
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid #e6f0ff;border-top-color:var(--brand);border-radius:50%;animation:spin 0.8s linear infinite;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
   @media(min-width:1100px){
     :root{
       --cell-padding:6px;
@@ -77,6 +82,7 @@
   <div class="meta">
     <div class="count">Total rows: <span id="totalRows">0</span></div>
     <div class="count">Showing: <span id="shownRows">0</span></div>
+    <div class="version-info">Version: <span id="versionDisplay">—</span></div>
     <div class="search-info" id="statusMsg">Loading...</div>
   </div>
 
@@ -96,17 +102,24 @@
 </main>
 
 <script>
-const SOURCE_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/sparelist.json";
+// Version-based cache busting URLs
+const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
+const BASE_SOURCE_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/sparelist.json';
 
 // For array-of-arrays shape use these indexes (0-based)
 const HEADER_ROW_INDEX_FOR_ROWS = 10; // 11th row
 const DATA_START_INDEX_FOR_ROWS  = 11; // 12th row
 
+// Auto-reload every 5 minutes
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000;
+
 let headers = [];
 let dataRows = []; // array of objects
+let currentVersion = '1.0.0';
 
 const totalRowsEl = document.getElementById('totalRows');
 const shownRowsEl = document.getElementById('shownRows');
+const versionDisplayEl = document.getElementById('versionDisplay');
 const statusMsg = document.getElementById('statusMsg');
 const filtersDiv = document.getElementById('filters');
 const tableHead = document.getElementById('tableHead');
@@ -269,10 +282,33 @@ function applyDynamicTableStyling(colCount){
   }
 }
 
+// Get latest version from version.json
+async function getVersion(){
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now());
+    if(!res.ok) throw new Error('Version fetch failed');
+    const data = await res.json();
+    currentVersion = data.version || '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+    console.log('Loaded version:', currentVersion);
+  } catch(err) {
+    console.warn('Failed to fetch version, using default:', err);
+    currentVersion = '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+// Build URL with version parameter for cache busting
+function buildSourceUrl(){
+  return `${BASE_SOURCE_URL}?v=${currentVersion}`;
+}
+
 async function loadAndBuild(){
-  statusMsg.textContent = 'Loading sparelist...';
+  statusMsg.textContent = '⏳ Loading sparelist...';
   try{
-    const res = await fetch(SOURCE_URL);
+    const sourceUrl = buildSourceUrl();
+    console.log('Fetching from:', sourceUrl);
+    const res = await fetch(sourceUrl);
     if(!res.ok) throw new Error('Fetch failed ' + res.status);
     const json = await res.json();
     console.log('Loaded JSON keys:', Object.keys(json));
@@ -366,14 +402,28 @@ async function loadAndBuild(){
     createFilters();
     renderTableHeader();
     renderFilteredTable();
-    statusMsg.textContent = 'Loaded';
+    statusMsg.textContent = '✓ Loaded';
   }catch(err){
     console.error(err);
-    statusMsg.textContent = 'Load failed: ' + (err.message||err);
+    statusMsg.textContent = '✗ Load failed: ' + (err.message||err);
   }
 }
 
-loadAndBuild();
+// Initialize: fetch version first, then load data
+async function init(){
+  await getVersion();
+  await loadAndBuild();
+  
+  // Auto-reload every 5 minutes
+  setInterval(async () => {
+    console.log('Auto-refreshing data...');
+    await getVersion();
+    await loadAndBuild();
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+// Start initialization
+init();
 
 </script>
 </body>
