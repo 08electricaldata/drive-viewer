@@ -22,6 +22,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 .header-left {
   display: flex;
@@ -40,6 +42,7 @@ body {
 .header-center {
   text-align: center;
   flex: 1;
+  min-width: 300px;
 }
 .header-center h1 {
   margin: 0;
@@ -49,6 +52,26 @@ body {
   margin: 4px 0 0;
   font-size: 16px;
 }
+
+.version-info {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  margin-right: 4px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
 /* ===== CONTAINER ===== */
 .container { padding: 20px; }
@@ -68,6 +91,12 @@ body {
   padding: 15px;
   text-align: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.summary .card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 .summary h3 { margin: 0; color: #003f88; }
 .summary p {
@@ -95,12 +124,18 @@ body {
 }
 
 /* ===== TABLE ===== */
+.table-wrap {
+  overflow: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   table-layout: fixed;
+  min-width: 1000px;
 }
 th, td {
   border: 1px solid #ccc;
@@ -112,6 +147,7 @@ th {
   color: white;
   position: sticky;
   top: 0;
+  z-index: 10;
   white-space: normal;
   word-break: break-word;
   line-height: 1.2;
@@ -158,16 +194,16 @@ td:nth-child(n+6){
   height: 12px;
   border-radius: 50%;
   background: #003f88;
-  animation: pulse 1.5s infinite;
+  animation: pulse-load 1.5s infinite;
 }
-@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+@keyframes pulse-load { 0%,100%{opacity:0.3} 50%{opacity:1} }
 
 /* ===== UX ===== */
 tbody tr { cursor: pointer; }
 tbody tr:hover { background: #eef5ff; }
 
 @media print {
-  .controls, .header-left { display: none; }
+  .controls, .header-left, .version-info { display: none; }
 }
 </style>
 </head>
@@ -189,7 +225,7 @@ tbody tr:hover { background: #eef5ff; }
       <p>Designed and maintained by Rakesh Chandra Sethy</p>
     </div>
 
-    <div style="width:60px"></div>
+    <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
   </div>
 </div>
 
@@ -218,33 +254,37 @@ tbody tr:hover { background: #eef5ff; }
   <button onclick="window.print()">🖨 Print</button>
 </div>
 
-<table id="pmTable">
-  <thead>
-    <tr>
-      <th>SL</th>
-      <th>Main Drive</th>
-      <th>Sub Drive</th>
-      <th>EQUPT NAME</th>
-      <th>LT/HT</th>
-      <th>Before OCT-25 Module</th>
-      <th>Before OCT-25 Motor</th>
-      <th>OCT25-MAR26 Module</th>
-      <th>OCT25-MAR26 Motor</th>
-      <th>Module Due</th>
-      <th>Motor Due</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<div class="table-wrap">
+  <table id="pmTable">
+    <thead>
+      <tr>
+        <th>SL</th>
+        <th>Main Drive</th>
+        <th>Sub Drive</th>
+        <th>EQUPT NAME</th>
+        <th>LT/HT</th>
+        <th>Before OCT-25 Module</th>
+        <th>Before OCT-25 Motor</th>
+        <th>OCT25-MAR26 Module</th>
+        <th>OCT25-MAR26 Motor</th>
+        <th>Module Due</th>
+        <th>Motor Due</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 </div>
 
 <script>
-/* ===== VERSION AND CDN URLS ===== */
+/* ===== VERSION-BASED CACHE BUSTING ===== */
 const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
 const BASE_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/2026_oct_mar.json";
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
 
 /* FETCH VERSION FOR CACHE BUSTING */
 async function getVersion() {
@@ -253,23 +293,25 @@ async function getVersion() {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
     currentVersion = data.version || "1.0.0";
-    console.log("Loaded version:", currentVersion);
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
   } catch (err) {
     console.warn("Failed to load version file:", err);
     currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
   }
 }
 
-/* BUILD URL WITH VERSION PARAM */
+/* BUILD URL WITH VERSION PARAM AND TIMESTAMP */
 function buildJsonUrl() {
-  return `${BASE_JSON_URL}?v=${currentVersion}`;
+  return `${BASE_JSON_URL}?v=${currentVersion}&t=${Date.now()}`;
 }
 
 /* NAV */
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 function goBack(){ history.back(); }
 function openMotorList(){
-  location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html";
+  location.href="https://08electricaldata.github.io/drive-viewer/motor.html";
 }
 function openMotorOH(){
   location.href="https://08electricaldata.github.io/drive-viewer/motoroh.html";
@@ -303,21 +345,28 @@ function getDriveColor(key){
   return driveColorMap[key];
 }
 
-/* LOAD */
+/* LOAD WITH OPTIMIZATIONS */
 async function loadData(){
   try{
     const url = buildJsonUrl();
-    console.log("Loading:", url);
+    console.log("📊 Loading PM status data...");
+    const startTime = performance.now();
+    
     const r = await fetch(url);
     if(!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
     const j = await r.json();
 
     const tbody=document.querySelector("#pmTable tbody");
-    const today=new Date(); today.setHours(0,0,0,0);
+    const today=new Date(); 
+    today.setHours(0,0,0,0);
 
     let total=0, overS=0, overT=0;
 
-    j.rows.forEach(row=>{
+    /* Use DocumentFragment for better DOM performance */
+    const fragment = document.createDocumentFragment();
+    const rows = j.rows || [];
+
+    rows.forEach(row=>{
 
       if(String(row[4]||"").toUpperCase()!=="S") return;
       if(!row[1] || !row[2]) return;
@@ -344,11 +393,12 @@ async function loadData(){
       tr.dataset.moduleOver = sOver ? "1" : "0";
       tr.dataset.motorOver  = tOver ? "1" : "0";
 
+      const id=`${row[1]}-${row[2]}`;
       tr.onclick=()=> {
-        const id=`${row[1]}-${row[2]}`;
         location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(id);
       };
 
+      /* Build HTML efficiently */
       tr.innerHTML=`
         <td>${row[0]||""}</td>
         <td class="drive-band" style="background:${bandColor}">${drive}</td>
@@ -363,22 +413,35 @@ async function loadData(){
         <td class="${tOver?'overdue-cell':'ok'}">${fmt(t)}</td>
       `;
 
-      tbody.appendChild(tr);
+      fragment.appendChild(tr);
     });
+
+    /* Append fragment all at once */
+    tbody.innerHTML = "";
+    tbody.appendChild(fragment);
 
     totalMotors.innerText=total;
     overdueModules.innerText=overS;
     overdueMotors.innerText=overT;
 
-    search.onkeyup=function(){
+    /* Optimized search with event delegation */
+    const searchInput = document.getElementById("search");
+    searchInput.addEventListener("input", function(){
       const q=this.value.toLowerCase();
+      if(!q) {
+        document.querySelectorAll("#pmTable tbody tr").forEach(tr => tr.style.display = "");
+        return;
+      }
       document.querySelectorAll("#pmTable tbody tr").forEach(tr=>{
         tr.style.display=
           tr.children[1].innerText.toLowerCase().includes(q)||
           tr.children[2].innerText.toLowerCase().includes(q)
           ? "":"none";
       });
-    };
+    });
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ PM status data loaded in ${loadTime.toFixed(2)}ms (${total} motors, ${overS} module overdue, ${overT} motor overdue)`);
   }catch(err){
     console.error("Error loading PM data:", err);
     document.querySelector("#pmTable tbody").innerHTML="<tr><td colspan='11' style='text-align:center;color:red;padding:20px;'>Error loading data. Please refresh the page.</td></tr>";
@@ -386,14 +449,20 @@ async function loadData(){
 }
 
 function exportExcel(){
+  const rows = document.querySelectorAll("#pmTable tr");
+  if(rows.length <= 1) { alert("No data to export"); return; }
+  
   let csv=[];
-  document.querySelectorAll("#pmTable tr").forEach(r=>{
+  rows.forEach(r=>{
     csv.push([...r.children].map(td=>`"${td.innerText.replace(/"/g,'""')}"`).join(","));
   });
+  
+  const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
   const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download="motor_module_pm_status.csv";
+  a.href=URL.createObjectURL(blob);
+  a.download=`motor_module_pm_status_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 function filterRows(type){
@@ -420,16 +489,20 @@ function filterRows(type){
 }
 
 /* Initialize: load version first, then load data */
-(async () => {
+async function init(){
   await getVersion();
   await loadData();
-})();
+  
+  /* Auto-reload every 5 minutes */
+  setInterval(async () => {
+    console.log("🔄 Auto-refreshing PM status data...");
+    await getVersion();
+    await loadData();
+  }, AUTO_RELOAD_INTERVAL);
+}
 
-/* Auto-reload every 5 minutes to check for updates */
-setInterval(async () => {
-  await getVersion();
-  await loadData();
-}, 5 * 60 * 1000);
+/* Start initialization */
+init();
 
 </script>
 
