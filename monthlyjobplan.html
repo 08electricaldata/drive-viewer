@@ -30,6 +30,8 @@ body{
   top:20px;
   display:flex;
   gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
 }
 
 .nav-buttons button{
@@ -40,6 +42,24 @@ body{
   color:#003f88;
   font-weight:bold;
   cursor:pointer;
+}
+
+.version-info{
+  background:rgba(255,255,255,0.2);
+  color:white;
+  padding:6px 12px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.status-indicator{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#4caf50;
+  margin-right:4px;
 }
 
 .container{
@@ -98,6 +118,18 @@ th{
   font-weight:bold;
 }
 
+/* Loading spinner */
+.spinner{
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 .footer{
   padding:15px;
   font-size:14px;
@@ -118,6 +150,7 @@ th{
   <div class="nav-buttons">
     <button onclick="history.back()">⬅ Back</button>
     <button onclick="goHome()">🏠 Home</button>
+    <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
   </div>
 </div>
 
@@ -134,94 +167,143 @@ th{
 
 <script>
 
-const JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/monthlyjob.json";
+/* ===== VERSION-BASED CACHE BUSTING SETUP ===== */
+const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
+const BASE_JSON_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/monthlyjob.json';
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let currentVersion = '1.0.0';
+
+// Build URL with version parameter for cache busting
+function buildDataUrl() {
+  return `${BASE_JSON_URL}?v=${currentVersion}`;
+}
+
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* Get latest version from version.json */
+async function getVersion(){
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now());
+    if(!res.ok) throw new Error('Version fetch failed');
+    const data = await res.json();
+    currentVersion = data.version || '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+    console.log('Loaded version:', currentVersion);
+  } catch(err) {
+    console.warn('Failed to fetch version, using default:', err);
+    currentVersion = '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
 
 function goHome(){
   location.href="https://08electricaldata.github.io/";
 }
 
 async function loadData(){
+  try {
+    const url = buildDataUrl();
+    console.log('Fetching from:', url);
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
 
-  const res = await fetch(JSON_URL);
-  const data = await res.json();
+    const headers = data.headers;
+    const rows = data.rows;
 
-  const headers = data.headers;
-  const rows = data.rows;
+    const thead = document.querySelector("#table thead");
+    const tbody = document.querySelector("#table tbody");
 
-  const thead = document.querySelector("#table thead");
-  const tbody = document.querySelector("#table tbody");
+    /* 
+       SHOW:
+       Column A (0)
+       Column B (1)
+       Skip Column C (2)
+       Show Column D → J (3 to 9)
+    */
 
-  /* 
-     SHOW:
-     Column A (0)
-     Column B (1)
-     Skip Column C (2)
-     Show Column D → J (3 to 9)
-  */
+    const displayColumns = [0,1,3,4,5,6,7,8,9];
 
-  const displayColumns = [0,1,3,4,5,6,7,8,9];
+    /* ===== HEADER ===== */
+    let headerHTML = "<tr>";
 
-  /* ===== HEADER ===== */
-  let headerHTML = "<tr>";
+    displayColumns.forEach(i=>{
+      headerHTML += `<th>${headers[i] ?? ""}</th>`;
+    });
 
-  displayColumns.forEach(i=>{
-    headerHTML += `<th>${headers[i] ?? ""}</th>`;
-  });
+    headerHTML += "</tr>";
+    thead.innerHTML = headerHTML;
 
-  headerHTML += "</tr>";
-  thead.innerHTML = headerHTML;
+    /* ===== BODY ===== */
+    let bodyHTML = "";
 
-  /* ===== BODY ===== */
-  let bodyHTML = "";
+    rows.forEach(r=>{
 
-  rows.forEach(r=>{
+      const colA = String(r[0] ?? "").trim();
+      const colB = String(r[1] ?? "").trim();
 
-    const colA = String(r[0] ?? "").trim();
-    const colB = String(r[1] ?? "").trim();
+      // If Column A has number → Section Heading
+      if(colA !== "" && !isNaN(Number(colA))){
 
-    // If Column A has number → Section Heading
-    if(colA !== "" && !isNaN(Number(colA))){
+        bodyHTML += `
+          <tr class="section-row">
+            <td colspan="${displayColumns.length}">
+              ${colA}. ${colB}
+            </td>
+          </tr>
+        `;
 
-      bodyHTML += `
-        <tr class="section-row">
-          <td colspan="${displayColumns.length}">
-            ${colA}. ${colB}
-          </td>
-        </tr>
-      `;
+      } else {
 
-    } else {
+        bodyHTML += "<tr>";
 
-      bodyHTML += "<tr>";
+        displayColumns.forEach(i=>{
 
-      displayColumns.forEach(i=>{
+          let value = r[i] ?? "";
+          let className = "";
 
-        let value = r[i] ?? "";
-        let className = "";
+          // Column E Highlight (index 4)
+          if(i === 4){
+            const achieved = Number(r[4]) || 0;
+            const target   = Number(r[5]) || 0;
 
-        // Column E Highlight (index 4)
-        if(i === 4){
-          const achieved = Number(r[4]) || 0;
-          const target   = Number(r[5]) || 0;
+            if(achieved > target) className = "positive";
+            else if(achieved < target) className = "negative";
+            else className = "equal";
+          }
 
-          if(achieved > target) className = "positive";
-          else if(achieved < target) className = "negative";
-          else className = "equal";
-        }
+          bodyHTML += `<td class="${className}">${value}</td>`;
+        });
 
-        bodyHTML += `<td class="${className}">${value}</td>`;
-      });
+        bodyHTML += "</tr>";
+      }
 
-      bodyHTML += "</tr>";
-    }
+    });
 
-  });
-
-  tbody.innerHTML = bodyHTML;
+    tbody.innerHTML = bodyHTML;
+  } catch(err) {
+    console.error("Error loading monthly job plan data:", err);
+    document.querySelector("#table tbody").innerHTML =
+      "<tr><td colspan='9' style='text-align:center;color:red;'>Error loading data. Please refresh the page.</td></tr>";
+  }
 }
 
-loadData();
+/* Initialize: fetch version first, then load data */
+async function init(){
+  await getVersion();
+  await loadData();
+  
+  // Auto-reload every 5 minutes
+  setInterval(async () => {
+    console.log('Auto-refreshing monthly job plan data...');
+    await getVersion();
+    await loadData();
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+// Start initialization
+init();
 
 </script>
 
