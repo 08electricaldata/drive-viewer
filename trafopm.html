@@ -14,15 +14,29 @@ body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
 }
 .header-bar {
   display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:10px;
 }
 .header-btn {
   background:#fff; color:#003f88; border:none;
   padding:6px 10px; border-radius:6px;
   font-size:16px; cursor:pointer;
 }
-.header-center { text-align:center; flex:1; }
+.header-center { text-align:center; flex:1; min-width:300px; }
 .header-center h1 { margin:0; font-size:30px; }
 .header-center p { margin:4px 0 0; font-size:15px; }
+
+.version-info {
+  background:rgba(255,255,255,0.2); color:#fff;
+  padding:6px 10px; border-radius:6px;
+  font-size:12px; font-weight:bold;
+}
+
+.status-indicator {
+  display:inline-block; width:8px; height:8px;
+  border-radius:50%; background:#4caf50;
+  margin-right:4px; animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
 /* SUMMARY */
 .summary {
@@ -32,6 +46,10 @@ body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
   background:#fff; border-radius:10px;
   padding:15px; min-width:200px;
   text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.15);
+  cursor:pointer; transition:transform 0.2s, box-shadow 0.2s;
+}
+.summary .card:hover {
+  transform:translateY(-4px); box-shadow:0 4px 12px rgba(0,0,0,0.2);
 }
 .summary h3 { margin:0; color:#003f88; }
 .summary p { font-size:26px; font-weight:bold; margin:6px 0 0; }
@@ -49,12 +67,21 @@ body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
 }
 
 /* TABLE */
+.table-wrap {
+  overflow:auto; border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  margin:0 15px;
+}
+
 table {
   width:100%; border-collapse:collapse;
-  background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.15);
+  background:#fff; min-width:1000px;
 }
 th,td { border:1px solid #ccc; padding:8px; text-align:center; }
-th { background:#003f88; color:#fff; position:sticky; top:0; }
+th { 
+  background:#003f88; color:#fff;
+  position:sticky; top:0; z-index:10;
+}
 
 /* COLUMN COLORS */
 td.col-oil { background:#fff4cc; }
@@ -74,12 +101,12 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
   height:12px;
   border-radius:50%;
   background:#003f88;
-  animation:pulse 1.5s infinite;
+  animation:pulse-load 1.5s infinite;
 }
-@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+@keyframes pulse-load { 0%,100%{opacity:0.3} 50%{opacity:1} }
 
 @media print {
-  .controls,.header-bar{display:none;}
+  .controls,.header-bar,.version-info{display:none;}
 }
 </style>
 </head>
@@ -97,14 +124,15 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
       <h1>Transformer Maintenance Status</h1>
       <p>Designed & maintained by Rakesh Chandra Sethy</p>
     </div>
-    <div style="width:60px"></div>
+    
+    <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
   </div>
 </div>
 
 <div class="summary">
-  <div class="card"><h3>Total Transformers</h3><p id="tot"><span class="loading"></span></p></div>
-  <div class="card"><h3>Overdue 🔴</h3><p id="over"><span class="loading"></span></p></div>
-  <div class="card"><h3>Due in 30 Days 🟠</h3><p id="soon"><span class="loading"></span></p></div>
+  <div class="card" onclick="filterStatus('all')"><h3>Total Transformers</h3><p id="tot"><span class="loading"></span></p></div>
+  <div class="card" onclick="filterStatus('overdue')"><h3>Overdue 🔴</h3><p id="over"><span class="loading"></span></p></div>
+  <div class="card" onclick="filterStatus('soon')"><h3>Due in 30 Days 🟠</h3><p id="soon"><span class="loading"></span></p></div>
 </div>
 
 <div class="controls">
@@ -115,23 +143,31 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
   <button onclick="window.print()">🖨 Print</button>
 </div>
 
-<table id="tbl">
-<thead>
-<tr>
-<th>S/S</th><th>TYPE</th><th>TRF NO</th><th>TRF SL NO</th>
-<th>MAKE</th><th>RATING</th>
-<th>OIL LEAKAGE</th><th>O/H DATE</th><th>PM DATE</th>
-<th>O/H FREQ</th><th>LAST DATE</th><th>NEXT DUE</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+<div class="table-wrap">
+  <table id="tbl">
+  <thead>
+  <tr>
+  <th>S/S</th><th>TYPE</th><th>TRF NO</th><th>TRF SL NO</th>
+  <th>MAKE</th><th>RATING</th>
+  <th>OIL LEAKAGE</th><th>O/H DATE</th><th>PM DATE</th>
+  <th>O/H FREQ</th><th>LAST DATE</th><th>NEXT DUE</th>
+  </tr>
+  </thead>
+  <tbody></tbody>
+  </table>
+</div>
 
 <script>
+/* ===== VERSION-BASED CACHE BUSTING ===== */
 const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
 const BASE_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformer_pm.json";
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
+const totElem = document.getElementById("tot");
+const overElem = document.getElementById("over");
+const soonElem = document.getElementById("soon");
 
 /* FETCH VERSION FOR CACHE BUSTING */
 async function getVersion() {
@@ -140,21 +176,23 @@ async function getVersion() {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
     currentVersion = data.version || "1.0.0";
-    console.log("Loaded version:", currentVersion);
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
   } catch (err) {
     console.warn("Failed to load version file:", err);
     currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
   }
 }
 
-/* BUILD URL WITH VERSION PARAM */
+/* BUILD URL WITH VERSION PARAM AND TIMESTAMP */
 function buildJsonUrl() {
-  return `${BASE_JSON_URL}?v=${currentVersion}`;
+  return `${BASE_JSON_URL}?v=${currentVersion}&t=${Date.now()}`;
 }
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 
-/* ✅ NEW NAV FUNCTIONS */
+/* NAV FUNCTIONS */
 function openTrafoList(){
   location.href="https://08electricaldata.github.io/drive-viewer/trafolist.html";
 }
@@ -181,58 +219,105 @@ function fmt(d){
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-/* LOAD */
+/* GLOBAL STATE */
+let allRows = [];
+let filteredByStatus = "all";
+
+/* LOAD WITH OPTIMIZATIONS */
 async function load(){
-  const url = buildJsonUrl();
-  console.log("Loading:", url);
-  const r = await fetch(url);
-  const j = await r.json();
-  const tbody = document.querySelector("#tbl tbody");
-  const today = new Date(); today.setHours(0,0,0,0);
+  try {
+    const url = buildJsonUrl();
+    console.log("📊 Loading transformer PM data...");
+    const startTime = performance.now();
+    
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+    const j = await r.json();
+    
+    const tbody = document.querySelector("#tbl tbody");
+    const today = new Date(); 
+    today.setHours(0,0,0,0);
 
-  let tot=0, over=0, soon=0;
-  const years=new Set();
+    const years = new Set();
 
-  j.rows.forEach(r=>{
-    const pm=parseDate(r[8]);
-    if(pm) years.add(pm.getFullYear());
-  });
+    /* Use DocumentFragment for better performance */
+    const fragment = document.createDocumentFragment();
+    allRows = [];
 
-  const yf=document.getElementById("yearFilter");
-  yf.innerHTML='<option value="">All Years</option>';
-  [...years].sort().forEach(y=>{
-    yf.innerHTML+=`<option value="${y}">${y}</option>`;
-  });
+    (j.rows || []).forEach(r => {
+      const pm = parseDate(r[8]);
+      if(pm) years.add(pm.getFullYear());
 
-  function render(){
-    tbody.innerHTML=""; tot=over=soon=0;
-    const ysel=yf.value;
-    const q=search.value.toLowerCase();
-
-    j.rows.forEach(r=>{
-      const pm=parseDate(r[8]);
-      if(ysel && (!pm || pm.getFullYear()!=ysel)) return;
-
-      const rowText=(r.join(" ")||"").toLowerCase();
-      if(q && !rowText.includes(q)) return;
-
-      tot++;
-      const next=parseDate(r[11]);
-      let cls="ok";
+      const next = parseDate(r[11]);
+      let status = "ok";
       if(next){
-        const diff=(next-today)/86400000;
-        if(diff<0){ cls="overdue"; over++; }
-        else if(diff<=30){ cls="warn"; soon++; }
+        const diff = (next - today) / 86400000;
+        if(diff < 0) status = "overdue";
+        else if(diff <= 30) status = "soon";
       }
 
-      const tr=document.createElement("tr");
-      tr.onclick=()=> {
-        location.href=
-          "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-          encodeURIComponent("TRANSFORMER-"+String(r[2]).trim());
-      };
+      allRows.push({
+        row: r,
+        status: status,
+        searchText: (r.join(" ") || "").toLowerCase()
+      });
+    });
 
-      tr.innerHTML=`
+    /* Populate year filter */
+    const yf = document.getElementById("yearFilter");
+    yf.innerHTML = '<option value="">All Years</option>';
+    [...years].sort().forEach(y => {
+      yf.innerHTML += `<option value="${y}">${y}</option>`;
+    });
+
+    /* Render table */
+    renderTable();
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Transformer PM data loaded in ${loadTime.toFixed(2)}ms (${allRows.length} transformers)`);
+  } catch(err) {
+    console.error("Error loading transformer PM data:", err);
+    document.querySelector("#tbl tbody").innerHTML = 
+      `<tr><td colspan="12" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
+  }
+}
+
+/* OPTIMIZED RENDER */
+function renderTable(){
+  const tbody = document.querySelector("#tbl tbody");
+  const ysel = document.getElementById("yearFilter").value;
+  const q = document.getElementById("search").value.toLowerCase();
+
+  const fragment = document.createDocumentFragment();
+  let tot = 0, over = 0, soon = 0;
+
+  allRows.forEach(item => {
+    const r = item.row;
+    const pm = parseDate(r[8]);
+
+    /* Apply year filter */
+    if(ysel && (!pm || pm.getFullYear() != ysel)) return;
+
+    /* Apply text search */
+    if(q && !item.searchText.includes(q)) return;
+
+    /* Apply status filter */
+    if(filteredByStatus !== "all" && item.status !== filteredByStatus) return;
+
+    tot++;
+    if(item.status === "overdue") over++;
+    if(item.status === "soon") soon++;
+
+    const tr = document.createElement("tr");
+    tr.dataset.status = item.status;
+    tr.onclick = () => {
+      location.href =
+        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+        encodeURIComponent("TRANSFORMER-" + String(r[2]).trim());
+    };
+
+    /* Build HTML efficiently */
+    tr.innerHTML = `
       <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
       <td>${r[4]}</td><td>${r[5]}</td>
       <td class="col-oil">${fmt(parseDate(r[6]))}</td>
@@ -240,58 +325,75 @@ async function load(){
       <td class="col-pm">${fmt(pm)}</td>
       <td>${r[9]}</td>
       <td>${fmt(parseDate(r[10]))}</td>
-      <td class="${cls}">${fmt(next)}</td>`;
-      tbody.appendChild(tr);
-    });
+      <td class="${item.status}">${fmt(parseDate(r[11]))}</td>
+    `;
 
-    totElem.innerText=tot;
-    overElem.innerText=over;
-    soonElem.innerText=soon;
-  }
+    fragment.appendChild(tr);
+  });
 
-  search.onkeyup=render;
-  yf.onchange=render;
-  render();
+  tbody.innerHTML = "";
+  tbody.appendChild(fragment);
+
+  /* Update summary only for current filter */
+  totElem.innerText = tot;
+  overElem.innerText = over;
+  soonElem.innerText = soon;
 }
+
+/* FILTER BY STATUS */
+function filterStatus(status){
+  filteredByStatus = status;
+  renderTable();
+}
+
+/* SEARCH AND FILTER */
+document.getElementById("search").addEventListener("input", renderTable);
+document.getElementById("yearFilter").addEventListener("change", renderTable);
 
 /* WHATSAPP */
 function sendWhatsApp(){
-  let msg="🔔 Transformer PM Overdue List:%0A";
-  document.querySelectorAll("td.overdue").forEach(td=>{
-    const tr=td.parentElement;
-    msg+=`TRF ${tr.children[2].innerText} → ${td.innerText}%0A`;
+  let msg = "🔔 Transformer PM Overdue List:%0A";
+  document.querySelectorAll("td.overdue").forEach(td => {
+    const tr = td.parentElement;
+    msg += `TRF ${tr.children[2].innerText} → ${td.innerText}%0A`;
   });
   if(msg.endsWith(":%0A")){ alert("No overdue transformers"); return; }
-  window.open("https://wa.me/?text="+msg,"_blank");
+  window.open("https://wa.me/?text=" + msg, "_blank");
 }
 
 /* EXPORT */
 function exportExcel(){
-  let csv=[];
-  document.querySelectorAll("table tr").forEach(r=>{
-    csv.push([...r.children].map(td=>`"${td.innerText}"`).join(","));
+  const rows = document.querySelectorAll("#tbl tr");
+  if(rows.length <= 1) { alert("No data to export"); return; }
+  
+  let csv = [];
+  rows.forEach(r => {
+    csv.push([...r.children].map(td => `"${td.innerText}"`).join(","));
   });
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download="transformer_pm_status.csv";
+  
+  const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `transformer_pm_status_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-const totElem=document.getElementById("tot");
-const overElem=document.getElementById("over");
-const soonElem=document.getElementById("soon");
-
 /* Initialize: load version first, then load data */
-(async () => {
+async function init(){
   await getVersion();
   await load();
-})();
+  
+  /* Auto-reload every 5 minutes */
+  setInterval(async () => {
+    console.log("🔄 Auto-refreshing transformer PM data...");
+    await getVersion();
+    await load();
+  }, AUTO_RELOAD_INTERVAL);
+}
 
-/* Auto-reload every 5 minutes to check for updates */
-setInterval(async () => {
-  await getVersion();
-  await load();
-}, 5 * 60 * 1000);
+/* Start initialization */
+init();
 
 </script>
 
