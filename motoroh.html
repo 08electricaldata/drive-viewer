@@ -23,6 +23,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .header-left {
@@ -44,6 +46,7 @@ body {
 .header-center {
   text-align: center;
   flex: 1;
+  min-width: 300px;
 }
 
 .header-center h1 {
@@ -54,6 +57,26 @@ body {
   margin: 4px 0 0;
   font-size: 16px;
 }
+
+.version-info {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  margin-right: 4px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
 /* ===== CONTAINER ===== */
 .container { padding: 20px; }
@@ -106,11 +129,17 @@ body {
 }
 
 /* ===== TABLE ===== */
+.table-wrap {
+  overflow: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  min-width: 900px;
 }
 th, td {
   border: 1px solid #ccc;
@@ -122,6 +151,7 @@ th {
   color: white;
   position: sticky;
   top: 0;
+  z-index: 10;
 }
 
 /* ===== COLUMN WIDTHS ===== */
@@ -154,8 +184,19 @@ tbody tr:hover {
   background: #eef5ff;
 }
 
+.loading-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ddd;
+  border-top-color: #003f88;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 @media print {
-  .controls, .header-left { display: none; }
+  .controls, .header-left, .version-info { display: none; }
 }
 </style>
 </head>
@@ -177,7 +218,7 @@ tbody tr:hover {
       <p>Designed and maintained by Rakesh Chandra Sethy</p>
     </div>
 
-    <div style="width:60px"></div>
+    <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
   </div>
 </div>
 
@@ -200,28 +241,56 @@ tbody tr:hover {
   <button onclick="window.print()">🖨 Print</button>
 </div>
 
-<table id="dataTable">
-  <thead>
-    <tr>
-      <th>RCS</th>
-      <th>BATTERY</th>
-      <th>EQPT NO</th>
-      <th>EQPT NAME</th>
-      <th>KW</th>
-      <th>FRQ</th>
-      <th>OH DATE</th>
-      <th>NEXT DUE</th>
-      <th>REFERENCE</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>RCS</th>
+        <th>BATTERY</th>
+        <th>EQPT NO</th>
+        <th>EQPT NAME</th>
+        <th>KW</th>
+        <th>FRQ</th>
+        <th>OH DATE</th>
+        <th>NEXT DUE</th>
+        <th>REFERENCE</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 </div>
 
 <script>
-const SHEET =
-"https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq?gid=1041736083&tqx=out:json";
+/* ===== VERSION-BASED CACHE BUSTING ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const SHEET_BASE = "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq";
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+/* BUILD SHEET URL WITH VERSION PARAM FOR CACHE BUSTING */
+function buildSheetUrl() {
+  return `${SHEET_BASE}?gid=1041736083&tqx=out:json&v=${currentVersion}&t=${Date.now()}`;
+}
 
 /* NAV */
 function goHome() {
@@ -231,7 +300,7 @@ function goBack() {
   history.back();
 }
 function openMotorList(){
-  window.location.href="https://08electricaldata.github.io/drive-viewer/motorlist.html";
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motor.html";
 }
 function openMotorPM(){
   window.location.href="https://08electricaldata.github.io/drive-viewer/motorpm.html";
@@ -250,87 +319,141 @@ function fmt(d) {
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-/* LOAD */
+/* LOAD DATA WITH OPTIMIZED PARSING */
 async function loadData() {
-  const r = await fetch(SHEET);
-  const t = await r.text();
-  const j = JSON.parse(t.substring(47, t.length - 2));
+  try {
+    const url = buildSheetUrl();
+    console.log("📊 Loading motor O/H data...");
+    const startTime = performance.now();
+    
+    const r = await fetch(url);
+    const t = await r.text();
+    const j = JSON.parse(t.substring(47, t.length - 2));
 
-  const tbody = document.querySelector("#dataTable tbody");
-  const today = new Date(); today.setHours(0,0,0,0);
+    const tbody = document.querySelector("#dataTable tbody");
+    const today = new Date(); 
+    today.setHours(0,0,0,0);
 
-  let total = 0, overdue = 0;
+    let total = 0, overdue = 0;
 
-  j.table.rows.forEach(r => {
-    const c = r.c || [];
-    if (!c[1]?.v && !c[2]?.v) return;
+    /* Use DocumentFragment for better performance */
+    const fragment = document.createDocumentFragment();
 
-    const tr = document.createElement("tr");
+    /* Pre-calculate today's date once */
+    const rows = j.table.rows || [];
+    
+    rows.forEach(r => {
+      const c = r.c || [];
+      if (!c[1]?.v && !c[2]?.v) return;
 
-    if (!c[0]?.v) {
-      tr.classList.add("section-row");
-    } else {
-      total++;
-    }
+      const tr = document.createElement("tr");
 
-    const oh = parseDate(c[8]?.v);
-    const due = parseDate(c[9]?.v);
-    const isOver = due && due < today;
-    if (isOver) overdue++;
+      if (!c[0]?.v) {
+        tr.classList.add("section-row");
+      } else {
+        total++;
+      }
 
-    tr.onclick = () => {
-      if (!c[0]?.v) return;
-      const id = `${c[1]?.v}-${c[2]?.v}`;
-      window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
-        encodeURIComponent(id);
-    };
+      const oh = parseDate(c[8]?.v);
+      const due = parseDate(c[9]?.v);
+      const isOver = due && due < today;
+      if (isOver) overdue++;
 
-    tr.innerHTML = `
-      <td>${c[0]?.v || ""}</td>
-      <td>${c[1]?.v || ""}</td>
-      <td>${c[2]?.v || ""}</td>
-      <td>${c[3]?.v || ""}</td>
-      <td>${c[4]?.v || ""}</td>
-      <td>${c[5]?.v || ""}</td>
-      <td>${oh ? fmt(oh) : ""}</td>
-      <td class="${isOver ? "overdue-cell" : ""}">
-        ${due ? fmt(due) : ""}
-      </td>
-      <td>${c[11]?.v || ""}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+      /* Cache onclick handler to avoid creating new functions repeatedly */
+      if (c[0]?.v) {
+        const id = `${c[1]?.v}-${c[2]?.v}`;
+        tr.onclick = () => {
+          window.location.href =
+            "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+            encodeURIComponent(id);
+        };
+        tr.style.cursor = "pointer";
+      }
 
-  document.getElementById("totalCount").innerText = total;
-  document.getElementById("overdueCount").innerText = overdue;
-
-  document.getElementById("search").onkeyup = function () {
-    const q = this.value.toLowerCase();
-    document.querySelectorAll("#dataTable tbody tr").forEach(tr => {
-      tr.style.display =
-        tr.children[1].innerText.toLowerCase().includes(q) ||
-        tr.children[2].innerText.toLowerCase().includes(q)
-        ? "" : "none";
+      /* Build HTML efficiently */
+      tr.innerHTML = `
+        <td>${c[0]?.v || ""}</td>
+        <td>${c[1]?.v || ""}</td>
+        <td>${c[2]?.v || ""}</td>
+        <td>${c[3]?.v || ""}</td>
+        <td>${c[4]?.v || ""}</td>
+        <td>${c[5]?.v || ""}</td>
+        <td>${oh ? fmt(oh) : ""}</td>
+        <td class="${isOver ? "overdue-cell" : ""}">${due ? fmt(due) : ""}</td>
+        <td>${c[11]?.v || ""}</td>
+      `;
+      
+      fragment.appendChild(tr);
     });
-  };
+
+    /* Append fragment all at once */
+    tbody.innerHTML = "";
+    tbody.appendChild(fragment);
+
+    document.getElementById("totalCount").innerText = total;
+    document.getElementById("overdueCount").innerText = overdue;
+
+    /* Optimize search with cached lowercase values */
+    document.getElementById("search").addEventListener("input", function () {
+      const q = this.value.toLowerCase();
+      const tableRows = document.querySelectorAll("#dataTable tbody tr");
+      
+      if (!q) {
+        tableRows.forEach(tr => tr.style.display = "");
+        return;
+      }
+      
+      tableRows.forEach(tr => {
+        const col2 = tr.children[1]?.innerText?.toLowerCase() || "";
+        const col3 = tr.children[2]?.innerText?.toLowerCase() || "";
+        tr.style.display = col2.includes(q) || col3.includes(q) ? "" : "none";
+      });
+    });
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Motor O/H data loaded in ${loadTime.toFixed(2)}ms (${total} motors, ${overdue} overdue)`);
+  } catch (err) {
+    console.error("Error loading motor O/H data:", err);
+    document.querySelector("#dataTable tbody").innerHTML = 
+      `<tr><td colspan="9" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
+  }
 }
 
-/* EXPORT */
+/* EXPORT WITH BETTER PERFORMANCE */
 function exportExcel() {
-  let csv = [];
-  document.querySelectorAll("#dataTable tr").forEach(r => {
+  const rows = document.querySelectorAll("#dataTable tr");
+  if (rows.length <= 1) { alert("No data to export"); return; }
+  
+  const csv = [];
+  rows.forEach(r => {
     csv.push([...r.children].map(td =>
       `"${td.innerText.replace(/"/g,'""')}"`
     ).join(","));
   });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv.join("\n")]));
-  a.download = "motor_oh_due.csv";
-  a.click();
+  
+  const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `motor_oh_due_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-loadData();
+/* Initialize: load version first, then data */
+async function init() {
+  await getVersion();
+  await loadData();
+  
+  /* Auto-reload every 5 minutes */
+  setInterval(async () => {
+    console.log("🔄 Auto-refreshing motor O/H data...");
+    await getVersion();
+    await loadData();
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+/* Start initialization */
+init();
 </script>
 
 </body>
