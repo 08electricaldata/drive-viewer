@@ -32,6 +32,18 @@
   .no-data{padding:16px;text-align:center;color:#666}
   tr.clickable:hover{background:#eef6ff;cursor:pointer}
   .drive-link{color:#003f88;font-weight:700;text-decoration:underline}
+  
+  /* LOADING INDICATOR */
+  .loading{
+    display:inline-block;
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:#003f88;
+    animation:pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+  
   @media (max-width:900px){
     .page{padding:0 10px}
     table{min-width:700px;font-size:12px}
@@ -103,11 +115,37 @@
 </div>
 
 <script>
-/* ===== JSDELIVR CDN URLS ===== */
+/* ===== VERSION AND CDN URLS ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
 const JOBBOOK_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/jobbook.json";
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+let currentVersion = "1.0.0";
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    console.log("Loaded version:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+  }
+}
+
+/* BUILD URL WITH VERSION PARAM */
+function buildHistoryUrl(year) {
+  return `${HISTORY_BASE}${year}.json?v=${currentVersion}`;
+}
+
+function buildJobbookUrl() {
+  return `${JOBBOOK_JSON}?v=${currentVersion}`;
+}
 
 /* Utilities */
 function normalize(v){ return String(v||"").trim().toUpperCase(); }
@@ -166,7 +204,9 @@ let jobBookMap = {};
 /* Load jobbook.json to fill jobBookMap */
 async function loadJobBook(){
   try{
-    const res = await fetch(JOBBOOK_JSON);
+    const url = buildJobbookUrl();
+    console.log("Loading jobbook:", url);
+    const res = await fetch(url);
     if(!res.ok) return;
     const j = await res.json();
     (j.rows || []).forEach(r=>{
@@ -196,7 +236,8 @@ let allRows = [], filteredRows = [], driveSet = new Set(), yearSet = new Set();
 async function loadAllHistory(){
   allRows = []; driveSet.clear(); yearSet.clear();
   for(const y of HISTORY_YEARS){
-    const url = HISTORY_BASE + y + ".json";
+    const url = buildHistoryUrl(y);
+    console.log("Loading history:", url);
     try{
       const res = await fetch(url);
       if(!res.ok) continue;
@@ -368,9 +409,10 @@ function exportCSV(){
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `breakdown-history-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
-/* Init: load jobbook then history */
+/* Init: load version, then jobbook, then history */
 async function init(){
   try{
+    await getVersion();
     await loadJobBook();
     await loadAllHistory();
   }catch(e){
@@ -405,6 +447,13 @@ function goBack(){ history.back(); }
   }
   await init();
 })();
+
+/* Auto-reload every 5 minutes to check for updates */
+setInterval(async () => {
+  await getVersion();
+  await loadJobBook();
+  await loadAllHistory();
+}, 5 * 60 * 1000);
 
 </script>
 </body>
