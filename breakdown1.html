@@ -11,11 +11,29 @@
     margin:0;background:#f2f6ff;color:#0b1220;
   }
   .header-bar{
-    position:sticky;top:0;background:#003f88;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;z-index:1000;
+    position:sticky;top:0;background:#003f88;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;z-index:1000;flex-wrap:wrap;
   }
   .header-left{display:flex;gap:8px;align-items:center}
   .hb-btn{background:#fff;color:#003f88;border:0;padding:8px 10px;border-radius:6px;cursor:pointer;font-weight:600}
   .title{flex:1;text-align:center;font-size:16px;font-weight:700}
+  .version-info{
+    background:rgba(255,255,255,0.2);
+    color:white;
+    padding:6px 10px;
+    border-radius:6px;
+    font-size:11px;
+    font-weight:bold;
+  }
+  .status-indicator{
+    display:inline-block;
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#4caf50;
+    margin-right:4px;
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
   .page{max-width:1200px;margin:14px auto;padding:0 14px}
   h2{color:#003f88;margin:6px 0 12px 0;text-align:left}
   .controls{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -40,13 +58,14 @@
     height:12px;
     border-radius:50%;
     background:#003f88;
-    animation:pulse 1.5s infinite;
+    animation:pulse-load 1.5s infinite;
   }
-  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+  @keyframes pulse-load { 0%,100%{opacity:0.3} 50%{opacity:1} }
   
   @media (max-width:900px){
     .page{padding:0 10px}
     table{min-width:700px;font-size:12px}
+    .version-info{order:3;flex-basis:100%;margin-top:8px}
   }
 </style>
 </head>
@@ -58,7 +77,7 @@
     <button class="hb-btn" onclick="goBack()">⬅ Back</button>
   </div>
   <div class="title">Break down History </div>
-  <div style="width:120px"></div>
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 </div>
 
 <div class="page">
@@ -115,7 +134,7 @@
 </div>
 
 <script>
-/* ===== VERSION AND CDN URLS ===== */
+/* ===== VERSION AND CDN URLS WITH OPTIMIZED LOADING ===== */
 const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
 const HISTORY_BASE = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
@@ -123,6 +142,7 @@ const JOBBOOK_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricald
 const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
 
 /* FETCH VERSION FOR CACHE BUSTING */
 async function getVersion() {
@@ -131,10 +151,12 @@ async function getVersion() {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
     currentVersion = data.version || "1.0.0";
-    console.log("Loaded version:", currentVersion);
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
   } catch (err) {
     console.warn("Failed to load version file:", err);
     currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
   }
 }
 
@@ -153,7 +175,7 @@ function normalize(v){ return String(v||"").trim().toUpperCase(); }
 /* Parse different date representations into Date or null */
 function parseDateKeyToDate(v){
   if(!v) return null;
-  if(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)){ // ISO like 2020-01-18T...
+  if(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)){ 
     const d = new Date(v);
     return isNaN(d) ? null : d;
   }
@@ -167,7 +189,7 @@ function parseDateKeyToDate(v){
   return isNaN(d) ? null : d;
 }
 
-/* Normalize date key to DD/MM/YYYY for lookup in jobBookMap (same as your jobbook sample uses) */
+/* Normalize date key to DD/MM/YYYY for lookup in jobBookMap */
 function normalizeDateKey(v){
   const d = parseDateKeyToDate(v);
   if(!d) return "";
@@ -187,42 +209,40 @@ function formatDateDisplay(v){
   return `${dd}-${mm}-${yyyy}`;
 }
 
-/* Ensure link is absolute (add https:// if missing) */
+/* Ensure link is absolute */
 function normalizeLink(u){
   if(!u) return "";
   let s = String(u).trim();
   if(!s) return "";
-  // If it's already an absolute URL or mailto/javascript, return as-is
   if(/^(https?:\/\/|mailto:|javascript:)/i.test(s)) return s;
-  // Some sheet values may be raw drive.google.com/... or starting with "www." — prefix https://
   return 'https://' + s.replace(/^\/+/, '');
 }
 
 /* Map from dateKey (DD/MM/YYYY) -> link */
 let jobBookMap = {};
 
-/* Load jobbook.json to fill jobBookMap */
+/* Load jobbook.json with cache busting */
 async function loadJobBook(){
   try{
     const url = buildJobbookUrl();
-    console.log("Loading jobbook:", url);
+    console.log("📖 Loading jobbook...");
+    const startTime = performance.now();
     const res = await fetch(url);
     if(!res.ok) return;
     const j = await res.json();
     (j.rows || []).forEach(r=>{
-      // Expect first column is date, second is link as in your sample
       const key = normalizeDateKey(r[0]);
       const link = (r[1]||"").toString().trim();
       if(key && link) jobBookMap[key] = link;
     });
-    // optional: debug
-    // console.log('jobBookMap loaded', Object.keys(jobBookMap).length);
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Jobbook loaded in ${loadTime.toFixed(2)}ms (${Object.keys(jobBookMap).length} entries)`);
   }catch(e){
-    console.warn('jobbook load failed', e);
+    console.warn('⚠ Jobbook load failed', e);
   }
 }
 
-/* Helper: get drive key like "BAT_A-P-201" from the row (row[2]-row[3] or as used) */
+/* Helper: get drive key from row */
 function getDriveKeyFromRow(row){
   const a = row[2] || "";
   const b = row[3] || "";
@@ -232,31 +252,47 @@ function getDriveKeyFromRow(row){
 /* State */
 let allRows = [], filteredRows = [], driveSet = new Set(), yearSet = new Set();
 
-/* Load all history files and keep only BD rows */
+/* Load all history files in PARALLEL with optimizations */
 async function loadAllHistory(){
   allRows = []; driveSet.clear(); yearSet.clear();
-  for(const y of HISTORY_YEARS){
+  
+  console.log("📂 Loading history files in parallel...");
+  const startTime = performance.now();
+  
+  /* Parallel fetch all history files */
+  const promises = HISTORY_YEARS.map(y => {
     const url = buildHistoryUrl(y);
-    console.log("Loading history:", url);
-    try{
-      const res = await fetch(url);
-      if(!res.ok) continue;
-      const j = await res.json();
-      (j.rows || []).forEach(r=>{
-        if(!(r || []).some(cell => normalize(cell) === "BD")) return;
-        const dateVal = r[4]; // date is usually at index 4 per your format
-        const dateObj = parseDateKeyToDate(dateVal);
-        const driveKey = getDriveKeyFromRow(r);
-        if(driveKey) driveSet.add(driveKey);
-        if(dateObj) yearSet.add(dateObj.getFullYear());
-        allRows.push({ row: r, dateObj, driveKey });
-      });
-    }catch(e){
-      console.warn("Failed to load", url, e);
-    }
-  }
-  // sort descending by date
+    return fetch(url)
+      .then(res => res.ok ? res.json() : null)
+      .catch(e => { console.warn(`Failed to load year ${y}:`, e); return null; });
+  });
+
+  const results = await Promise.all(promises);
+
+  /* Process all results in one pass */
+  results.forEach((j, idx) => {
+    if(!j) return;
+    const year = HISTORY_YEARS[idx];
+    (j.rows || []).forEach(r => {
+      if(!(r || []).some(cell => normalize(cell) === "BD")) return;
+      
+      const dateVal = r[4];
+      const dateObj = parseDateKeyToDate(dateVal);
+      const driveKey = getDriveKeyFromRow(r);
+      
+      if(driveKey) driveSet.add(driveKey);
+      if(dateObj) yearSet.add(dateObj.getFullYear());
+      
+      allRows.push({ row: r, dateObj, driveKey });
+    });
+  });
+
+  /* Sort once in descending order */
   allRows.sort((a,b) => (b.dateObj||0) - (a.dateObj||0));
+  
+  const loadTime = performance.now() - startTime;
+  console.log(`✓ History loaded in ${loadTime.toFixed(2)}ms (${allRows.length} BD entries)`);
+  
   populateFilters();
   applyFilters();
 }
@@ -299,23 +335,27 @@ function applyFilters(){
   renderTable();
 }
 
-/* Render table rows; use jobBookMap mapping first, then fallback to row[10] */
+/* Render table rows with DocumentFragment for better performance */
 function renderTable(){
   const tbody = document.querySelector("#historyTable tbody");
   const noData = document.getElementById("noData");
-  tbody.innerHTML = "";
-
+  
   if(filteredRows.length === 0){
+    tbody.innerHTML = "";
     noData.style.display = "block";
     return;
   }
   noData.style.display = "none";
 
+  /* Use DocumentFragment for better DOM performance */
+  const fragment = document.createDocumentFragment();
   let currentYear = null;
+
   filteredRows.forEach(item=>{
     const r = item.row;
     const dObj = item.dateObj;
     const year = dObj ? dObj.getFullYear() : "";
+    
     if(String(year) !== String(currentYear)){
       currentYear = year;
       const yr = document.createElement("tr");
@@ -324,7 +364,7 @@ function renderTable(){
       td.colSpan = 6;
       td.textContent = year ? `YEAR ${year}` : "Unknown year";
       yr.appendChild(td);
-      tbody.appendChild(yr);
+      fragment.appendChild(yr);
     }
 
     const tr = document.createElement("tr");
@@ -335,14 +375,12 @@ function renderTable(){
     const details = r[5] || r[6] || "";
     const category = r[7] || r[8] || "";
 
-    // link: priority -> jobBookMap by date key -> row[10] fallback
-    const dateKey = normalizeDateKey(r[4]); // dd/mm/yyyy
+    const dateKey = normalizeDateKey(r[4]);
     const jobbookLinkRaw = jobBookMap[dateKey] || "";
     const rowLinkRaw = (r[10] || "").toString().trim();
     const chosenLinkRaw = jobbookLinkRaw || rowLinkRaw;
     const chosenLink = normalizeLink(chosenLinkRaw);
 
-    // build cells
     const td0 = document.createElement('td'); td0.style.textAlign = 'center'; td0.textContent = trno; tr.appendChild(td0);
     const td1 = document.createElement('td'); td1.style.textAlign = 'center'; td1.textContent = dateDisplay; tr.appendChild(td1);
 
@@ -352,7 +390,7 @@ function renderTable(){
       a.href = `https://08electricaldata.github.io/drive-viewer/history.html?id=${encodeURIComponent(driveKey)}`;
       a.className = 'drive-link';
       a.textContent = driveKey;
-      a.addEventListener('click', (e) => { e.stopPropagation(); /* allow normal navigation */ });
+      a.addEventListener('click', (e) => e.stopPropagation());
       td2.appendChild(a);
     } else {
       td2.textContent = driveKey;
@@ -371,12 +409,9 @@ function renderTable(){
       a2.textContent = 'Open';
       a2.addEventListener('click', function(e){ e.stopPropagation(); });
       td5.appendChild(a2);
-    } else {
-      td5.textContent = '';
     }
     tr.appendChild(td5);
 
-    // make row clickable -> open drive history page
     if(driveKey){
       tr.classList.add('clickable');
       tr.addEventListener('click', () => {
@@ -384,11 +419,14 @@ function renderTable(){
       });
     }
 
-    tbody.appendChild(tr);
+    fragment.appendChild(tr);
   });
+
+  tbody.innerHTML = "";
+  tbody.appendChild(fragment);
 }
 
-/* Export CSV for visible filteredRows */
+/* Export CSV */
 function exportCSV(){
   if(filteredRows.length === 0){ alert("No rows to export"); return; }
   const header = ["TR NO","DATE","DRIVE DETAILS","DETAILS","CATEGORY","LINK"];
@@ -409,12 +447,14 @@ function exportCSV(){
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `breakdown-history-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
-/* Init: load version, then jobbook, then history */
+/* Init: load version, then jobbook and history in parallel */
 async function init(){
   try{
     await getVersion();
-    await loadJobBook();
-    await loadAllHistory();
+    console.log("⏳ Loading data...");
+    /* Load jobbook and history in parallel */
+    await Promise.all([loadJobBook(), loadAllHistory()]);
+    console.log("✓ All data loaded!");
   }catch(e){
     console.error("Initialization error:", e);
     document.querySelector("#historyTable tbody").innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
@@ -424,6 +464,7 @@ async function init(){
 /* Wire UI events */
 document.getElementById("driveSelect").addEventListener("change", applyFilters);
 document.getElementById("yearSelect").addEventListener("change", applyFilters);
+document.getElementById("monthSelect").addEventListener("change", applyFilters);
 document.getElementById("search").addEventListener("input", applyFilters);
 document.getElementById("exportBtn").addEventListener("click", exportCSV);
 
@@ -431,7 +472,7 @@ document.getElementById("exportBtn").addEventListener("click", exportCSV);
 function goHome(){ location.href = "https://08electricaldata.github.io/"; }
 function goBack(){ history.back(); }
 
-/* build month select if missing and start */
+/* Boot sequence */
 (async function boot(){
   const monthSelect = document.getElementById("monthSelect");
   if(!monthSelect){
@@ -448,8 +489,9 @@ function goBack(){ history.back(); }
   await init();
 })();
 
-/* Auto-reload every 5 minutes to check for updates */
+/* Auto-reload every 5 minutes */
 setInterval(async () => {
+  console.log("🔄 Auto-refreshing data...");
   await getVersion();
   await loadJobBook();
   await loadAllHistory();
