@@ -81,6 +81,25 @@ select,input,button{
 
 .card h3{margin:0;font-size:18px;}
 
+.version-info{
+  background:#fff;
+  padding:6px 12px;
+  border-radius:6px;
+  box-shadow:0 2px 5px rgba(0,0,0,.15);
+  font-size:12px;
+  color:#003f88;
+  font-weight:bold;
+}
+
+.status-indicator{
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#28a745;
+  margin-right:6px;
+}
+
 .table-wrapper{
   padding:10px;
   overflow:auto;
@@ -143,6 +162,10 @@ th{
 
 .completed{background:#28a745;}
 
+/* Loading spinner */
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid #ddd;border-top-color:#003f88;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 /* Responsive tweaks */
 @media (max-width:720px){
   th, td { padding:6px 8px; font-size:13px; }
@@ -184,6 +207,7 @@ th{
   </select>
   <input type="text" id="searchBox" placeholder="Search...">
   <button onclick="exportCSV()">Export Excel</button>
+  <div class="version-info"><span class="status-indicator"></span>Version: <span id="versionDisplay">—</span></div>
 </div>
 
 <!-- SUMMARY -->
@@ -212,12 +236,23 @@ th{
 </div>
 
 <script>
-/* ===== JSDELIVR CDN URLS ===== */
-const JSON_FILES={
-  rewinding:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/rewinding.json",
-  overhauling:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/overhauling.json",
-  scrap:"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/scrap.json"
+/* ===== VERSION-BASED CACHE BUSTING SETUP ===== */
+const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let currentVersion = '1.0.0';
+
+/* ===== JSDELIVR CDN BASE URLS ===== */
+const JSON_FILES_BASE = {
+  rewinding: "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/rewinding.json",
+  overhauling: "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/overhauling.json",
+  scrap: "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/scrap.json"
 };
+
+// Build URLs with version parameter for cache busting
+function buildDataUrl(type) {
+  return `${JSON_FILES_BASE[type]}?v=${currentVersion}`;
+}
 
 let currentData=[];
 let headers=[];
@@ -226,6 +261,7 @@ let currentType = 'rewinding'; // track selected type
 
 const select=document.getElementById("typeSelect");
 const searchBox=document.getElementById("searchBox");
+const versionDisplayEl = document.getElementById("versionDisplay");
 
 /* Desired visible columns (display order)
    "Problems" will display but the script will try to match data using "Motor Location Update On" */
@@ -251,10 +287,28 @@ function normalize(s){
   return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,"");
 }
 
+/* Get latest version from version.json */
+async function getVersion(){
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now());
+    if(!res.ok) throw new Error('Version fetch failed');
+    const data = await res.json();
+    currentVersion = data.version || '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+    console.log('Loaded version:', currentVersion);
+  } catch(err) {
+    console.warn('Failed to fetch version, using default:', err);
+    currentVersion = '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
 async function loadData(type){
   currentType = type; // set current selection type
   try{
-    const res=await fetch(JSON_FILES[type]);
+    const url = buildDataUrl(type);
+    console.log('Fetching from:', url);
+    const res=await fetch(url);
     if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const json=await res.json();
     currentData = json.data || [];
@@ -531,8 +585,21 @@ function escapeCSV(s){
 select.addEventListener("change",()=>loadData(select.value));
 searchBox.addEventListener("keyup",render);
 
-// initial load
-loadData(select.value);
+/* Initialize: fetch version first, then load data */
+async function init(){
+  await getVersion();
+  await loadData(select.value);
+  
+  // Auto-reload every 5 minutes
+  setInterval(async () => {
+    console.log('Auto-refreshing data...');
+    await getVersion();
+    await loadData(select.value);
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+// Start initialization
+init();
 </script>
 
 </body>
