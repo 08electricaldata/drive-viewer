@@ -102,6 +102,17 @@ body{
   color:#000;
 }
 
+/* LOADING INDICATOR */
+.loading{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#003f88;
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
 @keyframes float{
   0%{transform:translateY(0)}
   50%{transform:translateY(-5px)}
@@ -292,27 +303,53 @@ tr:hover{
 
 <script>
 
-/* ===== JSDELIVR CDN URLS ===== */
-const DASHBOARD_JSON =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/summary.json";
-
-const MONTHLY_JOB_JSON =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/monthly_job_count.json";
-
+/* ===== VERSION AND CDN URLS ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const DASHBOARD_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/summary.json";
+const MONTHLY_JOB_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/monthly_job_count.json";
 const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
-const HISTORY_BASE =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
+const HISTORY_BASE = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
 
+let currentVersion = "1.0.0";
 let monthlyData;
 let chartInstance;
 let HISTORY_DATA = [];
 let popupRows = [];
 
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    console.log("Loaded version:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+  }
+}
+
+/* BUILD URLS WITH VERSION PARAM */
+function buildDashboardUrl() {
+  return `${DASHBOARD_JSON}?v=${currentVersion}`;
+}
+
+function buildMonthlyJobUrl() {
+  return `${MONTHLY_JOB_JSON}?v=${currentVersion}`;
+}
+
+function buildHistoryUrl(year) {
+  return `${HISTORY_BASE}${year}.json?v=${currentVersion}`;
+}
+
 /* PRELOAD ALL HISTORY */
 async function preloadHistory(){
   for(const y of HISTORY_YEARS){
     try{
-      const res = await fetch(HISTORY_BASE + y + ".json");
+      const url = buildHistoryUrl(y);
+      console.log("Loading history:", url);
+      const res = await fetch(url);
       if(!res.ok) continue;
       const data = await res.json();
       if(data.rows) HISTORY_DATA = HISTORY_DATA.concat(data.rows);
@@ -325,10 +362,13 @@ async function preloadHistory(){
 /* KPI */
 async function loadKPI(){
   try{
-    const res = await fetch(DASHBOARD_JSON);
+    const url = buildDashboardUrl();
+    console.log("Loading dashboard:", url);
+    const res = await fetch(url);
     if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
     const container = document.getElementById("kpiSection");
+    container.innerHTML = "";
 
     data.metrics.forEach(m=>{
       const box=document.createElement("div");
@@ -349,9 +389,11 @@ async function loadKPI(){
 /* TABLE */
 async function loadTable(){
   try{
-    const res=await fetch(MONTHLY_JOB_JSON);
+    const url = buildMonthlyJobUrl();
+    console.log("Loading monthly jobs:", url);
+    const res = await fetch(url);
     if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    monthlyData=await res.json();
+    monthlyData = await res.json();
 
     const headers=monthlyData.headers;
     const rows=monthlyData.rows;
@@ -511,9 +553,10 @@ function closeTrend(){
   document.getElementById("trendModal").style.display="none";
 }
 
-/* Initialize */
+/* Initialize: load version first, then data */
 (async function init(){
   try{
+    await getVersion();
     await preloadHistory();
     await loadKPI();
     await loadTable();
@@ -521,6 +564,14 @@ function closeTrend(){
     console.error("Initialization error:", err);
   }
 })();
+
+/* Auto-reload every 5 minutes to check for updates */
+setInterval(async () => {
+  await getVersion();
+  await preloadHistory();
+  await loadKPI();
+  await loadTable();
+}, 5 * 60 * 1000);
 
 </script>
 
