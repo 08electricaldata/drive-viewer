@@ -151,6 +151,17 @@ td:nth-child(n+6){
   font-weight: bold;
 }
 
+/* ===== LOADING INDICATOR ===== */
+.loading {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #003f88;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
 /* ===== UX ===== */
 tbody tr { cursor: pointer; }
 tbody tr:hover { background: #eef5ff; }
@@ -187,17 +198,17 @@ tbody tr:hover { background: #eef5ff; }
 <div class="summary">
 <div class="card" onclick="filterRows('all')">
   <h3>Total Motors</h3>
-  <p id="totalMotors">0</p>
+  <p id="totalMotors"><span class="loading"></span></p>
 </div>
 
 <div class="card" onclick="filterRows('module')">
   <h3>Overdue Modules 🔔</h3>
-  <p id="overdueModules" class="overdue">0</p>
+  <p id="overdueModules" class="overdue"><span class="loading"></span></p>
 </div>
 
 <div class="card" onclick="filterRows('motor')">
   <h3>Overdue Motors 🔔</h3>
-  <p id="overdueMotors" class="overdue">0</p>
+  <p id="overdueMotors" class="overdue"><span class="loading"></span></p>
 </div>
 </div>
 
@@ -229,9 +240,30 @@ tbody tr:hover { background: #eef5ff; }
 </div>
 
 <script>
-/* ===== JSDELIVR CDN URL ===== */
-const JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/2026_oct_mar.json";
+/* ===== VERSION AND CDN URLS ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const BASE_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/2026_oct_mar.json";
+
+let currentVersion = "1.0.0";
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    console.log("Loaded version:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+  }
+}
+
+/* BUILD URL WITH VERSION PARAM */
+function buildJsonUrl() {
+  return `${BASE_JSON_URL}?v=${currentVersion}`;
+}
 
 /* NAV */
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
@@ -274,7 +306,9 @@ function getDriveColor(key){
 /* LOAD */
 async function loadData(){
   try{
-    const r = await fetch(JSON_URL);
+    const url = buildJsonUrl();
+    console.log("Loading:", url);
+    const r = await fetch(url);
     if(!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
     const j = await r.json();
 
@@ -385,7 +419,18 @@ function filterRows(type){
   });
 }
 
-loadData();
+/* Initialize: load version first, then load data */
+(async () => {
+  await getVersion();
+  await loadData();
+})();
+
+/* Auto-reload every 5 minutes to check for updates */
+setInterval(async () => {
+  await getVersion();
+  await loadData();
+}, 5 * 60 * 1000);
+
 </script>
 
 </body>
