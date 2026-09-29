@@ -35,7 +35,7 @@
   header{
     display:flex;
     align-items:center;
-    justify-content:flex-start; /* left controls on left */
+    justify-content:flex-start;
     gap:12px;
     padding:18px 24px;
     background:linear-gradient(90deg,var(--accent),var(--accent-2));
@@ -44,6 +44,7 @@
     border-bottom-right-radius:12px;
     box-shadow: var(--shadow-1);
     position:relative;
+    flex-wrap:wrap;
   }
 
   /* left-side top buttons */
@@ -77,7 +78,7 @@
     transform:translateX(-50%);
     text-align:center;
     z-index:4;
-    pointer-events:none; /* keep buttons clickable below if overlap */
+    pointer-events:none;
   }
   .branding{
     font-weight:800;
@@ -93,6 +94,28 @@
     color: rgba(255,255,255,0.95);
     pointer-events:auto;
   }
+
+  .version-info{
+    background: rgba(255,255,255,0.15);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: auto;
+    z-index: 5;
+  }
+
+  .status-indicator{
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4caf50;
+    margin-right: 4px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
   main{
     max-width:1400px;
@@ -192,7 +215,7 @@
     background:linear-gradient(180deg,#fff,#fbfdff);
   }
 
-  /* Prev / Next buttons (subtle modern) */
+  /* Prev / Next buttons */
   .btn{
     position:absolute;
     top:50%;
@@ -268,7 +291,6 @@
     background:#1976d2;
     animation:pulse 1.5s infinite;
   }
-  @keyframes pulse{ 0%,100%{opacity:0.3} 50%{opacity:1} }
 
   /* Responsive */
   @media (max-width:1000px){
@@ -281,6 +303,7 @@
     header{ padding:12px 14px; align-items:flex-start; }
     .left-controls{ gap:8px; }
     .header-center{ position:static; transform:none; text-align:center; margin:8px auto 0; }
+    .version-info{ margin-left:0; margin-top:8px; order:3; flex-basis:100%; }
     main{ padding:16px }
     .track{ gap:10px }
     .card{ flex:0 0 200px; min-width:170px }
@@ -303,11 +326,14 @@
     <button class="action-btn" onclick="goHome()" title="Home" aria-label="Home">🏠 Home</button>
   </div>
 
-  <!-- Centered branding (kept visually centered regardless of left controls) -->
+  <!-- Centered branding -->
   <div class="header-center" aria-hidden="false">
     <div class="branding">Electrical Photo Gallery Of 08 AREA</div>
     <small>08 AREA • SAFETY • 5S</small>
   </div>
+
+  <!-- Version info (top right) -->
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 </header>
 
 <main>
@@ -345,7 +371,7 @@
   </section>
 </main>
 
-<!-- Lightbox (kept structure; styling improved) -->
+<!-- Lightbox -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image preview">
   <div class="close" onclick="hideLightbox()" role="button" aria-label="Close">×</div>
   <img id="lbimg" alt="" />
@@ -357,68 +383,102 @@
   function goHome(){ location.href = "https://08electricaldata.github.io/"; }
   function goBack(){ history.back(); }
 
-  /* ===== VERSION FILE + JSDELIVR CDN URLS WITH CACHE BUSTING ===== */
-  const versionUrl = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/version.json";
+  /* ===== VERSION-BASED CACHE BUSTING ===== */
+  const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+  const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
   
+  let currentVersion = "1.0.0";
+  const versionDisplayEl = document.getElementById("versionDisplay");
+
   const galleryConfig = [
     { name: "08area", track: "t1", count: "c1" },
     { name: "safety", track: "t2", count: "c2" },
     { name: "5s", track: "t3", count: "c3" }
   ];
 
-  let currentVersion = "1.0.0";
-
   /* Fetch version file to bust cache */
   async function getVersion() {
     try {
-      const res = await fetch(versionUrl + "?t=" + Date.now());
+      const res = await fetch(VERSION_URL + "?t=" + Date.now());
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       currentVersion = data.version || "1.0.0";
-      console.log("Loaded version:", currentVersion);
+      versionDisplayEl.textContent = currentVersion;
+      console.log("Gallery version loaded:", currentVersion);
     } catch (err) {
       console.warn("Failed to load version file:", err);
       currentVersion = "1.0.0";
+      versionDisplayEl.textContent = currentVersion;
     }
   }
 
-  /* Build gallery URL with version param */
+  /* Build gallery URL with version param for faster cache busting */
   function buildGalleryUrl(galleryName) {
     return `https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/Gallery/${galleryName}.json?v=${currentVersion}`;
+  }
+
+  /* Preload gallery image for better performance */
+  function preloadImage(src) {
+    const img = new Image();
+    img.src = src;
   }
 
   async function loadGallery(config) {
     try {
       const url = buildGalleryUrl(config.name);
-      console.log("Loading:", url);
+      console.log("Loading gallery:", config.name, "from", url);
+      const startTime = performance.now();
+      
       const r = await fetch(url);
       if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
       const j = await r.json();
+      
+      const loadTime = performance.now() - startTime;
+      console.log(`${config.name} loaded in ${loadTime.toFixed(2)}ms`);
       
       document.getElementById(config.count).textContent = j.total || (j.photos && j.photos.length) || 0;
       const t = document.getElementById(config.track);
       t.innerHTML = "";
       
-      j.photos.forEach(p => {
+      /* Use DocumentFragment for better performance */
+      const fragment = document.createDocumentFragment();
+      
+      j.photos.forEach((p, idx) => {
         const c = document.createElement("div");
         c.className = "card";
         c.setAttribute("role", "listitem");
+        
+        /* Use thumb for initial display, full image for lightbox */
+        const thumbSrc = p.thumb || p.image;
+        const fullSrc = p.image;
+        
         c.innerHTML = `
           <div class="card-media">
-            <img loading="lazy" src="${p.thumb || p.image}" alt="${(p.title || '')}" />
+            <img loading="lazy" src="${thumbSrc}" alt="${(p.title || '')}" data-full="${fullSrc}" />
           </div>
           <div class="card-caption">${p.title || ''}</div>
         `;
-        c.onclick = () => showLightbox(p.image, p.title);
-        c.onkeydown = (e) => { if (e.key === 'Enter') showLightbox(p.image, p.title); };
+        
+        c.onclick = () => showLightbox(fullSrc, p.title);
+        c.onkeydown = (e) => { if (e.key === 'Enter') showLightbox(fullSrc, p.title); };
         c.tabIndex = 0;
-        t.appendChild(c);
+        
+        /* Preload images in viewport (first 5 images) */
+        if (idx < 5) {
+          preloadImage(fullSrc);
+        }
+        
+        fragment.appendChild(c);
       });
+      
+      t.appendChild(fragment);
 
-      /* Auto-scroll loop */
-      setInterval(() => {
-        if (!t) return;
-        if (t.children.length === 0) return;
+      /* Auto-scroll loop with better performance */
+      let scrollInterval = setInterval(() => {
+        if (!t || t.children.length === 0) {
+          clearInterval(scrollInterval);
+          return;
+        }
         t.scrollBy({left: 280, behavior: "smooth"});
         if (t.scrollLeft + t.clientWidth >= t.scrollWidth - 10) {
           setTimeout(() => t.scrollTo({left: 0, behavior: "smooth"}), 700);
@@ -426,8 +486,9 @@
       }, 3500);
       
     } catch (err) {
-      console.error("Failed to load gallery:", config.name, err);
-      document.getElementById(config.count).textContent = "0";
+      console.error(`Failed to load gallery [${config.name}]:`, err);
+      document.getElementById(config.count).textContent = "Error";
+      document.getElementById(config.track).innerHTML = `<div style="padding:20px;color:red;text-align:center;">Failed to load. Please refresh.</div>`;
     }
   }
 
@@ -439,7 +500,13 @@
   function showLightbox(src, title) { 
     document.getElementById("lbimg").src = src; 
     document.getElementById("caption").textContent = title || ''; 
-    document.getElementById("lightbox").classList.add('show'); 
+    document.getElementById("lightbox").classList.add('show');
+    /* Preload next images from current gallery */
+    document.querySelectorAll('.card img').forEach(img => {
+      if (img.dataset.full) {
+        preloadImage(img.dataset.full);
+      }
+    });
   }
   
   function hideLightbox() { 
@@ -447,17 +514,20 @@
     document.getElementById("lbimg").src = ''; 
   }
 
-  /* Initialize: load version first, then galleries */
+  /* Initialize: load version first, then all galleries in parallel */
   (async () => {
     await getVersion();
-    galleryConfig.forEach(loadGallery);
+    console.log("Loading galleries in parallel for better performance...");
+    await Promise.all(galleryConfig.map(loadGallery));
+    console.log("All galleries loaded!");
   })();
 
   /* Reload galleries every 5 minutes to check for updates */
   setInterval(async () => {
+    console.log("Auto-refreshing galleries...");
     await getVersion();
-    galleryConfig.forEach(loadGallery);
-  }, 5 * 60 * 1000);
+    await Promise.all(galleryConfig.map(loadGallery));
+  }, AUTO_RELOAD_INTERVAL);
 
 </script>
 </body>
