@@ -161,6 +161,17 @@ tr:hover{background:#eef5ff;cursor:pointer}
 .normal-level{background:#ffff66;color:black}
 .excellent-level{background:#33cc33;color:white}
 
+/* LOADING INDICATOR */
+.loading{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#003f88;
+  animation:pulse-load 1.5s infinite;
+}
+@keyframes pulse-load{ 0%,100%{opacity:0.3} 50%{opacity:1} }
+
 .footer{text-align:center;padding:15px;color:#555}
 </style>
 </head>
@@ -185,16 +196,16 @@ tr:hover{background:#eef5ff;cursor:pointer}
 
 <div class="status-panel">
   <div class="status-card critical">
-    🔴 Critical (&lt;30%)<br><span id="countCritical">0</span>
+    🔴 Critical (&lt;30%)<br><span id="countCritical"><span class="loading"></span></span>
   </div>
   <div class="status-card avg">
-    🟡 30–50%<br><span id="countAvg">0</span>
+    🟡 30–50%<br><span id="countAvg"><span class="loading"></span></span>
   </div>
   <div class="status-card medium">
-    🟠 50–70%<br><span id="countMedium">0</span>
+    🟠 50–70%<br><span id="countMedium"><span class="loading"></span></span>
   </div>
   <div class="status-card safe">
-    🟢 Safe (&gt;70%)<br><span id="countSafe">0</span>
+    🟢 Safe (&gt;70%)<br><span id="countSafe"><span class="loading"></span></span>
   </div>
 </div>
 
@@ -232,11 +243,30 @@ tr:hover{background:#eef5ff;cursor:pointer}
 
 <script>
 
-const JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformeroil.json";
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const BASE_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformeroil.json";
+const BASE_LAST3_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/last3transformeroil.json";
 
-const LAST3_JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/last3transformeroil.json";
+let currentVersion = "1.0.0";
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    console.log("Loaded version:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+  }
+}
+
+/* BUILD URLS WITH VERSION PARAM */
+function buildJsonUrl(baseUrl) {
+  return `${baseUrl}?v=${currentVersion}`;
+}
 
 /* ✅ NEW NAV FUNCTIONS */
 function openTrafoList(){
@@ -249,15 +279,19 @@ function openTrafoPM(){
 let fullData=[], headers=[], mainChart=null, trendChart=null, last3Data=[];
 
 async function load(){
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
-  headers=data.headers;
-  fullData=data.rows;
+  const url = buildJsonUrl(BASE_JSON_URL);
+  console.log("Loading:", url);
+  const res = await fetch(url);
+  const data = await res.json();
+  headers = data.headers;
+  fullData = data.rows;
 
   // Load last3 data
-  const res3=await fetch(LAST3_JSON_URL);
-  const data3=await res3.json();
-  last3Data=data3.rows;
+  const url3 = buildJsonUrl(BASE_LAST3_JSON_URL);
+  console.log("Loading:", url3);
+  const res3 = await fetch(url3);
+  const data3 = await res3.json();
+  last3Data = data3.rows;
 
   buildYearDropdown();
   buildTable();
@@ -519,7 +553,18 @@ function closePopup(){
   document.getElementById("trendPopup").style.display="none";
 }
 
-load();
+/* Initialize: load version first, then load data */
+(async () => {
+  await getVersion();
+  await load();
+})();
+
+/* Auto-reload every 5 minutes to check for updates */
+setInterval(async () => {
+  await getVersion();
+  await load();
+}, 5 * 60 * 1000);
+
 </script>
 
 </body>
