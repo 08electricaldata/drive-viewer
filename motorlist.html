@@ -23,6 +23,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 12px;
+  flex-wrap: wrap;
 }
 
 .header-bar button {
@@ -40,6 +41,24 @@ body {
   text-align: center;
   font-size: 22px;
   font-weight: 700;
+}
+
+.version-info {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  margin-right: 4px;
 }
 
 /* ===== CONTENT ===== */
@@ -112,6 +131,18 @@ tr:hover {
   font-weight: 600;
 }
 
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 @media print {
   .header-bar, .controls, .filter-row { display: none; }
 }
@@ -126,6 +157,7 @@ tr:hover {
   <button onclick="openMotorOH()">🛠️ Motor O/H Data</button>
   <button onclick="openMotorPM()">🧾 Motor PM Status</button>
   <div class="header-title">MOTOR MASTER LIST</div>
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 </div>
 
 <div class="container">
@@ -148,23 +180,43 @@ tr:hover {
 </div>
 
 <script>
-/* ===== JSDELIVR CDN URL ===== */
-const JSON_URL =
-  "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/motors.json";
+/* ===== VERSION-BASED CACHE BUSTING SETUP ===== */
+const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
+const BASE_JSON_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/motors.json';
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let currentVersion = '1.0.0';
+
+// Build URL with version parameter for cache busting
+function buildDataUrl() {
+  return `${BASE_JSON_URL}?v=${currentVersion}`;
+}
+
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* Get latest version from version.json */
+async function getVersion(){
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now());
+    if(!res.ok) throw new Error('Version fetch failed');
+    const data = await res.json();
+    currentVersion = data.version || '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+    console.log('Loaded version:', currentVersion);
+  } catch(err) {
+    console.warn('Failed to fetch version, using default:', err);
+    currentVersion = '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
 
 async function loadMotors() {
-  const cache = localStorage.getItem("motorJSON");
-  let data;
-
   try {
-    if (cache) {
-      data = JSON.parse(cache);
-    } else {
-      const res = await fetch(JSON_URL);
-      if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      data = await res.json();
-      localStorage.setItem("motorJSON", JSON.stringify(data));
-    }
+    const url = buildDataUrl();
+    console.log('Fetching from:', url);
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
 
     const headers = data.headers;
     const rows = data.rows;
@@ -262,7 +314,21 @@ function openMotorPM(){
   window.location.href="https://08electricaldata.github.io/drive-viewer/motorpm.html";
 }
 
-loadMotors();
+/* Initialize: fetch version first, then load data */
+async function init(){
+  await getVersion();
+  await loadMotors();
+  
+  // Auto-reload every 5 minutes
+  setInterval(async () => {
+    console.log('Auto-refreshing motor data...');
+    await getVersion();
+    await loadMotors();
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+// Start initialization
+init();
 </script>
 
 </body>
