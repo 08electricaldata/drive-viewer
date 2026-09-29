@@ -65,6 +65,24 @@ body{
   padding:6px 8px;
 }
 
+.version-info{
+  background:#0f3057;
+  color:white;
+  padding:6px 12px;
+  border-radius:4px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.status-indicator{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#4caf50;
+  margin-right:4px;
+}
+
 .container{
   padding:15px;
 }
@@ -119,6 +137,18 @@ tr:hover{
   font-weight:bold;
 }
 
+/* Loading spinner */
+.spinner{
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border:2px solid #ddd;
+  border-top-color:#0f3057;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 @media(max-width:768px){
   table{
     font-size:11px;
@@ -146,6 +176,8 @@ tr:hover{
     <button onclick="history.back()">⬅ Back</button>
     <button onclick="window.location.href='https://08electricaldata.github.io/'">🏠 Home</button>
   </div>
+
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 
   <div class="nav-right">
     <button class="btn-secondary" onclick="downloadExcel()">📥 Export Excel</button>
@@ -188,14 +220,38 @@ tr:hover{
 </div>
 
 <script>
-/* ===== JSDELIVR CDN URLS with Cache Busting ===== */
-function getCacheBustedURL(url) {
-  return url + "?t=" + new Date().getTime();
+/* ===== VERSION-BASED CACHE BUSTING SETUP ===== */
+const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let currentVersion = '1.0.0';
+
+const BOARD_JSON_BASE  = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/board.json";
+const SLD_JSON_BASE    = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/boards_sld.json";
+const LT_JSON_BASE     = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
+
+// Build URLs with version parameter for cache busting
+function buildDataUrl(baseUrl) {
+  return `${baseUrl}?v=${currentVersion}`;
 }
 
-const BOARD_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/board.json";
-const SLD_JSON   = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/boards_sld.json";
-const LT_JSON    = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* Get latest version from version.json */
+async function getVersion(){
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now());
+    if(!res.ok) throw new Error('Version fetch failed');
+    const data = await res.json();
+    currentVersion = data.version || '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+    console.log('Loaded version:', currentVersion);
+  } catch(err) {
+    console.warn('Failed to fetch version, using default:', err);
+    currentVersion = '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
 
 let masterData = [];
 let sldData = null;
@@ -204,8 +260,9 @@ let ltData = null;
 // ⚡ Load Board Data with Cache Control
 async function loadBoardData(){
   try {
-    // Always fetch fresh data (no sessionStorage cache)
-    const res = await fetch(getCacheBustedURL(BOARD_JSON));
+    const url = buildDataUrl(BOARD_JSON_BASE);
+    console.log('Fetching from:', url);
+    const res = await fetch(url);
     if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const json = await res.json();
     masterData = json.data;
@@ -224,8 +281,8 @@ async function loadBoardData(){
 async function preloadSLDData(){
   try {
     const [sldRes, ltRes] = await Promise.all([
-      fetch(getCacheBustedURL(SLD_JSON)),
-      fetch(getCacheBustedURL(LT_JSON))
+      fetch(buildDataUrl(SLD_JSON_BASE)),
+      fetch(buildDataUrl(LT_JSON_BASE))
     ]);
     
     if(sldRes.ok) sldData = await sldRes.json();
@@ -352,8 +409,8 @@ async function searchAndRedirect(boardId){
     if(!sld || !lt){
       console.log("⚠️ Preloaded data not ready, fetching fresh...");
       const [sldRes, ltRes]=await Promise.all([
-        fetch(getCacheBustedURL(SLD_JSON)),
-        fetch(getCacheBustedURL(LT_JSON))
+        fetch(buildDataUrl(SLD_JSON_BASE)),
+        fetch(buildDataUrl(LT_JSON_BASE))
       ]);
 
       if(!sldRes.ok || !ltRes.ok) throw new Error("Failed to fetch SLD data");
@@ -422,9 +479,6 @@ async function searchAndRedirect(boardId){
     alert("Error searching board. Please try again.\n\nError: " + err.message);
   }
 }
-
-// Load data when page loads
-loadBoardData();
 
 /* ================= Export to Excel & Print A4 ================= */
 
@@ -587,6 +641,21 @@ function printA4(){
   };
 }
 
+/* Initialize: fetch version first, then load data */
+async function init(){
+  await getVersion();
+  await loadBoardData();
+  
+  // Auto-reload every 5 minutes
+  setInterval(async () => {
+    console.log('Auto-refreshing board data...');
+    await getVersion();
+    await loadBoardData();
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+// Start initialization
+init();
 </script>
 
 </body>
