@@ -12,12 +12,26 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
 .topbar{
   background:#003f88;color:white;
   padding:12px 15px;
-  display:flex;justify-content:space-between;align-items:center
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:10px;
 }
 .topbar button{
   padding:8px 12px;border:none;border-radius:5px;
   font-weight:bold;cursor:pointer;background:white;color:#003f88
 }
+
+.version-info {
+  background:rgba(255,255,255,0.2); color:white;
+  padding:6px 10px; border-radius:6px;
+  font-size:12px; font-weight:bold;
+}
+
+.status-indicator {
+  display:inline-block; width:8px; height:8px;
+  border-radius:50%; background:#4caf50;
+  margin-right:4px; animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
 .container{max-width:1500px;margin:20px auto;padding:10px}
 /* ===== MAIN HEADER ===== */
@@ -45,14 +59,14 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   color:white;font-weight:bold;
   text-align:center;
   box-shadow:0 3px 8px rgba(0,0,0,.2);
-  animation:pulse 2.5s infinite;
+  animation:pulse-card 2.5s infinite;
 }
 .critical{background:#cc0000}
 .avg{background:#ff9900}
 .medium{background:#ffcc00;color:black}
 .safe{background:#33cc33}
 
-@keyframes pulse{
+@keyframes pulse-card{
   0%{transform:scale(1)}
   50%{transform:scale(1.05)}
   100%{transform:scale(1)}
@@ -69,15 +83,20 @@ select{
   padding:6px 10px;margin-bottom:10px
 }
 
+.table-wrap{
+  overflow:auto;border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+
 table{
   width:100%;border-collapse:collapse;
-  background:white;box-shadow:0 2px 6px rgba(0,0,0,.15)
+  background:white;min-width:1000px;
 }
 th,td{
   padding:8px;border:1px solid #ddd;
   text-align:center;font-size:13px
 }
-th{background:#003f88;color:white}
+th{background:#003f88;color:white;position:sticky;top:0;z-index:10}
 tr:hover{background:#eef5ff;cursor:pointer}
 
 .low{background:#ff4d4d;color:white;cursor:pointer}
@@ -185,6 +204,7 @@ tr:hover{background:#eef5ff;cursor:pointer}
     <button onclick="openTrafoList()">⚡ Transformer List</button>
     <button onclick="openTrafoPM()">⚡ PM Status</button>
   </div>
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 </div>
 
 <div class="container">
@@ -215,10 +235,12 @@ tr:hover{background:#eef5ff;cursor:pointer}
   <canvas id="mainChart" height="100"></canvas>
 </div>
 
-<table id="dataTable">
-<thead></thead>
-<tbody></tbody>
-</table>
+<div class="table-wrap">
+  <table id="dataTable">
+  <thead></thead>
+  <tbody></tbody>
+  </table>
+</div>
 
 </div>
 
@@ -243,11 +265,14 @@ tr:hover{background:#eef5ff;cursor:pointer}
 
 <script>
 
+/* ===== VERSION-BASED CACHE BUSTING ===== */
 const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
 const BASE_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformeroil.json";
 const BASE_LAST3_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/last3transformeroil.json";
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
 
 /* FETCH VERSION FOR CACHE BUSTING */
 async function getVersion() {
@@ -256,19 +281,21 @@ async function getVersion() {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
     currentVersion = data.version || "1.0.0";
-    console.log("Loaded version:", currentVersion);
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
   } catch (err) {
     console.warn("Failed to load version file:", err);
     currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
   }
 }
 
-/* BUILD URLS WITH VERSION PARAM */
+/* BUILD URLS WITH VERSION PARAM AND TIMESTAMP */
 function buildJsonUrl(baseUrl) {
-  return `${baseUrl}?v=${currentVersion}`;
+  return `${baseUrl}?v=${currentVersion}&t=${Date.now()}`;
 }
 
-/* ✅ NEW NAV FUNCTIONS */
+/* NAV FUNCTIONS */
 function openTrafoList(){
   location.href="https://08electricaldata.github.io/drive-viewer/trafolist.html";
 }
@@ -279,27 +306,39 @@ function openTrafoPM(){
 let fullData=[], headers=[], mainChart=null, trendChart=null, last3Data=[];
 
 async function load(){
-  const url = buildJsonUrl(BASE_JSON_URL);
-  console.log("Loading:", url);
-  const res = await fetch(url);
-  const data = await res.json();
-  headers = data.headers;
-  fullData = data.rows;
+  try {
+    console.log("📊 Loading transformer oil data...");
+    const startTime = performance.now();
+    
+    /* Parallel fetch both JSON files */
+    const [res1, res2] = await Promise.all([
+      fetch(buildJsonUrl(BASE_JSON_URL)),
+      fetch(buildJsonUrl(BASE_LAST3_JSON_URL))
+    ]);
 
-  // Load last3 data
-  const url3 = buildJsonUrl(BASE_LAST3_JSON_URL);
-  console.log("Loading:", url3);
-  const res3 = await fetch(url3);
-  const data3 = await res3.json();
-  last3Data = data3.rows;
+    if (!res1.ok || !res2.ok) throw new Error("Failed to fetch data");
 
-  buildYearDropdown();
-  buildTable();
-  updateStatusCounts();
+    const data = await res1.json();
+    const data3 = await res2.json();
+
+    headers = data.headers;
+    fullData = data.rows || [];
+    last3Data = data3.rows || [];
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Oil data loaded in ${loadTime.toFixed(2)}ms (${fullData.length} transformers)`);
+
+    buildYearDropdown();
+    buildTable();
+    updateStatusCounts();
+  } catch(err) {
+    console.error("Error loading transformer oil data:", err);
+  }
 }
 
 function buildYearDropdown(){
   const sel=document.getElementById("yearSelect");
+  sel.innerHTML = "";
   for(let y=2018;y<=2026;y++){
     let o=document.createElement("option");
     o.value=y;o.textContent=y;
@@ -341,6 +380,10 @@ function updateMainChart(year){
           data:sorted.map(d=>d.value),
           backgroundColor:"#003f88"
         }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:true
       }
     }
   );
@@ -384,13 +427,18 @@ function buildTable(){
   const thead=document.querySelector("#dataTable thead");
   const tbody=document.querySelector("#dataTable tbody");
 
+  /* Build header */
   let tr=document.createElement("tr");
   displayCols.forEach(i=>{
     let th=document.createElement("th");
     th.textContent=headers[i];
     tr.appendChild(th);
   });
+  thead.innerHTML="";
   thead.appendChild(tr);
+
+  /* Use DocumentFragment for better performance */
+  const fragment = document.createDocumentFragment();
 
   fullData.forEach(r=>{
     let tr=document.createElement("tr");
@@ -413,7 +461,7 @@ function buildTable(){
         else if(v<70)td.classList.add("normal");
         else td.classList.add("excellent");
         
-        // Add click handler for level column
+        /* Add click handler for level column */
         td.style.cursor="pointer";
         td.onclick=function(e){
           e.stopPropagation();
@@ -440,17 +488,22 @@ function buildTable(){
       tr.appendChild(td);
     });
 
+    /* Cache transformer ID to avoid recalculation */
+    const trafoId = "Transformer-" + r[2];
     tr.onclick=function(){
       location.href=
-      "https://08electricaldata.github.io/drive-viewer/history.html?id=Transformer-"+r[2];
+      "https://08electricaldata.github.io/drive-viewer/history.html?id="+encodeURIComponent(trafoId);
     };
 
-    tbody.appendChild(tr);
+    fragment.appendChild(tr);
   });
+
+  tbody.innerHTML = "";
+  tbody.appendChild(fragment);
 }
 
 function parseOilData(dataStr){
-  // Parse "02-06-2026 ,70" format
+  /* Parse "02-06-2026 ,70" format */
   if(!dataStr || dataStr.trim()==="") return {date:"N/A", level:"N/A"};
   
   const parts=dataStr.split(',');
@@ -463,7 +516,7 @@ function parseOilData(dataStr){
 function showLast3Levels(row){
   const trafoNo=row[2];
   
-  // Find all matching records from last3Data
+  /* Find all matching records from last3Data */
   const matchingRecords=last3Data.filter(r=>r[2]===trafoNo);
 
   document.getElementById("levelPopupTitle").textContent=`Last 3 Level Checks - Transformer ${trafoNo}`;
@@ -474,7 +527,7 @@ function showLast3Levels(row){
   if(matchingRecords.length===0){
     container.innerHTML="<p style='text-align:center;color:#999;width:100%;'>No historical data available</p>";
   } else {
-    // Get the first 3 columns with data (indices 3, 4, 5 typically contain date/level pairs)
+    /* Get the first 3 columns with data (indices 3, 4, 5 typically contain date/level pairs) */
     const dataIndices=[3, 4, 5];
     let checkNum=1;
     
@@ -544,6 +597,10 @@ function showTrend(row){
           backgroundColor:"rgba(0,63,136,0.1)",
           fill:true
         }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:true
       }
     }
   );
@@ -554,16 +611,20 @@ function closePopup(){
 }
 
 /* Initialize: load version first, then load data */
-(async () => {
+async function init(){
   await getVersion();
   await load();
-})();
+  
+  /* Auto-reload every 5 minutes */
+  setInterval(async () => {
+    console.log("🔄 Auto-refreshing oil data...");
+    await getVersion();
+    await load();
+  }, AUTO_RELOAD_INTERVAL);
+}
 
-/* Auto-reload every 5 minutes to check for updates */
-setInterval(async () => {
-  await getVersion();
-  await load();
-}, 5 * 60 * 1000);
+/* Start initialization */
+init();
 
 </script>
 
