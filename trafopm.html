@@ -67,6 +67,17 @@ td.col-pm  { background:#e9ffe8; }
 
 tbody tr:hover { background:#eef5ff; cursor:pointer; }
 
+/* LOADING INDICATOR */
+.loading{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#003f88;
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
 @media print {
   .controls,.header-bar{display:none;}
 }
@@ -91,9 +102,9 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
 </div>
 
 <div class="summary">
-  <div class="card"><h3>Total Transformers</h3><p id="tot">0</p></div>
-  <div class="card"><h3>Overdue 🔴</h3><p id="over">0</p></div>
-  <div class="card"><h3>Due in 30 Days 🟠</h3><p id="soon">0</p></div>
+  <div class="card"><h3>Total Transformers</h3><p id="tot"><span class="loading"></span></p></div>
+  <div class="card"><h3>Overdue 🔴</h3><p id="over"><span class="loading"></span></p></div>
+  <div class="card"><h3>Due in 30 Days 🟠</h3><p id="soon"><span class="loading"></span></p></div>
 </div>
 
 <div class="controls">
@@ -117,8 +128,29 @@ tbody tr:hover { background:#eef5ff; cursor:pointer; }
 </table>
 
 <script>
-const JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformer_pm.json";
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const BASE_JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/transformer_pm.json";
+
+let currentVersion = "1.0.0";
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    console.log("Loaded version:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+  }
+}
+
+/* BUILD URL WITH VERSION PARAM */
+function buildJsonUrl() {
+  return `${BASE_JSON_URL}?v=${currentVersion}`;
+}
 
 function goHome(){ location.href="https://08electricaldata.github.io/"; }
 
@@ -151,10 +183,12 @@ function fmt(d){
 
 /* LOAD */
 async function load(){
-  const r=await fetch(JSON_URL);
-  const j=await r.json();
-  const tbody=document.querySelector("#tbl tbody");
-  const today=new Date(); today.setHours(0,0,0,0);
+  const url = buildJsonUrl();
+  console.log("Loading:", url);
+  const r = await fetch(url);
+  const j = await r.json();
+  const tbody = document.querySelector("#tbl tbody");
+  const today = new Date(); today.setHours(0,0,0,0);
 
   let tot=0, over=0, soon=0;
   const years=new Set();
@@ -247,7 +281,18 @@ const totElem=document.getElementById("tot");
 const overElem=document.getElementById("over");
 const soonElem=document.getElementById("soon");
 
-load();
+/* Initialize: load version first, then load data */
+(async () => {
+  await getVersion();
+  await load();
+})();
+
+/* Auto-reload every 5 minutes to check for updates */
+setInterval(async () => {
+  await getVersion();
+  await load();
+}, 5 * 60 * 1000);
+
 </script>
 
 </body>
