@@ -21,6 +21,18 @@
     tbody td.code { color:#0d47a1; font-weight:700; cursor:pointer; text-decoration:underline; }
     .empty { padding:18px; color:#666; }
     .note { font-size:13px; color:#555; margin-top:6px; }
+    
+    /* LOADING INDICATOR */
+    .loading{
+      display:inline-block;
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      background:#0d47a1;
+      animation:pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+    
     @media (max-width:720px){
       header { flex-direction:column; align-items:stretch; }
       .controls { flex-direction:column; align-items:stretch; }
@@ -80,16 +92,42 @@
         </tr>
       </thead>
       <tbody>
-        <tr><td class="empty" colspan="3">Loading data…</td></tr>
+        <tr><td class="empty" colspan="3"><span class="loading"></span> Loading data…</td></tr>
       </tbody>
     </table>
   </div>
 
   <script>
-    // URLs to the JSON files
+    // VERSION AND CDN URLS
+    const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
     const MATERIAL_CODE_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialcode.json';
     const MATERIAL_DRAWN_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json';
     const HOME_URL = 'https://08electricaldata.github.io/';
+
+    let currentVersion = "1.0.0";
+
+    // FETCH VERSION FOR CACHE BUSTING
+    async function getVersion() {
+      try {
+        const res = await fetch(VERSION_URL + "?t=" + Date.now());
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        currentVersion = data.version || "1.0.0";
+        console.log("Loaded version:", currentVersion);
+      } catch (err) {
+        console.warn("Failed to load version file:", err);
+        currentVersion = "1.0.0";
+      }
+    }
+
+    // BUILD URLS WITH VERSION PARAM
+    function buildMaterialCodeUrl() {
+      return `${MATERIAL_CODE_URL}?v=${currentVersion}`;
+    }
+
+    function buildMaterialDrawnUrl() {
+      return `${MATERIAL_DRAWN_URL}?v=${currentVersion}`;
+    }
 
     // DOM refs
     const typeSelect = document.getElementById('typeSelect');
@@ -144,70 +182,79 @@
       return `${dd}-${mm}-${yyyy}`;
     }
 
-    // Fetch both JSONs (prefetch materialdrawn for quick lookups)
-    Promise.all([
-      fetch(MATERIAL_CODE_URL).then(r => { if (!r.ok) throw new Error('Failed to fetch materialcode.json'); return r.json(); }),
-      fetch(MATERIAL_DRAWN_URL).then(r => { if (!r.ok) throw new Error('Failed to fetch materialdrawn.json'); return r.json(); })
-    ]).then(([codeJson, drawnJson]) => {
-      // materialcode.json processing
-      if (!codeJson || !Array.isArray(codeJson.rows)) throw new Error('materialcode.json invalid');
-      allRows = codeJson.rows.slice(2).filter(r => Array.isArray(r) && r.length >= 4);
-      if (allRows.length === 0) {
-        renderEmpty('No data found after skipping the first two rows.');
-        typeSelect.innerHTML = '<option value="">No types</option>';
-      } else {
-        // Build unique types from column D (index 3)
-        const typesSet = new Set();
-        allRows.forEach(r => {
-          const val = toStr(r[3]).trim();
-          if (val) typesSet.add(val);
-        });
-        const types = Array.from(typesSet).sort((a,b)=> a.localeCompare(b, undefined, {sensitivity:'base'}));
-        // Populate dropdown
-        typeSelect.innerHTML = '';
-        const allOption = document.createElement('option');
-        allOption.value = '__ALL__';
-        allOption.textContent = 'All types';
-        typeSelect.appendChild(allOption);
-        types.forEach(t => {
-          const opt = document.createElement('option'); opt.value = t; opt.textContent = t; typeSelect.appendChild(opt);
-        });
-        typeSelect.value = '__ALL__';
-        applyTypeFilter();
-      }
+    // Fetch both JSONs with version busting
+    async function loadData() {
+      try {
+        const codeUrl = buildMaterialCodeUrl();
+        const drawnUrl = buildMaterialDrawnUrl();
+        console.log("Loading material code:", codeUrl);
+        console.log("Loading material drawn:", drawnUrl);
 
-      // materialdrawn.json processing
-      if (!drawnJson || !Array.isArray(drawnJson.rows)) {
-        drawnRows = [];
-        drawnHeaders = Array.isArray(drawnJson.headers) ? drawnJson.headers : [];
-      } else {
-        drawnRows = drawnJson.rows.slice();
-        drawnHeaders = Array.isArray(drawnJson.headers) ? drawnJson.headers : [];
-        // Build index by material code at column C (index 2)
-        drawnRows.forEach(r => {
-          const code = toStr(r[2]).trim();
-          if (!code) return;
-          if (!drawnIndexByCode.has(code)) drawnIndexByCode.set(code, []);
-          drawnIndexByCode.get(code).push(r);
-        });
-        // Sort each list by date column G (index 6) descending (present -> past)
-        const IDX_G = 6;
-        drawnIndexByCode.forEach((arr, code) => {
-          arr.sort((a,b) => {
-            const da = parseFlexibleDate(a[IDX_G]);
-            const db = parseFlexibleDate(b[IDX_G]);
-            if (da && db) return db - da;
-            if (da && !db) return -1;
-            if (!da && db) return 1;
-            return 0;
+        const [codeRes, drawnRes] = await Promise.all([
+          fetch(codeUrl).then(r => { if (!r.ok) throw new Error('Failed to fetch materialcode.json'); return r.json(); }),
+          fetch(drawnUrl).then(r => { if (!r.ok) throw new Error('Failed to fetch materialdrawn.json'); return r.json(); })
+        ]);
+
+        // materialcode.json processing
+        if (!codeRes || !Array.isArray(codeRes.rows)) throw new Error('materialcode.json invalid');
+        allRows = codeRes.rows.slice(2).filter(r => Array.isArray(r) && r.length >= 4);
+        if (allRows.length === 0) {
+          renderEmpty('No data found after skipping the first two rows.');
+          typeSelect.innerHTML = '<option value="">No types</option>';
+        } else {
+          // Build unique types from column D (index 3)
+          const typesSet = new Set();
+          allRows.forEach(r => {
+            const val = toStr(r[3]).trim();
+            if (val) typesSet.add(val);
           });
-        });
-      }
+          const types = Array.from(typesSet).sort((a,b)=> a.localeCompare(b, undefined, {sensitivity:'base'}));
+          // Populate dropdown
+          typeSelect.innerHTML = '';
+          const allOption = document.createElement('option');
+          allOption.value = '__ALL__';
+          allOption.textContent = 'All types';
+          typeSelect.appendChild(allOption);
+          types.forEach(t => {
+            const opt = document.createElement('option'); opt.value = t; opt.textContent = t; typeSelect.appendChild(opt);
+          });
+          typeSelect.value = '__ALL__';
+          applyTypeFilter();
+        }
 
-    }).catch(err => {
-      renderEmpty('Error loading data: ' + (err.message || err));
-      console.error(err);
-    });
+        // materialdrawn.json processing
+        if (!codeRes || !Array.isArray(drawnRes.rows)) {
+          drawnRows = [];
+          drawnHeaders = Array.isArray(drawnRes.headers) ? drawnRes.headers : [];
+        } else {
+          drawnRows = drawnRes.rows.slice();
+          drawnHeaders = Array.isArray(drawnRes.headers) ? drawnRes.headers : [];
+          // Build index by material code at column C (index 2)
+          drawnRows.forEach(r => {
+            const code = toStr(r[2]).trim();
+            if (!code) return;
+            if (!drawnIndexByCode.has(code)) drawnIndexByCode.set(code, []);
+            drawnIndexByCode.get(code).push(r);
+          });
+          // Sort each list by date column G (index 6) descending (present -> past)
+          const IDX_G = 6;
+          drawnIndexByCode.forEach((arr, code) => {
+            arr.sort((a,b) => {
+              const da = parseFlexibleDate(a[IDX_G]);
+              const db = parseFlexibleDate(b[IDX_G]);
+              if (da && db) return db - da;
+              if (da && !db) return -1;
+              if (!da && db) return 1;
+              return 0;
+            });
+          });
+        }
+
+      } catch (err) {
+        renderEmpty('Error loading data: ' + (err.message || err));
+        console.error(err);
+      }
+    }
 
     // Apply filter by type selection
     function applyTypeFilter() {
@@ -366,6 +413,18 @@
       else window.location.href = HOME_URL;
     });
     homeBtn.addEventListener('click', () => { window.location.href = HOME_URL; });
+
+    // Initialize: load version first, then data
+    (async function init() {
+      await getVersion();
+      await loadData();
+    })();
+
+    // Auto-reload every 5 minutes to check for updates
+    setInterval(async () => {
+      await getVersion();
+      await loadData();
+    }, 5 * 60 * 1000);
 
   </script>
 </body>
