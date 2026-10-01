@@ -16,11 +16,13 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   display:flex;
   align-items:center;
   gap:10px;
+  flex-wrap:wrap;
 }
 
 .header-title{
   flex:1;
   text-align:center;
+  min-width:300px;
 }
 
 .header-title h2{
@@ -43,7 +45,22 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   padding:6px 10px;
   cursor:pointer;
   font-weight:bold;
+  transition:transform .14s ease, box-shadow .14s ease;
 }
+.header-btn:hover{transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,63,136,0.2)}
+
+.version-info {
+  background:rgba(255,255,255,0.2); color:white;
+  padding:6px 10px; border-radius:6px;
+  font-size:12px; font-weight:bold;
+}
+
+.status-indicator {
+  display:inline-block; width:8px; height:8px;
+  border-radius:50%; background:#4caf50;
+  margin-right:4px; animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
 .container{padding:20px}
 
@@ -79,8 +96,10 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   box-shadow:0 2px 5px rgba(0,0,0,.1);
   cursor:pointer;
   text-align:center;
-  transition:.2s
+  transition:.2s;
+  animation:fade-in 0.3s ease-out;
 }
+@keyframes fade-in { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
 .tile:hover{transform:scale(1.03)}
 
 .tile img{
@@ -88,7 +107,8 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   height:150px;
   object-fit:cover;
   border-radius:8px;
-  margin-bottom:8px
+  margin-bottom:8px;
+  background:#e0e7ff;
 }
 
 .tile h4{
@@ -109,12 +129,15 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   border-radius:10px;
   overflow:hidden;
   display:none;
-  position:relative
+  position:relative;
+  animation:slide-up 0.3s ease-out;
 }
+@keyframes slide-up { from{opacity:0; transform:translateY(20px)} to{opacity:1; transform:translateY(0)} }
 .viewer iframe{
   width:100%;
   height:100%;
-  border:none
+  border:none;
+  background:#fff;
 }
 
 /* CONTROLS */
@@ -129,8 +152,10 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   color:white;
   border-radius:6px;
   cursor:pointer;
-  margin-left:8px
+  margin-left:8px;
+  transition:transform .14s ease, box-shadow .14s ease;
 }
+.viewer-controls button:hover{transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,63,136,0.2)}
 
 /* FULLSCREEN */
 .viewer.fullscreen{
@@ -147,6 +172,15 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
   color:red;
   text-align:center;
   font-weight:bold
+}
+
+.loading-spinner {
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#003f88;
+  animation:pulse 1.5s infinite;
 }
 
 @media(max-width:768px){
@@ -169,15 +203,47 @@ body{font-family:Arial;margin:0;background:#f2f6ff}
     <h2>Equipment Drawings</h2>
     <small>Designed and maintained by Rakesh Chandra Sethy</small>
   </div>
+  
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 </div>
 
 <div class="container">
-  <div id="content">Loading drawings...</div>
+  <div id="content">Loading drawings…</div>
 </div>
 
 <script>
-const JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
+/* ===== VERSION-BASED CACHE BUSTING ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
+
+let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+/* BUILD URLS WITH VERSION PARAM AND TIMESTAMP */
+function buildUrl(baseUrl) {
+  return `${baseUrl}?v=${currentVersion}&t=${Date.now()}`;
+}
+
+/* ===== NORMALIZE ===== */
+function normalize(v){
+  return String(v||"").toUpperCase().trim();
+}
 
 /* ===== NAVIGATION ===== */
 function goHome(){
@@ -187,7 +253,6 @@ function goBack(){
   history.back();
 }
 
-/* ✅ NEW NAVIGATION BUTTONS */
 function getCurrentID(){
   return new URLSearchParams(location.search).get("id");
 }
@@ -195,7 +260,7 @@ function getCurrentID(){
 function goDriveInfo(){
   const id = getCurrentID();
   location.href =
-  "https://08electricaldata.github.io/drive-viewer/index.html?id=" +
+  "https://08electricaldata.github.io/drive-viewer/index2.html?id=" +
   encodeURIComponent(id);
 }
 
@@ -213,12 +278,9 @@ function goPLC(){
   encodeURIComponent(id);
 }
 
-function normalize(v){
-  return String(v||"").toUpperCase().trim();
-}
-
 /* ===== Extract Drive File ID ===== */
 function getFileId(link){
+  if(!link) return null;
   const match = link.match(/[-\w]{25,}/);
   return match ? match[0] : null;
 }
@@ -237,101 +299,180 @@ function convertToThumbnail(link){
   return "https://drive.google.com/thumbnail?id="+fileId;
 }
 
-/* ===== Download Counter ===== */
-function incrementDownload(id,index){
-  const key="draw_"+id+"_"+index;
-  let count=localStorage.getItem(key);
+/* ===== LOCAL STORAGE FOR DOWNLOADS ===== */
+function incrementDownload(id, index){
+  const key = "draw_"+id+"_"+index;
+  let count = localStorage.getItem(key);
   count = count ? Number(count)+1 : 1;
-  localStorage.setItem(key,count);
+  localStorage.setItem(key, count);
   return count;
 }
-function getDownload(id,index){
-  return localStorage.getItem("draw_"+id+"_"+index)||0;
+
+function getDownload(id, index){
+  return localStorage.getItem("draw_"+id+"_"+index) || "0";
 }
 
-/* ===== LOAD PAGE ===== */
+/* ===== LOAD PAGE (OPTIMIZED) ===== */
 async function load(){
   const id = normalize(getCurrentID());
-  if(!id) return;
-
-  const j = await (await fetch(JSON_URL)).json();
-  const item = j.rows.find(r=>normalize(r.id)===id);
-
-  if(!item){
-    content.innerHTML =
-      "<div class='card no-data'>No Drawings Available</div>";
+  if(!id) {
+    content.innerHTML = "<div class='card no-data'>Invalid Equipment ID</div>";
     return;
   }
 
-  let html=`<div class="card">
-              <h3>${id}</h3>`;
+  try {
+    console.log(`📐 Loading drawings for ${id}...`);
+    const startTime = performance.now();
+    
+    const j = await (await fetch(buildUrl(JSON_URL))).json();
+    const item = j.rows.find(r => normalize(r.id) === id);
 
-  Object.keys(item).forEach(group=>{
-    if(group==="id") return;
+    if(!item){
+      content.innerHTML =
+        "<div class='card no-data'>No Drawings Available</div>";
+      console.warn("No drawings found for:", id);
+      return;
+    }
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Drawings loaded in ${loadTime.toFixed(2)}ms`);
+
+    renderDrawings(id, item);
+  } catch(e) {
+    console.error("Error loading drawings:", e);
+    content.innerHTML =
+      "<div class='card no-data'>Error loading drawings. Please refresh the page.</div>";
+  }
+}
+
+/* ===== RENDER DRAWINGS (OPTIMIZED WITH DOCUMENTFRAGMENT) ===== */
+function renderDrawings(id, item){
+  const fragment = document.createDocumentFragment();
+  
+  const card = document.createElement("div");
+  card.className = "card";
+  
+  const title = document.createElement("h3");
+  title.textContent = id;
+  card.appendChild(title);
+
+  Object.keys(item).forEach(group => {
+    if(group === "id") return;
     if(!Array.isArray(item[group])) return;
 
-    html+=`<div class="group-title">${group.toUpperCase()}</div>
-           <div class="grid">`;
+    const groupTitle = document.createElement("div");
+    groupTitle.className = "group-title";
+    groupTitle.textContent = group.toUpperCase();
+    card.appendChild(groupTitle);
 
-    item[group].forEach((link,i)=>{
+    const grid = document.createElement("div");
+    grid.className = "grid";
+
+    /* Use DocumentFragment for tiles */
+    const tilesFragment = document.createDocumentFragment();
+
+    item[group].forEach((link, i) => {
       if(!link) return;
 
       const thumb = convertToThumbnail(link);
-      const count = getDownload(id,i);
+      const count = getDownload(id, i);
 
-      html+=`
-        <div class="tile"
-             onclick="openDrawing('${id}',${i},'${link}')">
-          <img src="${thumb}"
-               onerror="this.src='https://via.placeholder.com/300x200?text=PDF'">
-          <h4>Drawing ${i+1}</h4>
-          <small id="count_${i}">Downloads: ${count}</small>
-        </div>`;
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.setAttribute("data-id", id);
+      tile.setAttribute("data-index", i);
+      tile.setAttribute("data-link", link);
+      
+      const img = document.createElement("img");
+      img.src = thumb;
+      img.onerror = () => img.src = "https://via.placeholder.com/300x200?text=PDF";
+      
+      const h4 = document.createElement("h4");
+      h4.textContent = "Drawing " + (i+1);
+      
+      const small = document.createElement("small");
+      small.id = "count_" + i;
+      small.textContent = "Downloads: " + count;
+      
+      tile.appendChild(img);
+      tile.appendChild(h4);
+      tile.appendChild(small);
+      
+      /* Event delegation */
+      tile.onclick = () => openDrawing(id, i, link);
+      
+      tilesFragment.appendChild(tile);
     });
 
-    html+=`</div>`;
+    grid.appendChild(tilesFragment);
+    card.appendChild(grid);
   });
 
-  html+=`
-        <div class="viewer" id="viewerBox">
-          <iframe id="pdfFrame"></iframe>
-        </div>
+  /* Add viewer and controls */
+  const viewer = document.createElement("div");
+  viewer.className = "viewer";
+  viewer.id = "viewerBox";
+  const iframe = document.createElement("iframe");
+  iframe.id = "pdfFrame";
+  viewer.appendChild(iframe);
+  card.appendChild(viewer);
 
-        <div class="viewer-controls">
-          <button onclick="toggleFullScreen()">📱 Full Screen</button>
-          <button onclick="printDrawing()">🖨 Print</button>
-        </div>
-        </div>`;
+  const controls = document.createElement("div");
+  controls.className = "viewer-controls";
+  
+  const fsBtn = document.createElement("button");
+  fsBtn.textContent = "📱 Full Screen";
+  fsBtn.onclick = toggleFullScreen;
+  
+  const printBtn = document.createElement("button");
+  printBtn.textContent = "🖨 Print";
+  printBtn.onclick = printDrawing;
+  
+  controls.appendChild(fsBtn);
+  controls.appendChild(printBtn);
+  card.appendChild(controls);
 
-  content.innerHTML=html;
+  fragment.appendChild(card);
+  content.innerHTML = "";
+  content.appendChild(fragment);
 }
 
-function openDrawing(id,index,link){
+function openDrawing(id, index, link){
+  console.log(`🎨 Opening drawing ${index+1}...`);
+  
   const embed = convertToEmbed(link);
   const frame = document.getElementById("pdfFrame");
   const viewer = document.getElementById("viewerBox");
 
   frame.src = embed;
-  viewer.style.display="block";
+  viewer.style.display = "block";
 
-  const newCount = incrementDownload(id,index);
-  document.getElementById("count_"+index).innerText =
-    "Downloads: "+newCount;
+  const newCount = incrementDownload(id, index);
+  const countEl = document.getElementById("count_" + index);
+  if(countEl) countEl.textContent = "Downloads: " + newCount;
+  
+  console.log(`✓ Drawing displayed (Total opens: ${newCount})`);
 }
 
 function printDrawing(){
-  const frame=document.getElementById("pdfFrame");
+  const frame = document.getElementById("pdfFrame");
   if(frame && frame.contentWindow){
     frame.contentWindow.print();
   }
 }
 
 function toggleFullScreen(){
-  const viewer=document.getElementById("viewerBox");
+  const viewer = document.getElementById("viewerBox");
   viewer.classList.toggle("fullscreen");
 }
 
-load();
+/* ===== INIT ===== */
+(async function(){
+  console.log("📥 Initializing drawings page...");
+  await getVersion();
+  load();
+})();
+
 </script>
 
 </body>
