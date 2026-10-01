@@ -46,6 +46,7 @@ body {
   background: linear-gradient(90deg, rgba(21,101,216,0.06), rgba(11,37,64,0.02));
   border-bottom: 1px solid rgba(11,37,64,0.04);
   backdrop-filter: blur(6px);
+  flex-wrap: wrap;
 }
 
 /* Header buttons (styled like action buttons) */
@@ -86,6 +87,19 @@ body {
   font-weight:600;
   white-space:nowrap;
 }
+
+.version-info {
+  background:rgba(255,255,255,0.2); color:white;
+  padding:6px 10px; border-radius:6px;
+  font-size:12px; font-weight:bold;
+}
+
+.status-indicator {
+  display:inline-block; width:8px; height:8px;
+  border-radius:50%; background:#4caf50;
+  margin-right:4px; animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
 /* Page container */
 .page { max-width:1100px; margin:22px auto; padding:0 18px; }
@@ -222,6 +236,7 @@ thead th {
   text-align:left;
   font-weight:800;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  z-index:10;
 }
 tbody td {
   padding:10px 12px;
@@ -273,6 +288,7 @@ tbody tr:nth-child(even) td{ background: #fbfeff; }
   .controls input{ min-width:120px; }
   .header-title { font-size:16px; }
   table { min-width:600px; font-size:13px; }
+  .version-info{order:3; flex-basis:100%; margin-top:8px;}
 }
 </style>
 </head>
@@ -289,6 +305,8 @@ tbody tr:nth-child(even) td{ background: #fbfeff; }
   <div class="header-credit">
     Designed and Maintained by Rakesh Chandra Sethy
   </div>
+  
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 </div>
 
 <div class="page">
@@ -330,7 +348,38 @@ tbody tr:nth-child(even) td{ background: #fbfeff; }
 </div>
 
 <script>
-/* ===== NORMALIZE (ONLY ADDITION) ===== */
+/* ===== VERSION-BASED CACHE BUSTING ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const DRIVE_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
+const JOBBOOK_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/jobbook.json";
+const HISTORY_YEARS = [2026,2025,2024,2023,2022,2021,2020,2019];
+const HISTORY_BASE = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
+
+let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+/* BUILD URLS WITH VERSION PARAM AND TIMESTAMP */
+function buildUrl(baseUrl) {
+  return `${baseUrl}?v=${currentVersion}&t=${Date.now()}`;
+}
+
+/* ===== NORMALIZE ===== */
 function normalize(v){
   return String(v || "")
     .replace(/[–—?]/g, "-")
@@ -352,18 +401,21 @@ function goDriveInfo(){
     encodeURIComponent(id);
 }
 
-/* ===== DRIVE INFO (UNCHANGED) ===== */
+/* ===== DRIVE INFO ===== */
 async function loadDriveInfo(){
   if(!id) return;
 
-  const url="https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
   try {
-    const r=await fetch(url);
-    const j=await r.json();
+    console.log(`📋 Loading drive info for ${id}...`);
+    const startTime = performance.now();
+    
+    const r = await fetch(buildUrl(DRIVE_JSON));
+    if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+    const j = await r.json();
 
-    let c=null;
-    j.rows.forEach(r=>{
-      if(normalize(`${r[1]}-${r[2]}`) === id) c=r;
+    let c = null;
+    j.rows.forEach(r => {
+      if(normalize(`${r[1]}-${r[2]}`) === id) c = r;
     });
 
     if(!c){
@@ -371,9 +423,12 @@ async function loadDriveInfo(){
       return;
     }
 
-    const type=normalize(c[1]);
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Drive info loaded in ${loadTime.toFixed(2)}ms`);
 
-    if(type==="TRANSFORMER"){
+    const type = normalize(c[1]);
+
+    if(type === "TRANSFORMER"){
       driveInfo.innerHTML=`
         <h3>Transformer No: ${c[2]}</h3>
         <div class="grid">
@@ -389,7 +444,7 @@ async function loadDriveInfo(){
       return;
     }
 
-    if(type==="BREAKER"){
+    if(type === "BREAKER"){
       driveInfo.innerHTML=`
         <h3>Breaker – ${c[2]}</h3>
         <div class="grid">
@@ -419,11 +474,12 @@ async function loadDriveInfo(){
         <p><span class="label">Aux Contactor:</span><span class="value">${c[20]||'—'}</span></p>
       </div>`;
   } catch(e) {
+    console.error("Error loading drive info:", e);
     driveInfo.innerHTML="<div class='empty-msg'>Error loading drive information.</div>";
   }
 }
 
-/* ===== DATE HELPERS (UNCHANGED) ===== */
+/* ===== DATE HELPERS ===== */
 function normalizeDateKey(v){
   if(!v) return "";
   if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return v;
@@ -446,70 +502,101 @@ function formatDate(v){
   return `${d}-${m}-${y}`;
 }
 
-/* ===== JOBBOOK ===== */
-const JOBBOOK_JSON =
-  "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/jobbook.json";
-
+/* ===== JOBBOOK (OPTIMIZED) ===== */
 let jobBookMap = {};
 
 async function loadJobBook(){
   try {
-    const r = await fetch(JOBBOOK_JSON);
+    console.log("📚 Loading jobbook...");
+    const startTime = performance.now();
+    
+    const r = await fetch(buildUrl(JOBBOOK_JSON));
+    if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
     const j = await r.json();
-    j.rows.forEach(r=>{
+    
+    j.rows.forEach(r => {
       const key = normalizeDateKey(r[0]);
       if(key && r[1]) jobBookMap[key] = r[1];
     });
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Jobbook loaded in ${loadTime.toFixed(2)}ms (${Object.keys(jobBookMap).length} entries)`);
   } catch(e) {
     console.error("Error loading job book:", e);
   }
 }
 
-/* ===== HISTORY ===== */
-const HISTORY_YEARS=[2026,2025,2024,2023,2022,2021,2020,2019];
-const HISTORY_BASE="https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/history/";
-
+/* ===== HISTORY (PARALLEL FETCHING) ===== */
 async function loadHistory(){
-  let all=[];
+  try {
+    console.log("📜 Loading history...");
+    const startTime = performance.now();
+    
+    /* Parallel fetch all history years */
+    const promises = HISTORY_YEARS.map(y =>
+      fetch(buildUrl(HISTORY_BASE + y + ".json"))
+        .then(r => r.ok ? r.json() : null)
+        .catch(e => {
+          console.warn(`Failed to fetch ${y}:`, e);
+          return null;
+        })
+    );
 
-  for(const y of HISTORY_YEARS){
-    try{
-      const r=await fetch(HISTORY_BASE+y+".json");
-      if(!r.ok) continue;
-      const j=await r.json();
-      j.rows.forEach(row=>{
+    const results = await Promise.all(promises);
+
+    let all = [];
+
+    results.forEach(j => {
+      if(!j) return;
+      (j.rows || []).forEach(row => {
         if(normalize(`${row[2]}-${row[3]}`) === id){
           all.push(row);
         }
       });
-    }catch(e){}
-  }
+    });
 
-  all.sort((a,b)=>new Date(b[4])-new Date(a[4]));
-  renderHistory(all);
+    all.sort((a,b) => new Date(b[4]) - new Date(a[4]));
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ History loaded in ${loadTime.toFixed(2)}ms (${all.length} records)`);
+
+    renderHistory(all);
+  } catch(e) {
+    console.error("Error loading history:", e);
+    const tbody = document.querySelector("#historyTable tbody");
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">Error loading history</td></tr>`;
+  }
 }
 
 function renderHistory(rows){
-  const tbody=document.querySelector("#historyTable tbody");
-  tbody.innerHTML="";
-  let currentYear="";
+  const tbody = document.querySelector("#historyTable tbody");
+  tbody.innerHTML = "";
+  
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">No history found</td></tr>`;
+    return;
+  }
 
-  rows.forEach(r=>{
-    const key=normalizeDateKey(r[4]);
-    const y=key.slice(-4) || "UNKNOWN";
+  /* Use DocumentFragment for better DOM performance */
+  const fragment = document.createDocumentFragment();
+  let currentYear = "";
 
-    if(y!==currentYear){
-      currentYear=y;
-      const yr=document.createElement("tr");
-      yr.className="year-row";
-      yr.innerHTML=`<td colspan="8">YEAR ${y}</td>`;
-      tbody.appendChild(yr);
+  rows.forEach(r => {
+    const key = normalizeDateKey(r[4]);
+    const y = key.slice(-4) || "UNKNOWN";
+
+    if(y !== currentYear){
+      currentYear = y;
+      const yr = document.createElement("tr");
+      yr.className = "year-row";
+      yr.innerHTML = `<td colspan="8">YEAR ${y}</td>`;
+      fragment.appendChild(yr);
     }
 
     const link = jobBookMap[key] || r[10];
 
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
       <td>${r[0]||""}</td>
       <td>${r[1]||""}</td>
       <td>${formatDate(r[4])}</td>
@@ -518,20 +605,25 @@ function renderHistory(rows){
       <td>${r[7]||""}</td>
       <td>${r[9]||""}</td>
       <td>${link?`<a class="table-link" href="${link}" target="_blank" rel="noopener">Open</a>`:""}</td>`;
-    tbody.appendChild(tr);
+    fragment.appendChild(tr);
   });
 
-  if(!rows.length){
-    tbody.innerHTML=`<tr><td colspan="8" class="empty-msg">No history found</td></tr>`;
-  }
+  tbody.appendChild(fragment);
 }
 
-/* ===== SEARCH ===== */
-document.getElementById("search").addEventListener("input",function(){
-  const v=this.value.toLowerCase().trim();
-  document.querySelectorAll("#historyTable tbody tr").forEach(tr=>{
+/* ===== SEARCH (OPTIMIZED) ===== */
+document.getElementById("search").addEventListener("input", function(){
+  const v = this.value.toLowerCase().trim();
+  if(!v) {
+    document.querySelectorAll("#historyTable tbody tr").forEach(tr => tr.style.display = "");
+    return;
+  }
+  document.querySelectorAll("#historyTable tbody tr").forEach(tr => {
     // keep year rows always visible
-    if(tr.classList.contains("year-row")) { tr.style.display = v ? "none" : ""; return; }
+    if(tr.classList.contains("year-row")) { 
+      tr.style.display = "none"; 
+      return; 
+    }
     tr.style.display = tr.innerText.toLowerCase().includes(v) ? "" : "none";
   });
 });
@@ -539,24 +631,41 @@ document.getElementById("search").addEventListener("input",function(){
 /* ===== EXPORT ===== */
 function exportExcel(){
   const rows = [];
-  document.querySelectorAll("#historyTable thead tr, #historyTable tbody tr").forEach(r=>{
+  document.querySelectorAll("#historyTable thead tr, #historyTable tbody tr").forEach(r => {
+    if(r.classList.contains("year-row")) return; // skip year rows
     const cols = [...r.children].map(c => `"${c.innerText.replace(/"/g,'""')}"`);
     rows.push(cols.join(","));
   });
+  
+  if(rows.length <= 1) {
+    alert("No data to export");
+    return;
+  }
+  
   const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "drive-history.csv";
+  a.download = `drive-history-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-/* ===== INIT ===== */
+/* ===== INIT (PARALLEL LOADING) ===== */
 (async function(){
-  await loadJobBook();
-  loadDriveInfo();
+  console.log("📥 Initializing drive history...");
+  
+  await getVersion();
+  
+  /* Load drive info and jobbook in parallel */
+  await Promise.all([
+    loadDriveInfo(),
+    loadJobBook()
+  ]);
+  
+  /* Then load history (depends on jobbook being loaded) */
   loadHistory();
 })();
+
 </script>
 
 </body>
