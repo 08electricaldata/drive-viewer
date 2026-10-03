@@ -13,7 +13,6 @@
       font-family: Arial, Helvetica, sans-serif; 
       margin: 18px; 
       background: #fafafa;
-      color: #222;
     }
     header { 
       display: flex; 
@@ -24,7 +23,7 @@
     }
     h1 { 
       margin: 0; 
-      font-size: 18px;
+      font-size: 18px; 
       flex: 1;
     }
     .controls { 
@@ -38,18 +37,17 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .controls label { 
-      font-size: 13px;
+      font-size: 13px; 
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
     .controls input[type="text"], 
     .controls input[type="date"] { 
-      padding: 6px 8px;
-      font-size: 13px;
+      padding: 6px 8px; 
+      font-size: 13px; 
       border: 1px solid #ddd;
       border-radius: 3px;
-      font-family: inherit;
     }
     .controls input:focus {
       outline: none;
@@ -62,10 +60,9 @@
       margin-top: 12px; 
       font-size: 13px;
       background: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     th, td { 
-      border: 1px solid #eee; 
+      border: 1px solid #ddd; 
       padding: 8px 6px; 
       text-align: left; 
       vertical-align: top;
@@ -96,7 +93,6 @@
       background: white;
       border-radius: 3px;
       transition: all 0.2s ease;
-      font-family: inherit;
     }
     button:hover {
       background: #f0f0f0;
@@ -121,7 +117,6 @@
       background: white;
       padding: 8px 12px;
       border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .nowrap { 
       white-space: nowrap; 
@@ -132,38 +127,19 @@
       border-radius: 4px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: #0066cc;
-      font-weight: bold;
-    }
-    .loading::after {
-      content: " .";
-      animation: dots 1.5s steps(4,end) infinite;
-    }
-    @keyframes dots {
-      0%,20% { content: " ."; }
-      40% { content: " .."; }
-      60% { content: " ..."; }
-      80%,100% { content: "."; }
-    }
     .error {
       color: #d32f2f;
       background: #ffebee;
       padding: 12px;
       border-radius: 4px;
-      margin-top: 12px;
     }
     @media (max-width: 768px) {
       body { margin: 10px; }
-      header { flex-direction: column; align-items: stretch; }
-      h1 { margin-bottom: 8px; }
-      .buttons { margin-left: 0; justify-content: stretch; }
+      header { flex-direction: column; }
+      .buttons { margin-left: 0; width: 100%; }
       button { flex: 1; }
       .controls { flex-direction: column; }
       .controls > div { width: 100%; }
-      .controls input { width: 100%; }
       table { font-size: 12px; }
       th, td { padding: 6px 4px; }
     }
@@ -179,34 +155,34 @@
     </div>
   </header>
 
-  <div class="controls" aria-label="filters" role="search">
+  <div class="controls" aria-label="filters">
     <div>
-      <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." aria-label="Material code contains" /></label>
+      <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." /></label>
     </div>
     <div>
-      <label class="nowrap">Material Code exact:<br><input id="cExact" type="text" placeholder="exact match..." aria-label="Material code exact match" /></label>
+      <label class="nowrap">Material Code exact:<br><input id="cExact" type="text" placeholder="exact match..." /></label>
     </div>
     <div>
-      <label class="nowrap">Description contains:<br><input id="dContains" type="text" placeholder="contains..." aria-label="Description contains" /></label>
+      <label class="nowrap">Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
     </div>
     <div>
-      <label class="nowrap">Description exact:<br><input id="dExact" type="text" placeholder="exact match..." aria-label="Description exact match" /></label>
+      <label class="nowrap">Description exact:<br><input id="dExact" type="text" placeholder="exact match..." /></label>
     </div>
     <div>
-      <label class="nowrap">From:<br><input id="fromDate" type="date" aria-label="From date" /></label>
+      <label class="nowrap">From:<br><input id="fromDate" type="date" /></label>
     </div>
     <div>
-      <label class="nowrap">To:<br><input id="toDate" type="date" aria-label="To date" /></label>
+      <label class="nowrap">To:<br><input id="toDate" type="date" /></label>
     </div>
     <div>
-      <button id="clearFilters" aria-label="Clear all filters">✕ Clear</button>
+      <button id="clearFilters">✕ Clear</button>
     </div>
   </div>
 
-  <div class="summary"><span id="countText" role="status">Loading...</span></div>
+  <div class="summary"><span id="countText">Loading...</span></div>
 
   <div class="table-wrapper">
-    <table id="dataTable" role="grid" aria-live="polite" aria-label="Material drawn data">
+    <table id="dataTable" aria-live="polite">
       <thead id="tableHead"></thead>
       <tbody id="tableBody"></tbody>
     </table>
@@ -223,27 +199,26 @@
       TIMEOUT: 15000
     };
 
-    const COLUMN_INDEXES = {
-      MATERIAL_CODE: 2,
-      MATERIAL_DESC: 3,
-      DATE: 6,
-      HIDDEN: 0
-    };
+    const IDX_C = 2, IDX_D = 3, IDX_G = 6;
+    const HIDDEN_INDEX = 0;
+
+    let headers = [];
+    let rows = [];
+    let rowsFiltered = [];
 
     /* ================================================
        CACHE MANAGEMENT
     ================================================ */
     const CacheManager = {
       set(key, value, ttl = CONFIG.CACHE_TTL) {
-        const now = Date.now();
         try {
           sessionStorage.setItem(key, JSON.stringify({
             data: value,
-            timestamp: now,
+            timestamp: Date.now(),
             ttl: ttl
           }));
         } catch (e) {
-          console.warn('SessionStorage quota exceeded:', e);
+          console.warn('Cache write failed:', e);
         }
       },
 
@@ -251,62 +226,53 @@
         try {
           const item = sessionStorage.getItem(key);
           if (!item) return null;
-          const parsed = JSON.parse(item);
-          const elapsed = Date.now() - parsed.timestamp;
-          if (elapsed > parsed.ttl) {
+          const { data, timestamp, ttl } = JSON.parse(item);
+          if (Date.now() - timestamp > ttl) {
             sessionStorage.removeItem(key);
             return null;
           }
-          return parsed.data;
+          return data;
         } catch (e) {
-          console.warn('Error reading from cache:', e);
           return null;
         }
       }
     };
 
     /* ================================================
-       STATE
+       FETCH WITH RETRY & TIMEOUT
     ================================================ */
-    let headers = [];
-    let rows = [];
-    let rowsFiltered = [];
-
-    /* ================================================
-       FETCH WITH TIMEOUT & RETRY
-    ================================================ */
-    async function fetchWithTimeout(url, timeout = CONFIG.TIMEOUT, retries = 2) {
-      let lastError;
+    async function fetchData(url) {
+      const MAX_RETRIES = 2;
       
-      for (let attempt = 0; attempt <= retries; attempt++) {
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), timeout);
+          const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
           
           const response = await fetch(url, {
             signal: controller.signal,
-            headers: {
-              'Cache-Control': 'max-age=3600'
-            }
+            headers: { 'Cache-Control': 'max-age=3600' }
           });
           
           clearTimeout(timeoutId);
           
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTP ${response.status}`);
           }
           
-          return response;
+          return await response.json();
+          
         } catch (error) {
-          lastError = error;
-          console.warn(`Fetch attempt ${attempt + 1} failed:`, error.message);
-          if (attempt < retries) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          clearTimeout(timeoutId);
+          console.warn(`Attempt ${attempt + 1} failed:`, error.message);
+          
+          if (attempt < MAX_RETRIES) {
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          } else {
+            throw error;
           }
         }
       }
-      
-      throw lastError;
     }
 
     /* ================================================
@@ -314,41 +280,30 @@
     ================================================ */
     async function loadData() {
       const cacheKey = `materialdrawn_${CONFIG.CACHE_VERSION}`;
-      const countText = document.getElementById('countText');
       
       try {
+        // Try cache first
         let data = CacheManager.get(cacheKey);
         
         if (!data) {
-          const cacheBusterUrl = `${CONFIG.DATA_URL}?v=${CONFIG.CACHE_VERSION}_${Date.now()}`;
-          console.log('Fetching from:', cacheBusterUrl);
-          
-          const response = await fetchWithTimeout(cacheBusterUrl);
-          data = await response.json();
-          
-          if (!data.headers || !Array.isArray(data.headers)) {
-            throw new Error('Invalid JSON structure: missing headers');
-          }
-          if (!data.rows || !Array.isArray(data.rows)) {
-            throw new Error('Invalid JSON structure: missing rows');
-          }
-          
-          CacheManager.set(cacheKey, data, CONFIG.CACHE_TTL);
+          // Cache miss - fetch with cache buster
+          const url = `${CONFIG.DATA_URL}?v=${Date.now()}`;
+          data = await fetchData(url);
+          CacheManager.set(cacheKey, data);
         }
 
-        headers = data.headers || [];
-        rows = data.rows || [];
-        
-        rows = rows.filter(r => {
-          const v = safeString(r[COLUMN_INDEXES.MATERIAL_CODE]);
-          return v !== '';
-        });
+        headers = Array.isArray(data.headers) ? data.headers : [];
+        rows = Array.isArray(data.rows) ? data.rows : [];
+
+        // Filter non-blank material codes
+        rows = rows.filter(r => safeString(r[IDX_C]) !== '');
 
         buildTableHead();
 
+        // Sort by date (newest first)
         rows.sort((a, b) => {
-          const da = parseFlexibleDate(a[COLUMN_INDEXES.DATE]);
-          const db = parseFlexibleDate(b[COLUMN_INDEXES.DATE]);
+          const da = parseFlexibleDate(a[IDX_G]);
+          const db = parseFlexibleDate(b[IDX_G]);
           if (da && db) return db - da;
           if (da && !db) return -1;
           if (!da && db) return 1;
@@ -356,12 +311,12 @@
         });
 
         applyFilters();
-        
+
       } catch (err) {
-        console.error('Error loading data:', err);
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        countText.innerHTML = `<span class="error">⚠ Error loading data: ${escapeHTML(err.message)}</span>`;
+        console.error('Error:', err);
+        document.getElementById('tableBody').innerHTML = '';
+        document.getElementById('countText').innerHTML = 
+          `<span class="error">⚠ Error: ${err.message}</span>`;
       }
     }
 
@@ -369,40 +324,32 @@
        TABLE BUILDING
     ================================================ */
     function getVisibleIndexes() {
-      let totalCols = headers.length;
-      if (!totalCols && rows.length) {
-        totalCols = Math.max(...rows.map(r => r.length));
-      }
+      let totalCols = headers.length || 
+        (rows.length ? Math.max(...rows.map(r => r.length)) : 0);
+      
       const indexes = [];
       for (let i = 0; i < totalCols; i++) {
-        if (i === COLUMN_INDEXES.HIDDEN) continue;
-        indexes.push(i);
+        if (i !== HIDDEN_INDEX) indexes.push(i);
       }
       return indexes;
     }
 
     function buildTableHead() {
       const thead = document.getElementById('tableHead');
-      thead.innerHTML = '';
       const tr = document.createElement('tr');
       const visible = getVisibleIndexes();
 
-      if (headers.length) {
-        visible.forEach(idx => {
-          const th = document.createElement('th');
+      visible.forEach(idx => {
+        const th = document.createElement('th');
+        if (headers.length) {
           th.textContent = headers[idx] || '';
-          th.scope = 'col';
-          tr.appendChild(th);
-        });
-      } else {
-        visible.forEach(idx => {
-          const th = document.createElement('th');
-          const letter = String.fromCharCode(65 + (idx % 26));
-          th.textContent = 'Col ' + letter;
-          th.scope = 'col';
-          tr.appendChild(th);
-        });
-      }
+        } else {
+          th.textContent = 'Col ' + String.fromCharCode(65 + (idx % 26));
+        }
+        tr.appendChild(th);
+      });
+
+      thead.innerHTML = '';
       thead.appendChild(tr);
     }
 
@@ -414,27 +361,24 @@
       const cExactVal = document.getElementById('cExact').value.trim().toLowerCase();
       const dContainsVal = document.getElementById('dContains').value.trim().toLowerCase();
       const dExactVal = document.getElementById('dExact').value.trim().toLowerCase();
-      const from = document.getElementById('fromDate').value 
-        ? new Date(document.getElementById('fromDate').value) 
-        : null;
-      const to = document.getElementById('toDate').value 
-        ? new Date(document.getElementById('toDate').value) 
-        : null;
-      
+      const from = document.getElementById('fromDate').value ? 
+        new Date(document.getElementById('fromDate').value) : null;
+      const to = document.getElementById('toDate').value ? 
+        new Date(document.getElementById('toDate').value) : null;
+
       if (to) to.setHours(23, 59, 59, 999);
 
       rowsFiltered = rows.filter(r => {
-        const c = safeString(r[COLUMN_INDEXES.MATERIAL_CODE]).toLowerCase();
-        const d = safeString(r[COLUMN_INDEXES.MATERIAL_DESC]).toLowerCase();
+        const c = safeString(r[IDX_C]).toLowerCase();
+        const d = safeString(r[IDX_D]).toLowerCase();
 
         if (cExactVal && c !== cExactVal) return false;
         if (cContainsVal && !c.includes(cContainsVal)) return false;
-
         if (dExactVal && d !== dExactVal) return false;
         if (dContainsVal && !d.includes(dContainsVal)) return false;
 
         if (from || to) {
-          const dt = parseFlexibleDate(r[COLUMN_INDEXES.DATE]);
+          const dt = parseFlexibleDate(r[IDX_G]);
           if (!dt) return false;
           if (from && dt < from) return false;
           if (to && dt > to) return false;
@@ -451,22 +395,9 @@
     ================================================ */
     function renderTableBody() {
       const tbody = document.getElementById('tableBody');
-      const countText = document.getElementById('countText');
       const visible = getVisibleIndexes();
 
       tbody.innerHTML = '';
-
-      if (rowsFiltered.length === 0 && rows.length > 0) {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = visible.length;
-        td.textContent = 'No rows match the current filters.';
-        td.style.textAlign = 'center';
-        td.style.padding = '20px';
-        td.style.color = '#999';
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-      }
 
       rowsFiltered.forEach(row => {
         const tr = document.createElement('tr');
@@ -474,7 +405,7 @@
           const td = document.createElement('td');
           const v = row[idx];
           
-          if (idx === COLUMN_INDEXES.DATE) {
+          if (idx === IDX_G) {
             const dt = parseFlexibleDate(v);
             td.textContent = dt ? dt.toISOString().split('T')[0] : safeString(v);
           } else {
@@ -486,55 +417,32 @@
         tbody.appendChild(tr);
       });
 
-      countText.textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows`;
+      document.getElementById('countText').textContent = 
+        `Showing ${rowsFiltered.length} of ${rows.length} rows`;
     }
 
     /* ================================================
-       UTILITIES
+       HELPERS
     ================================================ */
     function safeString(v) {
-      if (v === null || v === undefined) return '';
-      return String(v).trim();
-    }
-
-    function escapeHTML(str) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return String(str).replace(/[&<>"']/g, char => map[char]);
+      return String(v || '').trim();
     }
 
     function parseFlexibleDate(val) {
-      if (val === null || val === undefined) return null;
-      
-      if (typeof val === 'number') {
-        const d = new Date(val);
-        if (!isNaN(d)) return d;
-      }
+      if (!val) return null;
       
       const s = String(val).trim();
-      if (!s) return null;
-
       const d1 = new Date(s);
       if (!isNaN(d1)) return d1;
 
       const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
       if (m) {
-        const day = Number(m[1]);
-        const mon = Number(m[2]) - 1;
-        const yr = Number(m[3]);
-
+        const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
         if (m[4]) {
-          const rest = m[4];
-          const iso = `${yr.toString().padStart(4, '0')}-${String(mon + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${rest}`;
+          const iso = `${yr.toString().padStart(4,'0')}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}T${m[4]}`;
           const d2 = new Date(iso);
           if (!isNaN(d2)) return d2;
         }
-
         const d = new Date(yr, mon, day);
         if (!isNaN(d)) return d;
       }
@@ -545,49 +453,30 @@
     /* ================================================
        EVENT LISTENERS
     ================================================ */
-    document.getElementById('backBtn').addEventListener('click', () => {
-      history.back();
-    });
+    document.getElementById('backBtn').addEventListener('click', () => history.back());
+    document.getElementById('homeBtn').addEventListener('click', () => 
+      window.open('https://08electricaldata.github.io/', '_self'));
+    document.getElementById('infoBtn').addEventListener('click', () => 
+      window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'));
 
-    document.getElementById('homeBtn').addEventListener('click', () => {
-      window.open('https://08electricaldata.github.io/', '_self');
-    });
-
-    document.getElementById('infoBtn').addEventListener('click', () => {
-      window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank');
-    });
-
-    const filterInputs = ['cContains', 'cExact', 'dContains', 'dExact', 'fromDate', 'toDate'];
-    filterInputs.forEach(id => {
-      document.getElementById(id).addEventListener('input', applyFilters);
-    });
+    [document.getElementById('cContains'),
+     document.getElementById('cExact'),
+     document.getElementById('dContains'),
+     document.getElementById('dExact'),
+     document.getElementById('fromDate'),
+     document.getElementById('toDate')].forEach(el => 
+      el.addEventListener('input', applyFilters));
 
     document.getElementById('clearFilters').addEventListener('click', () => {
-      filterInputs.forEach(id => {
-        document.getElementById(id).value = '';
-      });
+      ['cContains','cExact','dContains','dExact','fromDate','toDate'].forEach(id => 
+        document.getElementById(id).value = '');
       applyFilters();
     });
 
     /* ================================================
-       SERVICE WORKER (Optional)
+       INIT
     ================================================ */
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js').catch(() => {
-          // Service worker not available
-        });
-      });
-    }
-
-    /* ================================================
-       INITIALIZATION
-    ================================================ */
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', loadData);
-    } else {
-      loadData();
-    }
+    loadData();
   </script>
 </body>
 </html>
