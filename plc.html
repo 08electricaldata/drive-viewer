@@ -44,6 +44,28 @@ body{
   font-weight:700;
 }
 
+.version-info {
+  display:inline-block;
+  margin-left:12px;
+  background:rgba(255,255,255,0.2); 
+  color:white;
+  padding:6px 10px; 
+  border-radius:6px;
+  font-size:12px; 
+  font-weight:bold;
+}
+
+.status-indicator {
+  display:inline-block; 
+  width:8px; 
+  height:8px;
+  border-radius:50%; 
+  background:#4caf50;
+  margin-right:4px; 
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
+
 /* Page container */
 .container{ max-width:1100px; margin:20px auto; padding:0 16px; }
 
@@ -86,7 +108,11 @@ body{
   box-shadow: 0 10px 26px rgba(21,101,216,0.12);
   transition: transform .14s ease, box-shadow .14s ease, opacity .12s;
 }
-.icon-btn:hover{ transform: translateY(-3px); box-shadow: 0 18px 36px rgba(21,101,216,0.14); }
+.icon-btn:hover:not(:disabled){ transform: translateY(-3px); box-shadow: 0 18px 36px rgba(21,101,216,0.14); }
+.icon-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
 .icon-btn.ghost {
   background: transparent;
   color: var(--accent);
@@ -153,6 +179,7 @@ thead th{
   font-weight:800;
   text-align:left;
   border-bottom:1px solid rgba(255,255,255,0.06);
+  z-index:10;
 }
 tbody td{
   padding:10px 12px;
@@ -161,7 +188,7 @@ tbody td{
   vertical-align:middle;
 }
 tbody tr:nth-child(even) td{ background:#fbfeff; }
-tr:hover td{ background:#f2f6ff; }
+tbody tr:hover td{ background:#f2f6ff; }
 
 /* visible small board column width */
 table th:nth-child(5),
@@ -203,7 +230,9 @@ table td:nth-child(6) {
   background: var(--pill-bg);
   border: 1.4px solid var(--pill-border);
   box-shadow: 0 8px 18px rgba(11,37,64,0.04), inset 0 1px 0 rgba(255,255,255,0.7);
+  animation:fade-in 0.3s ease-out;
 }
+@keyframes fade-in { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
 .pill .k { color:var(--accent); font-weight:800; display:block; margin-bottom:6px; }
 .pill .v { font-weight:700; color:#0f2333; }
 
@@ -217,13 +246,17 @@ table td:nth-child(6) {
   .icon-btn{ padding:8px 12px; font-size:13px; }
   table{ min-width:600px; font-size:12px; }
   .pills{ grid-template-columns: 1fr; }
+  .version-info { display:block; margin-top:8px; margin-left:0; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="top-credit">Designed and Maintained by RAKESH CHANDRA SETHY</div>
+<div class="top-credit">
+  Designed and Maintained by RAKESH CHANDRA SETHY
+  <span class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></span>
+</div>
 
 <div class="container">
   <div id="app" class="card">
@@ -232,14 +265,34 @@ table td:nth-child(6) {
 </div>
 
 <script>
-/* ===== JSDELIVR CDN URLS ===== */
-const JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/plc/plc.json";
+/* ===== VERSION-BASED CACHE BUSTING ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/plc/plc.json";
+const DRAWING_JSON = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
 
-const DRAWING_JSON =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/drawings.json";
+let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
 
-let drawingAvailable = false;
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+/* BUILD URLS WITH VERSION PARAM AND TIMESTAMP */
+function buildUrl(baseUrl) {
+  return `${baseUrl}?v=${currentVersion}&t=${Date.now()}`;
+}
 
 function getDriveFromURL(){
   const params = new URLSearchParams(window.location.search);
@@ -273,69 +326,108 @@ function goDrawing(){
   encodeURIComponent(id);
 }
 
+let drawingAvailable = false;
+
 async function checkDrawingAvailability(id){
-  try{
-    const j = await (await fetch(DRAWING_JSON)).json();
+  try {
+    console.log("🎨 Checking drawing availability...");
+    const startTime = performance.now();
+    
+    const j = await (await fetch(buildUrl(DRAWING_JSON))).json();
     const found = j.rows.find(r =>
       String(r.id || "").toUpperCase() === id.toUpperCase()
     );
+    
     drawingAvailable = !!found;
-  }catch(e){
+    
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Drawing check completed in ${loadTime.toFixed(2)}ms (Available: ${drawingAvailable})`);
+  } catch(e){
     console.error("Error checking drawing availability:", e);
     drawingAvailable = false;
   }
 }
 
-function createTable(title, dataArray){
+function escapeHtml(s){
+  if(!s) return "";
+  return String(s)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;');
+}
+
+function createTableElement(title, dataArray){
   const showBoard = dataArray.some(row =>
     row.board && row.board.trim() !== ""
   );
 
-  let html = `
-    <div class="section-title">${title}</div>
-    <div class="table-wrap card" style="padding:0;">
-      <table aria-label="${title}">
-        <thead>
-          <tr>
-            <th>Signal</th>
-            <th>Tag</th>
-            <th>Address</th>
-            <th>Description</th>
-            <th>Panel</th>
-            <th>TB No</th>
-            <th>RL</th>
-            ${showBoard ? "<th>Board</th>" : ""}
-          </tr>
-        </thead>
-        <tbody>
-  `;
+  const card = document.createElement("div");
+  card.className = "card";
+  
+  const sectionTitle = document.createElement("div");
+  sectionTitle.className = "section-title";
+  sectionTitle.textContent = title;
+  card.appendChild(sectionTitle);
 
-  dataArray.forEach(row=>{
-    html += `
-      <tr>
-        <td>${escapeHtml(row.signal||"")}</td>
-        <td>${escapeHtml(row.tag||"")}</td>
-        <td>${escapeHtml(row.address||"")}</td>
-        <td>${escapeHtml(row.description||"")}</td>
-        <td>${escapeHtml(row.panel||"")}</td>
-        <td>${escapeHtml(row.tb||"")}</td>
-        <td>${escapeHtml(row.rl||"")}</td>
-        ${showBoard ? `<td>${escapeHtml(row.board||"")}</td>` : ""}
-      </tr>
-    `;
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "table-wrap";
+  
+  const table = document.createElement("table");
+  table.setAttribute("aria-label", title);
+  
+  /* THEAD */
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  
+  const headers = ["Signal", "Tag", "Address", "Description", "Panel", "TB No", "RL"];
+  if(showBoard) headers.push("Board");
+  
+  headers.forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    headerRow.appendChild(th);
   });
-
-  html += `</tbody></table></div>`;
-  return html;
-}
-
-function escapeHtml(s){
-  if(!s) return "";
-  return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+  
+  /* TBODY */
+  const tbody = document.createElement("tbody");
+  const fragment = document.createDocumentFragment();
+  
+  dataArray.forEach(row => {
+    const tr = document.createElement("tr");
+    
+    const cells = [
+      row.signal || "",
+      row.tag || "",
+      row.address || "",
+      row.description || "",
+      row.panel || "",
+      row.tb || "",
+      row.rl || ""
+    ];
+    
+    if(showBoard) cells.push(row.board || "");
+    
+    cells.forEach(cellText => {
+      const td = document.createElement("td");
+      td.textContent = cellText;
+      tr.appendChild(td);
+    });
+    
+    fragment.appendChild(tr);
+  });
+  
+  tbody.appendChild(fragment);
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  card.appendChild(tableWrap);
+  
+  return card;
 }
 
 async function loadPLC(){
-
   const app = document.getElementById("app");
   const driveID = getDriveFromURL();
 
@@ -344,52 +436,90 @@ async function loadPLC(){
     return;
   }
 
-  try{
+  try {
+    console.log(`⚡ Loading PLC data for ${driveID}...`);
+    const startTime = performance.now();
 
-    await checkDrawingAvailability(driveID);
+    /* Parallel load version, drawing check, and PLC data */
+    await getVersion();
+    
+    const [drawingCheckPromise, plcPromise] = await Promise.all([
+      checkDrawingAvailability(driveID),
+      fetch(buildUrl(JSON_URL)).then(r => {
+        if(!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+        return r.json();
+      })
+    ]);
 
-    // Header + Buttons ALWAYS visible
-    let html = `
-      <div class="header">
-        <h2>PLC ADDRESS OF DRIVE — ${escapeHtml(driveID)}</h2>
-      </div>
-
-      <div class="button-bar" style="justify-content:center;margin-bottom:8px;">
-        <button class="icon-btn" onclick="goBack()">⬅ Back</button>
-        <button class="icon-btn" onclick="goHome()">🏠 Home</button>
-        <button class="icon-btn" onclick="goDriveInfo()">ℹ️ Drive Info</button>
-        <button class="icon-btn" onclick="goHistory()">📜 History</button>
-        <button id="drawBtn" class="icon-btn" onclick="goDrawing()">📐 Drawings</button>
-      </div>
-    `;
-
-    const response = await fetch(JSON_URL);
-    if(!response.ok){
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
+    const data = await plcPromise;
     const drive = data.drives[driveID.toUpperCase()];
 
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ PLC data loaded in ${loadTime.toFixed(2)}ms`);
+
+    /* Create app content using DocumentFragment */
+    const fragment = document.createDocumentFragment();
+
+    /* HEADER */
+    const headerDiv = document.createElement("div");
+    headerDiv.className = "header";
+    const headerH2 = document.createElement("h2");
+    headerH2.textContent = `PLC ADDRESS OF DRIVE — ${escapeHtml(driveID)}`;
+    headerDiv.appendChild(headerH2);
+    fragment.appendChild(headerDiv);
+
+    /* BUTTONS */
+    const buttonBar = document.createElement("div");
+    buttonBar.className = "button-bar";
+    buttonBar.style.justifyContent = "center";
+    buttonBar.style.marginBottom = "8px";
+
+    const buttons = [
+      { text: "⬅ Back", onclick: "goBack()" },
+      { text: "🏠 Home", onclick: "goHome()" },
+      { text: "ℹ️ Drive Info", onclick: "goDriveInfo()" },
+      { text: "📜 History", onclick: "goHistory()" },
+      { text: "📐 Drawings", onclick: "goDrawing()", id: "drawBtn" }
+    ];
+
+    buttons.forEach(btn => {
+      const button = document.createElement("button");
+      button.className = "icon-btn";
+      button.textContent = btn.text;
+      button.onclick = eval(`() => ${btn.onclick}`);
+      if(btn.id) button.id = btn.id;
+      buttonBar.appendChild(button);
+    });
+
+    fragment.appendChild(buttonBar);
+
+    /* UPDATED TIMESTAMP */
+    if(data.updated){
+      const updatedDiv = document.createElement("div");
+      updatedDiv.className = "updated";
+      updatedDiv.style.textAlign = "center";
+      updatedDiv.style.marginBottom = "12px";
+      updatedDiv.textContent = `Last Updated: ${new Date(data.updated).toLocaleString("en-GB")}`;
+      fragment.appendChild(updatedDiv);
+    }
+
     if(!drive){
-      html += `
-        <div class="no-data">No PLC data found for: ${escapeHtml(driveID)}</div>
-      `;
-      app.innerHTML = html;
-
+      const noDriveDiv = document.createElement("div");
+      noDriveDiv.className = "no-data";
+      noDriveDiv.textContent = `No PLC data found for: ${escapeHtml(driveID)}`;
+      fragment.appendChild(noDriveDiv);
+      
+      app.innerHTML = "";
+      app.appendChild(fragment);
+      
       if(!drawingAvailable){
-        setTimeout(()=>{ const b = document.getElementById("drawBtn"); if(b) b.disabled = true; }, 0);
+        const btn = document.getElementById("drawBtn");
+        if(btn) btn.disabled = true;
       }
-
       return;
     }
 
-    html += `
-      <div class="updated" style="text-align:center;margin-bottom:12px;">
-        Last Updated: ${new Date(data.updated).toLocaleString("en-GB")}
-      </div>
-    `;
-
-    // Optional summary pills (Drive meta) if present
+    /* META PILLS */
     const meta = drive.meta || {};
     const metaEntries = [];
     if(meta.model) metaEntries.push({k:"Model", v:meta.model});
@@ -398,40 +528,63 @@ async function loadPLC(){
     if(meta.address) metaEntries.push({k:"PLC Address", v:meta.address});
 
     if(metaEntries.length){
-      html += `<div class="pills">`;
-      metaEntries.forEach(e=>{
-        html += `<div class="pill"><div class="k">${escapeHtml(e.k)}</div><div class="v">${escapeHtml(e.v)}</div></div>`;
+      const pillsDiv = document.createElement("div");
+      pillsDiv.className = "pills";
+      
+      metaEntries.forEach(e => {
+        const pill = document.createElement("div");
+        pill.className = "pill";
+        pill.innerHTML = `<div class="k">${escapeHtml(e.k)}</div><div class="v">${escapeHtml(e.v)}</div>`;
+        pillsDiv.appendChild(pill);
       });
-      html += `</div>`;
+      
+      fragment.appendChild(pillsDiv);
     }
 
+    /* INPUTS TABLE */
     if(drive.inputs && drive.inputs.length){
-      html += createTable("INPUT SIGNALS", drive.inputs);
+      fragment.appendChild(createTableElement("INPUT SIGNALS", drive.inputs));
     } else {
-      html += `<div class="card"><div class="no-data">No input signals available</div></div>`;
+      const noInputsCard = document.createElement("div");
+      noInputsCard.className = "card";
+      noInputsCard.innerHTML = "<div class='no-data'>No input signals available</div>";
+      fragment.appendChild(noInputsCard);
     }
 
+    /* OUTPUTS TABLE */
     if(drive.outputs && drive.outputs.length){
-      html += createTable("OUTPUT SIGNALS", drive.outputs);
+      fragment.appendChild(createTableElement("OUTPUT SIGNALS", drive.outputs));
     } else {
-      html += `<div class="card"><div class="no-data">No output signals available</div></div>`;
+      const noOutputsCard = document.createElement("div");
+      noOutputsCard.className = "card";
+      noOutputsCard.innerHTML = "<div class='no-data'>No output signals available</div>";
+      fragment.appendChild(noOutputsCard);
     }
 
-    app.innerHTML = html;
+    /* Replace app content */
+    app.innerHTML = "";
+    app.appendChild(fragment);
 
+    /* Disable drawing button if not available */
     if(!drawingAvailable){
       const btn = document.getElementById("drawBtn");
       if(btn) btn.disabled = true;
     }
 
-  }catch(err){
+    console.log(`✓ PLC page rendered (Inputs: ${drive.inputs?.length || 0}, Outputs: ${drive.outputs?.length || 0})`);
+
+  } catch(err){
     app.innerHTML = "<div class='no-data'>Error loading PLC JSON file.</div>";
     console.error("Error loading PLC data:", err);
   }
-
 }
 
-loadPLC();
+/* ===== INIT ===== */
+(async function(){
+  console.log("📥 Initializing PLC address viewer...");
+  loadPLC();
+})();
+
 </script>
 
 </body>
