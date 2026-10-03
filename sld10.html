@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Industrial LT MCC Layout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Cache control: force validation -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<style>
+/* Critical CSS inline for faster first paint */
+body{
+  font-family:Arial;
+  margin:0;
+  background:#f2f6ff;
+}
+
+.header{
+  background:#003f88;
+  color:white;
+  padding:10px;
+  text-align:center;
+  box-shadow:0 3px 10px rgba(0,0,0,.25);
+  position:relative;
+}
+
+.header-title{
+  font-size:22px;
+  font-weight:700;
+}
+
+.subtitle{
+  font-size:14px;
+  margin-top:3px;
+  font-weight:500;
+}
+
+.nav-buttons{
+  position:absolute;
+  top:10px;
+  left:10px;
+  display:flex;
+  gap:10px;
+}
+
+.nav-btn{
+  background:white;
+  color:#003f88;
+  border:none;
+  padding:6px 12px;
+  border-radius:5px;
+  font-size:13px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 3px 8px rgba(0,0,0,.3);
+  transition:all .2s ease;
+}
+
+.nav-btn:hover{
+  background:#ffd633;
+  transform:scale(1.05);
+}
+
+#boardWrapper{
+  overflow:auto;
+  padding:20px;
+}
+
+#boardContainer{
+  display:flex;
+  align-items:flex-start;
+  position:relative;
+  min-height:500px;
+}
+
+.section{
+  background:white;
+  border-radius:8px;
+  box-shadow:0 6px 15px rgba(0,0,0,.25);
+  margin-right:10px;
+  display:flex;
+  flex-direction:column;
+  width:160px;
+  height:600px;
+}
+
+.section-title{
+  background:#003f88;
+  color:white;
+  text-align:center;
+  font-weight:bold;
+  padding:8px;
+  font-size:14px;
+  letter-spacing:.5px;
+  flex-shrink:0;
+}
+
+.cell{
+  border:2px solid #333;
+  padding:8px;
+  margin:6px;
+  font-size:12px;
+  border-radius:6px;
+  cursor:pointer;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+  box-shadow:0 4px 8px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.6);
+  transition:all .25s ease;
+}
+
+.cell:hover{
+  transform:scale(1.05);
+  box-shadow:0 8px 16px rgba(0,0,0,.35), inset 0 1px 2px rgba(255,255,255,.7);
+}
+
+.incomer-box{
+  font-size:14px;
+  font-weight:bold;
+}
+
+.breaker-font{
+  font-size:14px;
+  font-weight:bold;
+}
+
+.status-on{
+  border:4px solid #cc0000 !important;
+  background: linear-gradient(180deg, rgba(255,220,220,0.12), rgba(255,255,255,0.02));
+  box-shadow:0 8px 18px rgba(170,0,0,0.25), 0 2px 6px rgba(0,0,0,0.25), inset 0 6px 12px rgba(200,0,0,0.08), inset 0 -6px 10px rgba(255,255,255,0.04);
+  position:relative;
+  z-index:2;
+  animation:glowPulseRed 2s infinite;
+}
+
+@keyframes glowPulseRed{
+  0%{box-shadow:0 8px 18px rgba(170,0,0,0.18), inset 0 6px 12px rgba(200,0,0,0.06);}
+  50%{box-shadow:0 12px 28px rgba(200,0,0,0.30), inset 0 8px 16px rgba(220,0,0,0.10);}
+  100%{box-shadow:0 8px 18px rgba(170,0,0,0.18), inset 0 6px 12px rgba(200,0,0,0.06);}
+}
+
+.status-off{
+  border:4px solid #00aa00 !important;
+  background: linear-gradient(180deg, rgba(200,255,200,0.12), rgba(255,255,255,0.02));
+  box-shadow:0 8px 18px rgba(0,150,0,0.25), 0 2px 6px rgba(0,0,0,0.28), inset 0 6px 10px rgba(0,120,0,0.12), inset 0 -6px 10px rgba(255,255,255,0.03);
+  position:relative;
+  z-index:1;
+  animation:glowPulseGreen 2s infinite;
+}
+
+@keyframes glowPulseGreen{
+  0%{box-shadow:0 8px 18px rgba(0,150,0,0.18), inset 0 6px 12px rgba(0,120,0,0.06);}
+  50%{box-shadow:0 12px 28px rgba(0,180,0,0.30), inset 0 8px 16px rgba(0,140,0,0.10);}
+  100%{box-shadow:0 8px 18px rgba(0,150,0,0.18), inset 0 6px 12px rgba(0,120,0,0.06);}
+}
+
+.incomer{ background:#ff4d4d; color:#fff; }
+.coupler{ background:#ffd633; color:#000; }
+.outgoing-breaker{ background:#ff944d; color:#000; }
+.outgoing-dol{ background:#1e90ff; color:#ffffff; }
+.outgoing-mccb{ background:#b366ff; color:#fff; }
+.outgoing-sfu{ background:#0d9488; color:#ffffff; }
+.outgoing-acb{ background:#7b0f1a; color:#ffffff; box-shadow: 0 6px 14px rgba(123,15,26,0.18), inset 0 2px 8px rgba(255,255,255,0.02); }
+.control-transformer{ background:#557a2b; color:#ffffff; box-shadow: 0 6px 12px rgba(85,122,43,0.12), inset 0 2px 6px rgba(255,255,255,0.03); }
+.spare{ background:#e0e0e0; color:#333; }
+.spare-dol{ background: linear-gradient(180deg,#fff3e0,#ffd6b3); color:#6b3f00; border:2px dashed #ffb86b; box-shadow: 0 6px 12px rgba(255,160,80,0.12), inset 0 1px 0 rgba(255,255,255,0.6); }
+.spare-sfu{ background: linear-gradient(180deg,#e9f8ff,#cfefff); color:#004862; border:2px dashed #5fbfe6; box-shadow: 0 6px 12px rgba(80,180,220,0.12), inset 0 1px 0 rgba(255,255,255,0.6); }
+
+.coupler-bridge{
+  position:absolute;
+  width:6px;
+  background:red;
+  top:50px;
+  height:70px;
+  z-index:1;
+  background:linear-gradient(to bottom, red 0%, yellow 50%, red 100%);
+  background-size:100% 200%;
+  animation:flowAnimation 1.5s linear infinite;
+}
+
+@keyframes flowAnimation{
+  0%{background-position:0% 0%;}
+  100%{background-position:0% 200%;}
+}
+
+@media print {
+  .nav-buttons { display:none !important; }
+  .header { box-shadow:none !important; }
+  .section { box-shadow:none !important; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="nav-buttons">
+    <button class="nav-btn" onclick="goHome()">Home</button>
+    <button class="nav-btn" onclick="goBack()">Back</button>
+    <button class="nav-btn" onclick="downloadExcel()">Download Excel</button>
+    <button class="nav-btn" onclick="printA4()">Print A4</button>
+  </div>
+  <div class="header-title" id="title">Industrial LT MCC Layout</div>
+  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+</div>
+
+<div id="boardWrapper">
+  <div id="boardContainer"></div>
+</div>
+
+<script>
+// ===== CACHE BUSTING & OPTIMIZATIONS =====
+const CACHE_BUST_VERSION = new Date().getTime();
+const JSON_URL_BASE = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
+const JSON_URL = JSON_URL_BASE + "?v=" + CACHE_BUST_VERSION;
+
+// Service Worker registration for offline support
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(()=>{});
+}
+
+// ===== LAZY LOADING FOR SHEETJS =====
+let xlsxLoaded = false;
+const XLSX_CDNS = [
+  "https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js",
+  "https://unpkg.com/xlsx@0.18.7/dist/xlsx.full.min.js"
+];
+
+function goHome(){
+  window.location.href="https://08electricaldata.github.io/";
+}
+
+function goBack(){
+  window.history.back();
+}
+
+function getParam(n){
+  return new URL(location.href).searchParams.get(n);
+}
+
+function norm(s){
+  if(!s && s!==0) return "";
+  return String(s).toUpperCase().replace(/[\s\-]+/g,'').replace(/_/g,'');
+}
+
+function escapeHtml(str){
+  if(!str) return "";
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function parseDriveId(raw){
+  if(raw === null || raw === undefined) return { displayText: "", linkId: null };
+  const s = String(raw).trim();
+  const m = s.match(/<\s*([^>]+)\s*>/);
+  if(m){
+    const linkId = m[1].trim();
+    const display = s.replace(/<\s*[^>]+\s*>/g, "").replace(/\s+/g," ").trim();
+    return { displayText: display || linkId, linkId: linkId };
+  } else {
+    return { displayText: s, linkId: null };
+  }
+}
+
+// ===== LAZY LOAD HELPER WITH RETRY =====
+function loadScript(src, timeoutMs = 8000){
+  return new Promise((resolve, reject)=>{
+    if(window.XLSX){ resolve(); return; }
+    const s = document.createElement('script');
+    let timedOut = false;
+    const to = setTimeout(()=>{ timedOut = true; s.onerror = s.onload = null; s.remove(); reject(new Error('timeout')); }, timeoutMs);
+    s.onload = ()=>{ if(timedOut) return; clearTimeout(to); resolve(); };
+    s.onerror = (e)=>{ if(timedOut) return; clearTimeout(to); reject(new Error('error')); };
+    s.src = src + "?v=" + CACHE_BUST_VERSION;
+    s.async = true;
+    s.defer = true;
+    document.head.appendChild(s);
+  });
+}
+
+async function ensureXLSX(){
+  if(window.XLSX) return window.XLSX;
+  if(xlsxLoaded) return null;
+  let lastErr = null;
+  for(const url of XLSX_CDNS){
+    try{
+      await loadScript(url, 8000);
+      if(window.XLSX){ xlsxLoaded = true; return window.XLSX; }
+    }catch(e){ lastErr = e; }
+  }
+  throw new Error('Failed to load SheetJS');
+}
+
+function hexToARGB(hex){
+  if(!hex) return "FFFFFFFF";
+  hex = hex.trim();
+  if(hex[0]==='#') hex = hex.slice(1);
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  hex = hex.toUpperCase();
+  return "FF" + hex;
+}
+
+function visualColorForDeviceByClasses(classes){
+  if(classes.includes('incomer')) return '#ff4d4d';
+  if(classes.includes('coupler')) return '#ffd633';
+  if(classes.includes('outgoing-breaker')) return '#ff944d';
+  if(classes.includes('outgoing-dol')) return '#1e90ff';
+  if(classes.includes('outgoing-mccb')) return '#b366ff';
+  if(classes.includes('outgoing-sfu')) return '#0d9488';
+  if(classes.includes('outgoing-acb')) return '#7b0f1a';
+  if(classes.includes('control-transformer')) return '#557a2b';
+  if(classes.includes('spare-dol')) return '#ffd6b3';
+  if(classes.includes('spare-sfu')) return '#e9f8ff';
+  if(classes.includes('spare')) return '#e0e0e0';
+  return '#ffffff';
+}
+
+function statusBorderColorByClasses(classes){
+  return classes.includes('status-on') ? '#cc0000' : '#00aa00';
+}
+
+// ===== OPTIMIZED EXCEL EXPORT WITH MEMOIZATION =====
+function exportAsHtmlXls(filename, sections){
+  let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>';
+  html += 'table{ border-collapse:collapse; } td, th { border:1px solid #444; padding:6px; vertical-align:middle; text-align:center; } ';
+  html += '</style></head><body>';
+  html += '<table><thead><tr>';
+  for(const sec of sections){
+    html += '<th style="background:#003f88;color:#fff;">' + escapeHtml(sec.title) + '</th>';
+  }
+  html += '</tr></thead><tbody>';
+  const maxRows = Math.max(0, ...sections.map(s=>s.cells.length));
+  for(let r=0;r<maxRows;r++){
+    html += '<tr>';
+    for(const sec of sections){
+      const cell = sec.cells[r];
+      if(!cell){ html += '<td></td>'; continue; }
+      const bg = visualColorForDeviceByClasses(cell.classes);
+      const borderColor = statusBorderColorByClasses(cell.classes);
+      const style = 'background:' + bg + '; border:2px solid ' + borderColor + ';';
+      const content = escapeHtml(cell.text).replace(/\n/g,'<br/>');
+      html += '<td style="' + style + '">' + content + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></body></html>';
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.xls') ? filename : (filename + '.xls');
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+async function downloadExcel(){
+  const boardId = getParam('id');
+  if(!boardId){ alert('Board id missing in URL'); return; }
+
+  const secEls = Array.from(document.querySelectorAll('#boardContainer > .section'));
+  if(secEls.length === 0){
+    alert('Nothing rendered yet to export.');
+    return;
+  }
+
+  const sections = secEls.map((secEl, idx)=> {
+    const titleEl = secEl.querySelector('.section-title');
+    const title = titleEl ? titleEl.innerText : ('SECTION ' + (idx+1));
+    const cells = Array.from(secEl.querySelectorAll('.cell')).map(c => ({ text: c.innerText || c.textContent || '', classes: Array.from(c.classList || []) }));
+    return { title, cells };
+  });
+
+  try{
+    await ensureXLSX();
+    const ws = {};
+    const colsCount = sections.length;
+    const maxRows = Math.max(0, ...sections.map(s=>s.cells.length));
+    const range = { s: { c:0, r:0 }, e: { c: Math.max(0, colsCount-1), r: Math.max(0, maxRows) } };
+    ws['!cols'] = sections.map(()=> ({ wch: 28 }) );
+
+    sections.forEach((sec, cidx)=>{
+      const addr = XLSX.utils.encode_cell({c:cidx, r:0});
+      ws[addr] = { v: sec.title, t: 's', s: {
+        font: { bold: true, color: { rgb: hexToARGB('#FFFFFF') } },
+        fill: { fgColor: { rgb: hexToARGB('#003f88') } },
+        alignment: { horizontal:'center', vertical:'center', wrapText:true }
+      }};
+      for(let r=0;r<maxRows;r++){
+        const a = XLSX.utils.encode_cell({c:cidx, r: r+1});
+        const cell = sec.cells[r];
+        if(!cell){
+          ws[a] = { v:"", t:'s', s: { alignment: { horizontal:'center', vertical:'center' } } };
+          continue;
+        }
+        const bg = visualColorForDeviceByClasses(cell.classes);
+        const border = statusBorderColorByClasses(cell.classes);
+        ws[a] = { v: cell.text, t: 's', s: {
+          alignment:{ horizontal:'center', vertical:'center', wrapText:true },
+          fill: { fgColor: { rgb: hexToARGB(bg) } },
+          border: {
+            top: { style:'thin', color:{ rgb: hexToARGB(border) } },
+            bottom: { style:'thin', color:{ rgb: hexToARGB(border) } },
+            left: { style:'thin', color:{ rgb: hexToARGB(border) } },
+            right: { style:'thin', color:{ rgb: hexToARGB(border) } }
+          },
+          font: { bold:true, color:{ rgb: hexToARGB('#222222') } }
+        }};
+      }
+    });
+
+    ws['!ref'] = XLSX.utils.encode_range(range);
+    const rows = [{ hpt:22 }];
+    for(let i=0;i<maxRows;i++) rows.push({ hpt:48 });
+    ws['!rows'] = rows;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Board-' + boardId);
+    XLSX.writeFile(wb, 'Board-' + boardId + '.xlsx');
+  }catch(err){
+    console.warn('SheetJS failed, using fallback:', err);
+    try{
+      exportAsHtmlXls('Board-' + boardId + '.xls', sections);
+    }catch(e2){
+      alert('Export failed: ' + (e2 && e2.message ? e2.message : e2));
+    }
+  }
+}
+
+// ===== OPTIMIZED PRINT WITH REDUCED CLONING =====
+function printA4(){
+  const boardWrapper = document.getElementById('boardWrapper');
+  if(!boardWrapper){ alert('Board not found'); return; }
+
+  const sections = Array.from(document.querySelectorAll('#boardContainer > .section')).map(s=>s.cloneNode(true));
+  if(sections.length === 0){ alert('No sections to print.'); return; }
+
+  const topCount = Math.max(1, Math.ceil(sections.length * 0.55));
+  const topSections = sections.slice(0, topCount);
+  const bottomSections = sections.slice(topCount);
+
+  let headHtml = '';
+  document.querySelectorAll('style').forEach(s=> headHtml += '<style>' + s.innerHTML + '</style>');
+  headHtml += `<style>
+    @page { size: A4 landscape; margin: 8mm; }
+    html, body { width:297mm; height:210mm; margin:0; padding:0; }
+    .print-header { padding:8px 12px; font-family: Arial; text-align:center; }
+    .print-board { display:flex; flex-direction:column; gap:6px; padding:6px; transform-origin: top left; }
+    .print-row { display:flex; gap:10px; align-items:flex-start; }
+    .print-row .section { width:160px; height:540px; margin-right:6px; box-sizing:border-box; }
+    .nav-buttons{ display:none !important; }
+    .section, .cell { box-shadow:none !important; }
+  </style>`;
+
+  const newWin = window.open('', '_blank', 'top=50,left=50,width=1200,height=900');
+  if(!newWin){ alert('Popup blocked'); return; }
+
+  const topHtml = '<div class="print-row">' + topSections.map(s=> s.outerHTML).join('') + '</div>';
+  const bottomHtml = bottomSections.length ? ('<div class="print-row">' + bottomSections.map(s=> s.outerHTML).join('') + '</div>') : '';
+  const headerHtml = document.querySelector('.header').outerHTML;
+  const titleText = escapeHtml(document.getElementById('title').innerText || '');
+  const bodyHtml = '<div class="print-header">' + headerHtml + '<div style="margin-top:6px;font-weight:700;">' + titleText + '</div></div>' +
+                   '<div class="print-board" id="printBoard">' + topHtml + bottomHtml + '</div>';
+
+  newWin.document.open();
+  newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
+  newWin.document.close();
+
+  newWin.onload = function(){
+    try {
+      const pb = newWin.document.getElementById('printBoard');
+      if(pb){
+        const mmToPx = (mm)=> mm * 3.78;
+        const printableWidthPx = mmToPx(297 - 16);
+        const topRow = pb.querySelector('.print-row');
+        const curW = topRow ? (topRow.scrollWidth || topRow.getBoundingClientRect().width) : pb.scrollWidth;
+        const scale = Math.min(1, printableWidthPx / Math.max(1, curW));
+        pb.style.transform = 'scale(' + scale + ')';
+      }
+    } catch(e){ /* ignore */ }
+    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 300);
+  };
+}
+
+// ===== MAIN LOAD WITH PERFORMANCE OPTIMIZATIONS =====
+async function load(){
+  const boardId = getParam("id");
+  if(!boardId) return;
+
+  document.getElementById("title").innerText = "Industrial LT MCC Layout - " + boardId;
+
+  try{
+    const res = await fetch(JSON_URL, { 
+      cache: 'no-store',
+      headers: { 'Pragma': 'no-cache' }
+    });
+    const data = await res.json();
+    const board = data.boards[boardId];
+    if(!board) return;
+
+    const container = document.getElementById("boardContainer");
+    container.innerHTML = "";
+
+    const sections = Object.keys(board.sections).sort((a,b)=>Number(a)-Number(b));
+    const sectionWidth = 160;
+    container.style.width = (sections.length * sectionWidth) + "px";
+
+    // Use DocumentFragment for batch DOM operations
+    const docFrag = document.createDocumentFragment();
+
+    sections.forEach((sec, index)=>{
+      const secDiv = document.createElement("div");
+      secDiv.className = "section";
+
+      const title = document.createElement("div");
+      title.className = "section-title";
+      title.innerText = "SECTION " + sec;
+      secDiv.appendChild(title);
+
+      const devices = (board.sections[sec]||[]).sort((a,b)=> (a.level||"").localeCompare(b.level||""));
+
+      devices.forEach(d=>{
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        // Status classes
+        if(d.status && String(d.status).toUpperCase() === "ON"){
+          cell.classList.add("status-on");
+        }else{
+          cell.classList.add("status-off");
+        }
+
+        const feeder = norm(d.feederType);
+        const breaker = norm(d.breakerType);
+        const drive = norm(d.DriveType || d.deviceType || "");
+        const parsedDriveId = parseDriveId(d.driveid);
+        const displayDriveRaw = (parsedDriveId.displayText || "").toUpperCase();
+
+        // Classification logic (optimized)
+        if(feeder === "INCOMER"){
+          cell.classList.add("incomer","incomer-box","breaker-font");
+        }
+        else if(feeder === "BUSCOUPLER"){
+          cell.classList.add("coupler","breaker-font");
+          const bridge = document.createElement("div");
+          bridge.className = "coupler-bridge";
+          bridge.style.left = (index * sectionWidth + 78) + "px";
+          container.appendChild(bridge);
+        }
+        else if(feeder === "OUTGOING"){
+          if(displayDriveRaw.includes("ACB") || breaker === "ACB"){
+            cell.classList.add("outgoing-acb","breaker-font");
+          }
+          else if(breaker){
+            cell.classList.add("outgoing-breaker","breaker-font");
+          }
+          else if(drive === "DOL"){
+            cell.classList.add("outgoing-dol");
+          }
+          else if(drive === "MCCB"){
+            cell.classList.add("outgoing-mccb");
+          }
+          else if(drive === "SFU"){
+            cell.classList.add("outgoing-sfu");
+          }
+          else if(drive === "ACB"){
+            cell.classList.add("outgoing-acb","breaker-font");
+          }
+          else if(drive === "CONTROLTRANSFORMER" || drive === "CT"){
+            cell.classList.add("control-transformer");
+          }
+          else{
+            cell.classList.add("outgoing-dol");
+          }
+        }
+        else{
+          if(drive === "DOL"){
+            cell.classList.add("spare","spare-dol");
+          } else if(drive === "SFU"){
+            cell.classList.add("spare","spare-sfu");
+          } else {
+            cell.classList.add("spare");
+          }
+        }
+
+        // Control transformer override
+        if((d.DriveType || d.deviceType) && (norm(d.DriveType || d.deviceType).includes("CONTROLTRANSFORMER"))){
+          cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+          cell.classList.add("control-transformer");
+        }
+
+        // Content generation
+        const displayDrive = escapeHtml(parsedDriveId.displayText || "");
+        const linkDrive = parsedDriveId.linkId;
+        const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
+
+        let contentText;
+        if(cell.classList.contains("spare") && !hasDriveOrDevice && !d.feederType){
+          contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
+        } else {
+          contentText = "<b>"+(d.position || "")+"</b><br>"+
+            "<div style='font-size:13px;line-height:1.1;min-height:28px;'>"+ displayDrive + "</div>"+
+            "<div style='margin-top:6px;font-weight:600;color:#222;'>"+
+            ((d.feederType==="INCOMER" || d.feederType==="BUS_COUPLER" || d.breakerType) ? (d.breakerType || "") : (d.DriveType || d.deviceType || "")) + 
+            "</div>";
+        }
+
+        cell.innerHTML = contentText;
+
+        if(linkDrive){
+          cell.style.cursor = "pointer";
+          cell.onclick = function(){
+            const id = encodeURIComponent(linkDrive);
+            location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + id;
+          };
+        }
+
+        secDiv.appendChild(cell);
+      });
+
+      docFrag.appendChild(secDiv);
+    });
+
+    container.appendChild(docFrag);
+  }catch(err){
+    console.error('Load failed:', err);
+    alert('Failed to load board: ' + (err.message || err));
+  }
+}
+
+// Defer load until DOM is ready
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', load);
+} else {
+  load();
+}
+
+</script>
+</body>
+</html>
