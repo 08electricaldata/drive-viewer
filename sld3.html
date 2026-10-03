@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <title>Industrial LT MCC Layout</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 
 <style>
 body{
@@ -277,6 +280,10 @@ body{
 </div>
 
 <script>
+// CACHE BUSTING VERSION
+const CACHE_BUST = '?v=' + new Date().getTime();
+const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json" + CACHE_BUST;
+
 function goHome(){
   window.location.href="https://08electricaldata.github.io/";
 }
@@ -284,9 +291,6 @@ function goHome(){
 function goBack(){
   window.history.back();
 }
-
-const JSON_URL =
-"https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
 
 function getParam(n){
   return new URL(location.href).searchParams.get(n);
@@ -569,173 +573,179 @@ async function load(){
   document.getElementById("title").innerText =
   "Industrial LT MCC Layout - " + boardId;
 
-  const res=await fetch(JSON_URL);
-  const data=await res.json();
+  try {
+    const res = await fetch(JSON_URL);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
 
-  const board=data.boards[boardId];
-  if(!board) return;
+    const board=data.boards[boardId];
+    if(!board) return;
 
-  const container=document.getElementById("boardContainer");
-  container.innerHTML="";
+    const container=document.getElementById("boardContainer");
+    container.innerHTML="";
 
-  const sections=Object.keys(board.sections)
-    .sort((a,b)=>Number(a)-Number(b));
+    const sections=Object.keys(board.sections)
+      .sort((a,b)=>Number(a)-Number(b));
 
-  const sectionWidth=160;
-  container.style.width=(sections.length*sectionWidth)+"px";
+    const sectionWidth=160;
+    container.style.width=(sections.length*sectionWidth)+"px";
 
-  sections.forEach((sec,index)=>{
+    sections.forEach((sec,index)=>{
 
-    const secDiv=document.createElement("div");
-    secDiv.className="section";
+      const secDiv=document.createElement("div");
+      secDiv.className="section";
 
-    const title=document.createElement("div");
-    title.className="section-title";
-    title.innerText="SECTION "+sec;
-    secDiv.appendChild(title);
+      const title=document.createElement("div");
+      title.className="section-title";
+      title.innerText="SECTION "+sec;
+      secDiv.appendChild(title);
 
-    const devices=(board.sections[sec]||[])
-      .sort((a,b)=> (a.level||"").localeCompare(b.level||""));
+      const devices=(board.sections[sec]||[])
+        .sort((a,b)=> (a.level||"").localeCompare(b.level||""));
 
-    devices.forEach(d=>{
+      devices.forEach(d=>{
 
-      const cell=document.createElement("div");
-      cell.className="cell";
+        const cell=document.createElement("div");
+        cell.className="cell";
 
-      // status ON / OFF classes
-      if(d.status && String(d.status).toUpperCase()==="ON"){
-        cell.classList.add("status-on");
-      }else{
-        cell.classList.add("status-off");
-      }
-
-      const feeder = norm(d.feederType);
-      const breaker = norm(d.breakerType);
-      const drive = norm(d.DriveType || d.deviceType || "");
-
-      // parse driveid now so we can inspect display text for 'ACB'
-      const parsedDriveId = parseDriveId(d.driveid);
-      const displayDriveRaw = (parsedDriveId.displayText || "").toUpperCase();
-
-      // INCOMER
-      if(feeder === "INCOMER"){
-        cell.classList.add("incomer","incomer-box","breaker-font");
-      }
-      // BUS COUPLER
-      else if(feeder === "BUSCOUPLER" || feeder === "BUSCOUPLER"){
-        cell.classList.add("coupler","breaker-font");
-
-        const bridge=document.createElement("div");
-        bridge.className="coupler-bridge";
-        bridge.style.left=(index*sectionWidth + 78)+"px";
-        container.appendChild(bridge);
-      }
-      // OUTGOING
-      else if(feeder === "OUTGOING"){
-
-        // NEW: If drive display (outside <>) contains 'ACB' anywhere, treat as ACB and use outgoing-acb
-        if(displayDriveRaw.includes("ACB")){
-          cell.classList.add("outgoing-acb","breaker-font");
+        // status ON / OFF classes
+        if(d.status && String(d.status).toUpperCase()==="ON"){
+          cell.classList.add("status-on");
+        }else{
+          cell.classList.add("status-off");
         }
-        // If breakerType is ACB -> outgoing-acb (explicit)
-        else if(breaker === "ACB"){
-          cell.classList.add("outgoing-acb","breaker-font");
+
+        const feeder = norm(d.feederType);
+        const breaker = norm(d.breakerType);
+        const drive = norm(d.DriveType || d.deviceType || "");
+
+        // parse driveid now so we can inspect display text for 'ACB'
+        const parsedDriveId = parseDriveId(d.driveid);
+        const displayDriveRaw = (parsedDriveId.displayText || "").toUpperCase();
+
+        // INCOMER
+        if(feeder === "INCOMER"){
+          cell.classList.add("incomer","incomer-box","breaker-font");
         }
-        // other breaker types present -> outgoing-breaker
-        else if(breaker){
-          cell.classList.add("outgoing-breaker","breaker-font");
+        // BUS COUPLER
+        else if(feeder === "BUSCOUPLER" || feeder === "BUSCOUPLER"){
+          cell.classList.add("coupler","breaker-font");
+
+          const bridge=document.createElement("div");
+          bridge.className="coupler-bridge";
+          bridge.style.left=(index*sectionWidth + 78)+"px";
+          container.appendChild(bridge);
         }
-        else {
-          // No breakerType: decide by DriveType / deviceType
-          if(drive === "DOL"){
-            cell.classList.add("outgoing-dol");
-          }
-          else if(drive === "MCCB"){
-            cell.classList.add("outgoing-mccb");
-          }
-          else if(drive === "SFU"){
-            cell.classList.add("outgoing-sfu");
-          }
-          else if(drive === "ACB"){
-            // drive labelled as ACB rather than breakerType
+        // OUTGOING
+        else if(feeder === "OUTGOING"){
+
+          // NEW: If drive display (outside <>) contains 'ACB' anywhere, treat as ACB and use outgoing-acb
+          if(displayDriveRaw.includes("ACB")){
             cell.classList.add("outgoing-acb","breaker-font");
           }
-          else if(drive === "CONTROLTRANSFORMER" || drive === "CT" || drive === "CONTROLTRANSFORMER"){
-            // If the device itself is a control transformer
-            cell.classList.add("control-transformer");
+          // If breakerType is ACB -> outgoing-acb (explicit)
+          else if(breaker === "ACB"){
+            cell.classList.add("outgoing-acb","breaker-font");
           }
-          else{
-            cell.classList.add("outgoing-dol");
+          // other breaker types present -> outgoing-breaker
+          else if(breaker){
+            cell.classList.add("outgoing-breaker","breaker-font");
+          }
+          else {
+            // No breakerType: decide by DriveType / deviceType
+            if(drive === "DOL"){
+              cell.classList.add("outgoing-dol");
+            }
+            else if(drive === "MCCB"){
+              cell.classList.add("outgoing-mccb");
+            }
+            else if(drive === "SFU"){
+              cell.classList.add("outgoing-sfu");
+            }
+            else if(drive === "ACB"){
+              // drive labelled as ACB rather than breakerType
+              cell.classList.add("outgoing-acb","breaker-font");
+            }
+            else if(drive === "CONTROLTRANSFORMER" || drive === "CT" || drive === "CONTROLTRANSFORMER"){
+              // If the device itself is a control transformer
+              cell.classList.add("control-transformer");
+            }
+            else{
+              cell.classList.add("outgoing-dol");
+            }
           }
         }
-      }
-      // SPARE or other (not incomer/bus/outgoing)
-      else{
-        // spare handling: prefer DriveType/deviceType to pick spare variant
-        if(drive === "DOL"){
-          cell.classList.add("spare","spare-dol");
-        } else if(drive === "SFU"){
-          cell.classList.add("spare","spare-sfu");
+        // SPARE or other (not incomer/bus/outgoing)
+        else{
+          // spare handling: prefer DriveType/deviceType to pick spare variant
+          if(drive === "DOL"){
+            cell.classList.add("spare","spare-dol");
+          } else if(drive === "SFU"){
+            cell.classList.add("spare","spare-sfu");
+          } else {
+            cell.classList.add("spare");
+          }
+        }
+
+        // Additionally, if DriveType specifically indicates CONTROL TRANSFORMER anywhere, ensure its color
+        if(d.DriveType && norm(d.DriveType).includes("CONTROLTRANSFORMER")){
+          cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+          cell.classList.add("control-transformer");
+        } else if(d.deviceType && norm(d.deviceType).includes("CONTROLTRANSFORMER")){
+          cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+          cell.classList.add("control-transformer");
+        }
+
+        // --- new parsing behavior for driveid in column D ---
+        const parsed = parsedDriveId;
+        const displayDrive = escapeHtml(parsed.displayText || "");
+        const linkDrive = parsed.linkId; // null if no <...>
+
+        // content: build using parsed displayDrive
+        let contentText;
+        const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
+
+        if(cell.classList.contains("spare") && !hasDriveOrDevice && !d.feederType){
+          contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
         } else {
-          cell.classList.add("spare");
+          contentText =
+            "<b>"+(d.position || "")+"</b><br>"+
+            "<div style='font-size:13px;line-height:1.1;min-height:28px;'>"+ displayDrive + "</div>"+
+            "<div style='margin-top:6px;font-weight:600;color:#222;'>"+
+            (
+              (d.feederType==="INCOMER" ||
+               d.feederType==="BUS_COUPLER" ||
+               d.breakerType)
+              ? (d.breakerType || "")
+              : (d.DriveType || d.deviceType || "")
+            ) + "</div>";
         }
-      }
 
-      // Additionally, if DriveType specifically indicates CONTROL TRANSFORMER anywhere, ensure its color
-      if(d.DriveType && norm(d.DriveType).includes("CONTROLTRANSFORMER")){
-        cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
-        cell.classList.add("control-transformer");
-      } else if(d.deviceType && norm(d.deviceType).includes("CONTROLTRANSFORMER")){
-        cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
-        cell.classList.add("control-transformer");
-      }
+        cell.innerHTML = contentText;
 
-      // --- new parsing behavior for driveid in column D ---
-      const parsed = parsedDriveId;
-      const displayDrive = escapeHtml(parsed.displayText || "");
-      const linkDrive = parsed.linkId; // null if no <...>
+        // set click target only if linkDrive exists (i.e., <...> was present)
+        if(linkDrive){
+          cell.style.cursor = "pointer";
+          cell.onclick=function(){
+            const id = encodeURIComponent(linkDrive);
+            location.href=
+            "https://08electricaldata.github.io/drive-viewer/index2.html?id="+ id;
+          };
+        } else {
+          // remove any pointer cursor if present and prevent navigation
+          cell.style.cursor = "default";
+          cell.onclick = null;
+        }
 
-      // content: build using parsed displayDrive
-      let contentText;
-      const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
+        secDiv.appendChild(cell);
+      });
 
-      if(cell.classList.contains("spare") && !hasDriveOrDevice && !d.feederType){
-        contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
-      } else {
-        contentText =
-          "<b>"+(d.position || "")+"</b><br>"+
-          "<div style='font-size:13px;line-height:1.1;min-height:28px;'>"+ displayDrive + "</div>"+
-          "<div style='margin-top:6px;font-weight:600;color:#222;'>"+
-          (
-            (d.feederType==="INCOMER" ||
-             d.feederType==="BUS_COUPLER" ||
-             d.breakerType)
-            ? (d.breakerType || "")
-            : (d.DriveType || d.deviceType || "")
-          ) + "</div>";
-      }
-
-      cell.innerHTML = contentText;
-
-      // set click target only if linkDrive exists (i.e., <...> was present)
-      if(linkDrive){
-        cell.style.cursor = "pointer";
-        cell.onclick=function(){
-          const id = encodeURIComponent(linkDrive);
-          location.href=
-          "https://08electricaldata.github.io/drive-viewer/index2.html?id="+ id;
-        };
-      } else {
-        // remove any pointer cursor if present and prevent navigation
-        cell.style.cursor = "default";
-        cell.onclick = null;
-      }
-
-      secDiv.appendChild(cell);
+      container.appendChild(secDiv);
     });
-
-    container.appendChild(secDiv);
-  });
+  } catch(err) {
+    console.error('Load failed:', err);
+    alert('Failed to load board: ' + (err.message || err));
+  }
 }
 
 load();
