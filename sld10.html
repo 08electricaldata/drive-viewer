@@ -4,19 +4,18 @@
 <meta charset="UTF-8">
 <title>Industrial LT MCC Layout</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Cache control: force validation -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
 <style>
-/* Critical CSS inline for faster first paint */
 body{
   font-family:Arial;
   margin:0;
   background:#f2f6ff;
 }
 
+/* HEADER */
 .header{
   background:#003f88;
   color:white;
@@ -37,6 +36,7 @@ body{
   font-weight:500;
 }
 
+/* NEW NAV BUTTONS */
 .nav-buttons{
   position:absolute;
   top:10px;
@@ -63,6 +63,7 @@ body{
   transform:scale(1.05);
 }
 
+/* BOARD AREA */
 #boardWrapper{
   overflow:auto;
   padding:20px;
@@ -75,6 +76,7 @@ body{
   min-height:500px;
 }
 
+/* SECTIONS */
 .section{
   background:white;
   border-radius:8px;
@@ -97,6 +99,7 @@ body{
   flex-shrink:0;
 }
 
+/* BASE CELL */
 .cell{
   border:2px solid #333;
   padding:8px;
@@ -109,13 +112,19 @@ body{
   flex-direction:column;
   justify-content:center;
   text-align:center;
-  box-shadow:0 4px 8px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.6);
+
+  box-shadow:
+    0 4px 8px rgba(0,0,0,.25),
+    inset 0 1px 2px rgba(255,255,255,.6);
+
   transition:all .25s ease;
 }
 
 .cell:hover{
   transform:scale(1.05);
-  box-shadow:0 8px 16px rgba(0,0,0,.35), inset 0 1px 2px rgba(255,255,255,.7);
+  box-shadow:
+    0 8px 16px rgba(0,0,0,.35),
+    inset 0 1px 2px rgba(255,255,255,.7);
 }
 
 .incomer-box{
@@ -128,10 +137,15 @@ body{
   font-weight:bold;
 }
 
+/* STATUS - SWAPPED: OFF is GREEN, ON is RED */
 .status-on{
   border:4px solid #cc0000 !important;
   background: linear-gradient(180deg, rgba(255,220,220,0.12), rgba(255,255,255,0.02));
-  box-shadow:0 8px 18px rgba(170,0,0,0.25), 0 2px 6px rgba(0,0,0,0.25), inset 0 6px 12px rgba(200,0,0,0.08), inset 0 -6px 10px rgba(255,255,255,0.04);
+  box-shadow:
+    0 8px 18px rgba(170,0,0,0.25),          
+    0 2px 6px rgba(0,0,0,0.25),             
+    inset 0 6px 12px rgba(200,0,0,0.08),    
+    inset 0 -6px 10px rgba(255,255,255,0.04);
   position:relative;
   z-index:2;
   animation:glowPulseRed 2s infinite;
@@ -143,10 +157,15 @@ body{
   100%{box-shadow:0 8px 18px rgba(170,0,0,0.18), inset 0 6px 12px rgba(200,0,0,0.06);}
 }
 
+/* OFF state — thick GREEN border + 3D effect */
 .status-off{
   border:4px solid #00aa00 !important;
   background: linear-gradient(180deg, rgba(200,255,200,0.12), rgba(255,255,255,0.02));
-  box-shadow:0 8px 18px rgba(0,150,0,0.25), 0 2px 6px rgba(0,0,0,0.28), inset 0 6px 10px rgba(0,120,0,0.12), inset 0 -6px 10px rgba(255,255,255,0.03);
+  box-shadow:
+    0 8px 18px rgba(0,150,0,0.25),
+    0 2px 6px rgba(0,0,0,0.28),
+    inset 0 6px 10px rgba(0,120,0,0.12),
+    inset 0 -6px 10px rgba(255,255,255,0.03);
   position:relative;
   z-index:1;
   animation:glowPulseGreen 2s infinite;
@@ -158,18 +177,60 @@ body{
   100%{box-shadow:0 8px 18px rgba(0,150,0,0.18), inset 0 6px 12px rgba(0,120,0,0.06);}
 }
 
+/* Colors for feeder types */
 .incomer{ background:#ff4d4d; color:#fff; }
 .coupler{ background:#ffd633; color:#000; }
 .outgoing-breaker{ background:#ff944d; color:#000; }
-.outgoing-dol{ background:#1e90ff; color:#ffffff; }
-.outgoing-mccb{ background:#b366ff; color:#fff; }
-.outgoing-sfu{ background:#0d9488; color:#ffffff; }
-.outgoing-acb{ background:#7b0f1a; color:#ffffff; box-shadow: 0 6px 14px rgba(123,15,26,0.18), inset 0 2px 8px rgba(255,255,255,0.02); }
-.control-transformer{ background:#557a2b; color:#ffffff; box-shadow: 0 6px 12px rgba(85,122,43,0.12), inset 0 2px 6px rgba(255,255,255,0.03); }
-.spare{ background:#e0e0e0; color:#333; }
-.spare-dol{ background: linear-gradient(180deg,#fff3e0,#ffd6b3); color:#6b3f00; border:2px dashed #ffb86b; box-shadow: 0 6px 12px rgba(255,160,80,0.12), inset 0 1px 0 rgba(255,255,255,0.6); }
-.spare-sfu{ background: linear-gradient(180deg,#e9f8ff,#cfefff); color:#004862; border:2px dashed #5fbfe6; box-shadow: 0 6px 12px rgba(80,180,220,0.12), inset 0 1px 0 rgba(255,255,255,0.6); }
 
+/* DOL color — bright blue */
+.outgoing-dol{
+  background:#1e90ff;
+  color:#ffffff;
+}
+
+/* MCCB color */
+.outgoing-mccb{ background:#b366ff; color:#fff; }
+
+/* SFU color — teal */
+.outgoing-sfu{
+  background:#0d9488;
+  color:#ffffff;
+}
+
+/* Outgoing ACB — deep burgundy */
+.outgoing-acb{
+  background:#7b0f1a;
+  color:#ffffff;
+  box-shadow: 0 6px 14px rgba(123,15,26,0.18), inset 0 2px 8px rgba(255,255,255,0.02);
+}
+
+/* Control Transformer — olive/green distinct color */
+.control-transformer{
+  background:#557a2b;
+  color:#ffffff;
+  box-shadow: 0 6px 12px rgba(85,122,43,0.12), inset 0 2px 6px rgba(255,255,255,0.03);
+}
+
+/* Spare variants */
+.spare{ background:#e0e0e0; color:#333; }
+
+/* Spare for DOL (pale warm) */
+.spare-dol{
+  background: linear-gradient(180deg,#fff3e0,#ffd6b3);
+  color:#6b3f00;
+  border:2px dashed #ffb86b;
+  box-shadow: 0 6px 12px rgba(255,160,80,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Spare for SFU (pale cool) */
+.spare-sfu{
+  background: linear-gradient(180deg,#e9f8ff,#cfefff);
+  color:#004862;
+  border:2px dashed #5fbfe6;
+  box-shadow: 0 6px 12px rgba(80,180,220,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* coupler bridge style (unchanged) */
 .coupler-bridge{
   position:absolute;
   width:6px;
@@ -187,6 +248,7 @@ body{
   100%{background-position:0% 200%;}
 }
 
+/* print helper: hide nav buttons and shrink box shadows for print if needed */
 @media print {
   .nav-buttons { display:none !important; }
   .header { box-shadow:none !important; }
@@ -198,14 +260,19 @@ body{
 <body>
 
 <div class="header">
+
+  <!-- NEW BUTTONS -->
   <div class="nav-buttons">
     <button class="nav-btn" onclick="goHome()">Home</button>
     <button class="nav-btn" onclick="goBack()">Back</button>
     <button class="nav-btn" onclick="downloadExcel()">Download Excel</button>
     <button class="nav-btn" onclick="printA4()">Print A4</button>
   </div>
+
   <div class="header-title" id="title">Industrial LT MCC Layout</div>
-  <div class="subtitle">Designed and Maintained by Rakesh Chandra Sethy</div>
+  <div class="subtitle">
+    Designed and Maintained by Rakesh Chandra Sethy
+  </div>
 </div>
 
 <div id="boardWrapper">
@@ -213,22 +280,9 @@ body{
 </div>
 
 <script>
-// ===== CACHE BUSTING & OPTIMIZATIONS =====
-const CACHE_BUST_VERSION = new Date().getTime();
-const JSON_URL_BASE = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json";
-const JSON_URL = JSON_URL_BASE + "?v=" + CACHE_BUST_VERSION;
-
-// Service Worker registration for offline support
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(()=>{});
-}
-
-// ===== LAZY LOADING FOR SHEETJS =====
-let xlsxLoaded = false;
-const XLSX_CDNS = [
-  "https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js",
-  "https://unpkg.com/xlsx@0.18.7/dist/xlsx.full.min.js"
-];
+// CACHE BUSTING VERSION
+const CACHE_BUST = '?v=' + new Date().getTime();
+const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/sld/lt_sld.json" + CACHE_BUST;
 
 function goHome(){
   window.location.href="https://08electricaldata.github.io/";
@@ -242,11 +296,13 @@ function getParam(n){
   return new URL(location.href).searchParams.get(n);
 }
 
+/* helper to normalize type strings for robust matching */
 function norm(s){
   if(!s && s!==0) return "";
   return String(s).toUpperCase().replace(/[\s\-]+/g,'').replace(/_/g,'');
 }
 
+/* escape HTML for safe insertion */
 function escapeHtml(str){
   if(!str) return "";
   return String(str)
@@ -257,48 +313,27 @@ function escapeHtml(str){
     .replace(/'/g,"&#039;");
 }
 
+/* parse driveid: returns { displayText, linkId }
+   - if raw contains <SOME-ID> the linkId is SOME-ID and displayText is raw with the <...> removed
+   - otherwise displayText is the raw trimmed string and linkId is null (so no navigation)
+*/
 function parseDriveId(raw){
   if(raw === null || raw === undefined) return { displayText: "", linkId: null };
   const s = String(raw).trim();
-  const m = s.match(/<\s*([^>]+)\s*>/);
+  const m = s.match(/<\s*([^>]+)\s*>/); // find first <...>
   if(m){
     const linkId = m[1].trim();
-    const display = s.replace(/<\s*[^>]+\s*>/g, "").replace(/\s+/g," ").trim();
+    const display = s.replace(/<\s*[^>]+\s*>/g, "") // remove all <> parts
+                     .replace(/\s+/g," ").trim();   // collapse whitespace
     return { displayText: display || linkId, linkId: linkId };
   } else {
     return { displayText: s, linkId: null };
   }
 }
 
-// ===== LAZY LOAD HELPER WITH RETRY =====
-function loadScript(src, timeoutMs = 8000){
-  return new Promise((resolve, reject)=>{
-    if(window.XLSX){ resolve(); return; }
-    const s = document.createElement('script');
-    let timedOut = false;
-    const to = setTimeout(()=>{ timedOut = true; s.onerror = s.onload = null; s.remove(); reject(new Error('timeout')); }, timeoutMs);
-    s.onload = ()=>{ if(timedOut) return; clearTimeout(to); resolve(); };
-    s.onerror = (e)=>{ if(timedOut) return; clearTimeout(to); reject(new Error('error')); };
-    s.src = src + "?v=" + CACHE_BUST_VERSION;
-    s.async = true;
-    s.defer = true;
-    document.head.appendChild(s);
-  });
-}
+/* ---------- Helpers for Excel export & Print ---------- */
 
-async function ensureXLSX(){
-  if(window.XLSX) return window.XLSX;
-  if(xlsxLoaded) return null;
-  let lastErr = null;
-  for(const url of XLSX_CDNS){
-    try{
-      await loadScript(url, 8000);
-      if(window.XLSX){ xlsxLoaded = true; return window.XLSX; }
-    }catch(e){ lastErr = e; }
-  }
-  throw new Error('Failed to load SheetJS');
-}
-
+/* convert hex to ARGB style for XLSX */
 function hexToARGB(hex){
   if(!hex) return "FFFFFFFF";
   hex = hex.trim();
@@ -308,6 +343,7 @@ function hexToARGB(hex){
   return "FF" + hex;
 }
 
+/* map visual class to representative color */
 function visualColorForDeviceByClasses(classes){
   if(classes.includes('incomer')) return '#ff4d4d';
   if(classes.includes('coupler')) return '#ffd633';
@@ -327,7 +363,35 @@ function statusBorderColorByClasses(classes){
   return classes.includes('status-on') ? '#cc0000' : '#00aa00';
 }
 
-// ===== OPTIMIZED EXCEL EXPORT WITH MEMOIZATION =====
+/* ---------- Robust SheetJS loader with fallback ---------- */
+function loadScript(src, timeoutMs = 10000){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    let timedOut = false;
+    const to = setTimeout(()=>{ timedOut = true; s.onerror = s.onload = null; s.remove(); reject(new Error('timeout')); }, timeoutMs);
+    s.onload = ()=>{ if(timedOut) return; clearTimeout(to); resolve(); };
+    s.onerror = (e)=>{ if(timedOut) return; clearTimeout(to); reject(new Error('error')); };
+    s.src = src;
+    document.head.appendChild(s);
+  });
+}
+async function ensureXLSX(){
+  if(window.XLSX) return window.XLSX;
+  const cdns = [
+    "https://cdn.jsdelivr.net/npm/xlsx@0.18.7/dist/xlsx.full.min.js",
+    "https://unpkg.com/xlsx@0.18.7/dist/xlsx.full.min.js"
+  ];
+  let lastErr = null;
+  for(const url of cdns){
+    try{
+      await loadScript(url, 10000);
+      if(window.XLSX) return window.XLSX;
+    }catch(e){ lastErr = e; /* try next */ }
+  }
+  throw new Error('Failed to load SheetJS: ' + (lastErr && lastErr.message ? lastErr.message : String(lastErr)));
+}
+
+/* ---------- Fallback: export as HTML table (.xls) ---------- */
 function exportAsHtmlXls(filename, sections){
   let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>';
   html += 'table{ border-collapse:collapse; } td, th { border:1px solid #444; padding:6px; vertical-align:middle; text-align:center; } ';
@@ -358,22 +422,22 @@ function exportAsHtmlXls(filename, sections){
   const a = document.createElement('a');
   a.href = url;
   a.download = filename.endsWith('.xls') ? filename : (filename + '.xls');
-  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 2000);
 }
 
+/* ---------- downloadExcel: tries SheetJS, falls back to HTML .xls ---------- */
 async function downloadExcel(){
   const boardId = getParam('id');
   if(!boardId){ alert('Board id missing in URL'); return; }
 
+  // Collect sections & cells from rendered DOM
   const secEls = Array.from(document.querySelectorAll('#boardContainer > .section'));
   if(secEls.length === 0){
     alert('Nothing rendered yet to export.');
     return;
   }
-
   const sections = secEls.map((secEl, idx)=> {
     const titleEl = secEl.querySelector('.section-title');
     const title = titleEl ? titleEl.innerText : ('SECTION ' + (idx+1));
@@ -381,6 +445,7 @@ async function downloadExcel(){
     return { title, cells };
   });
 
+  // Try primary path: XLSX via SheetJS
   try{
     await ensureXLSX();
     const ws = {};
@@ -426,18 +491,24 @@ async function downloadExcel(){
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Board-' + boardId);
-    XLSX.writeFile(wb, 'Board-' + boardId + '.xlsx');
+    const filename = 'Board-' + boardId + '.xlsx';
+    XLSX.writeFile(wb, filename);
+    return;
   }catch(err){
-    console.warn('SheetJS failed, using fallback:', err);
+    console.warn('SheetJS failed, falling back to HTML .xls export:', err);
     try{
-      exportAsHtmlXls('Board-' + boardId + '.xls', sections);
+      const filename = 'Board-' + boardId + '.xls';
+      exportAsHtmlXls(filename, sections);
+      return;
     }catch(e2){
-      alert('Export failed: ' + (e2 && e2.message ? e2.message : e2));
+      console.error('Fallback export failed', e2);
+      alert('Failed to generate Excel: ' + (e2 && e2.message ? e2.message : e2));
+      return;
     }
   }
 }
 
-// ===== OPTIMIZED PRINT WITH REDUCED CLONING =====
+/* ---------- Print A4 landscape with two-row distribution ---------- */
 function printA4(){
   const boardWrapper = document.getElementById('boardWrapper');
   if(!boardWrapper){ alert('Board not found'); return; }
@@ -445,6 +516,7 @@ function printA4(){
   const sections = Array.from(document.querySelectorAll('#boardContainer > .section')).map(s=>s.cloneNode(true));
   if(sections.length === 0){ alert('No sections to print.'); return; }
 
+  // top row gets ~55% of sections
   const topCount = Math.max(1, Math.ceil(sections.length * 0.55));
   const topSections = sections.slice(0, topCount);
   const bottomSections = sections.slice(topCount);
@@ -463,7 +535,7 @@ function printA4(){
   </style>`;
 
   const newWin = window.open('', '_blank', 'top=50,left=50,width=1200,height=900');
-  if(!newWin){ alert('Popup blocked'); return; }
+  if(!newWin){ alert('Popup blocked: allow popups for this site to print.'); return; }
 
   const topHtml = '<div class="print-row">' + topSections.map(s=> s.outerHTML).join('') + '</div>';
   const bottomHtml = bottomSections.length ? ('<div class="print-row">' + bottomSections.map(s=> s.outerHTML).join('') + '</div>') : '';
@@ -473,7 +545,7 @@ function printA4(){
                    '<div class="print-board" id="printBoard">' + topHtml + bottomHtml + '</div>';
 
   newWin.document.open();
-  newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
+  newWin.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Print - ' + titleText + '</title>' + headHtml + '</head><body>' + bodyHtml + '</body></html>');
   newWin.document.close();
 
   newWin.onload = function(){
@@ -488,53 +560,56 @@ function printA4(){
         pb.style.transform = 'scale(' + scale + ')';
       }
     } catch(e){ /* ignore */ }
-    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 300);
+    setTimeout(()=>{ newWin.focus(); newWin.print(); }, 500);
   };
 }
 
-// ===== MAIN LOAD WITH PERFORMANCE OPTIMIZATIONS =====
+/* ---------- Main load (original logic preserved) ---------- */
 async function load(){
-  const boardId = getParam("id");
+
+  const boardId=getParam("id");
   if(!boardId) return;
 
-  document.getElementById("title").innerText = "Industrial LT MCC Layout - " + boardId;
+  document.getElementById("title").innerText =
+  "Industrial LT MCC Layout - " + boardId;
 
-  try{
-    const res = await fetch(JSON_URL, { 
-      cache: 'no-store',
-      headers: { 'Pragma': 'no-cache' }
-    });
+  try {
+    const res = await fetch(JSON_URL);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    const board = data.boards[boardId];
+
+    const board=data.boards[boardId];
     if(!board) return;
 
-    const container = document.getElementById("boardContainer");
-    container.innerHTML = "";
+    const container=document.getElementById("boardContainer");
+    container.innerHTML="";
 
-    const sections = Object.keys(board.sections).sort((a,b)=>Number(a)-Number(b));
-    const sectionWidth = 160;
-    container.style.width = (sections.length * sectionWidth) + "px";
+    const sections=Object.keys(board.sections)
+      .sort((a,b)=>Number(a)-Number(b));
 
-    // Use DocumentFragment for batch DOM operations
-    const docFrag = document.createDocumentFragment();
+    const sectionWidth=160;
+    container.style.width=(sections.length*sectionWidth)+"px";
 
-    sections.forEach((sec, index)=>{
-      const secDiv = document.createElement("div");
-      secDiv.className = "section";
+    sections.forEach((sec,index)=>{
 
-      const title = document.createElement("div");
-      title.className = "section-title";
-      title.innerText = "SECTION " + sec;
+      const secDiv=document.createElement("div");
+      secDiv.className="section";
+
+      const title=document.createElement("div");
+      title.className="section-title";
+      title.innerText="SECTION "+sec;
       secDiv.appendChild(title);
 
-      const devices = (board.sections[sec]||[]).sort((a,b)=> (a.level||"").localeCompare(b.level||""));
+      const devices=(board.sections[sec]||[])
+        .sort((a,b)=> (a.level||"").localeCompare(b.level||""));
 
       devices.forEach(d=>{
-        const cell = document.createElement("div");
-        cell.className = "cell";
 
-        // Status classes
-        if(d.status && String(d.status).toUpperCase() === "ON"){
+        const cell=document.createElement("div");
+        cell.className="cell";
+
+        // status ON / OFF classes
+        if(d.status && String(d.status).toUpperCase()==="ON"){
           cell.classList.add("status-on");
         }else{
           cell.classList.add("status-off");
@@ -543,47 +618,66 @@ async function load(){
         const feeder = norm(d.feederType);
         const breaker = norm(d.breakerType);
         const drive = norm(d.DriveType || d.deviceType || "");
+
+        // parse driveid now so we can inspect display text for 'ACB'
         const parsedDriveId = parseDriveId(d.driveid);
         const displayDriveRaw = (parsedDriveId.displayText || "").toUpperCase();
 
-        // Classification logic (optimized)
+        // INCOMER
         if(feeder === "INCOMER"){
           cell.classList.add("incomer","incomer-box","breaker-font");
         }
-        else if(feeder === "BUSCOUPLER"){
+        // BUS COUPLER
+        else if(feeder === "BUSCOUPLER" || feeder === "BUSCOUPLER"){
           cell.classList.add("coupler","breaker-font");
-          const bridge = document.createElement("div");
-          bridge.className = "coupler-bridge";
-          bridge.style.left = (index * sectionWidth + 78) + "px";
+
+          const bridge=document.createElement("div");
+          bridge.className="coupler-bridge";
+          bridge.style.left=(index*sectionWidth + 78)+"px";
           container.appendChild(bridge);
         }
+        // OUTGOING
         else if(feeder === "OUTGOING"){
-          if(displayDriveRaw.includes("ACB") || breaker === "ACB"){
+
+          // NEW: If drive display (outside <>) contains 'ACB' anywhere, treat as ACB and use outgoing-acb
+          if(displayDriveRaw.includes("ACB")){
             cell.classList.add("outgoing-acb","breaker-font");
           }
+          // If breakerType is ACB -> outgoing-acb (explicit)
+          else if(breaker === "ACB"){
+            cell.classList.add("outgoing-acb","breaker-font");
+          }
+          // other breaker types present -> outgoing-breaker
           else if(breaker){
             cell.classList.add("outgoing-breaker","breaker-font");
           }
-          else if(drive === "DOL"){
-            cell.classList.add("outgoing-dol");
-          }
-          else if(drive === "MCCB"){
-            cell.classList.add("outgoing-mccb");
-          }
-          else if(drive === "SFU"){
-            cell.classList.add("outgoing-sfu");
-          }
-          else if(drive === "ACB"){
-            cell.classList.add("outgoing-acb","breaker-font");
-          }
-          else if(drive === "CONTROLTRANSFORMER" || drive === "CT"){
-            cell.classList.add("control-transformer");
-          }
-          else{
-            cell.classList.add("outgoing-dol");
+          else {
+            // No breakerType: decide by DriveType / deviceType
+            if(drive === "DOL"){
+              cell.classList.add("outgoing-dol");
+            }
+            else if(drive === "MCCB"){
+              cell.classList.add("outgoing-mccb");
+            }
+            else if(drive === "SFU"){
+              cell.classList.add("outgoing-sfu");
+            }
+            else if(drive === "ACB"){
+              // drive labelled as ACB rather than breakerType
+              cell.classList.add("outgoing-acb","breaker-font");
+            }
+            else if(drive === "CONTROLTRANSFORMER" || drive === "CT" || drive === "CONTROLTRANSFORMER"){
+              // If the device itself is a control transformer
+              cell.classList.add("control-transformer");
+            }
+            else{
+              cell.classList.add("outgoing-dol");
+            }
           }
         }
+        // SPARE or other (not incomer/bus/outgoing)
         else{
+          // spare handling: prefer DriveType/deviceType to pick spare variant
           if(drive === "DOL"){
             cell.classList.add("spare","spare-dol");
           } else if(drive === "SFU"){
@@ -593,57 +687,68 @@ async function load(){
           }
         }
 
-        // Control transformer override
-        if((d.DriveType || d.deviceType) && (norm(d.DriveType || d.deviceType).includes("CONTROLTRANSFORMER"))){
+        // Additionally, if DriveType specifically indicates CONTROL TRANSFORMER anywhere, ensure its color
+        if(d.DriveType && norm(d.DriveType).includes("CONTROLTRANSFORMER")){
+          cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
+          cell.classList.add("control-transformer");
+        } else if(d.deviceType && norm(d.deviceType).includes("CONTROLTRANSFORMER")){
           cell.classList.remove("outgoing-dol","outgoing-sfu","outgoing-mccb","outgoing-breaker","outgoing-acb");
           cell.classList.add("control-transformer");
         }
 
-        // Content generation
-        const displayDrive = escapeHtml(parsedDriveId.displayText || "");
-        const linkDrive = parsedDriveId.linkId;
+        // --- new parsing behavior for driveid in column D ---
+        const parsed = parsedDriveId;
+        const displayDrive = escapeHtml(parsed.displayText || "");
+        const linkDrive = parsed.linkId; // null if no <...>
+
+        // content: build using parsed displayDrive
+        let contentText;
         const hasDriveOrDevice = Boolean(d.DriveType || d.deviceType);
 
-        let contentText;
         if(cell.classList.contains("spare") && !hasDriveOrDevice && !d.feederType){
           contentText = "<b>"+(d.position || "")+"</b><br>SPARE";
         } else {
-          contentText = "<b>"+(d.position || "")+"</b><br>"+
+          contentText =
+            "<b>"+(d.position || "")+"</b><br>"+
             "<div style='font-size:13px;line-height:1.1;min-height:28px;'>"+ displayDrive + "</div>"+
             "<div style='margin-top:6px;font-weight:600;color:#222;'>"+
-            ((d.feederType==="INCOMER" || d.feederType==="BUS_COUPLER" || d.breakerType) ? (d.breakerType || "") : (d.DriveType || d.deviceType || "")) + 
-            "</div>";
+            (
+              (d.feederType==="INCOMER" ||
+               d.feederType==="BUS_COUPLER" ||
+               d.breakerType)
+              ? (d.breakerType || "")
+              : (d.DriveType || d.deviceType || "")
+            ) + "</div>";
         }
 
         cell.innerHTML = contentText;
 
+        // set click target only if linkDrive exists (i.e., <...> was present)
         if(linkDrive){
           cell.style.cursor = "pointer";
-          cell.onclick = function(){
+          cell.onclick=function(){
             const id = encodeURIComponent(linkDrive);
-            location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + id;
+            location.href=
+            "https://08electricaldata.github.io/drive-viewer/index2.html?id="+ id;
           };
+        } else {
+          // remove any pointer cursor if present and prevent navigation
+          cell.style.cursor = "default";
+          cell.onclick = null;
         }
 
         secDiv.appendChild(cell);
       });
 
-      docFrag.appendChild(secDiv);
+      container.appendChild(secDiv);
     });
-
-    container.appendChild(docFrag);
-  }catch(err){
+  } catch(err) {
     console.error('Load failed:', err);
     alert('Failed to load board: ' + (err.message || err));
   }
 }
 
-// Defer load until DOM is ready
-if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', load);
-} else {
-  load();
-}
+load();
 
 </script>
 </body>
