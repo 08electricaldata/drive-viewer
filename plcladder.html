@@ -20,11 +20,13 @@ body{
   display:flex;
   align-items:center;
   gap:10px;
+  flex-wrap:wrap;
 }
 
 .header-title{
   flex:1;
   text-align:center;
+  min-width:300px;
 }
 
 .header-title h2{
@@ -45,7 +47,29 @@ body{
   padding:6px 10px;
   cursor:pointer;
   font-weight:bold;
+  transition:transform .14s ease, box-shadow .14s ease;
 }
+.header-btn:hover{transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,63,136,0.2)}
+
+.version-info {
+  background:rgba(255,255,255,0.2); 
+  color:white;
+  padding:6px 10px; 
+  border-radius:6px;
+  font-size:12px; 
+  font-weight:bold;
+}
+
+.status-indicator {
+  display:inline-block; 
+  width:8px; 
+  height:8px;
+  border-radius:50%; 
+  background:#4caf50;
+  margin-right:4px; 
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
 /* CONTAINER */
 .container{padding:20px}
@@ -66,7 +90,9 @@ body{
   cursor:pointer;
   box-shadow:0 2px 6px rgba(0,0,0,.15);
   transition:.2s;
+  animation:fade-in 0.3s ease-out;
 }
+@keyframes fade-in { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
 .tile:hover{transform:scale(1.05)}
 
 .viewer{
@@ -74,17 +100,21 @@ body{
   border-radius:10px;
   overflow:hidden;
   border:1px solid #ccc;
+  animation:slide-up 0.3s ease-out;
 }
+@keyframes slide-up { from{opacity:0; transform:translateY(20px)} to{opacity:1; transform:translateY(0)} }
 
 .viewer iframe{
   width:100%;
   height:700px;
   border:none;
+  background:#fff;
 }
 
 .controls{
   margin-top:10px;
   text-align:center;
+  animation:fade-in 0.3s ease-out;
 }
 
 .btn{
@@ -95,16 +125,28 @@ body{
   border-radius:6px;
   cursor:pointer;
   margin:5px;
+  transition:transform .14s ease, box-shadow .14s ease;
 }
+.btn:hover{transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,63,136,0.2)}
 
 input{
   padding:6px;
   width:80px;
   text-align:center;
+  border:1px solid #ccc;
+  border-radius:4px;
+}
+
+.no-data {
+  text-align:center;
+  padding:36px;
+  font-weight:bold;
+  color:#666;
 }
 
 @media(max-width:768px){
   .viewer iframe{height:450px}
+  .version-info { display:block; margin-top:8px; }
 }
 </style>
 </head>
@@ -124,11 +166,13 @@ input{
     <h2>Ultra PLC Ladder Viewer</h2>
     <small>Designed and developed by Rakesh Chandra Sethy</small>
   </div>
+  
+  <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
 </div>
 
 <div class="container">
 
-  <div id="content">Loading...</div>
+  <div id="content">Loading PLC Ladder data…</div>
 
   <div class="viewer" id="viewerBox">
     <iframe id="pdfFrame"></iframe>
@@ -148,12 +192,37 @@ input{
 
 <script>
 
-/* ===== JSDELIVR CDN URL ===== */
-const JSON_URL="https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/plcladder.json";
+/* ===== VERSION-BASED CACHE BUSTING ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drawings/plcladder.json";
 
-let pages=[];
-let currentIndex=0;
-let pdfURL="";
+let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+/* BUILD URLS WITH VERSION PARAM AND TIMESTAMP */
+function buildUrl(baseUrl) {
+  return `${baseUrl}?v=${currentVersion}&t=${Date.now()}`;
+}
+
+let pages = [];
+let currentIndex = 0;
+let pdfURL = "";
 
 function getCurrentID(){
   return new URLSearchParams(location.search).get("id");
@@ -174,74 +243,102 @@ function goBack(){
 }
 
 function goDriveInfo(){
-  const id=getCurrentID();
-  location.href="https://08electricaldata.github.io/drive-viewer/index.html?id="+id;
+  const id = getCurrentID();
+  location.href = "https://08electricaldata.github.io/drive-viewer/index2.html?id=" + encodeURIComponent(id);
 }
 
 function goHistory(){
-  const id=getCurrentID();
-  location.href="https://08electricaldata.github.io/drive-viewer/history.html?id="+id;
+  const id = getCurrentID();
+  location.href = "https://08electricaldata.github.io/drive-viewer/history.html?id=" + encodeURIComponent(id);
 }
 
 function goPLC(){
-  const id=getCurrentID();
-  location.href="https://08electricaldata.github.io/drive-viewer/plc.html?id="+id;
+  const id = getCurrentID();
+  location.href = "https://08electricaldata.github.io/drive-viewer/plc.html?id=" + encodeURIComponent(id);
 }
 
 function goDrawing(){
-  const id=getCurrentID();
-  location.href="https://08electricaldata.github.io/drive-viewer/drawing.html?id="+id;
+  const id = getCurrentID();
+  location.href = "https://08electricaldata.github.io/drive-viewer/drawing.html?id=" + encodeURIComponent(id);
 }
 
-/* LOAD DATA */
+/* LOAD DATA (OPTIMIZED) */
 
 async function load(){
-
-  const id=normalize(getCurrentID());
+  const id = normalize(getCurrentID());
 
   if(!id){
-    document.getElementById("content").innerHTML="<h3>No Drive ID</h3>";
+    document.getElementById("content").innerHTML = "<div class='no-data'>No Drive ID provided in URL.</div>";
     return;
   }
 
-  try{
-    const response=await fetch(JSON_URL);
+  try {
+    console.log(`🔧 Loading PLC Ladder for ${id}...`);
+    const startTime = performance.now();
+    
+    await getVersion();
+    
+    const response = await fetch(buildUrl(JSON_URL));
     if(!response.ok){
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const j=await response.json();
+    const j = await response.json();
 
-    const row=j.rows.find(r=>normalize(r.id)===id);
+    const row = j.rows.find(r => normalize(r.id) === id);
 
     if(!row){
-      document.getElementById("content").innerHTML="<h3>No PLC Ladder Found</h3>";
+      document.getElementById("content").innerHTML = "<div class='no-data'>No PLC Ladder Found for this Drive</div>";
+      console.warn("No PLC Ladder found for:", id);
       return;
     }
 
-    pdfURL=row.url;
-    pages=[...row.pages].sort((a,b)=>a-b);
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ PLC Ladder loaded in ${loadTime.toFixed(2)}ms (Pages: ${row.pages.length})`);
 
-    let html="<div class='grid'>";
+    pdfURL = row.url;
+    pages = [...row.pages].sort((a, b) => a - b);
 
-    pages.forEach((p,i)=>{
-      html+=`<div class="tile" onclick="openPage(${i})">Page ${p}</div>`;
-    });
-
-    html+="</div>";
-
-    document.getElementById("content").innerHTML=html;
-  }catch(err){
-    document.getElementById("content").innerHTML="<h3>Error loading PLC Ladder data</h3>";
+    renderTiles();
+  } catch(err){
+    document.getElementById("content").innerHTML = "<div class='no-data'>Error loading PLC Ladder data. Please refresh the page.</div>";
     console.error("Error loading PLC Ladder:", err);
   }
 }
 
+/* RENDER TILES (OPTIMIZED WITH DOCUMENTFRAGMENT) */
+function renderTiles(){
+  console.log(`🎨 Rendering ${pages.length} page tiles...`);
+  
+  const contentDiv = document.getElementById("content");
+  const grid = document.createElement("div");
+  grid.className = "grid";
+
+  /* Use DocumentFragment for tiles */
+  const fragment = document.createDocumentFragment();
+
+  pages.forEach((pageNum, i) => {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.textContent = `Page ${pageNum}`;
+    tile.setAttribute("data-index", i);
+    tile.onclick = () => openPage(i);
+    fragment.appendChild(tile);
+  });
+
+  grid.appendChild(fragment);
+  contentDiv.innerHTML = "";
+  contentDiv.appendChild(grid);
+  
+  console.log("✓ Page tiles rendered");
+}
+
 function openPage(index){
+  console.log(`📖 Opening page ${index + 1}/${pages.length}...`);
+  
+  currentIndex = index;
 
-  currentIndex=index;
-
-  document.getElementById("viewerBox").style.display="block";
-  document.getElementById("controls").style.display="block";
+  document.getElementById("viewerBox").style.display = "block";
+  document.getElementById("controls").style.display = "block";
 
   showPage();
 }
@@ -249,8 +346,7 @@ function openPage(index){
 /* PDF.js viewer link */
 
 function showPage(){
-
-  const page=pages[currentIndex];
+  const page = pages[currentIndex];
 
   const viewerURL =
     "https://mozilla.github.io/pdf.js/web/viewer.html?file="
@@ -259,38 +355,44 @@ function showPage(){
 
   document.getElementById("pdfFrame").src = viewerURL;
 
-  document.getElementById("pageInfo").innerText =
-    "Page "+page+" ("+(currentIndex+1)+"/"+pages.length+")";
+  const pageInfo = document.getElementById("pageInfo");
+  pageInfo.textContent = `Page ${page} (${currentIndex + 1}/${pages.length})`;
+  
+  console.log(`✓ Displaying page ${page}`);
 }
 
 function nextPage(){
-  if(currentIndex<pages.length-1){
+  if(currentIndex < pages.length - 1){
     currentIndex++;
     showPage();
   }
 }
 
 function prevPage(){
-  if(currentIndex>0){
+  if(currentIndex > 0){
     currentIndex--;
     showPage();
   }
 }
 
 function jumpPage(){
+  const val = Number(document.getElementById("jumpBox").value);
+  const index = pages.indexOf(val);
 
-  const val=Number(document.getElementById("jumpBox").value);
-  const index=pages.indexOf(val);
-
-  if(index!==-1){
-    currentIndex=index;
+  if(index !== -1){
+    currentIndex = index;
     showPage();
-  }else{
-    alert("Page not available for this Drive");
+  } else {
+    alert("Page " + val + " not available for this Drive");
+    console.warn("Page not available:", val);
   }
 }
 
-load();
+/* ===== INIT ===== */
+(async function(){
+  console.log("📥 Initializing PLC Ladder viewer...");
+  load();
+})();
 
 </script>
 
