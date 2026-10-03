@@ -25,6 +25,8 @@
     .summary { margin-top:6px; font-size:13px; color:#333; }
     .nowrap { white-space:nowrap; }
     .status { font-size:12px; color:#666; margin-top:4px; }
+    .status.error { color:#d32f2f; }
+    .status.success { color:#388e3c; }
   </style>
 </head>
 <body>
@@ -82,7 +84,10 @@
   <script>
     // Cache busting: append timestamp to URL
     const TIMESTAMP = Date.now();
-    const DATA_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json?v=' + TIMESTAMP;
+    
+    // Primary URL (jsdelivr) and fallback (raw GitHub)
+    const DATA_URL_PRIMARY = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json?v=' + TIMESTAMP;
+    const DATA_URL_FALLBACK = 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json?v=' + TIMESTAMP;
 
     // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
     const IDX_C = 2, IDX_D = 3, IDX_G = 6;
@@ -119,17 +124,18 @@
       applyFilters();
     });
 
-    // Fetch with cache busting and no-cache headers
+    // Fetch with cache busting, retry logic, and fallback
     function fetchData() {
       // Check if cache is still valid
       if (cachedData && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
-        statusMsg.textContent = 'Using cached data';
+        updateStatus('Using cached data', 'success');
         return Promise.resolve(cachedData);
       }
 
-      statusMsg.textContent = 'Loading data...';
+      updateStatus('Loading data...', '');
       
-      return fetch(DATA_URL, {
+      // Try primary URL first
+      return fetch(DATA_URL_PRIMARY, {
         cache: 'no-store',
         headers: {
           'Pragma': 'no-cache',
@@ -137,16 +143,41 @@
         }
       })
       .then(r => {
-        if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
+      .catch(err => {
+        // If primary fails, try fallback
+        console.warn('Primary URL failed, trying fallback:', err);
+        updateStatus('Retrying from fallback...', '');
+        return fetch(DATA_URL_FALLBACK, {
+          cache: 'no-store',
+          headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          }
+        })
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status} from fallback`);
+          return r.json();
+        });
+      })
       .then(json => {
+        // Validate JSON structure
+        if (!json.headers || !Array.isArray(json.headers) || !json.rows || !Array.isArray(json.rows)) {
+          throw new Error('Invalid JSON structure');
+        }
         // Cache the data
         cachedData = json;
         cacheTimestamp = Date.now();
-        statusMsg.textContent = 'Data loaded successfully';
+        updateStatus(`Data loaded (${json.rows.length} rows)`, 'success');
         return json;
       });
+    }
+
+    function updateStatus(msg, cssClass) {
+      statusMsg.textContent = msg;
+      statusMsg.className = 'status ' + cssClass;
     }
 
     // Load and process data
@@ -177,8 +208,9 @@
         applyFilters();
       })
       .catch(err => {
-        document.getElementById('countText').textContent = 'Error loading data: ' + err;
-        statusMsg.textContent = 'Failed to load: ' + err.message;
+        const errMsg = 'Error loading data: ' + err.message;
+        document.getElementById('countText').textContent = errMsg;
+        updateStatus(errMsg, 'error');
         console.error(err);
       });
 
