@@ -245,9 +245,10 @@
       const MAX_RETRIES = 2;
       
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        let timeoutId;
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
+          timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
           
           const response = await fetch(url, {
             signal: controller.signal,
@@ -263,7 +264,7 @@
           return await response.json();
           
         } catch (error) {
-          clearTimeout(timeoutId);
+          if (timeoutId) clearTimeout(timeoutId);
           console.warn(`Attempt ${attempt + 1} failed:`, error.message);
           
           if (attempt < MAX_RETRIES) {
