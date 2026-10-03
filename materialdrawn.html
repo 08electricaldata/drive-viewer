@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Material Drawn Viewer</title>
   <style>
@@ -17,9 +20,11 @@
     tr:nth-child(even) td { background:#fafafa; }
     .buttons { margin-left:auto; display:flex; gap:8px; }
     button { padding:6px 10px; font-size:13px; cursor:pointer; }
+    button:hover { opacity:0.85; }
     .small { font-size:12px; color:#555; }
     .summary { margin-top:6px; font-size:13px; color:#333; }
     .nowrap { white-space:nowrap; }
+    .status { font-size:12px; color:#666; margin-top:4px; }
   </style>
 </head>
 <body>
@@ -62,7 +67,10 @@
     </div>
   </div>
 
-  <div class="summary"><span id="countText">Loading...</span></div>
+  <div class="summary">
+    <span id="countText">Loading...</span>
+    <div class="status" id="statusMsg"></div>
+  </div>
 
   <div style="overflow:auto; max-height:70vh;">
     <table id="dataTable" aria-live="polite">
@@ -72,13 +80,19 @@
   </div>
 
   <script>
-    // URL to the raw JSON you provided
-    const DATA_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json';
+    // Cache busting: append timestamp to URL
+    const TIMESTAMP = Date.now();
+    const DATA_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json?v=' + TIMESTAMP;
 
     // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
     const IDX_C = 2, IDX_D = 3, IDX_G = 6;
     // Index to hide (first column / Sub-number)
     const HIDDEN_INDEX = 0;
+
+    // Cache configuration
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    let cachedData = null;
+    let cacheTimestamp = 0;
 
     let headers = [];
     let rows = []; // raw rows array
@@ -97,6 +111,7 @@
     const fromDate = document.getElementById('fromDate');
     const toDate = document.getElementById('toDate');
     const clearFilters = document.getElementById('clearFilters');
+    const statusMsg = document.getElementById('statusMsg');
 
     [cContains,cExact,dContains,dExact,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
     clearFilters.addEventListener('click', () => {
@@ -104,20 +119,50 @@
       applyFilters();
     });
 
-    fetch(DATA_URL)
+    // Fetch with cache busting and no-cache headers
+    function fetchData() {
+      // Check if cache is still valid
+      if (cachedData && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+        statusMsg.textContent = 'Using cached data';
+        return Promise.resolve(cachedData);
+      }
+
+      statusMsg.textContent = 'Loading data...';
+      
+      return fetch(DATA_URL, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      })
       .then(r => {
         if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
         return r.json();
       })
       .then(json => {
+        // Cache the data
+        cachedData = json;
+        cacheTimestamp = Date.now();
+        statusMsg.textContent = 'Data loaded successfully';
+        return json;
+      });
+    }
+
+    // Load and process data
+    fetchData()
+      .then(json => {
         headers = Array.isArray(json.headers) ? json.headers : [];
         rows = Array.isArray(json.rows) ? json.rows : [];
+        
         // Only keep rows where column C is non-blank (non-empty string and not null/undefined)
         rows = rows.filter(r => {
           const v = safeString(r[IDX_C]);
           return v !== '';
         });
+        
         buildTableHead(); // build head now that headers/rows exist
+        
         // Sort by column G (date) newest -> oldest
         rows.sort((a,b) => {
           const da = parseFlexibleDate(a[IDX_G]);
@@ -128,10 +173,12 @@
           if (!da && db) return 1;
           return 0;
         });
+        
         applyFilters();
       })
       .catch(err => {
         document.getElementById('countText').textContent = 'Error loading data: ' + err;
+        statusMsg.textContent = 'Failed to load: ' + err.message;
         console.error(err);
       });
 
