@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>Summary</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -74,6 +77,16 @@ body {
   border-radius: 4px;
   cursor: pointer;
 }
+.controls button:hover {
+  opacity: 0.9;
+}
+
+.status-msg {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 10px;
+  min-height: 20px;
+}
 
 /* ===== TABLE ===== */
 table {
@@ -88,6 +101,9 @@ th, td {
 th {
   background: #003f88;
   color: white;
+  position: sticky;
+  top: 61px;
+  z-index: 10;
 }
 
 /* ===== COLUMN WIDTH FIXES ===== */
@@ -113,7 +129,7 @@ tbody tr:hover {
 }
 
 @media print {
-  .header-bar, .controls { display: none; }
+  .header-bar, .controls, .status-msg { display: none; }
 }
 </style>
 </head>
@@ -138,6 +154,8 @@ tbody tr:hover {
     <button onclick="window.print()">Export PDF</button>
   </div>
 
+  <div class="status-msg" id="statusMsg"></div>
+
   <table id="summaryTable">
     <thead>
       <tr>
@@ -160,9 +178,16 @@ tbody tr:hover {
 </div>
 
 <script>
+// Cache busting: append timestamp
+const TIMESTAMP = Date.now();
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1Ar9-a9u4b622-6i8b889qGqENI8rl8Q2U6PPOPBaLDc/gviz/tq" +
-  "?gid=751880096&tqx=out:json";
+  "?gid=751880096&tqx=out:json&v=" + TIMESTAMP;
+
+// Cache data in memory to avoid repeated fetches during same session
+let cachedData = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /* ===== NAV ===== */
 function goHome() {
@@ -195,54 +220,102 @@ function formatDate(d) {
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
+/* ===== FETCH WITH CACHE BUSTING ===== */
+async function fetchSheetData() {
+  const statusMsg = document.getElementById("statusMsg");
+  
+  // Check if cache is still valid
+  if (cachedData && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+    statusMsg.textContent = "Using cached data";
+    return cachedData;
+  }
+
+  statusMsg.textContent = "Loading data...";
+  
+  try {
+    const res = await fetch(SHEET_URL, {
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    });
+    
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
+    const txt = await res.text();
+    const json = JSON.parse(txt.substring(47, txt.length - 2));
+    
+    // Cache the data
+    cachedData = json;
+    cacheTimestamp = Date.now();
+    
+    statusMsg.textContent = `Data loaded (${json.table.rows.length} rows)`;
+    return json;
+  } catch (err) {
+    statusMsg.textContent = `Error loading data: ${err.message}`;
+    console.error(err);
+    throw err;
+  }
+}
+
 /* ===== LOAD SUMMARY ===== */
 async function loadSummary() {
+  const statusMsg = document.getElementById("statusMsg");
+  
   let from = document.getElementById("fromDate").valueAsDate;
-let to = document.getElementById("toDate").valueAsDate;
+  let to = document.getElementById("toDate").valueAsDate;
 
-if (from) from.setHours(0, 0, 0, 0);        // start of day
-if (to) to.setHours(23, 59, 59, 999);       // end of day
+  if (from) from.setHours(0, 0, 0, 0);        // start of day
+  if (to) to.setHours(23, 59, 59, 999);       // end of day
 
+  try {
+    const json = await fetchSheetData();
 
-  const res = await fetch(SHEET_URL);
-  const txt = await res.text();
-  const json = JSON.parse(txt.substring(47, txt.length - 2));
+    const tbody = document.querySelector("#summaryTable tbody");
+    tbody.innerHTML = "";
 
-  const tbody = document.querySelector("#summaryTable tbody");
-  tbody.innerHTML = "";
+    let filteredCount = 0;
 
-  json.table.rows.forEach(r => {
-    const c = r.c || [];
-    const d = parseDate(c[4]?.v);
-    if (!d) return;
+    json.table.rows.forEach(r => {
+      const c = r.c || [];
+      const d = parseDate(c[4]?.v);
+      if (!d) return;
 
-    if (from && d < from) return;
-    if (to && d > to) return;
+      if (from && d < from) return;
+      if (to && d > to) return;
 
-    const tr = document.createElement("tr");
+      filteredCount++;
 
-    tr.innerHTML = `
-      <td>${c[2]?.v || ""}</td>
-      <td>${c[3]?.v || ""}</td>
-      <td>${c[0]?.v || ""}</td>
-      <td>${c[1]?.v || ""}</td>
-      <td>${formatDate(d)}</td>
-      <td>${c[5]?.v || ""}</td>
-      <td>${c[6]?.v || ""}</td>
-      <td>${c[7]?.v || ""}</td>
-      <td>${c[9]?.v || ""}</td>
-      <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
-    `;
+      const tr = document.createElement("tr");
 
-    tr.onclick = () => {
-      const id = `${c[2]?.v}-${c[3]?.v}`;
-      window.location.href =
-        "https://08electricaldata.github.io/drive-viewer/index2.html?id=" +
-        encodeURIComponent(id);
-    };
+      tr.innerHTML = `
+        <td>${c[2]?.v || ""}</td>
+        <td>${c[3]?.v || ""}</td>
+        <td>${c[0]?.v || ""}</td>
+        <td>${c[1]?.v || ""}</td>
+        <td>${formatDate(d)}</td>
+        <td>${c[5]?.v || ""}</td>
+        <td>${c[6]?.v || ""}</td>
+        <td>${c[7]?.v || ""}</td>
+        <td>${c[9]?.v || ""}</td>
+        <td>${c[10]?.v ? `<a href="${c[10].v}" target="_blank">Open</a>` : ""}</td>
+      `;
 
-    tbody.appendChild(tr);
-  });
+      tr.onclick = () => {
+        const id = `${c[2]?.v}-${c[3]?.v}`;
+        window.location.href =
+          "https://08electricaldata.github.io/drive-viewer/index2.html?id=" +
+          encodeURIComponent(id);
+      };
+
+      tbody.appendChild(tr);
+    });
+
+    statusMsg.textContent = `Showing ${filteredCount} rows`;
+  } catch (err) {
+    statusMsg.textContent = `Failed to load data: ${err.message}`;
+  }
 }
 
 /* ===== EXPORT ===== */
@@ -258,6 +331,12 @@ function exportExcel() {
   a.download = "summary.csv";
   a.click();
 }
+
+// Optionally load data on page init
+window.addEventListener('load', () => {
+  // You can uncomment to auto-load on page load:
+  // loadSummary();
+});
 </script>
 
 </body>
