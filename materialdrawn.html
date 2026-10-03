@@ -3,379 +3,151 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Material Drawn Viewer</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://08electricaldata.github.io">
   <style>
-    * { box-sizing: border-box; }
-    body { 
-      font-family: Arial, Helvetica, sans-serif; 
-      margin: 18px; 
-      background: #fafafa;
-      color: #222;
-    }
-    header { 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-    h1 { 
-      margin: 0; 
-      font-size: 18px;
-      flex: 1;
-    }
-    .controls { 
-      display: flex; 
-      gap: 12px; 
-      flex-wrap: wrap; 
-      align-items: center;
-      background: white;
-      padding: 12px;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .controls label { 
-      font-size: 13px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .controls input[type="text"], 
-    .controls input[type="date"] { 
-      padding: 6px 8px;
-      font-size: 13px;
-      border: 1px solid #ddd;
-      border-radius: 3px;
-      font-family: inherit;
-    }
-    .controls input:focus {
-      outline: none;
-      border-color: #0066cc;
-      box-shadow: 0 0 0 2px rgba(0,102,204,0.1);
-    }
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 12px; 
-      font-size: 13px;
-      background: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    th, td { 
-      border: 1px solid #eee; 
-      padding: 8px 6px; 
-      text-align: left; 
-      vertical-align: top;
-    }
-    th { 
-      background: #f5f5f5; 
-      position: sticky; 
-      top: 0; 
-      z-index: 10;
-      font-weight: 600;
-    }
-    tr:nth-child(even) td { 
-      background: #fafafa; 
-    }
-    tr:hover td {
-      background: #f0f0f0;
-    }
-    .buttons { 
-      margin-left: auto; 
-      display: flex; 
-      gap: 8px;
-    }
-    button { 
-      padding: 6px 12px; 
-      font-size: 13px; 
-      cursor: pointer;
-      border: 1px solid #ddd;
-      background: white;
-      border-radius: 3px;
-      transition: all 0.2s ease;
-      font-family: inherit;
-    }
-    button:hover {
-      background: #f0f0f0;
-      border-color: #999;
-    }
-    button:active {
-      transform: scale(0.98);
-    }
-    button#clearFilters {
-      background: #ff6b6b;
-      color: white;
-      border-color: #cc5555;
-    }
-    button#clearFilters:hover {
-      background: #ff5252;
-      border-color: #bb4444;
-    }
-    .small { 
-      font-size: 12px; 
-      color: #555; 
-    }
-    .summary { 
-      margin-top: 6px; 
-      font-size: 13px; 
-      color: #333;
-      background: white;
-      padding: 8px 12px;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .nowrap { 
-      white-space: nowrap; 
-    }
-    .table-wrapper {
-      overflow: auto;
-      max-height: 70vh;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: #0066cc;
-      font-weight: bold;
-    }
-    .loading::after {
-      content: " .";
-      animation: dots 1.5s steps(4,end) infinite;
-    }
-    @keyframes dots {
-      0%,20% { content: " ."; }
-      40% { content: " .."; }
-      60% { content: " ..."; }
-      80%,100% { content: "."; }
-    }
-    .error {
-      color: #d32f2f;
-      background: #ffebee;
-      padding: 12px;
-      border-radius: 4px;
-      margin-top: 12px;
-    }
-    @media (max-width: 768px) {
-      body { margin: 10px; }
-      header { flex-direction: column; align-items: stretch; }
-      h1 { margin-bottom: 8px; }
-      .buttons { margin-left: 0; justify-content: stretch; }
-      button { flex: 1; }
-      .controls { flex-direction: column; }
-      .controls > div { width: 100%; }
-      .controls input { width: 100%; }
-      table { font-size: 12px; }
-      th, td { padding: 6px 4px; }
-    }
+    body { font-family: Arial, Helvetica, sans-serif; margin: 18px; }
+    header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    h1 { margin:0; font-size:18px; } 
+    .controls { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .controls label { font-size:13px; }
+    .controls input[type="text"], .controls input[type="date"] { padding:6px; font-size:13px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    th, td { border:1px solid #ddd; padding:6px; text-align:left; vertical-align:top; }
+    th { background:#f5f5f5; position:sticky; top:0; z-index:1; }
+    tr:nth-child(even) td { background:#fafafa; }
+    .buttons { margin-left:auto; display:flex; gap:8px; }
+    button { padding:6px 10px; font-size:13px; cursor:pointer; }
+    .small { font-size:12px; color:#555; }
+    .summary { margin-top:6px; font-size:13px; color:#333; }
+    .nowrap { white-space:nowrap; }
   </style>
 </head>
 <body>
   <header>
     <h1>Material Drawn — Viewer</h1>
     <div class="buttons">
-      <button id="backBtn">← Back</button>
-      <button id="homeBtn">🏠 Home</button>
-      <button id="infoBtn">ℹ Info</button>
+      <button id="backBtn">Back</button>
+      <button id="homeBtn">Home</button>
+      <button id="infoBtn">Information</button>
     </div>
   </header>
 
-  <div class="controls" aria-label="filters" role="search">
+  <div class="controls" aria-label="filters">
+    <!-- Column C (Material) filters -->
     <div>
-      <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." aria-label="Material code contains" /></label>
+      <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." /></label>
     </div>
     <div>
-      <label class="nowrap">Material Code exact:<br><input id="cExact" type="text" placeholder="exact match..." aria-label="Material code exact match" /></label>
+      <label class="nowrap">Material Code exact:<br><input id="cExact" type="text" placeholder="exact match..." /></label>
+    </div>
+
+    <!-- Column D (Material Description) filters -->
+    <div>
+      <label class="nowrap">Material Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
     </div>
     <div>
-      <label class="nowrap">Description contains:<br><input id="dContains" type="text" placeholder="contains..." aria-label="Description contains" /></label>
+      <label class="nowrap">Description (D) exact:<br><input id="dExact" type="text" placeholder="exact match..." /></label>
+    </div>
+
+    <!-- Date filters for column G -->
+    <div>
+      <label class="nowrap">From (G):<br><input id="fromDate" type="date" /></label>
     </div>
     <div>
-      <label class="nowrap">Description exact:<br><input id="dExact" type="text" placeholder="exact match..." aria-label="Description exact match" /></label>
+      <label class="nowrap">To (G):<br><input id="toDate" type="date" /></label>
     </div>
+
     <div>
-      <label class="nowrap">From:<br><input id="fromDate" type="date" aria-label="From date" /></label>
-    </div>
-    <div>
-      <label class="nowrap">To:<br><input id="toDate" type="date" aria-label="To date" /></label>
-    </div>
-    <div>
-      <button id="clearFilters" aria-label="Clear all filters">✕ Clear</button>
+      <button id="clearFilters">Clear Filters</button>
     </div>
   </div>
 
-  <div class="summary"><span id="countText" role="status">Loading...</span></div>
+  <div class="summary"><span id="countText">Loading...</span></div>
 
-  <div class="table-wrapper">
-    <table id="dataTable" role="grid" aria-live="polite" aria-label="Material drawn data">
+  <div style="overflow:auto; max-height:70vh;">
+    <table id="dataTable" aria-live="polite">
       <thead id="tableHead"></thead>
       <tbody id="tableBody"></tbody>
     </table>
   </div>
 
   <script>
-    /* ================================================
-       CONFIGURATION
-    ================================================ */
-    const CONFIG = {
-      DATA_URL: 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json',
-      CACHE_VERSION: 'v1',
-      CACHE_TTL: 3600000, // 1 hour
-      TIMEOUT: 10000
-    };
+    // URL to the raw JSON you provided
+    const DATA_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json';
 
-    const COLUMN_INDEXES = {
-      MATERIAL_CODE: 2,      // Column C
-      MATERIAL_DESC: 3,      // Column D
-      DATE: 6,               // Column G
-      HIDDEN: 0              // Sub-number (first column)
-    };
+    // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
+    const IDX_C = 2, IDX_D = 3, IDX_G = 6;
+    // Index to hide (first column / Sub-number)
+    const HIDDEN_INDEX = 0;
 
-    /* ================================================
-       CACHE MANAGEMENT
-    ================================================ */
-    const CacheManager = {
-      set(key, value, ttl = CONFIG.CACHE_TTL) {
-        const now = Date.now();
-        try {
-          sessionStorage.setItem(key, JSON.stringify({
-            data: value,
-            timestamp: now,
-            ttl: ttl
-          }));
-        } catch (e) {
-          console.warn('SessionStorage quota exceeded:', e);
-        }
-      },
-
-      get(key) {
-        try {
-          const item = sessionStorage.getItem(key);
-          if (!item) return null;
-          const parsed = JSON.parse(item);
-          const elapsed = Date.now() - parsed.timestamp;
-          if (elapsed > parsed.ttl) {
-            sessionStorage.removeItem(key);
-            return null;
-          }
-          return parsed.data;
-        } catch (e) {
-          console.warn('Error reading from cache:', e);
-          return null;
-        }
-      },
-
-      clear() {
-        try {
-          sessionStorage.clear();
-        } catch (e) {
-          console.warn('Error clearing cache:', e);
-        }
-      }
-    };
-
-    /* ================================================
-       STATE
-    ================================================ */
     let headers = [];
-    let rows = [];
+    let rows = []; // raw rows array
     let rowsFiltered = [];
 
-    /* ================================================
-       FETCH WITH TIMEOUT & CACHE BUSTING
-    ================================================ */
-    async function fetchWithTimeout(url, timeout = CONFIG.TIMEOUT) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      try {
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            'Cache-Control': 'max-age=3600'
-          }
-        });
-        clearTimeout(timeoutId);
-        return response;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
-    }
+    // Buttons behaviour
+    document.getElementById('backBtn').addEventListener('click', () => { history.back(); });
+    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
+    document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'); });
 
-    /* ================================================
-       LOAD DATA
-    ================================================ */
-    async function loadData() {
-      const cacheKey = `materialdrawn_${CONFIG.CACHE_VERSION}`;
-      const countText = document.getElementById('countText');
-      
-      try {
-        // Try cache first
-        let data = CacheManager.get(cacheKey);
-        
-        if (!data) {
-          // Cache miss - fetch with cache buster
-          const cacheBusterUrl = `${CONFIG.DATA_URL}?v=${CONFIG.CACHE_VERSION}_${Date.now()}`;
-          const response = await fetchWithTimeout(cacheBusterUrl);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: Failed to fetch data`);
-          }
-          
-          data = await response.json();
-          
-          // Cache the data
-          CacheManager.set(cacheKey, data, CONFIG.CACHE_TTL);
-        }
+    // Inputs
+    const cContains = document.getElementById('cContains');
+    const cExact = document.getElementById('cExact');
+    const dContains = document.getElementById('dContains');
+    const dExact = document.getElementById('dExact');
+    const fromDate = document.getElementById('fromDate');
+    const toDate = document.getElementById('toDate');
+    const clearFilters = document.getElementById('clearFilters');
 
-        // Process data
-        headers = Array.isArray(data.headers) ? data.headers : [];
-        rows = Array.isArray(data.rows) ? data.rows : [];
-        
-        // Filter rows: keep only those where column C (Material Code) is non-blank
+    [cContains,cExact,dContains,dExact,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
+    clearFilters.addEventListener('click', () => {
+      cContains.value=''; cExact.value=''; dContains.value=''; dExact.value=''; fromDate.value=''; toDate.value='';
+      applyFilters();
+    });
+
+    fetch(DATA_URL)
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
+        return r.json();
+      })
+      .then(json => {
+        headers = Array.isArray(json.headers) ? json.headers : [];
+        rows = Array.isArray(json.rows) ? json.rows : [];
+        // Only keep rows where column C is non-blank (non-empty string and not null/undefined)
         rows = rows.filter(r => {
-          const v = safeString(r[COLUMN_INDEXES.MATERIAL_CODE]);
+          const v = safeString(r[IDX_C]);
           return v !== '';
         });
-
-        // Build table header
-        buildTableHead();
-
+        buildTableHead(); // build head now that headers/rows exist
         // Sort by column G (date) newest -> oldest
-        rows.sort((a, b) => {
-          const da = parseFlexibleDate(a[COLUMN_INDEXES.DATE]);
-          const db = parseFlexibleDate(b[COLUMN_INDEXES.DATE]);
+        rows.sort((a,b) => {
+          const da = parseFlexibleDate(a[IDX_G]);
+          const db = parseFlexibleDate(b[IDX_G]);
+          // Put rows with valid dates first, by descending date.
           if (da && db) return db - da;
           if (da && !db) return -1;
           if (!da && db) return 1;
           return 0;
         });
-
-        // Apply filters
         applyFilters();
-        
-      } catch (err) {
-        console.error('Error loading data:', err);
-        countText.innerHTML = `<span class="error">Error loading data: ${escapeHTML(err.message)}</span>`;
-        document.getElementById('tableBody').innerHTML = '';
-      }
-    }
+      })
+      .catch(err => {
+        document.getElementById('countText').textContent = 'Error loading data: ' + err;
+        console.error(err);
+      });
 
-    /* ================================================
-       TABLE BUILDING
-    ================================================ */
+    // Compute visible column indexes (all original indexes except the hidden one)
     function getVisibleIndexes() {
-      let totalCols = headers.length;
-      if (!totalCols) {
-        totalCols = rows.reduce((m, r) => Math.max(m, r.length), 0);
+      // determine total number of columns, using headers if present else using longest row
+      let totalCols = 0;
+      if (headers.length) {
+        totalCols = headers.length;
+      } else {
+        totalCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
       }
+      // build indexes [0..totalCols-1] then filter out HIDDEN_INDEX
       const indexes = [];
-      for (let i = 0; i < totalCols; i++) {
-        if (i === COLUMN_INDEXES.HIDDEN) continue;
+      for (let i=0;i<totalCols;i++) {
+        if (i === HIDDEN_INDEX) continue;
         indexes.push(i);
       }
       return indexes;
@@ -391,199 +163,119 @@
         visible.forEach(idx => {
           const th = document.createElement('th');
           th.textContent = headers[idx] || '';
-          th.scope = 'col';
           tr.appendChild(th);
         });
       } else {
+        // fallback labels using original column letters (A,B,C,...), skipping the hidden one
         visible.forEach(idx => {
           const th = document.createElement('th');
           const letter = String.fromCharCode(65 + (idx % 26));
           th.textContent = 'Col ' + letter;
-          th.scope = 'col';
           tr.appendChild(th);
         });
       }
       thead.appendChild(tr);
     }
 
-    /* ================================================
-       FILTERING
-    ================================================ */
     function applyFilters() {
-      const cContainsVal = document.getElementById('cContains').value.trim().toLowerCase();
-      const cExactVal = document.getElementById('cExact').value.trim().toLowerCase();
-      const dContainsVal = document.getElementById('dContains').value.trim().toLowerCase();
-      const dExactVal = document.getElementById('dExact').value.trim().toLowerCase();
-      const from = document.getElementById('fromDate').value 
-        ? new Date(document.getElementById('fromDate').value) 
-        : null;
-      const to = document.getElementById('toDate').value 
-        ? new Date(document.getElementById('toDate').value) 
-        : null;
-      
-      if (to) to.setHours(23, 59, 59, 999);
+      const cContainsVal = cContains.value.trim().toLowerCase();
+      const cExactVal = cExact.value.trim().toLowerCase();
+      const dContainsVal = dContains.value.trim().toLowerCase();
+      const dExactVal = dExact.value.trim().toLowerCase();
+      const from = fromDate.value ? new Date(fromDate.value) : null;
+      const to = toDate.value ? new Date(toDate.value) : null;
+      // If 'to' is provided, extend to end of day
+      if (to) to.setHours(23,59,59,999);
 
       rowsFiltered = rows.filter(r => {
-        const c = safeString(r[COLUMN_INDEXES.MATERIAL_CODE]).toLowerCase();
-        const d = safeString(r[COLUMN_INDEXES.MATERIAL_DESC]).toLowerCase();
-
-        // Material code filters
+        const c = safeString(r[IDX_C]).toLowerCase();
+        const d = safeString(r[IDX_D]).toLowerCase();
+        // C contains/exact logic: if exact provided then exact must match; otherwise if contains provided then must contain; if neither provided, pass
         if (cExactVal && c !== cExactVal) return false;
         if (cContainsVal && !c.includes(cContainsVal)) return false;
-
-        // Description filters
         if (dExactVal && d !== dExactVal) return false;
         if (dContainsVal && !d.includes(dContainsVal)) return false;
 
-        // Date filter
+        // Date filter on column G
+        const cell = r[IDX_G];
+        const dt = parseFlexibleDate(cell);
         if (from || to) {
-          const dt = parseFlexibleDate(r[COLUMN_INDEXES.DATE]);
-          if (!dt) return false;
+          if (!dt) return false; // when filtering by date range, ignore rows with no valid date
           if (from && dt < from) return false;
           if (to && dt > to) return false;
         }
-
         return true;
       });
 
       renderTableBody();
     }
 
-    /* ================================================
-       RENDERING
-    ================================================ */
     function renderTableBody() {
       const tbody = document.getElementById('tableBody');
-      const countText = document.getElementById('countText');
-      const visible = getVisibleIndexes();
-
       tbody.innerHTML = '';
+      const visible = getVisibleIndexes();
 
       rowsFiltered.forEach(row => {
         const tr = document.createElement('tr');
         visible.forEach(idx => {
           const td = document.createElement('td');
           const v = row[idx];
-          
-          if (idx === COLUMN_INDEXES.DATE) {
+          if (idx === IDX_G) {
+            // show dates in ISO-like format if parseable or raw text otherwise
             const dt = parseFlexibleDate(v);
             td.textContent = dt ? dt.toISOString().split('T')[0] : safeString(v);
           } else {
             td.textContent = (v === null || v === undefined) ? '' : String(v);
           }
-          
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
       });
 
-      countText.textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows (column C non-blank enforced)`;
+      document.getElementById('countText').textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows (column C non-blank enforced)`;
     }
 
-    /* ================================================
-       UTILITIES
-    ================================================ */
+    // Helpers
     function safeString(v) {
       if (v === null || v === undefined) return '';
       return String(v).trim();
     }
 
-    function escapeHTML(str) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return String(str).replace(/[&<>"']/g, char => map[char]);
-    }
-
+    // Try to parse multiple date formats that appear in your JSON:
+    // - ISO (Date.parse)
+    // - "dd-mm-yyyy" or "dd-mm-yyyyThh:mm:ssZ" (some rows)
+    // Return a Date object or null if unparseable
     function parseFlexibleDate(val) {
       if (val === null || val === undefined) return null;
-      
       if (typeof val === 'number') {
+        // treat as Excel-ish serial? No: assume epoch ms (rare). Try to construct.
         const d = new Date(val);
         if (!isNaN(d)) return d;
       }
-      
       const s = String(val).trim();
       if (!s) return null;
-
       // Try native parser
       const d1 = new Date(s);
       if (!isNaN(d1)) return d1;
-
       // Try dd-mm-yyyy or dd-mm-yyyy hh:mm:ss
+      // Common patterns in file: "25-08-2010", "28-01-2011", sometimes without time.
       const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
       if (m) {
-        const day = Number(m[1]);
-        const mon = Number(m[2]) - 1;
-        const yr = Number(m[3]);
-
+        const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
+        // if time present, parse; otherwise create date midnight UTC/local
         if (m[4]) {
           const rest = m[4];
-          const iso = `${yr.toString().padStart(4, '0')}-${String(mon + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${rest}`;
+          // try to parse rest with Date (append to ISO)
+          const iso = `${yr.toString().padStart(4,'0')}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}T${rest}`;
           const d2 = new Date(iso);
           if (!isNaN(d2)) return d2;
         }
-
         const d = new Date(yr, mon, day);
         if (!isNaN(d)) return d;
       }
-
       return null;
     }
 
-    /* ================================================
-       EVENT LISTENERS
-    ================================================ */
-    document.getElementById('backBtn').addEventListener('click', () => {
-      history.back();
-    });
-
-    document.getElementById('homeBtn').addEventListener('click', () => {
-      window.open('https://08electricaldata.github.io/', '_self');
-    });
-
-    document.getElementById('infoBtn').addEventListener('click', () => {
-      window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank');
-    });
-
-    const filterInputs = [
-      'cContains', 'cExact', 'dContains', 'dExact', 'fromDate', 'toDate'
-    ];
-
-    filterInputs.forEach(id => {
-      document.getElementById(id).addEventListener('input', applyFilters);
-    });
-
-    document.getElementById('clearFilters').addEventListener('click', () => {
-      filterInputs.forEach(id => {
-        document.getElementById(id).value = '';
-      });
-      applyFilters();
-    });
-
-    /* ================================================
-       SERVICE WORKER (Optional - for offline support)
-    ================================================ */
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js').catch(() => {
-          // Service worker not available
-        });
-      });
-    }
-
-    /* ================================================
-       INITIALIZATION
-    ================================================ */
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', loadData);
-    } else {
-      loadData();
-    }
   </script>
 </body>
 </html>
