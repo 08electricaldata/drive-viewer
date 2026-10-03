@@ -299,8 +299,8 @@
           return response;
         } catch (error) {
           lastError = error;
+          console.warn(`Fetch attempt ${attempt + 1} failed:`, error.message);
           if (attempt < retries) {
-            console.warn(`Fetch attempt ${attempt + 1} failed, retrying...`, error);
             await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
           }
         }
