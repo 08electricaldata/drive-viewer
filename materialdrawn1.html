@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Material Drawn Viewer</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://08electricaldata.github.io">
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: Arial, Helvetica, sans-serif; 
+      margin: 18px; 
+      background: #fafafa;
+      color: #222;
+    }
+    header { 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    h1 { 
+      margin: 0; 
+      font-size: 18px;
+      flex: 1;
+    }
+    .controls { 
+      display: flex; 
+      gap: 12px; 
+      flex-wrap: wrap; 
+      align-items: center;
+      background: white;
+      padding: 12px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .controls label { 
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .controls input[type="text"], 
+    .controls input[type="date"] { 
+      padding: 6px 8px;
+      font-size: 13px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      font-family: inherit;
+    }
+    .controls input:focus {
+      outline: none;
+      border-color: #0066cc;
+      box-shadow: 0 0 0 2px rgba(0,102,204,0.1);
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 12px; 
+      font-size: 13px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    th, td { 
+      border: 1px solid #eee; 
+      padding: 8px 6px; 
+      text-align: left; 
+      vertical-align: top;
+    }
+    th { 
+      background: #f5f5f5; 
+      position: sticky; 
+      top: 0; 
+      z-index: 10;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { 
+      background: #fafafa; 
+    }
+    tr:hover td {
+      background: #f0f0f0;
+    }
+    .buttons { 
+      margin-left: auto; 
+      display: flex; 
+      gap: 8px;
+    }
+    button { 
+      padding: 6px 12px; 
+      font-size: 13px; 
+      cursor: pointer;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 3px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    button:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    button#clearFilters {
+      background: #ff6b6b;
+      color: white;
+      border-color: #cc5555;
+    }
+    button#clearFilters:hover {
+      background: #ff5252;
+      border-color: #bb4444;
+    }
+    .summary { 
+      margin-top: 6px; 
+      font-size: 13px; 
+      color: #333;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .nowrap { 
+      white-space: nowrap; 
+    }
+    .table-wrapper {
+      overflow: auto;
+      max-height: 70vh;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #0066cc;
+      font-weight: bold;
+    }
+    .loading::after {
+      content: " .";
+      animation: dots 1.5s steps(4,end) infinite;
+    }
+    @keyframes dots {
+      0%,20% { content: " ."; }
+      40% { content: " .."; }
+      60% { content: " ..."; }
+      80%,100% { content: "."; }
+    }
+    .error {
+      color: #d32f2f;
+      background: #ffebee;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+    }
+    @media (max-width: 768px) {
+      body { margin: 10px; }
+      header { flex-direction: column; align-items: stretch; }
+      h1 { margin-bottom: 8px; }
+      .buttons { margin-left: 0; justify-content: stretch; }
+      button { flex: 1; }
+      .controls { flex-direction: column; }
+      .controls > div { width: 100%; }
+      .controls input { width: 100%; }
+      table { font-size: 12px; }
+      th, td { padding: 6px 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Material Drawn — Viewer</h1>
+    <div class="buttons">
+      <button id="backBtn">← Back</button>
+      <button id="homeBtn">🏠 Home</button>
+      <button id="infoBtn">ℹ Info</button>
+    </div>
+  </header>
+
+  <div class="controls" aria-label="filters" role="search">
+    <div>
+      <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." aria-label="Material code contains" /></label>
+    </div>
+    <div>
+      <label class="nowrap">Material Code exact:<br><input id="cExact" type="text" placeholder="exact match..." aria-label="Material code exact match" /></label>
+    </div>
+    <div>
+      <label class="nowrap">Description contains:<br><input id="dContains" type="text" placeholder="contains..." aria-label="Description contains" /></label>
+    </div>
+    <div>
+      <label class="nowrap">Description exact:<br><input id="dExact" type="text" placeholder="exact match..." aria-label="Description exact match" /></label>
+    </div>
+    <div>
+      <label class="nowrap">From:<br><input id="fromDate" type="date" aria-label="From date" /></label>
+    </div>
+    <div>
+      <label class="nowrap">To:<br><input id="toDate" type="date" aria-label="To date" /></label>
+    </div>
+    <div>
+      <button id="clearFilters" aria-label="Clear all filters">✕ Clear</button>
+    </div>
+  </div>
+
+  <div class="summary"><span id="countText" role="status">Loading...</span></div>
+
+  <div class="table-wrapper">
+    <table id="dataTable" role="grid" aria-live="polite" aria-label="Material drawn data">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    /* ================================================
+       CONFIGURATION
+    ================================================ */
+    const CONFIG = {
+      DATA_URL: 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json',
+      CACHE_VERSION: 'v1',
+      CACHE_TTL: 3600000,
+      TIMEOUT: 15000
+    };
+
+    const COLUMN_INDEXES = {
+      MATERIAL_CODE: 2,
+      MATERIAL_DESC: 3,
+      DATE: 6,
+      HIDDEN: 0
+    };
+
+    /* ================================================
+       CACHE MANAGEMENT
+    ================================================ */
+    const CacheManager = {
+      set(key, value, ttl = CONFIG.CACHE_TTL) {
+        const now = Date.now();
+        try {
+          sessionStorage.setItem(key, JSON.stringify({
+            data: value,
+            timestamp: now,
+            ttl: ttl
+          }));
+        } catch (e) {
+          console.warn('SessionStorage quota exceeded:', e);
+        }
+      },
+
+      get(key) {
+        try {
+          const item = sessionStorage.getItem(key);
+          if (!item) return null;
+          const parsed = JSON.parse(item);
+          const elapsed = Date.now() - parsed.timestamp;
+          if (elapsed > parsed.ttl) {
+            sessionStorage.removeItem(key);
+            return null;
+          }
+          return parsed.data;
+        } catch (e) {
+          console.warn('Error reading from cache:', e);
+          return null;
+        }
+      }
+    };
+
+    /* ================================================
+       STATE
+    ================================================ */
+    let headers = [];
+    let rows = [];
+    let rowsFiltered = [];
+
+    /* ================================================
+       FETCH WITH TIMEOUT & RETRY
+    ================================================ */
+    async function fetchWithTimeout(url, timeout = CONFIG.TIMEOUT, retries = 2) {
+      let lastError;
+      
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeout);
+          
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              'Cache-Control': 'max-age=3600'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          return response;
+        } catch (error) {
+          lastError = error;
+          if (attempt < retries) {
+            console.warn(`Fetch attempt ${attempt + 1} failed, retrying...`, error);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          }
+        }
+      }
+      
+      throw lastError;
+    }
+
+    /* ================================================
+       LOAD DATA
+    ================================================ */
+    async function loadData() {
+      const cacheKey = `materialdrawn_${CONFIG.CACHE_VERSION}`;
+      const countText = document.getElementById('countText');
+      
+      try {
+        let data = CacheManager.get(cacheKey);
+        
+        if (!data) {
+          const cacheBusterUrl = `${CONFIG.DATA_URL}?v=${CONFIG.CACHE_VERSION}_${Date.now()}`;
+          console.log('Fetching from:', cacheBusterUrl);
+          
+          const response = await fetchWithTimeout(cacheBusterUrl);
+          data = await response.json();
+          
+          if (!data.headers || !Array.isArray(data.headers)) {
+            throw new Error('Invalid JSON structure: missing headers');
+          }
+          if (!data.rows || !Array.isArray(data.rows)) {
+            throw new Error('Invalid JSON structure: missing rows');
+          }
+          
+          CacheManager.set(cacheKey, data, CONFIG.CACHE_TTL);
+        }
+
+        headers = data.headers || [];
+        rows = data.rows || [];
+        
+        rows = rows.filter(r => {
+          const v = safeString(r[COLUMN_INDEXES.MATERIAL_CODE]);
+          return v !== '';
+        });
+
+        buildTableHead();
+
+        rows.sort((a, b) => {
+          const da = parseFlexibleDate(a[COLUMN_INDEXES.DATE]);
+          const db = parseFlexibleDate(b[COLUMN_INDEXES.DATE]);
+          if (da && db) return db - da;
+          if (da && !db) return -1;
+          if (!da && db) return 1;
+          return 0;
+        });
+
+        applyFilters();
+        
+      } catch (err) {
+        console.error('Error loading data:', err);
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        countText.innerHTML = `<span class="error">⚠ Error loading data: ${escapeHTML(err.message)}</span>`;
+      }
+    }
+
+    /* ================================================
+       TABLE BUILDING
+    ================================================ */
+    function getVisibleIndexes() {
+      let totalCols = headers.length;
+      if (!totalCols && rows.length) {
+        totalCols = Math.max(...rows.map(r => r.length));
+      }
+      const indexes = [];
+      for (let i = 0; i < totalCols; i++) {
+        if (i === COLUMN_INDEXES.HIDDEN) continue;
+        indexes.push(i);
+      }
+      return indexes;
+    }
+
+    function buildTableHead() {
+      const thead = document.getElementById('tableHead');
+      thead.innerHTML = '';
+      const tr = document.createElement('tr');
+      const visible = getVisibleIndexes();
+
+      if (headers.length) {
+        visible.forEach(idx => {
+          const th = document.createElement('th');
+          th.textContent = headers[idx] || '';
+          th.scope = 'col';
+          tr.appendChild(th);
+        });
+      } else {
+        visible.forEach(idx => {
+          const th = document.createElement('th');
+          const letter = String.fromCharCode(65 + (idx % 26));
+          th.textContent = 'Col ' + letter;
+          th.scope = 'col';
+          tr.appendChild(th);
+        });
+      }
+      thead.appendChild(tr);
+    }
+
+    /* ================================================
+       FILTERING
+    ================================================ */
+    function applyFilters() {
+      const cContainsVal = document.getElementById('cContains').value.trim().toLowerCase();
+      const cExactVal = document.getElementById('cExact').value.trim().toLowerCase();
+      const dContainsVal = document.getElementById('dContains').value.trim().toLowerCase();
+      const dExactVal = document.getElementById('dExact').value.trim().toLowerCase();
+      const from = document.getElementById('fromDate').value 
+        ? new Date(document.getElementById('fromDate').value) 
+        : null;
+      const to = document.getElementById('toDate').value 
+        ? new Date(document.getElementById('toDate').value) 
+        : null;
+      
+      if (to) to.setHours(23, 59, 59, 999);
+
+      rowsFiltered = rows.filter(r => {
+        const c = safeString(r[COLUMN_INDEXES.MATERIAL_CODE]).toLowerCase();
+        const d = safeString(r[COLUMN_INDEXES.MATERIAL_DESC]).toLowerCase();
+
+        if (cExactVal && c !== cExactVal) return false;
+        if (cContainsVal && !c.includes(cContainsVal)) return false;
+
+        if (dExactVal && d !== dExactVal) return false;
+        if (dContainsVal && !d.includes(dContainsVal)) return false;
+
+        if (from || to) {
+          const dt = parseFlexibleDate(r[COLUMN_INDEXES.DATE]);
+          if (!dt) return false;
+          if (from && dt < from) return false;
+          if (to && dt > to) return false;
+        }
+
+        return true;
+      });
+
+      renderTableBody();
+    }
+
+    /* ================================================
+       RENDERING
+    ================================================ */
+    function renderTableBody() {
+      const tbody = document.getElementById('tableBody');
+      const countText = document.getElementById('countText');
+      const visible = getVisibleIndexes();
+
+      tbody.innerHTML = '';
+
+      if (rowsFiltered.length === 0 && rows.length > 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = visible.length;
+        td.textContent = 'No rows match the current filters.';
+        td.style.textAlign = 'center';
+        td.style.padding = '20px';
+        td.style.color = '#999';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      }
+
+      rowsFiltered.forEach(row => {
+        const tr = document.createElement('tr');
+        visible.forEach(idx => {
+          const td = document.createElement('td');
+          const v = row[idx];
+          
+          if (idx === COLUMN_INDEXES.DATE) {
+            const dt = parseFlexibleDate(v);
+            td.textContent = dt ? dt.toISOString().split('T')[0] : safeString(v);
+          } else {
+            td.textContent = (v === null || v === undefined) ? '' : String(v);
+          }
+          
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      countText.textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows`;
+    }
+
+    /* ================================================
+       UTILITIES
+    ================================================ */
+    function safeString(v) {
+      if (v === null || v === undefined) return '';
+      return String(v).trim();
+    }
+
+    function escapeHTML(str) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(str).replace(/[&<>"']/g, char => map[char]);
+    }
+
+    function parseFlexibleDate(val) {
+      if (val === null || val === undefined) return null;
+      
+      if (typeof val === 'number') {
+        const d = new Date(val);
+        if (!isNaN(d)) return d;
+      }
+      
+      const s = String(val).trim();
+      if (!s) return null;
+
+      const d1 = new Date(s);
+      if (!isNaN(d1)) return d1;
+
+      const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
+      if (m) {
+        const day = Number(m[1]);
+        const mon = Number(m[2]) - 1;
+        const yr = Number(m[3]);
+
+        if (m[4]) {
+          const rest = m[4];
+          const iso = `${yr.toString().padStart(4, '0')}-${String(mon + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${rest}`;
+          const d2 = new Date(iso);
+          if (!isNaN(d2)) return d2;
+        }
+
+        const d = new Date(yr, mon, day);
+        if (!isNaN(d)) return d;
+      }
+
+      return null;
+    }
+
+    /* ================================================
+       EVENT LISTENERS
+    ================================================ */
+    document.getElementById('backBtn').addEventListener('click', () => {
+      history.back();
+    });
+
+    document.getElementById('homeBtn').addEventListener('click', () => {
+      window.open('https://08electricaldata.github.io/', '_self');
+    });
+
+    document.getElementById('infoBtn').addEventListener('click', () => {
+      window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank');
+    });
+
+    const filterInputs = ['cContains', 'cExact', 'dContains', 'dExact', 'fromDate', 'toDate'];
+    filterInputs.forEach(id => {
+      document.getElementById(id).addEventListener('input', applyFilters);
+    });
+
+    document.getElementById('clearFilters').addEventListener('click', () => {
+      filterInputs.forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      applyFilters();
+    });
+
+    /* ================================================
+       SERVICE WORKER (Optional)
+    ================================================ */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(() => {
+          // Service worker not available
+        });
+      });
+    }
+
+    /* ================================================
+       INITIALIZATION
+    ================================================ */
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadData);
+    } else {
+      loadData();
+    }
+  </script>
+</body>
+</html>
