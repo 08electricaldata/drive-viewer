@@ -324,6 +324,7 @@ tbody tr:nth-child(even) td{ background: #fbfeff; }
       <input id="search" placeholder="Search…" />
       <button class="action-btn" onclick="exportExcel()">Export CSV</button>
       <button class="action-btn" onclick="window.print()">Export PDF</button>
+      <button class="action-btn" onclick="goPhotos()">📷 Photos</button>
     </div>
 
     <div class="table-wrap card" style="padding:0;">
@@ -628,6 +629,13 @@ document.getElementById("search").addEventListener("input", function(){
   });
 });
 
+ function goPhotos(){
+  if(!id) return;
+  location.href =
+    "https://08electricaldata.github.io/drive-viewer/drivephoto.html?id=" +
+    encodeURIComponent(id);
+}
+  
 /* ===== EXPORT ===== */
 function exportExcel(){
   const rows = [];
