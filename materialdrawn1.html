@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Material Drawn Viewer</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://08electricaldata.github.io">
+  <link rel="preconnect" href="https://08electricaldata.github.io">
   <style>
     * { box-sizing: border-box; }
     body { 
@@ -127,19 +126,6 @@
       border-radius: 4px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .error {
-      color: #d32f2f;
-      background: #ffebee;
-      padding: 12px;
-      border-radius: 4px;
-      line-height: 1.6;
-    }
-    .error-details {
-      font-size: 12px;
-      margin-top: 8px;
-      font-family: monospace;
-      word-break: break-all;
-    }
     @media (max-width: 768px) {
       body { margin: 10px; }
       header { flex-direction: column; }
@@ -195,18 +181,11 @@
     </table>
   </div>
 
-  <script>
-    /* ================================================
-       CONFIGURATION
-    ================================================ */
-    const CONFIG = {
-      PRIMARY_URL: 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json',
-      BACKUP_URL: 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json',
-      CACHE_VERSION: 'v1',
-      CACHE_TTL: 3600000,
-      TIMEOUT: 15000
-    };
+  <script id="data-store" type="application/json">
+{"updated":"2026-10-04T02:18:49.785Z","headers":["Sub-number","Item number of reservation","Material","Material Description","Base Unit of Measure","Reservation","Requirements date","Requirement Quantity","Difference Quantity","Goods recipient","Cost Center","Base date","Removed quantity","Receiving stor. loc.","Debit/Credit Ind.","Movement Type","Movement Type Text","Plant","Unit of Entry","Item deleted","Bulk material","Phantom item","Reserv. status","User Name","Receiving plant","Storage Location","Final Issue","Movement allowed","Account assignment of reservation","Requirement type","Qty. for avail.check"],"rows":[["",1,82527502830,"HEATING ELEMENT 230 VOLT 2 KW","EA",33048,"25-08-2010",60,0,"",1233400,"25-08-2010",60,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",60],["",1,76170018060,"CURRENT TRANSFORMER RATIO 30/1 AMPS.","EA",51213,"2010-02-11T18:30:00.000Z",2,0,"",1233400,"2010-02-11T18:30:00.000Z",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",1,82729061050,"BUS SUPPORT INSULATOR,6.6KV EPOXY 130H","EA",58253,"2011-07-31T18:30:00.000Z",10,0,"",1233400,"2011-07-31T18:30:00.000Z",10,"","S",202,"RE for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,92108004800,"HR SHEET 3.15X1400X5600","MT",69071,"2011-01-02T18:30:00.000Z",0.3,0,"",1233400,"2011-01-02T18:30:00.000Z",0.3,"","H",201,"GI for cost center",1200,"MT","","","","M","12MMPR01","","R001","X","X","K","MR",0.3],["",2,90104035770,"HT HEX HEAD BOLT+DOUBLE NUT M-16X60 F/T","EA",69071,"2011-01-02T18:30:00.000Z",100,0,"",1233400,"2011-01-02T18:30:00.000Z",100,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",100],["",1,82735120750,"1000A M-PACT ACB GE MAKE 415V 50KA","EA",71634,"2011-12-02T18:30:00.000Z",2,0,"",1233400,"2011-12-02T18:30:00.000Z",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",1,88100012550,"COTTON WASTE IS:5485/1980,TY-1","KG",72490,"16-03-2011",60,0,"",1233400,"16-03-2011",60,"","H",201,"GI for cost center",1200,"KG","","","","M","12MMPR01","","R001","X","X","K","MR",60],["",1,76026000380,"6300KVA 11/6.9KV TRANSFORMER","EA",74333,"25-03-2011",3,0,"",1233400,"25-03-2011",3,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,82008206510,"4CX70MM2 FLEXIBLE EPR COPPER CABLE","M",77361,"2011-09-03T18:30:00.000Z",10,0,"",1233400,"2011-09-03T18:30:00.000Z",10,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",10],["",1,72709006360,"BEARING FRAME JACKETED,PT.NO-190","EA",83362,"2011-11-04T18:30:00.000Z",1,0,"",1233400,"2011-11-04T18:30:00.000Z",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,82724081130,"LOAD BREAK SWITCH-400AMPS","EA",83779,"13-05-2011",1,0,"",1233400,"13-05-2011",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,82641921101,"MICRO SWITCH MCSE L80372","EA",83878,"13-05-2011",4,0,"",1233400,"13-05-2011",4,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",1,82641943160,"63A 3 POLE LOAD BREAK ISOLATOR","EA",83901,"13-05-2011",5,0,"",1233400,"13-05-2011",5,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",5],["",1,72829003030,"SEAL TYPE CARBON/SOLID TUNGSTEN CARBIDE*","EA",84834,"18-05-2011",15,0,"",1233400,"18-05-2011",15,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",15],["",1,82310004020,"300MM SWEEP,220/250V,50HZ EXHAUST FAN","EA",85509,"21-05-2011",3,0,"",1233400,"21-05-2011",3,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",3],["",1,82008206510,"4CX70MM2 FLEXIBLE EPR COPPER CABLE","M",86839,"27-05-2011",30,0,"",1233400,"27-05-2011",30,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",30],["",1,93501991780,"RED OXIDE (ZINC CHROMATE) PRIMER","L",94875,"2011-04-06T18:30:00.000Z",4,0,"",1233400,"2011-04-06T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"L","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",2,93504022290,"LIGHT GRAY PAINT .","L",94875,"2011-04-06T18:30:00.000Z",4,0,"",1233400,"2011-04-06T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"L","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",1,99905001610,"4CX10 SQ.MM MULTISTRD FLEX COPPER CABLE","M",99260,"25-07-2011",50,0,"",1233400,"25-07-2011",50,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",50],["",2,82060244020,"4C X 25 SQMM FLEXIBLE TRS COPPER CABLE","M",99260,"25-07-2011",12,0,"",1233400,"25-07-2011",12,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",12],["",1,82643065790,"POLE TOP BOX.","EA",104478,"19-08-2011",5,0,"",1233400,"19-08-2011",5,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,74124026240,"MOTOR 1 PHASE-DRYER,ATLAS COPCO COMP.","EA",107745,"2011-01-08T18:30:00.000Z",1,0,"",1233400,"2011-01-08T18:30:00.000Z",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,75515000090,"MOTOR: 450KW,6.6KV,F-AVMN 560L4","EA",108034,"2011-03-08T18:30:00.000Z",1,0,"",1233400,"2011-03-08T18:30:00.000Z",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,35501001030,"M-PACT ACB TYPE-M812,","EA",111983,"24-09-2011",1,0,"",1233400,"24-09-2011",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,86005012000,"THERMOMETER DIAL TYPE 0 - 100 DEC.CENT","EA",122519,"24-11-2011",2,0,"",1233400,"24-11-2011",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",2,86505837110,"WINDING TEMPERATURE INDICATOR","EA",122519,"24-11-2011",2,0,"",1233400,"24-11-2011",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",1,35311001570,"450MM ? 1 PHASE WALL MOUNT EXHAUST FAN","EA",126012,"2011-10-11T18:30:00.000Z",10,0,"",1233400,"2011-10-11T18:30:00.000Z",10,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",10],["",1,82785025120,"T TY.MALE CONTACT(BIG)-NGEF AEG/GE PANEL","EA",126059,"2011-10-11T18:30:00.000Z",4,0,"",1233400,"2011-10-11T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",2,82785025050,"T TY.MALECONTACT-NGEF AEG/GE POWER PANEL","EA",126059,"2011-10-11T18:30:00.000Z",10,0,"",1233400,"2011-10-11T18:30:00.000Z",10,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",10],["",1,93914001010,"TRANSFORMER OIL (IS-335)","L",129696,"2011-07-26T18:30:00.000Z",4,0,"",1233400,"2011-07-26T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"L","","","","M","12MMPR01","","R001","X","X","K","MR",4]]}
+  </script>
 
+  <script>
     const IDX_C = 2, IDX_D = 3, IDX_G = 6;
     const HIDDEN_INDEX = 0;
 
@@ -214,138 +193,34 @@
     let rows = [];
     let rowsFiltered = [];
 
-    /* ================================================
-       CACHE MANAGEMENT
-    ================================================ */
-    const CacheManager = {
-      set(key, value, ttl = CONFIG.CACHE_TTL) {
-        try {
-          sessionStorage.setItem(key, JSON.stringify({
-            data: value,
-            timestamp: Date.now(),
-            ttl: ttl
-          }));
-        } catch (e) {
-          console.warn('Cache write failed:', e);
-        }
-      },
+    // Load data from embedded JSON
+    const dataElement = document.getElementById('data-store');
+    const data = JSON.parse(dataElement.textContent);
 
-      get(key) {
-        try {
-          const item = sessionStorage.getItem(key);
-          if (!item) return null;
-          const { data, timestamp, ttl } = JSON.parse(item);
-          if (Date.now() - timestamp > ttl) {
-            sessionStorage.removeItem(key);
-            return null;
-          }
-          return data;
-        } catch (e) {
-          return null;
-        }
-      }
-    };
+    headers = Array.isArray(data.headers) ? data.headers : [];
+    rows = Array.isArray(data.rows) ? data.rows : [];
 
-    /* ================================================
-       FETCH WITH RETRY & MULTIPLE SOURCES
-    ================================================ */
-    async function fetchFromUrl(url) {
-      let timeoutId;
-      try {
-        const controller = new AbortController();
-        timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
-        
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: { 'Cache-Control': 'max-age=3600' }
-        });
-        
-        if (timeoutId) clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        return await response.json();
-        
-      } catch (error) {
-        if (timeoutId) clearTimeout(timeoutId);
-        throw error;
-      }
-    }
+    // Filter non-blank material codes
+    rows = rows.filter(r => safeString(r[IDX_C]) !== '');
 
-    async function fetchData() {
-      const urls = [CONFIG.PRIMARY_URL, CONFIG.BACKUP_URL];
-      const errors = [];
-      
-      // Try each URL with cache buster
-      for (const baseUrl of urls) {
-        try {
-          const url = `${baseUrl}?v=${Date.now()}`;
-          console.log(`Attempting to fetch from: ${url}`);
-          const data = await fetchFromUrl(url);
-          console.log('✓ Data loaded successfully');
-          return data;
-        } catch (error) {
-          errors.push(`${baseUrl}: ${error.message}`);
-          console.warn(`Failed to fetch from ${baseUrl}:`, error.message);
-        }
-      }
-      
-      // All URLs failed
-      throw new Error(`Failed from all sources:\n${errors.join('\n')}`);
-    }
+    // Build table head
+    buildTableHead();
 
-    /* ================================================
-       LOAD DATA
-    ================================================ */
-    async function loadData() {
-      const cacheKey = `materialdrawn_${CONFIG.CACHE_VERSION}`;
-      
-      try {
-        // Try cache first
-        let data = CacheManager.get(cacheKey);
-        
-        if (!data) {
-          console.log('Cache miss, fetching from remote...');
-          data = await fetchData();
-          CacheManager.set(cacheKey, data);
-          console.log('Data cached for future use');
-        } else {
-          console.log('Using cached data');
-        }
+    // Sort by date (newest first)
+    rows.sort((a, b) => {
+      const da = parseFlexibleDate(a[IDX_G]);
+      const db = parseFlexibleDate(b[IDX_G]);
+      if (da && db) return db - da;
+      if (da && !db) return -1;
+      if (!da && db) return 1;
+      return 0;
+    });
 
-        headers = Array.isArray(data.headers) ? data.headers : [];
-        rows = Array.isArray(data.rows) ? data.rows : [];
+    // Apply filters on load
+    applyFilters();
 
-        // Filter non-blank material codes
-        rows = rows.filter(r => safeString(r[IDX_C]) !== '');
-
-        buildTableHead();
-
-        // Sort by date (newest first)
-        rows.sort((a, b) => {
-          const da = parseFlexibleDate(a[IDX_G]);
-          const db = parseFlexibleDate(b[IDX_G]);
-          if (da && db) return db - da;
-          if (da && !db) return -1;
-          if (!da && db) return 1;
-          return 0;
-        });
-
-        applyFilters();
-
-      } catch (err) {
-        console.error('Error loading data:', err);
-        document.getElementById('tableBody').innerHTML = '';
-        document.getElementById('countText').innerHTML = 
-          `<span class="error">⚠ Failed to load data<div class="error-details">${escapeHTML(err.message)}</div></span>`;
-      }
-    }
-
-    /* ================================================
-       TABLE BUILDING
-    ================================================ */
+    // ===== FUNCTIONS =====
+    
     function getVisibleIndexes() {
       let totalCols = headers.length || 
         (rows.length ? Math.max(...rows.map(r => r.length)) : 0);
@@ -376,9 +251,6 @@
       thead.appendChild(tr);
     }
 
-    /* ================================================
-       FILTERING
-    ================================================ */
     function applyFilters() {
       const cContainsVal = document.getElementById('cContains').value.trim().toLowerCase();
       const cExactVal = document.getElementById('cExact').value.trim().toLowerCase();
@@ -413,9 +285,6 @@
       renderTableBody();
     }
 
-    /* ================================================
-       RENDERING
-    ================================================ */
     function renderTableBody() {
       const tbody = document.getElementById('tableBody');
       const visible = getVisibleIndexes();
@@ -444,17 +313,8 @@
         `Showing ${rowsFiltered.length} of ${rows.length} rows`;
     }
 
-    /* ================================================
-       HELPERS
-    ================================================ */
     function safeString(v) {
       return String(v || '').trim();
-    }
-
-    function escapeHTML(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
     }
 
     function parseFlexibleDate(val) {
@@ -479,9 +339,8 @@
       return null;
     }
 
-    /* ================================================
-       EVENT LISTENERS
-    ================================================ */
+    // ===== EVENT LISTENERS =====
+    
     document.getElementById('backBtn').addEventListener('click', () => history.back());
     document.getElementById('homeBtn').addEventListener('click', () => 
       window.open('https://08electricaldata.github.io/', '_self'));
@@ -501,11 +360,6 @@
         document.getElementById(id).value = '');
       applyFilters();
     });
-
-    /* ================================================
-       INIT
-    ================================================ */
-    loadData();
   </script>
 </body>
 </html>
