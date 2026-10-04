@@ -132,6 +132,13 @@
       background: #ffebee;
       padding: 12px;
       border-radius: 4px;
+      line-height: 1.6;
+    }
+    .error-details {
+      font-size: 12px;
+      margin-top: 8px;
+      font-family: monospace;
+      word-break: break-all;
     }
     @media (max-width: 768px) {
       body { margin: 10px; }
@@ -193,7 +200,8 @@
        CONFIGURATION
     ================================================ */
     const CONFIG = {
-      DATA_URL: 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json',
+      PRIMARY_URL: 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json',
+      BACKUP_URL: 'https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/dashboard/materialdrawn.json',
       CACHE_VERSION: 'v1',
       CACHE_TTL: 3600000,
       TIMEOUT: 15000
@@ -239,41 +247,53 @@
     };
 
     /* ================================================
-       FETCH WITH RETRY & TIMEOUT
+       FETCH WITH RETRY & MULTIPLE SOURCES
     ================================================ */
-    async function fetchData(url) {
-      const MAX_RETRIES = 2;
+    async function fetchFromUrl(url) {
+      let timeoutId;
+      try {
+        const controller = new AbortController();
+        timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
+        
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: { 'Cache-Control': 'max-age=3600' }
+        });
+        
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return await response.json();
+        
+      } catch (error) {
+        if (timeoutId) clearTimeout(timeoutId);
+        throw error;
+      }
+    }
+
+    async function fetchData() {
+      const urls = [CONFIG.PRIMARY_URL, CONFIG.BACKUP_URL];
+      const errors = [];
       
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        let timeoutId;
+      // Try each URL with cache buster
+      for (const baseUrl of urls) {
         try {
-          const controller = new AbortController();
-          timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
-          
-          const response = await fetch(url, {
-            signal: controller.signal,
-            headers: { 'Cache-Control': 'max-age=3600' }
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          
-          return await response.json();
-          
+          const url = `${baseUrl}?v=${Date.now()}`;
+          console.log(`Attempting to fetch from: ${url}`);
+          const data = await fetchFromUrl(url);
+          console.log('✓ Data loaded successfully');
+          return data;
         } catch (error) {
-          if (timeoutId) clearTimeout(timeoutId);
-          console.warn(`Attempt ${attempt + 1} failed:`, error.message);
-          
-          if (attempt < MAX_RETRIES) {
-            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-          } else {
-            throw error;
-          }
+          errors.push(`${baseUrl}: ${error.message}`);
+          console.warn(`Failed to fetch from ${baseUrl}:`, error.message);
         }
       }
+      
+      // All URLs failed
+      throw new Error(`Failed from all sources:\n${errors.join('\n')}`);
     }
 
     /* ================================================
@@ -287,10 +307,12 @@
         let data = CacheManager.get(cacheKey);
         
         if (!data) {
-          // Cache miss - fetch with cache buster
-          const url = `${CONFIG.DATA_URL}?v=${Date.now()}`;
-          data = await fetchData(url);
+          console.log('Cache miss, fetching from remote...');
+          data = await fetchData();
           CacheManager.set(cacheKey, data);
+          console.log('Data cached for future use');
+        } else {
+          console.log('Using cached data');
         }
 
         headers = Array.isArray(data.headers) ? data.headers : [];
@@ -314,10 +336,10 @@
         applyFilters();
 
       } catch (err) {
-        console.error('Error:', err);
+        console.error('Error loading data:', err);
         document.getElementById('tableBody').innerHTML = '';
         document.getElementById('countText').innerHTML = 
-          `<span class="error">⚠ Error: ${err.message}</span>`;
+          `<span class="error">⚠ Failed to load data<div class="error-details">${escapeHTML(err.message)}</div></span>`;
       }
     }
 
@@ -427,6 +449,12 @@
     ================================================ */
     function safeString(v) {
       return String(v || '').trim();
+    }
+
+    function escapeHTML(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     function parseFlexibleDate(val) {
