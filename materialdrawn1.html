@@ -2,283 +2,259 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Material Drawn Viewer</title>
-  <link rel="preconnect" href="https://08electricaldata.github.io">
+  <title>Material Drawn Viewer </title>
   <style>
-    * { box-sizing: border-box; }
-    body { 
-      font-family: Arial, Helvetica, sans-serif; 
-      margin: 18px; 
-      background: #fafafa;
-    }
-    header { 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-    h1 { 
-      margin: 0; 
-      font-size: 18px; 
-      flex: 1;
-    }
-    .controls { 
-      display: flex; 
-      gap: 12px; 
-      flex-wrap: wrap; 
-      align-items: center;
-      background: white;
-      padding: 12px;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .controls label { 
-      font-size: 13px; 
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .controls input[type="text"], 
-    .controls input[type="date"] { 
-      padding: 6px 8px; 
-      font-size: 13px; 
-      border: 1px solid #ddd;
-      border-radius: 3px;
-    }
-    .controls input:focus {
-      outline: none;
-      border-color: #0066cc;
-      box-shadow: 0 0 0 2px rgba(0,102,204,0.1);
-    }
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 12px; 
-      font-size: 13px;
-      background: white;
-    }
-    th, td { 
-      border: 1px solid #ddd; 
-      padding: 8px 6px; 
-      text-align: left; 
-      vertical-align: top;
-    }
-    th { 
-      background: #f5f5f5; 
-      position: sticky; 
-      top: 0; 
-      z-index: 10;
-      font-weight: 600;
-    }
-    tr:nth-child(even) td { 
-      background: #fafafa; 
-    }
-    tr:hover td {
-      background: #f0f0f0;
-    }
-    .buttons { 
-      margin-left: auto; 
-      display: flex; 
-      gap: 8px;
-    }
-    button { 
-      padding: 6px 12px; 
-      font-size: 13px; 
-      cursor: pointer;
-      border: 1px solid #ddd;
-      background: white;
-      border-radius: 3px;
-      transition: all 0.2s ease;
-    }
-    button:hover {
-      background: #f0f0f0;
-      border-color: #999;
-    }
-    button:active {
-      transform: scale(0.98);
-    }
-    button#clearFilters {
-      background: #ff6b6b;
-      color: white;
-      border-color: #cc5555;
-    }
-    button#clearFilters:hover {
-      background: #ff5252;
-      border-color: #bb4444;
-    }
-    .summary { 
-      margin-top: 6px; 
-      font-size: 13px; 
-      color: #333;
-      background: white;
-      padding: 8px 12px;
-      border-radius: 4px;
-    }
-    .nowrap { 
-      white-space: nowrap; 
-    }
-    .table-wrapper {
-      overflow: auto;
-      max-height: 70vh;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    @media (max-width: 768px) {
-      body { margin: 10px; }
-      header { flex-direction: column; }
-      .buttons { margin-left: 0; width: 100%; }
-      button { flex: 1; }
-      .controls { flex-direction: column; }
-      .controls > div { width: 100%; }
-      table { font-size: 12px; }
-      th, td { padding: 6px 4px; }
-    }
+    body { font-family: Arial, Helvetica, sans-serif; margin: 18px; }
+    header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    h1 { margin:0; font-size:18px; } 
+    .controls { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .controls label { font-size:13px; }
+    .controls input[type="text"], .controls input[type="date"] { padding:6px; font-size:13px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+    th, td { border:1px solid #ddd; padding:6px; text-align:left; vertical-align:top; }
+    th { background:#f5f5f5; position:sticky; top:0; z-index:1; }
+    tr:nth-child(even) td { background:#fafafa; }
+    .buttons { margin-left:auto; display:flex; gap:8px; }
+    button { padding:6px 10px; font-size:13px; cursor:pointer; }
+    button:hover { opacity:0.85; }
+    .small { font-size:12px; color:#555; }
+    .summary { margin-top:6px; font-size:13px; color:#333; }
+    .nowrap { white-space:nowrap; }
+    .status { font-size:12px; color:#666; margin-top:4px; }
+    .status.error { color:#d32f2f; }
+    .status.success { color:#388e3c; }
   </style>
 </head>
 <body>
   <header>
     <h1>Material Drawn — Viewer</h1>
     <div class="buttons">
-      <button id="backBtn">← Back</button>
-      <button id="homeBtn">🏠 Home</button>
-      <button id="infoBtn">ℹ Info</button>
+      <button id="backBtn">Back</button>
+      <button id="homeBtn">Home</button>
+      <button id="infoBtn">Information</button>
     </div>
   </header>
 
   <div class="controls" aria-label="filters">
+    <!-- Column C (Material) filters -->
     <div>
       <label class="nowrap">Material Code contains:<br><input id="cContains" type="text" placeholder="contains..." /></label>
     </div>
     <div>
       <label class="nowrap">Material Code exact:<br><input id="cExact" type="text" placeholder="exact match..." /></label>
     </div>
+
+    <!-- Column D (Material Description) filters -->
     <div>
-      <label class="nowrap">Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
+      <label class="nowrap">Material Description contains:<br><input id="dContains" type="text" placeholder="contains..." /></label>
     </div>
     <div>
-      <label class="nowrap">Description exact:<br><input id="dExact" type="text" placeholder="exact match..." /></label>
+      <label class="nowrap">Description (D) exact:<br><input id="dExact" type="text" placeholder="exact match..." /></label>
+    </div>
+
+    <!-- Date filters for column G -->
+    <div>
+      <label class="nowrap">From (G):<br><input id="fromDate" type="date" /></label>
     </div>
     <div>
-      <label class="nowrap">From:<br><input id="fromDate" type="date" /></label>
+      <label class="nowrap">To (G):<br><input id="toDate" type="date" /></label>
     </div>
+
     <div>
-      <label class="nowrap">To:<br><input id="toDate" type="date" /></label>
-    </div>
-    <div>
-      <button id="clearFilters">✕ Clear</button>
+      <button id="clearFilters">Clear Filters</button>
     </div>
   </div>
 
-  <div class="summary"><span id="countText">Loading...</span></div>
+  <div class="summary">
+    <span id="countText">Loading...</span>
+    <div class="status" id="statusMsg"></div>
+  </div>
 
-  <div class="table-wrapper">
+  <div style="overflow:auto; max-height:70vh;">
     <table id="dataTable" aria-live="polite">
       <thead id="tableHead"></thead>
       <tbody id="tableBody"></tbody>
     </table>
   </div>
 
-  <script id="data-store" type="application/json">
-{"updated":"2026-10-04T02:18:49.785Z","headers":["Sub-number","Item number of reservation","Material","Material Description","Base Unit of Measure","Reservation","Requirements date","Requirement Quantity","Difference Quantity","Goods recipient","Cost Center","Base date","Removed quantity","Receiving stor. loc.","Debit/Credit Ind.","Movement Type","Movement Type Text","Plant","Unit of Entry","Item deleted","Bulk material","Phantom item","Reserv. status","User Name","Receiving plant","Storage Location","Final Issue","Movement allowed","Account assignment of reservation","Requirement type","Qty. for avail.check"],"rows":[["",1,82527502830,"HEATING ELEMENT 230 VOLT 2 KW","EA",33048,"25-08-2010",60,0,"",1233400,"25-08-2010",60,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",60],["",1,76170018060,"CURRENT TRANSFORMER RATIO 30/1 AMPS.","EA",51213,"2010-02-11T18:30:00.000Z",2,0,"",1233400,"2010-02-11T18:30:00.000Z",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",1,82729061050,"BUS SUPPORT INSULATOR,6.6KV EPOXY 130H","EA",58253,"2011-07-31T18:30:00.000Z",10,0,"",1233400,"2011-07-31T18:30:00.000Z",10,"","S",202,"RE for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,92108004800,"HR SHEET 3.15X1400X5600","MT",69071,"2011-01-02T18:30:00.000Z",0.3,0,"",1233400,"2011-01-02T18:30:00.000Z",0.3,"","H",201,"GI for cost center",1200,"MT","","","","M","12MMPR01","","R001","X","X","K","MR",0.3],["",2,90104035770,"HT HEX HEAD BOLT+DOUBLE NUT M-16X60 F/T","EA",69071,"2011-01-02T18:30:00.000Z",100,0,"",1233400,"2011-01-02T18:30:00.000Z",100,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",100],["",1,82735120750,"1000A M-PACT ACB GE MAKE 415V 50KA","EA",71634,"2011-12-02T18:30:00.000Z",2,0,"",1233400,"2011-12-02T18:30:00.000Z",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",1,88100012550,"COTTON WASTE IS:5485/1980,TY-1","KG",72490,"16-03-2011",60,0,"",1233400,"16-03-2011",60,"","H",201,"GI for cost center",1200,"KG","","","","M","12MMPR01","","R001","X","X","K","MR",60],["",1,76026000380,"6300KVA 11/6.9KV TRANSFORMER","EA",74333,"25-03-2011",3,0,"",1233400,"25-03-2011",3,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,82008206510,"4CX70MM2 FLEXIBLE EPR COPPER CABLE","M",77361,"2011-09-03T18:30:00.000Z",10,0,"",1233400,"2011-09-03T18:30:00.000Z",10,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",10],["",1,72709006360,"BEARING FRAME JACKETED,PT.NO-190","EA",83362,"2011-11-04T18:30:00.000Z",1,0,"",1233400,"2011-11-04T18:30:00.000Z",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,82724081130,"LOAD BREAK SWITCH-400AMPS","EA",83779,"13-05-2011",1,0,"",1233400,"13-05-2011",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,82641921101,"MICRO SWITCH MCSE L80372","EA",83878,"13-05-2011",4,0,"",1233400,"13-05-2011",4,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",1,82641943160,"63A 3 POLE LOAD BREAK ISOLATOR","EA",83901,"13-05-2011",5,0,"",1233400,"13-05-2011",5,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",5],["",1,72829003030,"SEAL TYPE CARBON/SOLID TUNGSTEN CARBIDE*","EA",84834,"18-05-2011",15,0,"",1233400,"18-05-2011",15,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",15],["",1,82310004020,"300MM SWEEP,220/250V,50HZ EXHAUST FAN","EA",85509,"21-05-2011",3,0,"",1233400,"21-05-2011",3,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",3],["",1,82008206510,"4CX70MM2 FLEXIBLE EPR COPPER CABLE","M",86839,"27-05-2011",30,0,"",1233400,"27-05-2011",30,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",30],["",1,93501991780,"RED OXIDE (ZINC CHROMATE) PRIMER","L",94875,"2011-04-06T18:30:00.000Z",4,0,"",1233400,"2011-04-06T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"L","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",2,93504022290,"LIGHT GRAY PAINT .","L",94875,"2011-04-06T18:30:00.000Z",4,0,"",1233400,"2011-04-06T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"L","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",1,99905001610,"4CX10 SQ.MM MULTISTRD FLEX COPPER CABLE","M",99260,"25-07-2011",50,0,"",1233400,"25-07-2011",50,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",50],["",2,82060244020,"4C X 25 SQMM FLEXIBLE TRS COPPER CABLE","M",99260,"25-07-2011",12,0,"",1233400,"25-07-2011",12,"","H",201,"GI for cost center",1200,"M","","","","M","12MMPR01","","R001","X","X","K","MR",12],["",1,82643065790,"POLE TOP BOX.","EA",104478,"19-08-2011",5,0,"",1233400,"19-08-2011",5,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,74124026240,"MOTOR 1 PHASE-DRYER,ATLAS COPCO COMP.","EA",107745,"2011-01-08T18:30:00.000Z",1,0,"",1233400,"2011-01-08T18:30:00.000Z",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,75515000090,"MOTOR: 450KW,6.6KV,F-AVMN 560L4","EA",108034,"2011-03-08T18:30:00.000Z",1,0,"",1233400,"2011-03-08T18:30:00.000Z",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",0],["",1,35501001030,"M-PACT ACB TYPE-M812,","EA",111983,"24-09-2011",1,0,"",1233400,"24-09-2011",1,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",1],["",1,86005012000,"THERMOMETER DIAL TYPE 0 - 100 DEC.CENT","EA",122519,"24-11-2011",2,0,"",1233400,"24-11-2011",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",2,86505837110,"WINDING TEMPERATURE INDICATOR","EA",122519,"24-11-2011",2,0,"",1233400,"24-11-2011",2,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",2],["",1,35311001570,"450MM ? 1 PHASE WALL MOUNT EXHAUST FAN","EA",126012,"2011-10-11T18:30:00.000Z",10,0,"",1233400,"2011-10-11T18:30:00.000Z",10,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",10],["",1,82785025120,"T TY.MALE CONTACT(BIG)-NGEF AEG/GE PANEL","EA",126059,"2011-10-11T18:30:00.000Z",4,0,"",1233400,"2011-10-11T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",4],["",2,82785025050,"T TY.MALECONTACT-NGEF AEG/GE POWER PANEL","EA",126059,"2011-10-11T18:30:00.000Z",10,0,"",1233400,"2011-10-11T18:30:00.000Z",10,"","H",201,"GI for cost center",1200,"EA","","","","M","12MMPR01","","R001","X","X","K","MR",10],["",1,93914001010,"TRANSFORMER OIL (IS-335)","L",129696,"2011-07-26T18:30:00.000Z",4,0,"",1233400,"2011-07-26T18:30:00.000Z",4,"","H",201,"GI for cost center",1200,"L","","","","M","12MMPR01","","R001","X","X","K","MR",4]]}
-  </script>
-
   <script>
+    // Cache busting: append timestamp to URL
+    const TIMESTAMP = Date.now();
+    const DATA_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/dashboard/materialdrawn.json?v=' + TIMESTAMP;
+
+    // Column indexes per your JSON headers: column C -> index 2, column D -> index 3, column G (date) -> index 6
     const IDX_C = 2, IDX_D = 3, IDX_G = 6;
+    // Index to hide (first column / Sub-number)
     const HIDDEN_INDEX = 0;
 
+    // Cache configuration
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    let cachedData = null;
+    let cacheTimestamp = 0;
+
     let headers = [];
-    let rows = [];
+    let rows = []; // raw rows array
     let rowsFiltered = [];
 
-    // Load data from embedded JSON
-    const dataElement = document.getElementById('data-store');
-    const data = JSON.parse(dataElement.textContent);
+    // Buttons behaviour
+    document.getElementById('backBtn').addEventListener('click', () => { history.back(); });
+    document.getElementById('homeBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/', '_self'); });
+    document.getElementById('infoBtn').addEventListener('click', () => { window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'); });
 
-    headers = Array.isArray(data.headers) ? data.headers : [];
-    rows = Array.isArray(data.rows) ? data.rows : [];
+    // Inputs
+    const cContains = document.getElementById('cContains');
+    const cExact = document.getElementById('cExact');
+    const dContains = document.getElementById('dContains');
+    const dExact = document.getElementById('dExact');
+    const fromDate = document.getElementById('fromDate');
+    const toDate = document.getElementById('toDate');
+    const clearFilters = document.getElementById('clearFilters');
+    const statusMsg = document.getElementById('statusMsg');
 
-    // Filter non-blank material codes
-    rows = rows.filter(r => safeString(r[IDX_C]) !== '');
-
-    // Build table head
-    buildTableHead();
-
-    // Sort by date (newest first)
-    rows.sort((a, b) => {
-      const da = parseFlexibleDate(a[IDX_G]);
-      const db = parseFlexibleDate(b[IDX_G]);
-      if (da && db) return db - da;
-      if (da && !db) return -1;
-      if (!da && db) return 1;
-      return 0;
+    [cContains,cExact,dContains,dExact,fromDate,toDate].forEach(el => el.addEventListener('input', applyFilters));
+    clearFilters.addEventListener('click', () => {
+      cContains.value=''; cExact.value=''; dContains.value=''; dExact.value=''; fromDate.value=''; toDate.value='';
+      applyFilters();
     });
 
-    // Apply filters on load
-    applyFilters();
+    // Fetch with cache busting and no-cache headers
+    function fetchData() {
+      // Check if cache is still valid
+      if (cachedData && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+        updateStatus('Using cached data (session)', 'success');
+        return Promise.resolve(cachedData);
+      }
 
-    // ===== FUNCTIONS =====
-    
+      updateStatus('Loading data...', '');
+
+      return fetch(DATA_URL, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      })
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to fetch JSON: ' + r.status);
+        return r.json();
+      })
+      .then(json => {
+        // Cache the data
+        cachedData = json;
+        cacheTimestamp = Date.now();
+        updateStatus(`Data loaded (${json.rows.length} rows)`, 'success');
+        return json;
+      });
+    }
+
+    function updateStatus(msg, cssClass) {
+      statusMsg.textContent = msg;
+      statusMsg.className = 'status ' + cssClass;
+    }
+
+    // Load and process data
+    fetchData()
+      .then(json => {
+        headers = Array.isArray(json.headers) ? json.headers : [];
+        rows = Array.isArray(json.rows) ? json.rows : [];
+        // Only keep rows where column C is non-blank (non-empty string and not null/undefined)
+        rows = rows.filter(r => {
+          const v = safeString(r[IDX_C]);
+          return v !== '';
+        });
+        buildTableHead(); // build head now that headers/rows exist
+        // Sort by column G (date) newest -> oldest
+        rows.sort((a,b) => {
+          const da = parseFlexibleDate(a[IDX_G]);
+          const db = parseFlexibleDate(b[IDX_G]);
+          // Put rows with valid dates first, by descending date.
+          if (da && db) return db - da;
+          if (da && !db) return -1;
+          if (!da && db) return 1;
+          return 0;
+        });
+        applyFilters();
+      })
+      .catch(err => {
+        const errMsg = 'Error loading data: ' + err.message;
+        document.getElementById('countText').textContent = errMsg;
+        updateStatus(errMsg, 'error');
+        console.error(err);
+      });
+
+    // Compute visible column indexes (all original indexes except the hidden one)
     function getVisibleIndexes() {
-      let totalCols = headers.length || 
-        (rows.length ? Math.max(...rows.map(r => r.length)) : 0);
-      
+      // determine total number of columns, using headers if present else using longest row
+      let totalCols = 0;
+      if (headers.length) {
+        totalCols = headers.length;
+      } else {
+        totalCols = rows.reduce((m,r) => Math.max(m, r.length), 0);
+      }
+      // build indexes [0..totalCols-1] then filter out HIDDEN_INDEX
       const indexes = [];
-      for (let i = 0; i < totalCols; i++) {
-        if (i !== HIDDEN_INDEX) indexes.push(i);
+      for (let i=0;i<totalCols;i++) {
+        if (i === HIDDEN_INDEX) continue;
+        indexes.push(i);
       }
       return indexes;
     }
 
     function buildTableHead() {
       const thead = document.getElementById('tableHead');
+      thead.innerHTML = '';
       const tr = document.createElement('tr');
       const visible = getVisibleIndexes();
 
-      visible.forEach(idx => {
-        const th = document.createElement('th');
-        if (headers.length) {
+      if (headers.length) {
+        visible.forEach(idx => {
+          const th = document.createElement('th');
           th.textContent = headers[idx] || '';
-        } else {
-          th.textContent = 'Col ' + String.fromCharCode(65 + (idx % 26));
-        }
-        tr.appendChild(th);
-      });
-
-      thead.innerHTML = '';
+          tr.appendChild(th);
+        });
+      } else {
+        // fallback labels using original column letters (A,B,C,...), skipping the hidden one
+        visible.forEach(idx => {
+          const th = document.createElement('th');
+          const letter = String.fromCharCode(65 + (idx % 26));
+          th.textContent = 'Col ' + letter;
+          tr.appendChild(th);
+        });
+      }
       thead.appendChild(tr);
     }
 
     function applyFilters() {
-      const cContainsVal = document.getElementById('cContains').value.trim().toLowerCase();
-      const cExactVal = document.getElementById('cExact').value.trim().toLowerCase();
-      const dContainsVal = document.getElementById('dContains').value.trim().toLowerCase();
-      const dExactVal = document.getElementById('dExact').value.trim().toLowerCase();
-      const from = document.getElementById('fromDate').value ? 
-        new Date(document.getElementById('fromDate').value) : null;
-      const to = document.getElementById('toDate').value ? 
-        new Date(document.getElementById('toDate').value) : null;
-
-      if (to) to.setHours(23, 59, 59, 999);
+      const cContainsVal = cContains.value.trim().toLowerCase();
+      const cExactVal = cExact.value.trim().toLowerCase();
+      const dContainsVal = dContains.value.trim().toLowerCase();
+      const dExactVal = dExact.value.trim().toLowerCase();
+      const from = fromDate.value ? new Date(fromDate.value) : null;
+      const to = toDate.value ? new Date(toDate.value) : null;
+      // If 'to' is provided, extend to end of day
+      if (to) to.setHours(23,59,59,999);
 
       rowsFiltered = rows.filter(r => {
         const c = safeString(r[IDX_C]).toLowerCase();
         const d = safeString(r[IDX_D]).toLowerCase();
-
+        // C contains/exact logic: if exact provided then exact must match; otherwise if contains provided then must contain; if neither provided, pass
         if (cExactVal && c !== cExactVal) return false;
         if (cContainsVal && !c.includes(cContainsVal)) return false;
         if (dExactVal && d !== dExactVal) return false;
         if (dContainsVal && !d.includes(dContainsVal)) return false;
 
+        // Date filter on column G
+        const cell = r[IDX_G];
+        const dt = parseFlexibleDate(cell);
         if (from || to) {
-          const dt = parseFlexibleDate(r[IDX_G]);
-          if (!dt) return false;
+          if (!dt) return false; // when filtering by date range, ignore rows with no valid date
           if (from && dt < from) return false;
           if (to && dt > to) return false;
         }
-
         return true;
       });
 
@@ -287,79 +263,70 @@
 
     function renderTableBody() {
       const tbody = document.getElementById('tableBody');
-      const visible = getVisibleIndexes();
-
       tbody.innerHTML = '';
+      const visible = getVisibleIndexes();
 
       rowsFiltered.forEach(row => {
         const tr = document.createElement('tr');
         visible.forEach(idx => {
           const td = document.createElement('td');
           const v = row[idx];
-          
           if (idx === IDX_G) {
+            // show dates in ISO-like format if parseable or raw text otherwise
             const dt = parseFlexibleDate(v);
             td.textContent = dt ? dt.toISOString().split('T')[0] : safeString(v);
           } else {
             td.textContent = (v === null || v === undefined) ? '' : String(v);
           }
-          
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
       });
 
-      document.getElementById('countText').textContent = 
-        `Showing ${rowsFiltered.length} of ${rows.length} rows`;
+      document.getElementById('countText').textContent = `Showing ${rowsFiltered.length} of ${rows.length} rows (column C non-blank enforced)`;
     }
 
+    // Helpers
     function safeString(v) {
-      return String(v || '').trim();
+      if (v === null || v === undefined) return '';
+      return String(v).trim();
     }
 
+    // Try to parse multiple date formats that appear in your JSON:
+    // - ISO (Date.parse)
+    // - "dd-mm-yyyy" or "dd-mm-yyyyThh:mm:ssZ" (some rows)
+    // Return a Date object or null if unparseable
     function parseFlexibleDate(val) {
-      if (!val) return null;
-      
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'number') {
+        // treat as Excel-ish serial? No: assume epoch ms (rare). Try to construct.
+        const d = new Date(val);
+        if (!isNaN(d)) return d;
+      }
       const s = String(val).trim();
+      if (!s) return null;
+      // Try native parser
       const d1 = new Date(s);
       if (!isNaN(d1)) return d1;
-
+      // Try dd-mm-yyyy or dd-mm-yyyy hh:mm:ss
+      // Common patterns in file: "25-08-2010", "28-01-2011", sometimes without time.
       const m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[T\s](.*))?$/);
       if (m) {
         const day = Number(m[1]), mon = Number(m[2]) - 1, yr = Number(m[3]);
+        // if time present, parse; otherwise create date midnight UTC/local
         if (m[4]) {
-          const iso = `${yr.toString().padStart(4,'0')}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}T${m[4]}`;
+          const rest = m[4];
+          // try to parse rest with Date (append to ISO)
+          const iso = `${yr.toString().padStart(4,'0')}-${String(mon+1).padStart(2,'0')}-${String(day).padStart(2,'0')}T${rest}`;
           const d2 = new Date(iso);
           if (!isNaN(d2)) return d2;
         }
         const d = new Date(yr, mon, day);
         if (!isNaN(d)) return d;
       }
-
       return null;
     }
 
-    // ===== EVENT LISTENERS =====
-    
-    document.getElementById('backBtn').addEventListener('click', () => history.back());
-    document.getElementById('homeBtn').addEventListener('click', () => 
-      window.open('https://08electricaldata.github.io/', '_self'));
-    document.getElementById('infoBtn').addEventListener('click', () => 
-      window.open('https://08electricaldata.github.io/drive-viewer/info.html', '_blank'));
-
-    [document.getElementById('cContains'),
-     document.getElementById('cExact'),
-     document.getElementById('dContains'),
-     document.getElementById('dExact'),
-     document.getElementById('fromDate'),
-     document.getElementById('toDate')].forEach(el => 
-      el.addEventListener('input', applyFilters));
-
-    document.getElementById('clearFilters').addEventListener('click', () => {
-      ['cContains','cExact','dContains','dExact','fromDate','toDate'].forEach(id => 
-        document.getElementById(id).value = '');
-      applyFilters();
-    });
   </script>
 </body>
 </html>
