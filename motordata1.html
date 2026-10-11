@@ -63,7 +63,7 @@ body{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
-  gap:20px;
+  gap:30px;
   padding:20px;
 }
 
@@ -96,17 +96,18 @@ body{
   flex-direction:column;
   gap:8px;
   padding:8px 0;
+  justify-content:flex-start;
 }
 
 .make-info-item{
   display:flex;
   flex-direction:column;
   gap:3px;
-  padding:10px 14px;
+  padding:12px 16px;
   background:#eaf3ff;
   border-left:3px solid var(--accent);
   border-radius:6px;
-  min-width:280px;
+  min-width:300px;
 }
 
 .make-info-label{
@@ -120,8 +121,9 @@ body{
 .make-info-value{
   font-weight:700;
   color:var(--text);
-  font-size:14px;
+  font-size:16px;
   min-height:18px;
+  line-height:1.4;
 }
 
 .make-loading{
@@ -194,6 +196,7 @@ td{
   padding:12px;
   text-align:center;
   border-bottom:1px solid var(--border);
+  word-break:break-word;
 }
 
 tr:nth-child(even) td{background:#fbfcff;}
@@ -216,7 +219,7 @@ tbody tr:last-child td{border-bottom:none;}
   font-weight:bold;
 }
 
-@media(max-width:900px){
+@media(max-width:1000px){
   .header-wrapper{
     flex-direction:column;
     align-items:center;
@@ -231,14 +234,15 @@ tbody tr:last-child td{border-bottom:none;}
 }
 
 @media(max-width:700px){
-  table{font-size:13px;}
+  table{font-size:12px;}
+  th, td{padding:8px;}
   .button-bar{margin:10px 0;}
   .button-bar button{flex:1;min-width:120px;}
   .version-info { display:block; margin-top:8px; margin-left:0; }
   .header-left h2{font-size:20px;}
   .header-left h3{font-size:16px;}
   .make-info-item{min-width:auto;}
-  .make-info-value{font-size:13px;}
+  .make-info-value{font-size:14px;}
 }
 </style>
 </head>
@@ -509,26 +513,9 @@ async function loadMotor(){
     updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
     headerLeft.appendChild(updatedDiv);
 
-    /* RIGHT: Make Information */
+    /* RIGHT: Only Current Make Information */
     const headerRight = document.createElement("div");
     headerRight.className = "header-right";
-
-    /* Column L Item */
-    const colLItem = document.createElement("div");
-    colLItem.className = "make-info-item";
-    
-    const colLLabel = document.createElement("div");
-    colLLabel.className = "make-info-label";
-    colLLabel.textContent = "Column L:";
-    colLItem.appendChild(colLLabel);
-    
-    const colLValue = document.createElement("div");
-    colLValue.id = "columnLValue";
-    colLValue.className = "make-info-value make-loading";
-    colLValue.textContent = "Loading...";
-    colLItem.appendChild(colLValue);
-
-    headerRight.appendChild(colLItem);
 
     /* Current Make Item */
     const makeItem = document.createElement("div");
@@ -597,10 +584,23 @@ async function loadMotor(){
     
     fragment.appendChild(createTableElement(null, motorHeaders, motorRows));
 
+    /* STORE COLUMN L VALUE FOR LATER USE */
+    const columnLValueForTable = document.createElement("span");
+    columnLValueForTable.id = "columnLForTable";
+    columnLValueForTable.style.display = "none";
+    fragment.appendChild(columnLValueForTable);
+
     const replacementHeaders = ["Last Motor Replacement", "Column L", "Last Motor PM"];
-    const replacementRows = [[formatDate(row[37]), "—", formatDate(row[38])]];
+    const replacementRows = [[
+      formatDate(row[37]), 
+      `<span id="columnLTableValue">Loading...</span>`,
+      formatDate(row[38])
+    ]];
     
-    fragment.appendChild(createTableElement(null, replacementHeaders, replacementRows));
+    const replacementTable = createTableElement(null, replacementHeaders, [[formatDate(row[37]), "Loading...", formatDate(row[38])]]);
+    fragment.appendChild(replacementTable);
+    const columnLTableCell = replacementTable.querySelector("tbody tr td:nth-child(2)");
+    columnLTableCell.id = "columnLTableCell";
 
     const spareHeaders = ["Sl No.", "W/O number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
     const spareRows = [];
@@ -639,19 +639,20 @@ async function loadMotor(){
 
     console.log(`✓ Motor details page rendered (ID: ${id})`);
 
-    /* FETCH AND SHOW COLUMN L + EXTRACTED VALUE */
+    /* FETCH AND SHOW CURRENT MAKE + COLUMN L */
     const makeData = await fetchCurrentMakeData(id);
 
-    const colLEl = document.getElementById("columnLValue");
-    if (colLEl) {
-      colLEl.textContent = escapeHtml(makeData.columnL);
-      colLEl.classList.remove("make-loading");
-    }
-
+    /* Update Current Make in header */
     const extractedEl = document.getElementById("extractedMakeValue");
     if (extractedEl) {
       extractedEl.textContent = escapeHtml(makeData.extracted);
       extractedEl.classList.remove("make-loading");
+    }
+
+    /* Update Column L in table */
+    const columnLCell = document.getElementById("columnLTableCell");
+    if (columnLCell) {
+      columnLCell.textContent = escapeHtml(makeData.columnL);
     }
 
   } catch(err){
