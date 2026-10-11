@@ -3,395 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Motor Details</title>
-
+<title>Test: Fetch Column L</title>
 <style>
-:root{
-  --bg: #f4f7ff;
-  --panel: #ffffff;
-  --text: #222222;
-  --muted: #777777;
-  --accent: #0d47a1;
-  --accent-2: #1565c0;
-  --border: #dddddd;
-  --shadow: 0 0 10px rgba(0,0,0,.08);
-  --danger: #d32f2f;
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f0f0f0;
 }
-
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  font-family:Arial,Helvetica,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-
-.top-credit{
-  background:linear-gradient(90deg,var(--accent),var(--accent-2));
-  color:#fff;
-  text-align:center;
-  padding:10px;
-  font-size:13px;
-  font-weight:bold;
-  letter-spacing:0.4px;
+h1 { color: #0d47a1; }
+.info { 
+  padding: 10px;
+  background: #e3f2fd;
+  border-left: 4px solid #0d47a1;
+  margin: 10px 0;
+  border-radius: 4px;
 }
-
-.version-info {
-  display:inline-block;
-  margin-left:12px;
-  background:rgba(255,255,255,0.2); 
-  color:white;
-  padding:6px 10px; 
-  border-radius:6px;
-  font-size:12px; 
-  font-weight:bold;
+.result {
+  padding: 15px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 15px 0;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
-
-.status-indicator {
-  display:inline-block; 
-  width:8px; 
-  height:8px;
-  border-radius:50%; 
-  background:#4caf50;
-  margin-right:4px; 
-  animation:pulse 2s infinite;
-}
-@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
-
-.header{text-align:center;padding:20px;}
-.header h2{color:var(--accent);margin-bottom:5px;font-size:22px;font-weight:800;}
-.header h3{color:var(--text);font-weight:normal;font-size:18px;}
-.updated{margin-top:10px;font-size:13px;color:var(--muted);}
-
-.current-make-container{
-  margin-top:15px;
-  padding:12px 14px;
-  background:#eaf3ff;
-  border-left:4px solid var(--accent);
-  border-radius:8px;
-  font-size:13px;
-  color:var(--text);
-}
-.current-make-row{
-  display:flex;
-  gap:15px;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:center;
-  margin-top:6px;
-}
-.make-item{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-.make-label{
-  font-weight:700;
-  color:var(--accent);
-  font-size:12px;
-  text-transform:uppercase;
-}
-.make-value{
-  font-weight:700;
-  color:var(--text);
-  font-size:13px;
-  min-height:20px;
-}
-.make-loading{
-  color:var(--muted);
-  font-style:italic;
-}
-
-.button-bar{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  flex-wrap:wrap;
-  margin:15px 0;
-}
-
-.button-bar button{
-  background:linear-gradient(90deg,var(--accent),var(--accent-2));
-  color:#fff;
-  border:none;
-  padding:10px 18px;
-  cursor:pointer;
-  border-radius:5px;
-  font-size:15px;
-  font-weight:700;
-  transition:transform .14s ease, box-shadow .14s ease;
-  box-shadow:0 4px 12px rgba(13,71,161,0.15);
-}
-
-.button-bar button:hover{
-  transform:translateY(-3px);
-  box-shadow:0 10px 24px rgba(13,71,161,0.25);
-}
-
-.container{width:95%;max-width:1100px;margin:auto;padding-bottom:30px;}
-
-.section-title{
-  font-weight:800;
-  margin:20px 0 12px 0;
-  padding:10px 12px;
-  border-radius:8px;
-  background:linear-gradient(180deg,#f2f7ff,#eef6ff);
-  border-left:4px solid var(--accent);
-  color:var(--accent);
-  font-size:16px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:var(--panel);
-  box-shadow:var(--shadow);
-  border-radius:8px;
-  overflow:hidden;
-  margin-bottom:18px;
-  animation:fade-in 0.3s ease-out;
-}
-@keyframes fade-in { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
-
-th{
-  background:linear-gradient(90deg,var(--accent),var(--accent-2));
-  color:white;
-  padding:12px;
-  font-weight:800;
-  text-align:left;
-  border-bottom:1px solid rgba(255,255,255,0.1);
-}
-
-td{
-  padding:12px;
-  text-align:center;
-  border-bottom:1px solid var(--border);
-}
-
-tr:nth-child(even) td{background:#fbfcff;}
-tr:hover td{background:#f2f6ff;}
-tbody tr:last-child td{border-bottom:none;}
-
-.loader{
-  padding:40px;
-  text-align:center;
-  font-size:18px;
-  font-weight:700;
-  color:var(--muted);
-}
-
-.no-data{
-  padding:30px;
-  text-align:center;
-  color:var(--danger);
-  font-size:18px;
-  font-weight:bold;
-}
-
-@media(max-width:700px){
-  table{font-size:13px;}
-  .button-bar{margin:10px 0;}
-  .button-bar button{flex:1;min-width:120px;}
-  .version-info { display:block; margin-top:8px; margin-left:0; }
-  .current-make-container{font-size:12px;}
-  .current-make-row{flex-direction:column; gap:8px;}
-}
+.success { background: #c8e6c9; border-color: #4caf50; }
+.error { background: #ffcdd2; border-color: #d32f2f; }
+.loading { background: #fff9c4; border-color: #fbc02d; }
 </style>
 </head>
-
 <body>
 
-<div class="top-credit">
-  Designed & Maintained by RAKESH CHANDRA SETHY
-  <span class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></span>
-</div>
-
 <div class="container">
-  <div id="app">
-    <div class="loader">Loading Motor Details…</div>
+  <h1>Test: Fetch Column L from Google Sheet</h1>
+  
+  <div class="info">
+    <strong>URL:</strong> <span id="urlDisplay"></span>
+  </div>
+
+  <div class="info">
+    <strong>Drive ID:</strong> <span id="driveIdDisplay">—</span>
+  </div>
+
+  <div class="info">
+    <strong>Status:</strong> <span id="statusDisplay">Initializing...</span>
+  </div>
+
+  <h2>Results:</h2>
+  
+  <div class="info">
+    <strong>Column B (extracted):</strong>
+    <div class="result loading" id="colBResult">Loading...</div>
+  </div>
+
+  <div class="info">
+    <strong>Column C (extracted):</strong>
+    <div class="result loading" id="colCResult">Loading...</div>
+  </div>
+
+  <div class="info">
+    <strong>Column L (fetched):</strong>
+    <div class="result loading" id="colLResult">Loading...</div>
+  </div>
+
+  <div class="info">
+    <strong>Extracted Make (between 2nd & 3rd hyphen):</strong>
+    <div class="result loading" id="extractedResult">Loading...</div>
+  </div>
+
+  <div class="info">
+    <strong>Console Log:</strong>
+    <div class="result" id="consoleLog"></div>
   </div>
 </div>
 
 <script>
 
-/* ===== VERSION-BASED CACHE BUSTING ===== */
-const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
-const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
-const GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq";
+// Capture console logs
+const logs = [];
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalError = console.error;
 
-let currentVersion = "1.0.0";
-const versionDisplayEl = document.getElementById("versionDisplay");
+console.log = function(...args) {
+  logs.push("LOG: " + args.join(" "));
+  document.getElementById("consoleLog").textContent = logs.join("\n");
+  originalLog.apply(console, args);
+};
 
-/* FETCH VERSION FOR CACHE BUSTING */
-async function getVersion() {
-  try {
-    const res = await fetch(VERSION_URL + "?t=" + Date.now());
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const data = await res.json();
-    currentVersion = data.version || "1.0.0";
-    versionDisplayEl.textContent = currentVersion;
-    console.log("✓ Version loaded:", currentVersion);
-  } catch (err) {
-    console.warn("Failed to load version file:", err);
-    currentVersion = "1.0.0";
-    versionDisplayEl.textContent = currentVersion;
-  }
+console.warn = function(...args) {
+  logs.push("WARN: " + args.join(" "));
+  document.getElementById("consoleLog").textContent = logs.join("\n");
+  originalWarn.apply(console, args);
+};
+
+console.error = function(...args) {
+  logs.push("ERROR: " + args.join(" "));
+  document.getElementById("consoleLog").textContent = logs.join("\n");
+  originalError.apply(console, args);
+};
+
+// Display URL
+document.getElementById("urlDisplay").textContent = window.location.href;
+
+function getID() {
+  return new URLSearchParams(window.location.search).get("id");
 }
 
-/* BUILD URLS WITH VERSION PARAM AND TIMESTAMP */
-function buildUrl(baseUrl) {
-  return `${baseUrl}?v=${currentVersion}&t=${Date.now()}`;
-}
-
-function getID(){ return new URLSearchParams(window.location.search).get("id"); }
-function goBack(){ history.back(); }
-function goHome(){ window.location.href="https://08electricaldata.github.io/"; }
-function goPLC(){ window.location.href="plc.html?id="+encodeURIComponent(getID()); }
-function goDrive(){ window.location.href="index2.html?id="+encodeURIComponent(getID()); }
-function goHistory(){ window.location.href="history.html?id="+encodeURIComponent(getID()); }
-
-function escapeHtml(s){
-  if(!s) return "";
+function escapeHtml(s) {
+  if (!s) return "";
   return String(s)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;');
-}
-
-function formatDate(v){
-  if(!v) return "N/A";
-  const d = new Date(v);
-  if(isNaN(d)) return escapeHtml(v);
-  return d.toLocaleDateString("en-GB");
-}
-
-function createTableElement(title, headers, rows){
-  const card = document.createElement("div");
-  
-  if(title){
-    const sectionTitle = document.createElement("h2");
-    sectionTitle.className = "section-title";
-    sectionTitle.textContent = title;
-    card.appendChild(sectionTitle);
-  }
-
-  const table = document.createElement("table");
-  
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  headers.forEach(h => {
-    const th = document.createElement("th");
-    th.textContent = h;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-  
-  const tbody = document.createElement("tbody");
-  const fragment = document.createDocumentFragment();
-  
-  if(rows.length === 0){
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = headers.length;
-    td.textContent = "No data available";
-    td.style.textAlign = "center";
-    td.style.color = "#999";
-    tr.appendChild(td);
-    fragment.appendChild(tr);
-  } else {
-    rows.forEach(row => {
-      const tr = document.createElement("tr");
-      row.forEach(cellText => {
-        const td = document.createElement("td");
-        td.textContent = cellText;
-        tr.appendChild(td);
-      });
-      fragment.appendChild(tr);
-    });
-  }
-  
-  tbody.appendChild(fragment);
-  table.appendChild(tbody);
-  card.appendChild(table);
-  
-  return card;
-}
-
-/* ===== FETCH CURRENT MAKE FROM SHEET ===== */
-async function fetchCurrentMakeData(driveID) {
-  try {
-    const id = String(driveID || "").trim();
-    if (!id) return { columnL: "N/A", extracted: "N/A" };
-
-    // Example: TANKAGE-P-775
-    // B = TANKAGE
-    // C = P-775
-    const parts = id.split(/-(.+)/);
-    const colB = (parts[0] || "").trim();
-    const colC = (parts[1] || "").trim();
-
-    if (!colB || !colC) {
-      return { columnL: "N/A", extracted: "N/A" };
-    }
-
-    const query = `SELECT B, C, L WHERE B='${colB}' AND C='${colC}' LIMIT 1`;
-    const url = `${GOOGLE_SHEETS_URL}?gid=1041736083&tqx=out:json&q=${encodeURIComponent(query)}&t=${Date.now()}`;
-
-    console.log("🔍 Querying sheet for:", id);
-    console.log("Query:", query);
-
-    const response = await fetch(url, { mode: "cors" });
-    if (!response.ok) {
-      console.warn("Sheet fetch error:", response.status);
-      return { columnL: "N/A", extracted: "N/A" };
-    }
-
-    const text = await response.text();
-
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}") + 1;
-
-    if (start === -1 || end <= start) {
-      console.warn("No JSON found in response");
-      return { columnL: "N/A", extracted: "N/A" };
-    }
-
-    const jsonText = text.substring(start, end);
-    let data;
-
-    try {
-      data = JSON.parse(jsonText);
-    } catch (e) {
-      console.error("JSON parse error:", e);
-      return { columnL: "N/A", extracted: "N/A" };
-    }
-
-    const rows = data?.table?.rows || [];
-    if (!rows.length) {
-      console.warn("❌ No matching row found for:", id);
-      return { columnL: "N/A", extracted: "N/A" };
-    }
-
-    const cells = rows[0].c || [];
-    const rawColumnL = cells[2]?.v || "";
-
-    console.log("Raw Column L:", rawColumnL);
-
-    const extracted = extractMakeValue(rawColumnL);
-    console.log("Extracted Current Make:", extracted);
-
-    return {
-      columnL: rawColumnL || "N/A",
-      extracted: extracted || "N/A"
-    };
-
-  } catch (err) {
-    console.error("Error fetching Current Make:", err);
-    return { columnL: "N/A", extracted: "N/A" };
-  }
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }
 
 function extractMakeValue(fullString) {
@@ -399,218 +133,172 @@ function extractMakeValue(fullString) {
   if (!value || value === "N/A") return "N/A";
 
   const parts = value.split("-");
-  // Example:
-  // 0512-(2025/06)-KEC(117/20.05.25)-KEC(OLD)
+  console.log("Splitting by hyphen:", parts);
+  
+  // Example: 0512-(2025/06)-KEC(117/20.05.25)-KEC(OLD)
   // parts[2] = KEC(117/20.05.25)
   if (parts.length >= 3) {
-    return parts[2].trim();
+    const result = parts[2].trim();
+    console.log("Extracted (parts[2]):", result);
+    return result;
   }
 
   return value;
 }
 
-async function loadMotor(){
-  const app = document.getElementById("app");
-  const id = getID();
-
-  if(!id){
-    app.innerHTML = "<div class='no-data'>No Drive ID supplied.</div>";
-    return;
-  }
-
-  try{
-    console.log(`⚡ Loading Motor details for ${id}...`);
-    const startTime = performance.now();
+async function fetchCurrentMakeData(driveID) {
+  try {
+    const id = String(driveID || "").trim();
+    console.log("=== START FETCH ===");
+    console.log("Drive ID:", id);
     
-    await getVersion();
-    
-    const response = await fetch(buildUrl(JSON_URL));
-    if(!response.ok) throw new Error("Unable to fetch JSON");
+    if (!id) {
+      console.error("No Drive ID");
+      return { columnB: "N/A", columnC: "N/A", columnL: "N/A", extracted: "N/A" };
+    }
 
-    const data = await response.json();
-    let row = null;
+    // Parse: TANKAGE-P-777
+    const idx = id.indexOf("-");
+    if (idx === -1) {
+      console.error("No hyphen found in Drive ID");
+      return { columnB: "N/A", columnC: "N/A", columnL: "N/A", extracted: "N/A" };
+    }
 
-    for(const r of data.rows){
-      if(String(r[3]||"").trim().toUpperCase() === id.trim().toUpperCase()){
-        row = r;
+    const colB = id.substring(0, idx).trim();
+    const colC = id.substring(idx + 1).trim();
+
+    console.log("Parsed - Column B:", colB);
+    console.log("Parsed - Column C:", colC);
+
+    // Build sheet URL
+    const sheetUrl =
+      `https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq` +
+      `?gid=1041736083&tqx=out:json&t=${Date.now()}`;
+
+    console.log("Fetching sheet URL:", sheetUrl);
+
+    const response = await fetch(sheetUrl, { mode: "cors" });
+    console.log("Fetch response status:", response.status);
+
+    if (!response.ok) {
+      console.error("Sheet fetch failed");
+      return { columnB: colB, columnC: colC, columnL: "FETCH_ERROR", extracted: "FETCH_ERROR" };
+    }
+
+    const text = await response.text();
+    console.log("Response text length:", text.length);
+
+    // Parse JSON
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}") + 1;
+
+    if (start === -1 || end <= start) {
+      console.error("No JSON found in response");
+      return { columnB: colB, columnC: colC, columnL: "NO_JSON", extracted: "NO_JSON" };
+    }
+
+    const jsonText = text.substring(start, end);
+    const json = JSON.parse(jsonText);
+
+    console.log("JSON parsed successfully");
+    console.log("Table structure:", json?.table ? "EXISTS" : "MISSING");
+
+    const rows = json?.table?.rows || [];
+    console.log("Total rows:", rows.length);
+
+    let matchedRow = null;
+    let rowIndex = 0;
+
+    for (const row of rows) {
+      rowIndex++;
+      const cells = row.c || [];
+
+      // Column B is index 1
+      // Column C is index 2
+      const bValue = String(cells[1]?.v || "").trim();
+      const cValue = String(cells[2]?.v || "").trim();
+
+      if (rowIndex <= 5 || (bValue === colB && cValue === colC)) {
+        console.log(`Row ${rowIndex}: B="${bValue}" | C="${cValue}"`);
+      }
+
+      if (bValue.toUpperCase() === colB.toUpperCase() && 
+          cValue.toUpperCase() === colC.toUpperCase()) {
+        console.log("✓ MATCH FOUND at row:", rowIndex);
+        matchedRow = row;
         break;
       }
     }
 
-    const loadTime = performance.now() - startTime;
-    console.log(`✓ Motor data loaded in ${loadTime.toFixed(2)}ms`);
-
-    const fragment = document.createDocumentFragment();
-
-    /* HEADER */
-    const headerDiv = document.createElement("div");
-    headerDiv.className = "header";
-    
-    const h2 = document.createElement("h2");
-    h2.textContent = "MOTOR DETAILS";
-    headerDiv.appendChild(h2);
-    
-    const h3 = document.createElement("h3");
-    h3.textContent = escapeHtml(id);
-    headerDiv.appendChild(h3);
-    
-    const updatedDiv = document.createElement("div");
-    updatedDiv.className = "updated";
-    updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
-    headerDiv.appendChild(updatedDiv);
-
-    /* CURRENT MAKE DISPLAY */
-    const makeContainer = document.createElement("div");
-    makeContainer.className = "current-make-container";
-
-    const makeRow = document.createElement("div");
-    makeRow.className = "current-make-row";
-
-    /* Column L */
-    const colLItem = document.createElement("div");
-    colLItem.className = "make-item";
-    const colLLabel = document.createElement("div");
-    colLLabel.className = "make-label";
-    colLLabel.textContent = "Column L:";
-    const colLValue = document.createElement("div");
-    colLValue.id = "columnLValue";
-    colLValue.className = "make-value make-loading";
-    colLValue.textContent = "Loading...";
-    colLItem.appendChild(colLLabel);
-    colLItem.appendChild(colLValue);
-
-    /* Current Make */
-    const currentItem = document.createElement("div");
-    currentItem.className = "make-item";
-    const currentLabel = document.createElement("div");
-    currentLabel.className = "make-label";
-    currentLabel.textContent = "Current Make:";
-    const currentValue = document.createElement("div");
-    currentValue.id = "extractedMakeValue";
-    currentValue.className = "make-value make-loading";
-    currentValue.textContent = "Loading...";
-    currentItem.appendChild(currentLabel);
-    currentItem.appendChild(currentValue);
-
-    makeRow.appendChild(colLItem);
-    makeRow.appendChild(currentItem);
-    makeContainer.appendChild(makeRow);
-    headerDiv.appendChild(makeContainer);
-
-    fragment.appendChild(headerDiv);
-
-    /* BUTTON BAR */
-    const buttonBar = document.createElement("div");
-    buttonBar.className = "button-bar";
-    
-    const buttons = [
-      { text: "⬅ Back", fn: goBack },
-      { text: "🏠 Home", fn: goHome },
-      { text: "ℹ️ Drive Info", fn: goDrive },
-      { text: "📜 History", fn: goHistory },
-      { text: "⚡ PLC", fn: goPLC }
-    ];
-    
-    buttons.forEach(btn => {
-      const button = document.createElement("button");
-      button.textContent = btn.text;
-      button.onclick = btn.fn;
-      buttonBar.appendChild(button);
-    });
-    
-    fragment.appendChild(buttonBar);
-
-    if(!row){
-      const noDriveDiv = document.createElement("div");
-      noDriveDiv.className = "no-data";
-      noDriveDiv.textContent = "Motor details not found for " + escapeHtml(id);
-      fragment.appendChild(noDriveDiv);
-      
-      app.innerHTML = "";
-      app.appendChild(fragment);
-      console.warn("No motor found for:", id);
-      return;
+    if (!matchedRow) {
+      console.warn("No row matched for:", { colB, colC });
+      return { columnB: colB, columnC: colC, columnL: "NO_MATCH", extracted: "NO_MATCH" };
     }
 
-    const motorHeaders = ["KW", "MAKE", "FRAME SIZE", "RPM", "FLC", "MTG"];
-    const motorRows = [[
-      escapeHtml(row[5] || ""),
-      escapeHtml(row[7] || ""),
-      escapeHtml(row[8] || ""),
-      escapeHtml(row[9] || ""),
-      escapeHtml(row[10] || ""),
-      escapeHtml(row[11] || "")
-    ]];
-    
-    fragment.appendChild(createTableElement(null, motorHeaders, motorRows));
+    const cells = matchedRow.c || [];
+    const rawColumnL = String(cells[11]?.v || "").trim(); // Column L is index 11
 
-    const replacementHeaders = ["Last Motor Replacement", "Last Motor PM"];
-    const replacementRows = [[formatDate(row[37]), formatDate(row[38])]];
-    
-    fragment.appendChild(createTableElement(null, replacementHeaders, replacementRows));
+    console.log("Column L raw value:", rawColumnL);
 
-    const spareHeaders = ["Sl No.", "W/O number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
-    const spareRows = [];
-    const spareData = (row[24] || "").trim();
-    if(spareData){
-      const spareList = spareData.split("@");
-      spareList.forEach((item, index) => {
-        const parts = item.trim().split("!");
-        const rowData = [String(index + 1)];
-        for(let i = 0; i < 8; i++){
-          rowData.push(escapeHtml(parts[i] ? parts[i].trim() : ""));
-        }
-        spareRows.push(rowData);
-      });
-    }
-    fragment.appendChild(createTableElement("Spare Motor Details", spareHeaders, spareRows));
+    const extracted = extractMakeValue(rawColumnL);
 
-    const pendingHeaders = ["Sl No.", "W/O Number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
-    const pendingRows = [];
-    const pendingData = (row[26] || "").trim();
-    if(pendingData){
-      const pendingList = pendingData.split("@");
-      pendingList.forEach((item, index) => {
-        const parts = item.trim().split("!");
-        const rowData = [String(index + 1)];
-        for(let i = 0; i < 8; i++){
-          rowData.push(escapeHtml(parts[i] ? parts[i].trim() : ""));
-        }
-        pendingRows.push(rowData);
-      });
-    }
-    fragment.appendChild(createTableElement("Pending Motors at ERS", pendingHeaders, pendingRows));
+    console.log("=== FETCH COMPLETE ===");
 
-    app.innerHTML = "";
-    app.appendChild(fragment);
+    return {
+      columnB: colB,
+      columnC: colC,
+      columnL: rawColumnL || "N/A",
+      extracted: extracted || "N/A"
+    };
 
-    console.log(`✓ Motor details page rendered (ID: ${id})`);
-
-    /* FETCH AND SHOW COLUMN L + EXTRACTED VALUE */
-    const makeData = await fetchCurrentMakeData(id);
-
-    const colLEl = document.getElementById("columnLValue");
-    if (colLEl) {
-      colLEl.textContent = escapeHtml(makeData.columnL);
-      colLEl.classList.remove("make-loading");
-    }
-
-    const extractedEl = document.getElementById("extractedMakeValue");
-    if (extractedEl) {
-      extractedEl.textContent = escapeHtml(makeData.extracted);
-      extractedEl.classList.remove("make-loading");
-    }
-
-  } catch(err){
-    console.error("Error loading motor details:", err);
-    app.innerHTML = `<div class='no-data'>Unable to load Motor Details.<br><br>${escapeHtml(err.message)}</div>`;
+  } catch (err) {
+    console.error("Exception:", err.toString());
+    console.error("Stack:", err.stack);
+    return { columnB: "ERROR", columnC: "ERROR", columnL: "ERROR", extracted: "ERROR" };
   }
 }
 
-(async function(){
-  console.log("📥 Initializing Motor details viewer...");
-  loadMotor();
-})();
+async function init() {
+  const driveId = getID();
+  document.getElementById("driveIdDisplay").textContent = driveId || "NOT PROVIDED";
+
+  if (!driveId) {
+    document.getElementById("statusDisplay").textContent = "ERROR: No Drive ID in URL";
+    return;
+  }
+
+  document.getElementById("statusDisplay").textContent = "Fetching...";
+
+  const result = await fetchCurrentMakeData(driveId);
+
+  document.getElementById("colBResult").textContent = escapeHtml(result.columnB);
+  document.getElementById("colBResult").classList.remove("loading");
+  document.getElementById("colBResult").classList.add(result.columnB === "N/A" ? "error" : "success");
+
+  document.getElementById("colCResult").textContent = escapeHtml(result.columnC);
+  document.getElementById("colCResult").classList.remove("loading");
+  document.getElementById("colCResult").classList.add(result.columnC === "N/A" ? "error" : "success");
+
+  document.getElementById("colLResult").textContent = escapeHtml(result.columnL);
+  document.getElementById("colLResult").classList.remove("loading");
+  document.getElementById("colLResult").classList.add(
+    result.columnL === "N/A" || result.columnL.includes("ERROR") || result.columnL.includes("MATCH") 
+      ? "error" 
+      : "success"
+  );
+
+  document.getElementById("extractedResult").textContent = escapeHtml(result.extracted);
+  document.getElementById("extractedResult").classList.remove("loading");
+  document.getElementById("extractedResult").classList.add(
+    result.extracted === "N/A" || result.extracted.includes("ERROR") || result.extracted.includes("MATCH")
+      ? "error"
+      : "success"
+  );
+
+  document.getElementById("statusDisplay").textContent = "✓ Complete";
+}
+
+init();
 </script>
 
 </body>
