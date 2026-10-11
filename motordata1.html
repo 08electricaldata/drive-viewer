@@ -430,7 +430,7 @@ async function fetchCurrentMakeData(driveID) {
     const cells = matchedRow.c || [];
     const rawColumnL = String(cells[11]?.v || "").trim();
 
-    console.log("Column L raw:", rawColumnL);
+    console.log("MOTOR REPLACE DETAILS raw:", rawColumnL);
 
     const extracted = extractMakeValue(rawColumnL);
 
@@ -584,13 +584,13 @@ async function loadMotor(){
     
     fragment.appendChild(createTableElement(null, motorHeaders, motorRows));
 
-    /* STORE COLUMN L VALUE FOR LATER USE */
+    /* STORE MOTOR REPLACE DETAILS VALUE FOR LATER USE */
     const columnLValueForTable = document.createElement("span");
     columnLValueForTable.id = "columnLForTable";
     columnLValueForTable.style.display = "none";
     fragment.appendChild(columnLValueForTable);
 
-    const replacementHeaders = ["Last Motor Replacement", "Column L", "Last Motor PM"];
+    const replacementHeaders = ["Last Motor Replacement", "MOTOR REPLACE DETAILS", "Last Motor PM"];
     const replacementRows = [[
       formatDate(row[37]), 
       `<span id="columnLTableValue">Loading...</span>`,
@@ -639,7 +639,7 @@ async function loadMotor(){
 
     console.log(`✓ Motor details page rendered (ID: ${id})`);
 
-    /* FETCH AND SHOW CURRENT MAKE + COLUMN L */
+    /* FETCH AND SHOW CURRENT MAKE + MOTOR REPLACE DETAILS */
     const makeData = await fetchCurrentMakeData(id);
 
     /* Update Current Make in header */
@@ -649,7 +649,7 @@ async function loadMotor(){
       extractedEl.classList.remove("make-loading");
     }
 
-    /* Update Column L in table */
+    /* Update MOTOR REPLACE DETAILS in table */
     const columnLCell = document.getElementById("columnLTableCell");
     if (columnLCell) {
       columnLCell.textContent = escapeHtml(makeData.columnL);
