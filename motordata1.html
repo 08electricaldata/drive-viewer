@@ -73,7 +73,6 @@ body{
   font-size:13px;
   color:var(--text);
 }
-
 .current-make-row{
   display:flex;
   gap:15px;
@@ -82,27 +81,23 @@ body{
   justify-content:center;
   margin-top:6px;
 }
-
 .make-item{
   display:flex;
   flex-direction:column;
   gap:4px;
 }
-
 .make-label{
   font-weight:700;
   color:var(--accent);
   font-size:12px;
   text-transform:uppercase;
 }
-
 .make-value{
   font-weight:700;
   color:var(--text);
   font-size:13px;
   min-height:20px;
 }
-
 .make-loading{
   color:var(--muted);
   font-style:italic;
@@ -284,7 +279,6 @@ function createTableElement(title, headers, rows){
 
   const table = document.createElement("table");
   
-  /* THEAD */
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
   headers.forEach(h => {
@@ -295,7 +289,6 @@ function createTableElement(title, headers, rows){
   thead.appendChild(headerRow);
   table.appendChild(thead);
   
-  /* TBODY */
   const tbody = document.createElement("tbody");
   const fragment = document.createDocumentFragment();
   
@@ -327,24 +320,28 @@ function createTableElement(title, headers, rows){
   return card;
 }
 
-/* ===== FETCH CURRENT MAKE FROM GOOGLE SHEETS ===== */
+/* ===== FETCH CURRENT MAKE FROM SHEET ===== */
 async function fetchCurrentMakeData(driveID) {
   try {
     const id = String(driveID || "").trim();
     if (!id) return { columnL: "N/A", extracted: "N/A" };
 
-    // Example: TANKAGE-P-775 => B = TANKAGE, C = P-775
-    const dashIndex = id.indexOf("-");
-    if (dashIndex === -1) return { columnL: "N/A", extracted: "N/A" };
+    // Example: TANKAGE-P-775
+    // B = TANKAGE
+    // C = P-775
+    const parts = id.split(/-(.+)/);
+    const colB = (parts[0] || "").trim();
+    const colC = (parts[1] || "").trim();
 
-    const colB = id.substring(0, dashIndex);     // TANKAGE
-    const colC = id.substring(dashIndex + 1);    // P-775
+    if (!colB || !colC) {
+      return { columnL: "N/A", extracted: "N/A" };
+    }
 
-    // Query the Motor O/H DUE sheet (gid=1041736083)
     const query = `SELECT B, C, L WHERE B='${colB}' AND C='${colC}' LIMIT 1`;
     const url = `${GOOGLE_SHEETS_URL}?gid=1041736083&tqx=out:json&q=${encodeURIComponent(query)}&t=${Date.now()}`;
 
-    console.log("🔍 Querying sheet for:", id, "Query:", query);
+    console.log("🔍 Querying sheet for:", id);
+    console.log("Query:", query);
 
     const response = await fetch(url, { mode: "cors" });
     if (!response.ok) {
@@ -353,17 +350,18 @@ async function fetchCurrentMakeData(driveID) {
     }
 
     const text = await response.text();
-    
-    // Extract JSON from Google's response wrapper
+
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}") + 1;
-    if (start === -1 || end === 0) {
+
+    if (start === -1 || end <= start) {
       console.warn("No JSON found in response");
       return { columnL: "N/A", extracted: "N/A" };
     }
 
     const jsonText = text.substring(start, end);
     let data;
+
     try {
       data = JSON.parse(jsonText);
     } catch (e) {
@@ -377,43 +375,33 @@ async function fetchCurrentMakeData(driveID) {
       return { columnL: "N/A", extracted: "N/A" };
     }
 
-    console.log("✓ Match found:", rows[0]);
-
     const cells = rows[0].c || [];
-    
-    // Selected columns: B (index 0), C (index 1), L (index 2)
-    const rawColumnL = cells[2]?.v || "N/A";
+    const rawColumnL = cells[2]?.v || "";
 
     console.log("Raw Column L:", rawColumnL);
 
-    // Extract value between 2nd and 3rd hyphen
     const extracted = extractMakeValue(rawColumnL);
-    console.log("Extracted Make:", extracted);
+    console.log("Extracted Current Make:", extracted);
 
-    return { 
-      columnL: rawColumnL,
-      extracted: extracted
+    return {
+      columnL: rawColumnL || "N/A",
+      extracted: extracted || "N/A"
     };
 
   } catch (err) {
     console.error("Error fetching Current Make:", err);
-    return { columnL: "Error", extracted: "Error" };
+    return { columnL: "N/A", extracted: "N/A" };
   }
 }
 
-/* ===== EXTRACT MAKE VALUE BETWEEN 2ND AND 3RD HYPHEN ===== */
 function extractMakeValue(fullString) {
   const value = String(fullString || "").trim();
   if (!value || value === "N/A") return "N/A";
 
   const parts = value.split("-");
   // Example:
-  // 0638-(2026/09)-KEC(117/20.05.25)-KEC(OLD)
-  // parts[0] = 0638
-  // parts[1] = (2026/09)
-  // parts[2] = KEC(117/20.05.25)  <-- THIS ONE
-  // parts[3] = KEC(OLD)
-  
+  // 0512-(2025/06)-KEC(117/20.05.25)-KEC(OLD)
+  // parts[2] = KEC(117/20.05.25)
   if (parts.length >= 3) {
     return parts[2].trim();
   }
@@ -442,7 +430,6 @@ async function loadMotor(){
     const data = await response.json();
     let row = null;
 
-    // Search using Equipment Number (Column D = index 3)
     for(const r of data.rows){
       if(String(r[3]||"").trim().toUpperCase() === id.trim().toUpperCase()){
         row = r;
@@ -472,47 +459,41 @@ async function loadMotor(){
     updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
     headerDiv.appendChild(updatedDiv);
 
-    /* CURRENT MAKE CONTAINER */
+    /* CURRENT MAKE DISPLAY */
     const makeContainer = document.createElement("div");
     makeContainer.className = "current-make-container";
-    
+
     const makeRow = document.createElement("div");
     makeRow.className = "current-make-row";
 
-    /* Column L Display */
+    /* Column L */
     const colLItem = document.createElement("div");
     colLItem.className = "make-item";
-    
     const colLLabel = document.createElement("div");
     colLLabel.className = "make-label";
     colLLabel.textContent = "Column L:";
-    
     const colLValue = document.createElement("div");
     colLValue.id = "columnLValue";
     colLValue.className = "make-value make-loading";
     colLValue.textContent = "Loading...";
-    
     colLItem.appendChild(colLLabel);
     colLItem.appendChild(colLValue);
 
-    /* Extracted Make Display */
-    const extractedItem = document.createElement("div");
-    extractedItem.className = "make-item";
-    
-    const extractedLabel = document.createElement("div");
-    extractedLabel.className = "make-label";
-    extractedLabel.textContent = "Current Make:";
-    
-    const extractedValue = document.createElement("div");
-    extractedValue.id = "extractedMakeValue";
-    extractedValue.className = "make-value make-loading";
-    extractedValue.textContent = "Loading...";
-    
-    extractedItem.appendChild(extractedLabel);
-    extractedItem.appendChild(extractedValue);
+    /* Current Make */
+    const currentItem = document.createElement("div");
+    currentItem.className = "make-item";
+    const currentLabel = document.createElement("div");
+    currentLabel.className = "make-label";
+    currentLabel.textContent = "Current Make:";
+    const currentValue = document.createElement("div");
+    currentValue.id = "extractedMakeValue";
+    currentValue.className = "make-value make-loading";
+    currentValue.textContent = "Loading...";
+    currentItem.appendChild(currentLabel);
+    currentItem.appendChild(currentValue);
 
     makeRow.appendChild(colLItem);
-    makeRow.appendChild(extractedItem);
+    makeRow.appendChild(currentItem);
     makeContainer.appendChild(makeRow);
     headerDiv.appendChild(makeContainer);
 
@@ -551,7 +532,6 @@ async function loadMotor(){
       return;
     }
 
-    /* MAIN MOTOR DETAILS TABLE */
     const motorHeaders = ["KW", "MAKE", "FRAME SIZE", "RPM", "FLC", "MTG"];
     const motorRows = [[
       escapeHtml(row[5] || ""),
@@ -564,16 +544,13 @@ async function loadMotor(){
     
     fragment.appendChild(createTableElement(null, motorHeaders, motorRows));
 
-    /* MOTOR REPLACEMENT & PM TABLE */
     const replacementHeaders = ["Last Motor Replacement", "Last Motor PM"];
     const replacementRows = [[formatDate(row[37]), formatDate(row[38])]];
     
     fragment.appendChild(createTableElement(null, replacementHeaders, replacementRows));
 
-    /* SPARE MOTOR DETAILS TABLE */
     const spareHeaders = ["Sl No.", "W/O number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
     const spareRows = [];
-    
     const spareData = (row[24] || "").trim();
     if(spareData){
       const spareList = spareData.split("@");
@@ -586,13 +563,10 @@ async function loadMotor(){
         spareRows.push(rowData);
       });
     }
-    
     fragment.appendChild(createTableElement("Spare Motor Details", spareHeaders, spareRows));
 
-    /* PENDING MOTORS AT ERS TABLE */
     const pendingHeaders = ["Sl No.", "W/O Number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
     const pendingRows = [];
-    
     const pendingData = (row[26] || "").trim();
     if(pendingData){
       const pendingList = pendingData.split("@");
@@ -605,7 +579,6 @@ async function loadMotor(){
         pendingRows.push(rowData);
       });
     }
-    
     fragment.appendChild(createTableElement("Pending Motors at ERS", pendingHeaders, pendingRows));
 
     app.innerHTML = "";
@@ -613,9 +586,9 @@ async function loadMotor(){
 
     console.log(`✓ Motor details page rendered (ID: ${id})`);
 
-    /* FETCH AND UPDATE CURRENT MAKE DATA */
+    /* FETCH AND SHOW COLUMN L + EXTRACTED VALUE */
     const makeData = await fetchCurrentMakeData(id);
-    
+
     const colLEl = document.getElementById("columnLValue");
     if (colLEl) {
       colLEl.textContent = escapeHtml(makeData.columnL);
@@ -634,12 +607,10 @@ async function loadMotor(){
   }
 }
 
-/* ===== INIT ===== */
 (async function(){
   console.log("📥 Initializing Motor details viewer...");
   loadMotor();
 })();
-
 </script>
 
 </body>
