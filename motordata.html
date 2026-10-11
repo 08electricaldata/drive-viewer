@@ -59,10 +59,78 @@ body{
 }
 @keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
-.header{text-align:center;padding:20px;}
-.header h2{color:var(--accent);margin-bottom:5px;font-size:22px;font-weight:800;}
-.header h3{color:var(--text);font-weight:normal;font-size:18px;}
-.updated{margin-top:10px;font-size:13px;color:var(--muted);}
+.header-wrapper{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:30px;
+  padding:20px;
+}
+
+.header-left{
+  flex:1;
+  text-align:center;
+}
+
+.header-left h2{
+  color:var(--accent);
+  margin-bottom:5px;
+  font-size:22px;
+  font-weight:800;
+}
+
+.header-left h3{
+  color:var(--text);
+  font-weight:normal;
+  font-size:18px;
+}
+
+.updated{
+  margin-top:10px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.header-right{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:8px 0;
+  justify-content:flex-start;
+}
+
+.make-info-item{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:12px 16px;
+  background:#eaf3ff;
+  border-left:3px solid var(--accent);
+  border-radius:6px;
+  min-width:300px;
+}
+
+.make-info-label{
+  font-weight:700;
+  color:var(--accent);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+
+.make-info-value{
+  font-weight:700;
+  color:var(--text);
+  font-size:16px;
+  min-height:18px;
+  line-height:1.4;
+}
+
+.make-loading{
+  color:var(--muted);
+  font-style:italic;
+  font-size:12px;
+}
 
 .button-bar{
   display:flex;
@@ -128,6 +196,7 @@ td{
   padding:12px;
   text-align:center;
   border-bottom:1px solid var(--border);
+  word-break:break-word;
 }
 
 tr:nth-child(even) td{background:#fbfcff;}
@@ -150,11 +219,30 @@ tbody tr:last-child td{border-bottom:none;}
   font-weight:bold;
 }
 
+@media(max-width:1000px){
+  .header-wrapper{
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  .header-right{
+    width:100%;
+  }
+  .make-info-item{
+    width:100%;
+  }
+}
+
 @media(max-width:700px){
-  table{font-size:13px;}
+  table{font-size:12px;}
+  th, td{padding:8px;}
   .button-bar{margin:10px 0;}
   .button-bar button{flex:1;min-width:120px;}
   .version-info { display:block; margin-top:8px; margin-left:0; }
+  .header-left h2{font-size:20px;}
+  .header-left h3{font-size:16px;}
+  .make-info-item{min-width:auto;}
+  .make-info-value{font-size:14px;}
 }
 </style>
 </head>
@@ -237,7 +325,6 @@ function createTableElement(title, headers, rows){
 
   const table = document.createElement("table");
   
-  /* THEAD */
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
   headers.forEach(h => {
@@ -248,7 +335,6 @@ function createTableElement(title, headers, rows){
   thead.appendChild(headerRow);
   table.appendChild(thead);
   
-  /* TBODY */
   const tbody = document.createElement("tbody");
   const fragment = document.createDocumentFragment();
   
@@ -280,6 +366,99 @@ function createTableElement(title, headers, rows){
   return card;
 }
 
+/* ===== FETCH CURRENT MAKE FROM SHEET (WORKING VERSION) ===== */
+async function fetchCurrentMakeData(driveID) {
+  try {
+    const id = String(driveID || "").trim();
+    console.log("=== FETCH CURRENT MAKE ===");
+    console.log("Drive ID:", id);
+
+    if (!id) return { columnL: "N/A", extracted: "N/A" };
+
+    const idx = id.indexOf("-");
+    if (idx === -1) return { columnL: "N/A", extracted: "N/A" };
+
+    const colB = id.substring(0, idx).trim();
+    const colC = id.substring(idx + 1).trim();
+
+    console.log("Parsed - B:", colB, "C:", colC);
+
+    const sheetUrl =
+      `https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq` +
+      `?gid=1041736083&tqx=out:json&t=${Date.now()}`;
+
+    const response = await fetch(sheetUrl, { mode: "cors" });
+    if (!response.ok) {
+      console.warn("Sheet fetch failed:", response.status);
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const text = await response.text();
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}") + 1;
+
+    if (start === -1 || end <= start) {
+      console.warn("No JSON in response");
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const json = JSON.parse(text.substring(start, end));
+    const rows = json?.table?.rows || [];
+
+    console.log("Total rows:", rows.length);
+
+    let matchedRow = null;
+
+    for (const row of rows) {
+      const cells = row.c || [];
+      const bValue = String(cells[1]?.v || "").trim();
+      const cValue = String(cells[2]?.v || "").trim();
+
+      if (bValue.toUpperCase() === colB.toUpperCase() && 
+          cValue.toUpperCase() === colC.toUpperCase()) {
+        console.log("✓ MATCH FOUND");
+        matchedRow = row;
+        break;
+      }
+    }
+
+    if (!matchedRow) {
+      console.warn("No row match");
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const cells = matchedRow.c || [];
+    const rawColumnL = String(cells[11]?.v || "").trim();
+
+    console.log("MOTOR REPLACE DETAILS raw:", rawColumnL);
+
+    const extracted = extractMakeValue(rawColumnL);
+
+    console.log("=== FETCH COMPLETE ===");
+
+    return {
+      columnL: rawColumnL || "N/A",
+      extracted: extracted || "N/A"
+    };
+
+  } catch (err) {
+    console.error("fetchCurrentMakeData error:", err);
+    return { columnL: "N/A", extracted: "N/A" };
+  }
+}
+
+function extractMakeValue(fullString) {
+  const value = String(fullString || "").trim();
+  if (!value || value === "N/A") return "N/A";
+
+  const parts = value.split("-");
+  if (parts.length >= 3) {
+    return parts[2].trim();
+  }
+
+  return value;
+}
+
 async function loadMotor(){
   const app = document.getElementById("app");
   const id = getID();
@@ -301,7 +480,6 @@ async function loadMotor(){
     const data = await response.json();
     let row = null;
 
-    // Search using Equipment Number (Column D = index 3)
     for(const r of data.rows){
       if(String(r[3]||"").trim().toUpperCase() === id.trim().toUpperCase()){
         row = r;
@@ -312,27 +490,54 @@ async function loadMotor(){
     const loadTime = performance.now() - startTime;
     console.log(`✓ Motor data loaded in ${loadTime.toFixed(2)}ms`);
 
-    /* BUILD CONTENT USING DOCUMENTFRAGMENT */
     const fragment = document.createDocumentFragment();
 
-    /* HEADER */
-    const headerDiv = document.createElement("div");
-    headerDiv.className = "header";
+    /* HEADER WITH LEFT AND RIGHT SECTIONS */
+    const headerWrapper = document.createElement("div");
+    headerWrapper.className = "header-wrapper";
+
+    /* LEFT: Motor Details Info */
+    const headerLeft = document.createElement("div");
+    headerLeft.className = "header-left";
     
     const h2 = document.createElement("h2");
     h2.textContent = "MOTOR DETAILS";
-    headerDiv.appendChild(h2);
+    headerLeft.appendChild(h2);
     
     const h3 = document.createElement("h3");
     h3.textContent = escapeHtml(id);
-    headerDiv.appendChild(h3);
+    headerLeft.appendChild(h3);
     
     const updatedDiv = document.createElement("div");
     updatedDiv.className = "updated";
     updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
-    headerDiv.appendChild(updatedDiv);
+    headerLeft.appendChild(updatedDiv);
+
+    /* RIGHT: Only Current Make Information */
+    const headerRight = document.createElement("div");
+    headerRight.className = "header-right";
+
+    /* Current Make Item */
+    const makeItem = document.createElement("div");
+    makeItem.className = "make-info-item";
     
-    fragment.appendChild(headerDiv);
+    const makeLabel = document.createElement("div");
+    makeLabel.className = "make-info-label";
+    makeLabel.textContent = "Current Make:";
+    makeItem.appendChild(makeLabel);
+    
+    const makeValue = document.createElement("div");
+    makeValue.id = "extractedMakeValue";
+    makeValue.className = "make-info-value make-loading";
+    makeValue.textContent = "Loading...";
+    makeItem.appendChild(makeValue);
+
+    headerRight.appendChild(makeItem);
+
+    /* Add left and right to wrapper */
+    headerWrapper.appendChild(headerLeft);
+    headerWrapper.appendChild(headerRight);
+    fragment.appendChild(headerWrapper);
 
     /* BUTTON BAR */
     const buttonBar = document.createElement("div");
@@ -367,7 +572,6 @@ async function loadMotor(){
       return;
     }
 
-    /* MAIN MOTOR DETAILS TABLE */
     const motorHeaders = ["KW", "MAKE", "FRAME SIZE", "RPM", "FLC", "MTG"];
     const motorRows = [[
       escapeHtml(row[5] || ""),
@@ -380,16 +584,26 @@ async function loadMotor(){
     
     fragment.appendChild(createTableElement(null, motorHeaders, motorRows));
 
-    /* MOTOR REPLACEMENT & PM TABLE */
-    const replacementHeaders = ["Last Motor Replacement", "Last Motor PM"];
-    const replacementRows = [[formatDate(row[37]), formatDate(row[38])]];
-    
-    fragment.appendChild(createTableElement(null, replacementHeaders, replacementRows));
+    /* STORE MOTOR REPLACE DETAILS VALUE FOR LATER USE */
+    const columnLValueForTable = document.createElement("span");
+    columnLValueForTable.id = "columnLForTable";
+    columnLValueForTable.style.display = "none";
+    fragment.appendChild(columnLValueForTable);
 
-    /* SPARE MOTOR DETAILS TABLE */
+    const replacementHeaders = ["Last Motor Replacement", "MOTOR REPLACE DETAILS", "Last Motor PM"];
+    const replacementRows = [[
+      formatDate(row[37]), 
+      `<span id="columnLTableValue">Loading...</span>`,
+      formatDate(row[38])
+    ]];
+    
+    const replacementTable = createTableElement(null, replacementHeaders, [[formatDate(row[37]), "Loading...", formatDate(row[38])]]);
+    fragment.appendChild(replacementTable);
+    const columnLTableCell = replacementTable.querySelector("tbody tr td:nth-child(2)");
+    columnLTableCell.id = "columnLTableCell";
+
     const spareHeaders = ["Sl No.", "W/O number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
     const spareRows = [];
-    
     const spareData = (row[24] || "").trim();
     if(spareData){
       const spareList = spareData.split("@");
@@ -402,13 +616,10 @@ async function loadMotor(){
         spareRows.push(rowData);
       });
     }
-    
     fragment.appendChild(createTableElement("Spare Motor Details", spareHeaders, spareRows));
 
-    /* PENDING MOTORS AT ERS TABLE */
     const pendingHeaders = ["Sl No.", "W/O Number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
     const pendingRows = [];
-    
     const pendingData = (row[26] || "").trim();
     if(pendingData){
       const pendingList = pendingData.split("@");
@@ -421,14 +632,28 @@ async function loadMotor(){
         pendingRows.push(rowData);
       });
     }
-    
     fragment.appendChild(createTableElement("Pending Motors at ERS", pendingHeaders, pendingRows));
 
-    /* APPEND ALL TO APP */
     app.innerHTML = "";
     app.appendChild(fragment);
 
     console.log(`✓ Motor details page rendered (ID: ${id})`);
+
+    /* FETCH AND SHOW CURRENT MAKE + MOTOR REPLACE DETAILS */
+    const makeData = await fetchCurrentMakeData(id);
+
+    /* Update Current Make in header */
+    const extractedEl = document.getElementById("extractedMakeValue");
+    if (extractedEl) {
+      extractedEl.textContent = escapeHtml(makeData.extracted);
+      extractedEl.classList.remove("make-loading");
+    }
+
+    /* Update MOTOR REPLACE DETAILS in table */
+    const columnLCell = document.getElementById("columnLTableCell");
+    if (columnLCell) {
+      columnLCell.textContent = escapeHtml(makeData.columnL);
+    }
 
   } catch(err){
     console.error("Error loading motor details:", err);
@@ -436,12 +661,10 @@ async function loadMotor(){
   }
 }
 
-/* ===== INIT ===== */
 (async function(){
   console.log("📥 Initializing Motor details viewer...");
   loadMotor();
 })();
-
 </script>
 
 </body>
