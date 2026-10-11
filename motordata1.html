@@ -65,23 +65,22 @@ body{
 .updated{margin-top:10px;font-size:13px;color:var(--muted);}
 
 .current-make-display{
-  margin-top:14px;
-  padding:12px 14px;
+  margin-top:15px;
   display:inline-block;
-  background:linear-gradient(180deg,#eff7ff,#e8f4ff);
+  padding:12px 14px;
+  background:#eaf3ff;
   border-left:4px solid var(--accent);
-  border-radius:6px;
-  color:var(--text);
+  border-radius:8px;
   font-size:14px;
-  font-weight:600;
-  box-shadow:0 2px 8px rgba(13,71,161,0.08);
+  color:var(--text);
 }
 .current-make-label{
   color:var(--accent);
-  font-weight:800;
+  font-weight:700;
   margin-right:8px;
 }
 .current-make-value{
+  font-weight:700;
   color:var(--text);
 }
 .current-make-loading{
@@ -313,46 +312,51 @@ async function fetchCurrentMake(driveID) {
     const id = String(driveID || "").trim();
     if (!id) return "N/A";
 
-    // Example: BAT_A-P-200 => B = BAT_A, C = P-200
     const dashIndex = id.indexOf("-");
     if (dashIndex === -1) return "N/A";
 
     const colB = id.substring(0, dashIndex);     // BAT_A
-    const colC = id.substring(dashIndex + 1);    // P-200
+    const colC = id.substring(dashIndex + 1);     // P-200
 
-    // Query only B, C, L columns
-    const query = `SELECT B,C,L WHERE B='${colB}' AND C='${colC}' LIMIT 1`;
-    const url = `${GOOGLE_SHEETS_URL}?tqx=out:json&q=${encodeURIComponent(query)}&t=${Date.now()}`;
+    // Query exact sheet used in MOTOR O/H DUE page
+    const query = `SELECT B, C, L WHERE B='${colB}' AND C='${colC}' LIMIT 1`;
+    const url = `${GOOGLE_SHEETS_URL}?gid=1041736083&tqx=out:json&q=${encodeURIComponent(query)}&t=${Date.now()}`;
+
+    console.log("🔍 Querying Current Make:", query);
 
     const response = await fetch(url, { mode: "cors" });
     if (!response.ok) return "N/A";
 
     const text = await response.text();
 
-    // Google Sheets gviz/tq returns a JS object inside a string
+    // Strip Google's wrapper
     const start = text.indexOf("{");
     const end = text.lastIndexOf("}") + 1;
     const jsonText = text.substring(start, end);
-    const data = JSON.parse(jsonText);
 
-    // Support both formats: data.table.rows and data.rows
-    const rows = data?.table?.rows || data?.rows || [];
-    if (!rows.length) return "N/A";
-
-    const row = rows[0];
-    const cells = row?.c || [];
-
-    // If selected only B,C,L then L is index 2
-    let rawValue = "";
-    if (cells[2] && cells[2].v !== undefined) {
-      rawValue = cells[2].v;
-    } else if (cells[11] && cells[11].v !== undefined) {
-      rawValue = cells[11].v;
+    let data;
+    try {
+      data = JSON.parse(jsonText);
+    } catch (e) {
+      console.error("JSON parse error for Current Make:", e);
+      return "N/A";
     }
+
+    const rows = data?.table?.rows || [];
+    if (!rows.length) {
+      console.warn("No Current Make match found for:", id);
+      return "N/A";
+    }
+
+    console.log("Current Make raw row:", rows[0]);
+
+    const cells = rows[0].c || [];
+    const rawValue = cells[2]?.v || cells[11]?.v || "";
 
     if (!rawValue) return "N/A";
 
     const value = extractMakeValue(rawValue);
+    console.log("✔ Extracted Current Make:", value);
     return value || "N/A";
   } catch (err) {
     console.error("Error fetching Current Make:", err);
@@ -408,7 +412,6 @@ async function loadMotor(){
     const loadTime = performance.now() - startTime;
     console.log(`✓ Motor data loaded in ${loadTime.toFixed(2)}ms`);
 
-    /* BUILD CONTENT USING DOCUMENTFRAGMENT */
     const fragment = document.createDocumentFragment();
 
     /* HEADER */
@@ -428,23 +431,23 @@ async function loadMotor(){
     updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
     headerDiv.appendChild(updatedDiv);
 
-    /* CURRENT MAKE DISPLAY */
+    /* CURRENT MAKE */
     const currentMakeDiv = document.createElement("div");
     currentMakeDiv.className = "current-make-display";
-
+    
     const label = document.createElement("span");
     label.className = "current-make-label";
     label.textContent = "Current MAKE:- ";
-
+    
     const value = document.createElement("span");
-    value.className = "current-make-value current-make-loading";
     value.id = "currentMakeValue";
+    value.className = "current-make-value current-make-loading";
     value.textContent = "Loading...";
-
+    
     currentMakeDiv.appendChild(label);
     currentMakeDiv.appendChild(value);
     headerDiv.appendChild(currentMakeDiv);
-    
+
     fragment.appendChild(headerDiv);
 
     /* BUTTON BAR */
@@ -537,13 +540,12 @@ async function loadMotor(){
     
     fragment.appendChild(createTableElement("Pending Motors at ERS", pendingHeaders, pendingRows));
 
-    /* APPEND ALL TO APP */
     app.innerHTML = "";
     app.appendChild(fragment);
 
     console.log(`✓ Motor details page rendered (ID: ${id})`);
 
-    /* FETCH AND UPDATE CURRENT MAKE */
+    /* UPDATE CURRENT MAKE */
     const currentMake = await fetchCurrentMake(id);
     const makeValueEl = document.getElementById("currentMakeValue");
     if (makeValueEl) {
@@ -562,7 +564,6 @@ async function loadMotor(){
   console.log("📥 Initializing Motor details viewer...");
   loadMotor();
 })();
-
 </script>
 
 </body>
