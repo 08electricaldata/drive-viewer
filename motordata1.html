@@ -59,48 +59,75 @@ body{
 }
 @keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
 
-.header{text-align:center;padding:20px;}
-.header h2{color:var(--accent);margin-bottom:5px;font-size:22px;font-weight:800;}
-.header h3{color:var(--text);font-weight:normal;font-size:18px;}
-.updated{margin-top:10px;font-size:13px;color:var(--muted);}
-
-.current-make-container{
-  margin-top:15px;
-  padding:12px 14px;
-  background:#eaf3ff;
-  border-left:4px solid var(--accent);
-  border-radius:8px;
-  font-size:13px;
-  color:var(--text);
-}
-.current-make-row{
+.header-wrapper{
   display:flex;
-  gap:15px;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:center;
-  margin-top:6px;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  padding:20px;
 }
-.make-item{
+
+.header-left{
+  flex:1;
+  text-align:center;
+}
+
+.header-left h2{
+  color:var(--accent);
+  margin-bottom:5px;
+  font-size:22px;
+  font-weight:800;
+}
+
+.header-left h3{
+  color:var(--text);
+  font-weight:normal;
+  font-size:18px;
+}
+
+.updated{
+  margin-top:10px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.header-right{
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:8px;
+  padding:8px 0;
 }
-.make-label{
+
+.make-info-item{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:10px 14px;
+  background:#eaf3ff;
+  border-left:3px solid var(--accent);
+  border-radius:6px;
+  min-width:280px;
+}
+
+.make-info-label{
   font-weight:700;
   color:var(--accent);
-  font-size:12px;
+  font-size:11px;
   text-transform:uppercase;
+  letter-spacing:0.5px;
 }
-.make-value{
+
+.make-info-value{
   font-weight:700;
   color:var(--text);
-  font-size:13px;
-  min-height:20px;
+  font-size:14px;
+  min-height:18px;
 }
+
 .make-loading{
   color:var(--muted);
   font-style:italic;
+  font-size:12px;
 }
 
 .button-bar{
@@ -189,13 +216,29 @@ tbody tr:last-child td{border-bottom:none;}
   font-weight:bold;
 }
 
+@media(max-width:900px){
+  .header-wrapper{
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  .header-right{
+    width:100%;
+  }
+  .make-info-item{
+    width:100%;
+  }
+}
+
 @media(max-width:700px){
   table{font-size:13px;}
   .button-bar{margin:10px 0;}
   .button-bar button{flex:1;min-width:120px;}
   .version-info { display:block; margin-top:8px; margin-left:0; }
-  .current-make-container{font-size:12px;}
-  .current-make-row{flex-direction:column; gap:8px;}
+  .header-left h2{font-size:20px;}
+  .header-left h3{font-size:16px;}
+  .make-info-item{min-width:auto;}
+  .make-info-value{font-size:13px;}
 }
 </style>
 </head>
@@ -445,62 +488,69 @@ async function loadMotor(){
 
     const fragment = document.createDocumentFragment();
 
-    /* HEADER */
-    const headerDiv = document.createElement("div");
-    headerDiv.className = "header";
+    /* HEADER WITH LEFT AND RIGHT SECTIONS */
+    const headerWrapper = document.createElement("div");
+    headerWrapper.className = "header-wrapper";
+
+    /* LEFT: Motor Details Info */
+    const headerLeft = document.createElement("div");
+    headerLeft.className = "header-left";
     
     const h2 = document.createElement("h2");
     h2.textContent = "MOTOR DETAILS";
-    headerDiv.appendChild(h2);
+    headerLeft.appendChild(h2);
     
     const h3 = document.createElement("h3");
     h3.textContent = escapeHtml(id);
-    headerDiv.appendChild(h3);
+    headerLeft.appendChild(h3);
     
     const updatedDiv = document.createElement("div");
     updatedDiv.className = "updated";
     updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
-    headerDiv.appendChild(updatedDiv);
+    headerLeft.appendChild(updatedDiv);
 
-    /* CURRENT MAKE DISPLAY */
-    const makeContainer = document.createElement("div");
-    makeContainer.className = "current-make-container";
+    /* RIGHT: Make Information */
+    const headerRight = document.createElement("div");
+    headerRight.className = "header-right";
 
-    const makeRow = document.createElement("div");
-    makeRow.className = "current-make-row";
-
-    /* Column L */
+    /* Column L Item */
     const colLItem = document.createElement("div");
-    colLItem.className = "make-item";
+    colLItem.className = "make-info-item";
+    
     const colLLabel = document.createElement("div");
-    colLLabel.className = "make-label";
+    colLLabel.className = "make-info-label";
     colLLabel.textContent = "Column L:";
+    colLItem.appendChild(colLLabel);
+    
     const colLValue = document.createElement("div");
     colLValue.id = "columnLValue";
-    colLValue.className = "make-value make-loading";
+    colLValue.className = "make-info-value make-loading";
     colLValue.textContent = "Loading...";
-    colLItem.appendChild(colLLabel);
     colLItem.appendChild(colLValue);
 
-    /* Current Make */
-    const currentItem = document.createElement("div");
-    currentItem.className = "make-item";
-    const currentLabel = document.createElement("div");
-    currentLabel.className = "make-label";
-    currentLabel.textContent = "Current Make:";
-    const currentValue = document.createElement("div");
-    currentValue.id = "extractedMakeValue";
-    currentValue.className = "make-value make-loading";
-    currentValue.textContent = "Loading...";
-    currentItem.appendChild(currentLabel);
-    currentItem.appendChild(currentValue);
+    headerRight.appendChild(colLItem);
 
-    makeRow.appendChild(colLItem);
-    makeRow.appendChild(currentItem);
-    makeContainer.appendChild(makeRow);
-    headerDiv.appendChild(makeContainer);
+    /* Current Make Item */
+    const makeItem = document.createElement("div");
+    makeItem.className = "make-info-item";
+    
+    const makeLabel = document.createElement("div");
+    makeLabel.className = "make-info-label";
+    makeLabel.textContent = "Current Make:";
+    makeItem.appendChild(makeLabel);
+    
+    const makeValue = document.createElement("div");
+    makeValue.id = "extractedMakeValue";
+    makeValue.className = "make-info-value make-loading";
+    makeValue.textContent = "Loading...";
+    makeItem.appendChild(makeValue);
 
-    fragment.appendChild(headerDiv);
+    headerRight.appendChild(makeItem);
+
+    /* Add left and right to wrapper */
+    headerWrapper.appendChild(headerLeft);
+    headerWrapper.appendChild(headerRight);
+    fragment.appendChild(headerWrapper);
 
     /* BUTTON BAR */
     const buttonBar = document.createElement("div");
@@ -547,8 +597,8 @@ async function loadMotor(){
     
     fragment.appendChild(createTableElement(null, motorHeaders, motorRows));
 
-    const replacementHeaders = ["Last Motor Replacement", "Last Motor PM"];
-    const replacementRows = [[formatDate(row[37]), formatDate(row[38])]];
+    const replacementHeaders = ["Last Motor Replacement", "Column L", "Last Motor PM"];
+    const replacementRows = [[formatDate(row[37]), "—", formatDate(row[38])]];
     
     fragment.appendChild(createTableElement(null, replacementHeaders, replacementRows));
 
