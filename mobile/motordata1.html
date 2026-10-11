@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Motor Details — Compact App View</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f4f7ff;color:#0b1220;-webkit-font-smoothing:antialiased}
+  .top-credit{background:#0b3b74;color:#fff;text-align:center;padding:10px;font-weight:700;font-size:13px}
+  .wrap{max-width:1000px;margin:10px auto;padding:12px}
+
+  /* Header */
+  .hdr{ text-align:center;padding:8px 6px }
+  .title{font-weight:800;color:#0b3b74;font-size:18px;margin-bottom:6px}
+  .subtitle{font-size:13px;color:#445;margin-bottom:4px}
+  .meta{font-size:12px;color:#667;margin-bottom:8px}
+
+  /* Current Make Display */
+  .current-make-display{
+    background:#eaf3ff;
+    border-left:3px solid #0b3b74;
+    padding:8px 10px;
+    border-radius:6px;
+    margin-bottom:10px;
+    font-size:13px;
+  }
+  .current-make-label{
+    font-weight:800;
+    color:#0b3b74;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    margin-bottom:3px;
+  }
+  .current-make-value{
+    font-weight:700;
+    color:#122;
+    font-size:13px;
+    min-height:16px;
+  }
+  .make-loading{
+    color:#667;
+    font-style:italic;
+    font-size:12px;
+  }
+
+  /* toolbar */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+  .btn{background:#fff;color:#0b3b74;border:1px solid rgba(11,59,116,.12);padding:8px 10px;border-radius:10px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px rgba(11,59,116,0.04)}
+  .btn.small{padding:7px 8px;font-size:13px}
+  .btn.primary{background:linear-gradient(90deg,#0b3b74,#0050aa);color:#fff;border:none}
+
+  /* compact info */
+  .info-card{background:#fff;padding:10px;border-radius:10px;box-shadow:0 10px 26px rgba(3,63,136,0.04);margin-bottom:10px}
+  .compact-lines{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#122}
+  .compact-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{background:#eef6ff;color:#0b3b74;padding:6px 8px;border-radius:8px;font-weight:800;font-size:13px}
+  .chip.muted{background:transparent;color:#233;font-weight:700;padding:0}
+
+  /* details (collapsible) */
+  details{margin-bottom:10px}
+  summary{
+    cursor:pointer;padding:10px;border-radius:8px;background:#fff;display:flex;justify-content:space-between;align-items:center;
+    box-shadow:0 10px 26px rgba(3,63,136,0.04);font-weight:800;color:#0b3b74;
+  }
+  .detail-body{padding:8px 10px;background:#fff;border-radius:0 0 10px 10px;box-shadow:0 10px 26px rgba(3,63,136,0.04)}
+
+  /* dense rows table */
+  .dense-table{width:100%;border-collapse:collapse;font-size:12px}
+  .dense-table th,.dense-table td{padding:6px;border:1px solid #eef6ff;text-align:left}
+  .dense-table th{background:#eef6ff;color:#0b3b74;font-weight:800}
+  .dense-row td{padding:6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* no-data / loader */
+  .loader,.no-data{text-align:center;padding:14px;font-weight:700;color:#556}
+
+  /* responsive tweaks */
+  @media(max-width:480px){
+    .title{font-size:16px}
+    .chip{font-size:12px;padding:5px 7px}
+    .dense-table th,.dense-table td{font-size:11px;padding:5px}
+    .btn{padding:7px 8px}
+    .current-make-display{font-size:12px;padding:7px 9px}
+    .current-make-value{font-size:12px}
+  }
+</style>
+</head>
+<body>
+  <div class="top-credit">Designed & Maintained by RAKESH CHANDRA SETHY</div>
+  <main class="wrap" id="app">
+    <div class="loader">Loading Motor Details…</div>
+  </main>
+
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+const GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq";
+
+function qId(){ return new URLSearchParams(location.search).get("id") || ""; }
+function goBack(){ history.back(); }
+function goHome(){ location.href = "https://08electricaldata.github.io/index_mob.html"; }
+function goDrive(){ const id=qId(); if(!id) return; location.href = "https://08electricaldata.github.io/drive-viewer/index.html?id=" + encodeURIComponent(id); }
+function goPLC(){ const id=qId(); if(!id) return; location.href = "plc.html?id=" + encodeURIComponent(id); }
+function safe(v){ return v===undefined||v===null ? "" : String(v); }
+function esc(s){ return safe(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(v){ if(!v) return "N/A"; const d=new Date(v); if(isNaN(d)) return v; return d.toLocaleDateString('en-GB'); }
+
+function detectFieldValue(row, candidates){
+  for(const idx of candidates){
+    const v = safe(row[idx]).trim();
+    if(v) return { idx, raw: v };
+  }
+  return { idx: null, raw: "" };
+}
+function detectSep(s){
+  if(s.includes('@')) return '@';
+  if(s.includes('|')) return '|';
+  if(s.includes(';')) return ';';
+  if(s.includes('/')) return '/';
+  return '@';
+}
+
+/* ===== FETCH CURRENT MAKE FROM SHEET ===== */
+async function fetchCurrentMakeData(driveID) {
+  try {
+    const id = String(driveID || "").trim();
+    console.log("=== FETCH CURRENT MAKE ===");
+    console.log("Drive ID:", id);
+
+    if (!id) return { columnL: "N/A", extracted: "N/A" };
+
+    const idx = id.indexOf("-");
+    if (idx === -1) return { columnL: "N/A", extracted: "N/A" };
+
+    const colB = id.substring(0, idx).trim();
+    const colC = id.substring(idx + 1).trim();
+
+    console.log("Parsed - B:", colB, "C:", colC);
+
+    const sheetUrl =
+      `${GOOGLE_SHEETS_URL}?gid=1041736083&tqx=out:json&t=${Date.now()}`;
+
+    const response = await fetch(sheetUrl, { mode: "cors" });
+    if (!response.ok) {
+      console.warn("Sheet fetch failed:", response.status);
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const text = await response.text();
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}") + 1;
+
+    if (start === -1 || end <= start) {
+      console.warn("No JSON in response");
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const json = JSON.parse(text.substring(start, end));
+    const rows = json?.table?.rows || [];
+
+    console.log("Total rows:", rows.length);
+
+    let matchedRow = null;
+
+    for (const row of rows) {
+      const cells = row.c || [];
+      const bValue = String(cells[1]?.v || "").trim();
+      const cValue = String(cells[2]?.v || "").trim();
+
+      if (bValue.toUpperCase() === colB.toUpperCase() && 
+          cValue.toUpperCase() === colC.toUpperCase()) {
+        console.log("✓ MATCH FOUND");
+        matchedRow = row;
+        break;
+      }
+    }
+
+    if (!matchedRow) {
+      console.warn("No row match");
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const cells = matchedRow.c || [];
+    const rawColumnL = String(cells[11]?.v || "").trim();
+
+    console.log("Column L raw:", rawColumnL);
+
+    const extracted = extractMakeValue(rawColumnL);
+
+    console.log("=== FETCH COMPLETE ===");
+
+    return {
+      columnL: rawColumnL || "N/A",
+      extracted: extracted || "N/A"
+    };
+
+  } catch (err) {
+    console.error("fetchCurrentMakeData error:", err);
+    return { columnL: "N/A", extracted: "N/A" };
+  }
+}
+
+function extractMakeValue(fullString) {
+  const value = String(fullString || "").trim();
+  if (!value || value === "N/A") return "N/A";
+
+  const parts = value.split("-");
+  if (parts.length >= 3) {
+    return parts[2].trim();
+  }
+
+  return value;
+}
+
+async function load(){
+  const app = document.getElementById('app');
+  const id = qId().trim();
+  if(!id){
+    app.innerHTML = `<div class="no-data">No Drive ID supplied.</div>`; return;
+  }
+
+  try{
+    const res = await fetch(JSON_URL);
+    if(!res.ok) throw new Error('Unable to fetch JSON');
+    const data = await res.json();
+    let foundRow = null;
+    for(const r of (data.rows||[])){
+      if(String(r[3]||"").trim().toUpperCase() === id.toUpperCase()){
+        foundRow = r; break;
+      }
+    }
+
+    let html = `
+      <div class="hdr">
+        <div class="title">MOTOR DETAILS</div>
+        <div class="subtitle">${esc(id)}</div>
+        <div class="meta">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString('en-GB') : 'Unknown'}</div>
+        <div class="current-make-display">
+          <div class="current-make-label">Current Make:</div>
+          <div class="current-make-value make-loading" id="currentMakeValue">Loading...</div>
+        </div>
+      </div>
+
+      <div class="toolbar" role="toolbar">
+        <button class="btn small" onclick="goBack()">⬅ Back</button>
+        <button class="btn small" onclick="goHome()">🏠 Home</button>
+        <button class="btn small" onclick="goDrive()">Drive Info</button>
+        <button class="btn small" onclick="goPLC()">PLC</button>
+      </div>
+    `;
+
+    if(!foundRow){
+      html += `<div class="no-data">Motor details not found for <b>${esc(id)}</b></div>`;
+      app.innerHTML = html; return;
+    }
+
+    const row = foundRow;
+    // main attributes
+    const KW = safe(row[5]);
+    const MAKE = safe(row[7]);
+    const FRAME = safe(row[8]);
+    const RPM = safe(row[9]);
+    const FLC = safe(row[10]);
+    const MTG = safe(row[11]);
+
+    html += `<div class="info-card">
+      <div class="compact-lines">
+        <div class="compact-line">
+          <div class="chip">${'KW-'+esc(KW)}</div>
+          <div class="chip">${'FRAME SIZE-'+esc(FRAME)}</div>
+          <div class="chip">${'MAKE-'+esc(MAKE)}</div>
+        </div>
+        <div class="compact-line">
+          <div class="chip">${'RPM-'+esc(RPM)}</div>
+          <div class="chip">${'FLC-'+esc(FLC)}</div>
+          <div class="chip">${'MTG-'+esc(MTG)}</div>
+        </div>
+      </div>
+    </div>`;
+
+    // Spare motors: try index 24 first (as your schema), fallback to others
+    const spareCandidate = detectFieldValue(row, [24,25,23,22]);
+    const spareRaw = spareCandidate.raw;
+    const spareIdx = spareCandidate.idx;
+
+    // Pending motors: try likely indices (26,25,27,24)
+    const pendingCandidate = detectFieldValue(row, [26,25,27,24,28]);
+    const pendingRaw = pendingCandidate.raw;
+    const pendingIdx = pendingCandidate.idx;
+
+    // Build spare details (compact)
+    let spareHtml = `<details ${spareRaw ? '' : ''}><summary>Spare Motor Details ${spareIdx !== null ? '(col '+spareIdx+')':''}</summary><div class="detail-body">`;
+    if(!spareRaw){
+      spareHtml += `<div style="padding:8px;color:#666;font-size:13px">No Spare Motor Details Available</div>`;
+    } else {
+      const sep = detectSep(spareRaw);
+      const items = spareRaw.split(sep).map(s=>s.trim()).filter(Boolean);
+      spareHtml += `<table class="dense-table"><thead><tr><th style="width:28px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOC</th></tr></thead><tbody>`;
+      items.forEach((it, idx)=>{
+        const parts = it.split('!').map(p=>p? p.trim() : '');
+        spareHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${esc(parts[0]||'')}</td><td>${esc(parts[1]||'')}</td><td>${esc(parts[2]||'')}</td><td>${esc(parts[3]||'')}</td><td>${esc(parts[4]||'')}</td><td>${esc(parts[5]||'')}</td><td>${esc(parts[6]||'')}</td><td>${esc(parts[7]||'')}</td></tr>`;
+      });
+      spareHtml += `</tbody></table>`;
+    }
+    spareHtml += `</div></details>`;
+
+    // Build pending details
+    let pendingHtml = `<details ${pendingRaw ? '' : ''}><summary>Pending Motors at ERS ${pendingIdx !== null ? '(col '+pendingIdx+')':''}</summary><div class="detail-body">`;
+    if(!pendingRaw){
+      pendingHtml += `<div style="padding:8px;color:#666;font-size:13px">No Pending Motors Available</div>`;
+    } else {
+      const sep = detectSep(pendingRaw);
+      const items = pendingRaw.split(sep).map(s=>s.trim()).filter(Boolean);
+      pendingHtml += `<table class="dense-table"><thead><tr><th style="width:28px">#</th><th>W/O</th><th>KW</th><th>MAKE</th><th>FRAME</th><th>RPM</th><th>MTG</th><th>DRIVE</th><th>LOC</th></tr></thead><tbody>`;
+      items.forEach((it, idx)=>{
+        const parts = it.split('!').map(p=>p? p.trim() : '');
+        pendingHtml += `<tr class="dense-row"><td>${idx+1}</td><td>${esc(parts[0]||'')}</td><td>${esc(parts[1]||'')}</td><td>${esc(parts[2]||'')}</td><td>${esc(parts[3]||'')}</td><td>${esc(parts[4]||'')}</td><td>${esc(parts[5]||'')}</td><td>${esc(parts[6]||'')}</td><td>${esc(parts[7]||'')}</td></tr>`;
+      });
+      pendingHtml += `</tbody></table>`;
+    }
+    pendingHtml += `</div></details>`;
+
+    html += spareHtml + pendingHtml;
+
+    app.innerHTML = html;
+
+    /* FETCH AND UPDATE CURRENT MAKE */
+    const makeData = await fetchCurrentMakeData(id);
+    const makeEl = document.getElementById("currentMakeValue");
+    if (makeEl) {
+      makeEl.textContent = esc(makeData.extracted);
+      makeEl.classList.remove("make-loading");
+    }
+
+  } catch(err){
+    console.error(err);
+    document.getElementById('app').innerHTML = `<div class="no-data">Unable to load motor details.<br>${esc(err.message||String(err))}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
