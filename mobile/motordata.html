@@ -13,7 +13,37 @@
   /* Header */
   .hdr{ text-align:center;padding:8px 6px }
   .title{font-weight:800;color:#0b3b74;font-size:18px;margin-bottom:6px}
-  .subtitle{font-size:13px;color:#445;margin-bottom:6px}
+  .subtitle{font-size:13px;color:#445;margin-bottom:4px}
+  .meta{font-size:12px;color:#667;margin-bottom:8px}
+
+  /* Current Make Display */
+  .current-make-display{
+    background:#eaf3ff;
+    border-left:3px solid #0b3b74;
+    padding:8px 10px;
+    border-radius:6px;
+    margin-bottom:10px;
+    font-size:13px;
+  }
+  .current-make-label{
+    font-weight:800;
+    color:#0b3b74;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    margin-bottom:3px;
+  }
+  .current-make-value{
+    font-weight:700;
+    color:#122;
+    font-size:13px;
+    min-height:16px;
+  }
+  .make-loading{
+    color:#667;
+    font-style:italic;
+    font-size:12px;
+  }
 
   /* toolbar */
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
@@ -51,6 +81,8 @@
     .chip{font-size:12px;padding:5px 7px}
     .dense-table th,.dense-table td{font-size:11px;padding:5px}
     .btn{padding:7px 8px}
+    .current-make-display{font-size:12px;padding:7px 9px}
+    .current-make-value{font-size:12px}
   }
 </style>
 </head>
@@ -62,6 +94,7 @@
 
 <script>
 const JSON_URL = "https://raw.githubusercontent.com/08electricaldata/08electricaldata-json/main/drive.json";
+const GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq";
 
 function qId(){ return new URLSearchParams(location.search).get("id") || ""; }
 function goBack(){ history.back(); }
@@ -72,11 +105,6 @@ function safe(v){ return v===undefined||v===null ? "" : String(v); }
 function esc(s){ return safe(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(v){ if(!v) return "N/A"; const d=new Date(v); if(isNaN(d)) return v; return d.toLocaleDateString('en-GB'); }
 
-/* Attempt to find pending/spare fields automatically:
-   check indices in order and choose first non-empty.
-   For separator try '@', '|', ';', '/'.
-   For item parts use '!' as field separator (as your data shows).
-*/
 function detectFieldValue(row, candidates){
   for(const idx of candidates){
     const v = safe(row[idx]).trim();
@@ -90,6 +118,98 @@ function detectSep(s){
   if(s.includes(';')) return ';';
   if(s.includes('/')) return '/';
   return '@';
+}
+
+/* ===== FETCH CURRENT MAKE FROM SHEET ===== */
+async function fetchCurrentMakeData(driveID) {
+  try {
+    const id = String(driveID || "").trim();
+    console.log("=== FETCH CURRENT MAKE ===");
+    console.log("Drive ID:", id);
+
+    if (!id) return { columnL: "N/A", extracted: "N/A" };
+
+    const idx = id.indexOf("-");
+    if (idx === -1) return { columnL: "N/A", extracted: "N/A" };
+
+    const colB = id.substring(0, idx).trim();
+    const colC = id.substring(idx + 1).trim();
+
+    console.log("Parsed - B:", colB, "C:", colC);
+
+    const sheetUrl =
+      `${GOOGLE_SHEETS_URL}?gid=1041736083&tqx=out:json&t=${Date.now()}`;
+
+    const response = await fetch(sheetUrl, { mode: "cors" });
+    if (!response.ok) {
+      console.warn("Sheet fetch failed:", response.status);
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const text = await response.text();
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}") + 1;
+
+    if (start === -1 || end <= start) {
+      console.warn("No JSON in response");
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const json = JSON.parse(text.substring(start, end));
+    const rows = json?.table?.rows || [];
+
+    console.log("Total rows:", rows.length);
+
+    let matchedRow = null;
+
+    for (const row of rows) {
+      const cells = row.c || [];
+      const bValue = String(cells[1]?.v || "").trim();
+      const cValue = String(cells[2]?.v || "").trim();
+
+      if (bValue.toUpperCase() === colB.toUpperCase() && 
+          cValue.toUpperCase() === colC.toUpperCase()) {
+        console.log("✓ MATCH FOUND");
+        matchedRow = row;
+        break;
+      }
+    }
+
+    if (!matchedRow) {
+      console.warn("No row match");
+      return { columnL: "N/A", extracted: "N/A" };
+    }
+
+    const cells = matchedRow.c || [];
+    const rawColumnL = String(cells[11]?.v || "").trim();
+
+    console.log("Column L raw:", rawColumnL);
+
+    const extracted = extractMakeValue(rawColumnL);
+
+    console.log("=== FETCH COMPLETE ===");
+
+    return {
+      columnL: rawColumnL || "N/A",
+      extracted: extracted || "N/A"
+    };
+
+  } catch (err) {
+    console.error("fetchCurrentMakeData error:", err);
+    return { columnL: "N/A", extracted: "N/A" };
+  }
+}
+
+function extractMakeValue(fullString) {
+  const value = String(fullString || "").trim();
+  if (!value || value === "N/A") return "N/A";
+
+  const parts = value.split("-");
+  if (parts.length >= 3) {
+    return parts[2].trim();
+  }
+
+  return value;
 }
 
 async function load(){
@@ -115,6 +235,10 @@ async function load(){
         <div class="title">MOTOR DETAILS</div>
         <div class="subtitle">${esc(id)}</div>
         <div class="meta">Last Updated: ${data.updated ? new Date(data.updated).toLocaleString('en-GB') : 'Unknown'}</div>
+        <div class="current-make-display">
+          <div class="current-make-label">Current Make:</div>
+          <div class="current-make-value make-loading" id="currentMakeValue">Loading...</div>
+        </div>
       </div>
 
       <div class="toolbar" role="toolbar">
@@ -199,6 +323,14 @@ async function load(){
     html += spareHtml + pendingHtml;
 
     app.innerHTML = html;
+
+    /* FETCH AND UPDATE CURRENT MAKE */
+    const makeData = await fetchCurrentMakeData(id);
+    const makeEl = document.getElementById("currentMakeValue");
+    if (makeEl) {
+      makeEl.textContent = esc(makeData.extracted);
+      makeEl.classList.remove("make-loading");
+    }
 
   } catch(err){
     console.error(err);
