@@ -65,27 +65,25 @@ body{
 .updated{margin-top:10px;font-size:13px;color:var(--muted);}
 
 .current-make-display{
-  margin-top:15px;
-  padding:12px;
-  background:#e3f2fd;
-  border-left:4px solid var(--accent);
-  border-radius:4px;
-  font-size:14px;
-  color:var(--text);
-}
-
-.current-make-label{
-  font-weight:bold;
-  color:var(--accent);
+  margin-top:14px;
+  padding:12px 14px;
   display:inline-block;
+  background:linear-gradient(180deg,#eff7ff,#e8f4ff);
+  border-left:4px solid var(--accent);
+  border-radius:6px;
+  color:var(--text);
+  font-size:14px;
+  font-weight:600;
+  box-shadow:0 2px 8px rgba(13,71,161,0.08);
+}
+.current-make-label{
+  color:var(--accent);
+  font-weight:800;
   margin-right:8px;
 }
-
 .current-make-value{
   color:var(--text);
-  font-weight:600;
 }
-
 .current-make-loading{
   color:var(--muted);
   font-style:italic;
@@ -182,7 +180,7 @@ tbody tr:last-child td{border-bottom:none;}
   .button-bar{margin:10px 0;}
   .button-bar button{flex:1;min-width:120px;}
   .version-info { display:block; margin-top:8px; margin-left:0; }
-  .current-make-display{font-size:13px;}
+  .current-make-display{display:block; font-size:13px;}
 }
 </style>
 </head>
@@ -312,68 +310,70 @@ function createTableElement(title, headers, rows){
 /* ===== FETCH CURRENT MAKE FROM GOOGLE SHEETS ===== */
 async function fetchCurrentMake(driveID) {
   try {
-    console.log(`🔍 Fetching Current Make for ${driveID}...`);
-    
-    // Parse Drive ID: BAT_A-P-200 => BAT_A (Column B) and P-200 (Column C)
-    const parts = driveID.split("-");
-    if (parts.length < 2) {
-      console.warn("Invalid Drive ID format:", driveID);
-      return "N/A";
-    }
-    
-    const drivePrefix = parts[0]; // BAT_A
-    const driveNumber = parts.slice(1).join("-"); // P-200
-    
-    console.log(`🔎 Searching: Column B="${drivePrefix}" & Column C="${driveNumber}"`);
-    
-    const query = encodeURIComponent(`SELECT B,C,L WHERE B='${drivePrefix}' AND C='${driveNumber}' LIMIT 1`);
-    const url = `${GOOGLE_SHEETS_URL}?tqx=out:json&q=${query}&t=${Date.now()}`;
-    
-    const response = await fetch(url);
+    const id = String(driveID || "").trim();
+    if (!id) return "N/A";
+
+    // Example: BAT_A-P-200 => B = BAT_A, C = P-200
+    const dashIndex = id.indexOf("-");
+    if (dashIndex === -1) return "N/A";
+
+    const colB = id.substring(0, dashIndex);     // BAT_A
+    const colC = id.substring(dashIndex + 1);    // P-200
+
+    // Query only B, C, L columns
+    const query = `SELECT B,C,L WHERE B='${colB}' AND C='${colC}' LIMIT 1`;
+    const url = `${GOOGLE_SHEETS_URL}?tqx=out:json&q=${encodeURIComponent(query)}&t=${Date.now()}`;
+
+    const response = await fetch(url, { mode: "cors" });
+    if (!response.ok) return "N/A";
+
     const text = await response.text();
-    
-    // Parse Google Visualization API response
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}') + 1;
-    const jsonStr = text.substring(jsonStart, jsonEnd);
-    const data = JSON.parse(jsonStr);
-    
-    if (data.rows && data.rows.length > 0) {
-      const rowData = data.rows[0].c;
-      const columnL = rowData[2]?.v || ""; // Column L is the 3rd column (0-indexed)
-      
-      console.log(`✓ Raw Column L value: ${columnL}`);
-      
-      // Extract value between 2nd and 3rd hyphen
-      // Format: 0638-(2026/09)-KEC(117/20.05.25)-KEC(OLD)
-      // We want: KEC(117/20.05.25)
-      const extractedValue = extractMakeValue(columnL);
-      console.log(`✓ Extracted Current Make: ${extractedValue}`);
-      
-      return extractedValue || "N/A";
-    } else {
-      console.warn("No matching record found in Google Sheets");
-      return "N/A";
+
+    // Google Sheets gviz/tq returns a JS object inside a string
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}") + 1;
+    const jsonText = text.substring(start, end);
+    const data = JSON.parse(jsonText);
+
+    // Support both formats: data.table.rows and data.rows
+    const rows = data?.table?.rows || data?.rows || [];
+    if (!rows.length) return "N/A";
+
+    const row = rows[0];
+    const cells = row?.c || [];
+
+    // If selected only B,C,L then L is index 2
+    let rawValue = "";
+    if (cells[2] && cells[2].v !== undefined) {
+      rawValue = cells[2].v;
+    } else if (cells[11] && cells[11].v !== undefined) {
+      rawValue = cells[11].v;
     }
+
+    if (!rawValue) return "N/A";
+
+    const value = extractMakeValue(rawValue);
+    return value || "N/A";
   } catch (err) {
     console.error("Error fetching Current Make:", err);
-    return "Error";
+    return "N/A";
   }
 }
 
 /* ===== EXTRACT MAKE VALUE BETWEEN 2ND AND 3RD HYPHEN ===== */
 function extractMakeValue(fullString) {
-  if (!fullString) return "";
-  
-  const parts = fullString.split("-");
-  
-  // We need at least 4 parts: [0], [1], [2], [3]
-  // We want parts[2] (between 2nd and 3rd hyphen)
+  const value = String(fullString || "").trim();
+  if (!value) return "N/A";
+
+  const parts = value.split("-");
+  // Example:
+  // 0638-(2026/09)-KEC(117/20.05.25)-KEC(OLD)
+  // parts[2] = KEC(117/20.05.25)
   if (parts.length >= 3) {
     return parts[2].trim();
   }
-  
-  return "";
+
+  return value;
 }
 
 async function loadMotor(){
@@ -427,23 +427,22 @@ async function loadMotor(){
     updatedDiv.className = "updated";
     updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
     headerDiv.appendChild(updatedDiv);
-    
+
     /* CURRENT MAKE DISPLAY */
     const currentMakeDiv = document.createElement("div");
     currentMakeDiv.className = "current-make-display";
-    currentMakeDiv.id = "currentMakeContainer";
-    
-    const makeLabel = document.createElement("span");
-    makeLabel.className = "current-make-label";
-    makeLabel.textContent = "Current MAKE:";
-    
-    const makeValue = document.createElement("span");
-    makeValue.className = "current-make-value current-make-loading";
-    makeValue.id = "currentMakeValue";
-    makeValue.textContent = "Loading...";
-    
-    currentMakeDiv.appendChild(makeLabel);
-    currentMakeDiv.appendChild(makeValue);
+
+    const label = document.createElement("span");
+    label.className = "current-make-label";
+    label.textContent = "Current MAKE:- ";
+
+    const value = document.createElement("span");
+    value.className = "current-make-value current-make-loading";
+    value.id = "currentMakeValue";
+    value.textContent = "Loading...";
+
+    currentMakeDiv.appendChild(label);
+    currentMakeDiv.appendChild(value);
     headerDiv.appendChild(currentMakeDiv);
     
     fragment.appendChild(headerDiv);
@@ -543,8 +542,8 @@ async function loadMotor(){
     app.appendChild(fragment);
 
     console.log(`✓ Motor details page rendered (ID: ${id})`);
-    
-    /* FETCH AND UPDATE CURRENT MAKE ASYNCHRONOUSLY */
+
+    /* FETCH AND UPDATE CURRENT MAKE */
     const currentMake = await fetchCurrentMake(id);
     const makeValueEl = document.getElementById("currentMakeValue");
     if (makeValueEl) {
