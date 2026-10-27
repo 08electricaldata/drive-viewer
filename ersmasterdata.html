@@ -188,7 +188,6 @@ const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 let currentVersion = '1.0.0';
 
-// Build URL with version parameter for cache busting
 function buildDataUrl() {
   return `${BASE_JSON_URL}?v=${currentVersion}`;
 }
@@ -198,7 +197,6 @@ function goBack(){ window.history.back(); }
 
 const versionDisplayEl = document.getElementById("versionDisplay");
 
-/* Get latest version from version.json */
 async function getVersion(){
   try {
     const res = await fetch(VERSION_URL + '?t=' + Date.now());
@@ -224,15 +222,12 @@ function fmt(d){
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-function printTable(){
-  window.print();
-}
+function printTable(){ window.print(); }
 
 function downloadExcel(){
   const table = document.getElementById('tbl');
   const rows = [];
   
-  // Get headers
   const headerRow = [];
   table.querySelectorAll('thead th').forEach(th => {
     const text = th.querySelector('span') ? th.querySelector('span').textContent : th.textContent;
@@ -240,7 +235,6 @@ function downloadExcel(){
   });
   rows.push(headerRow);
   
-  // Get visible rows
   table.querySelectorAll('tbody tr').forEach(tr => {
     const rowData = [];
     tr.querySelectorAll('td').forEach(td => {
@@ -249,10 +243,8 @@ function downloadExcel(){
     rows.push(rowData);
   });
   
-  // Convert to CSV
   let csv = rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
   
-  // Download
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -262,6 +254,28 @@ function downloadExcel(){
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function getRequestedWoNo(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  if (id && id.trim()) return id.trim();
+
+  // Optional fallback for old path-based format
+  try{
+    const path = window.location.pathname || "";
+    const fileName = "ersmasterdata3.html";
+    const idx = path.indexOf(fileName);
+    if (idx !== -1) {
+      const suffix = path.substring(idx + fileName.length);
+      if (suffix && suffix !== "/") {
+        const cleaned = decodeURIComponent(suffix).replace(/^\/+/, "").replace(/\.html$/i, "");
+        if (cleaned && cleaned !== "null") return cleaned;
+      }
+    }
+  } catch (err) {}
+
+  return "";
 }
 
 let allRows = [];
@@ -300,19 +314,22 @@ async function load(){
       if(r[3]) ersStatuses.add(r[3]);
     });
 
-    // Fill dropdowns
     areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
     statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
     ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
 
+    const requestedWo = getRequestedWoNo();
+    if (requestedWo) {
+      search.value = requestedWo;
+    }
+
     function render(){
       tbody.innerHTML="";
-      const q=search.value.toLowerCase();
+      const q=(search.value || "").toLowerCase();
       const areaVal=areaFilter.value;
       const statusVal=statusFilter.value;
       const ersVal=ersFilter.value;
-      
-      // Get column filters
+
       const colFilters = {};
       document.querySelectorAll('.col-filter').forEach(inp => {
         const col = parseInt(inp.getAttribute('data-col'));
@@ -320,17 +337,23 @@ async function load(){
         if(val) colFilters[col] = val;
       });
 
-      allRows.forEach(r=>{
+      const exactMatchWo = requestedWo ? String(requestedWo).trim() : "";
 
-        // Hide if Column C & T both blank
+      allRows.forEach(r=>{
         if(!r[2] && !r[19]) return;
+
+        const rowWo = String(r[2] || "").trim();
+
+        // If URL contains id=..., only show that matching W.O
+        if (exactMatchWo) {
+          if (rowWo.toLowerCase() !== exactMatchWo.toLowerCase()) return;
+        }
 
         if(q && !r.join(" ").toLowerCase().includes(q)) return;
         if(areaVal && r[13]!==areaVal) return;
         if(statusVal && r[4]!==statusVal) return;
         if(ersVal && r[3]!==ersVal) return;
-        
-        // Column-level filters
+
         for(const col in colFilters){
           const val = String(r[col]||'').toLowerCase();
           if(!val.includes(colFilters[col])) return;
@@ -395,7 +418,6 @@ async function init(){
   await getVersion();
   await load();
   
-  // Auto-reload every 5 minutes
   setInterval(async () => {
     console.log('Auto-refreshing ERS data...');
     await getVersion();
@@ -403,7 +425,6 @@ async function init(){
   }, AUTO_RELOAD_INTERVAL);
 }
 
-// Start initialization
 init();
 </script>
 
