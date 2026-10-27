@@ -261,7 +261,6 @@ tbody tr:last-child td{border-bottom:none;}
 </div>
 
 <script>
-
 /* ===== VERSION-BASED CACHE BUSTING ===== */
 const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
 const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
@@ -330,13 +329,8 @@ function getJsonRows(json){
 function getRowCellValue(row, index){
   if (Array.isArray(row)) return row[index];
   if (row && typeof row === "object") {
-    const candidates = [
-      Object.keys(row)[index],
-      ["W.O No", "W.O number", "W.O#", "W.ONo", "WO No", "WO Number", "WONo"][index] || null
-    ];
-    for (const key of candidates) {
-      if (key && Object.prototype.hasOwnProperty.call(row, key)) return row[key];
-    }
+    const keys = Object.keys(row);
+    if (keys[index]) return row[keys[index]];
   }
   return "";
 }
@@ -419,6 +413,35 @@ function createTableElement(title, headers, rows){
   card.appendChild(table);
   
   return card;
+}
+
+// New helper: open ERS master data page for selected W/O row
+function bindTableRowNavigation(container, woColumnIndex = 1){
+  const table = container.querySelector("table");
+  if (!table) return;
+
+  const rows = table.querySelectorAll("tbody tr");
+  rows.forEach((tr) => {
+    const cells = tr.querySelectorAll("td");
+    if (!cells.length) return;
+
+    const woCell = cells[woColumnIndex];
+    if (!woCell) return;
+
+    const wono = (woCell.textContent || "").trim();
+    if (!wono || wono === "N/A" || wono === "—") return;
+
+    tr.style.cursor = "pointer";
+    tr.title = "Open ERS master data for W/O: " + wono;
+
+    tr.addEventListener("click", () => {
+      const finalWo = (tr.children[woColumnIndex]?.textContent || "").trim();
+      if (!finalWo || finalWo === "N/A" || finalWo === "—") return;
+
+      const url = "https://08electricaldata.github.io/drive-viewer/ersmasterdata.html?id=" + encodeURIComponent(finalWo);
+      window.location.href = url;
+    });
+  });
 }
 
 /* ===== FETCH CURRENT MAKE FROM SHEET ===== */
@@ -681,7 +704,9 @@ async function loadMotor(){
         spareRows.push(rowData);
       });
     }
-    fragment.appendChild(createTableElement("Spare Motor Details", spareHeaders, spareRows));
+    const spareCard = createTableElement("Spare Motor Details", spareHeaders, spareRows);
+    fragment.appendChild(spareCard);
+    bindTableRowNavigation(spareCard, 1);
 
     const pendingHeaders = ["Sl No.", "W/O Number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION", "TR No"];
     const pendingRows = [];
@@ -718,7 +743,9 @@ async function loadMotor(){
         pendingRows.push(rowData);
       });
     }
-    fragment.appendChild(createTableElement("Pending Motors at ERS", pendingHeaders, pendingRows));
+    const pendingCard = createTableElement("Pending Motors at ERS", pendingHeaders, pendingRows);
+    fragment.appendChild(pendingCard);
+    bindTableRowNavigation(pendingCard, 1);
 
     app.innerHTML = "";
     app.appendChild(fragment);
