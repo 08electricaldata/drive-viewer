@@ -465,7 +465,7 @@ function openRowModal(row){
   ];
 
   const sentItems = [];
-  for (let i = 0; i <= 15; i++) {
+  for (let i = 1; i <= 15; i++) {
     sentItems.push({
       label: COLUMN_HEADERS[i] || `COL ${i + 1}`,
       value: displayValue(row, i)
