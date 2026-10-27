@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pending Dashboard — Problems column & nowrap other columns</title>
+<title>Pending Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -66,8 +66,8 @@ select,input,button{
 .summary{
   display:flex;
   gap:15px;
-  justify-content:center;
-  padding:10px;
+  justify-content:flex-end;
+  padding:10px 15px 0 15px;
   flex-wrap:wrap;
 }
 
@@ -99,6 +99,30 @@ select,input,button{
   border-radius:50%;
   background:#28a745;
   margin-right:6px;
+}
+
+.filter-panel{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:0 15px 15px;
+}
+
+.filter-group{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:#fff;
+  border:1px solid #d9dfe8;
+  border-radius:6px;
+  padding:6px 8px;
+}
+
+.filter-group label{
+  font-size:12px;
+  color:#003f88;
+  font-weight:bold;
 }
 
 .table-wrapper{
@@ -160,7 +184,7 @@ th{
 @media (max-width:720px){
   th, td { padding:6px 8px; font-size:13px; }
   .controls{padding:8px;}
-  .summary{padding:8px;}
+  .filter-panel{padding:0 8px 8px;}
   th[data-col="Problems"], td[data-col="Problems"] { max-width:260px; }
 }
 </style>
@@ -193,33 +217,43 @@ th{
     <option value="scrap">SCRAP</option>
   </select>
 
-  <select id="fieldSelect">
-    <option value="all">All Fields</option>
-    <option value="W.O No">W.O No</option>
-    <option value="kW">kW</option>
-    <option value="Make">Make</option>
-    <option value="Frame Size">Frame Size</option>
-    <option value="Mounting">Mounting</option>
-    <option value="RPM">RPM</option>
-    <option value="Sl No">Sl No</option>
-    <option value="Equipment details">Equipment details</option>
-    <option value="Problems">Problems</option>
-    <option value="Job Completion Dat">Job Completion Dat</option>
-  </select>
-
-  <input type="text" id="searchBox" placeholder="Search...">
-  <button onclick="exportCSV()">Export Excel</button>
   <div class="version-info"><span class="status-indicator"></span>Version: <span id="versionDisplay">—</span></div>
+
+  <button onclick="exportCSV()">Export Excel</button>
 </div>
 
-<!-- SUMMARY -->
 <div class="summary">
   <div class="card"><h3 id="totalCount">0</h3><span>Total</span></div>
 </div>
 
-<div class="section-title">Priority Assigned</div>
+<div class="filter-panel">
+  <div class="filter-group">
+    <label>Filter 1</label>
+    <select id="fieldSelect1">
+      <option value="">Select field</option>
+    </select>
+    <input type="text" id="filterInput1" placeholder="Value">
+  </div>
+
+  <div class="filter-group">
+    <label>Filter 2</label>
+    <select id="fieldSelect2">
+      <option value="">Select field</option>
+    </select>
+    <input type="text" id="filterInput2" placeholder="Value">
+  </div>
+
+  <div class="filter-group">
+    <label>Filter 3</label>
+    <select id="fieldSelect3">
+      <option value="">Select field</option>
+    </select>
+    <input type="text" id="filterInput3" placeholder="Value">
+  </div>
+</div>
+
 <div class="table-wrapper">
-  <table id="priorityTable">
+  <table id="dataTable">
     <thead></thead>
     <tbody></tbody>
   </table>
@@ -248,14 +282,20 @@ let headers = [];
 let currentType = 'rewinding';
 
 const select = document.getElementById("typeSelect");
-const fieldSelect = document.getElementById("fieldSelect");
-const searchBox = document.getElementById("searchBox");
 const versionDisplayEl = document.getElementById("versionDisplay");
 
-/* Desired visible columns (display order)
-   PRIORITY removed completely
-   Problems column wraps
-*/
+const fieldSelects = [
+  document.getElementById("fieldSelect1"),
+  document.getElementById("fieldSelect2"),
+  document.getElementById("fieldSelect3")
+];
+
+const filterInputs = [
+  document.getElementById("filterInput1"),
+  document.getElementById("filterInput2"),
+  document.getElementById("filterInput3")
+];
+
 const desiredDisplayCols = [
   "W.O No",
   "kW",
@@ -269,8 +309,7 @@ const desiredDisplayCols = [
   "Job Completion Dat"
 ];
 
-/* Columns to explicitly exclude if present */
-const excludedNames = ["voltage","area","storage","remarks","priority","columno","columno","priorityassigned"];
+const excludedNames = ["voltage","area","storage","remarks","priority","columno","priorityassigned"];
 
 function normalize(s){
   return String(s || "").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,"");
@@ -284,7 +323,6 @@ async function getVersion(){
     const data = await res.json();
     currentVersion = data.version || '1.0.0';
     versionDisplayEl.textContent = currentVersion;
-    console.log('Loaded version:', currentVersion);
   } catch(err) {
     console.warn('Failed to fetch version, using default:', err);
     currentVersion = '1.0.0';
@@ -309,6 +347,7 @@ async function loadData(type){
     }
 
     headers = Object.keys(currentData[0] || {});
+    populateFieldSelects();
   }catch(err){
     console.error("Error loading data:", err);
     currentData = [];
@@ -318,7 +357,38 @@ async function loadData(type){
   render();
 }
 
-/* find the actual header key from headers by matching a display label */
+function populateFieldSelects(){
+  const allFields = [];
+  const mapped = buildOrderedKeys();
+
+  if(mapped.every(k => k === null)){
+    const fallback = headers.filter(h => {
+      const kn = normalize(h);
+      return !excludedNames.some(ex => kn.includes(ex));
+    });
+    fallback.forEach(h => allFields.push(h));
+  } else {
+    for(let i=0;i<desiredDisplayCols.length;i++){
+      const key = mapped[i];
+      if(key === null) continue;
+      allFields.push(desiredDisplayCols[i]);
+    }
+  }
+
+  const unique = [...new Set(allFields)];
+  fieldSelects.forEach(sel => {
+    const currentValue = sel.value;
+    sel.innerHTML = '<option value="">Select field</option>';
+    unique.forEach(field => {
+      const opt = document.createElement("option");
+      opt.value = field;
+      opt.textContent = field;
+      sel.appendChild(opt);
+    });
+    if (currentValue && unique.includes(currentValue)) sel.value = currentValue;
+  });
+}
+
 function findKeyMatch(displayName){
   const n = normalize(displayName);
 
@@ -339,7 +409,6 @@ function findKeyMatch(displayName){
   return null;
 }
 
-/* Build ordered keys without any priority/column O data */
 function buildOrderedKeys(){
   const orderedKeys = [];
 
@@ -386,57 +455,35 @@ function buildOrderedKeys(){
   });
 }
 
-function getSelectedFieldKey(){
-  const selectedField = fieldSelect.value;
-  if(!selectedField || selectedField === "all") return null;
+function getActiveFilters(){
+  const filters = [];
 
-  const mappedOrderedKeys = buildOrderedKeys();
-  const allNull = mappedOrderedKeys.every(k => k === null);
-
-  let keysForTable = [];
-  let labelsForTable = [];
-
-  if(allNull){
-    keysForTable = headers.filter(h => {
-      const kn = normalize(h);
-      return !excludedNames.some(ex => kn.includes(ex));
-    });
-    labelsForTable = keysForTable.slice();
-  } else {
-    for(let i=0;i<desiredDisplayCols.length;i++){
-      const key = mappedOrderedKeys[i];
-      if(key === null) continue;
-      keysForTable.push(key);
-      labelsForTable.push(desiredDisplayCols[i]);
+  fieldSelects.forEach((sel, index) => {
+    const field = sel.value;
+    const text = (filterInputs[index].value || "").trim().toLowerCase();
+    if(field && text){
+      filters.push({ field, text });
     }
-  }
+  });
 
-  for(let i=0;i<labelsForTable.length;i++){
-    if(labelsForTable[i] === selectedField){
-      return keysForTable[i];
-    }
-  }
-  return null;
+  return filters;
+}
+
+function matchesFilters(row){
+  const filters = getActiveFilters();
+
+  if(filters.length === 0) return true;
+
+  return filters.every(filter => {
+    const value = String(row[filter.field] ?? "");
+    return value.toLowerCase().includes(filter.text);
+  });
 }
 
 function render(){
-  const q = (searchBox.value || "").trim().toLowerCase();
-  const selectedFieldKey = getSelectedFieldKey();
+  const filtered = currentData.filter(row => matchesFilters(row)).slice().reverse();
 
-  let filtered = currentData.filter(r => {
-    if(!q) return true;
-
-    if(selectedFieldKey){
-      const val = String(r[selectedFieldKey] ?? "");
-      return val.toLowerCase().includes(q);
-    }
-
-    return Object.values(r).join(" ").toLowerCase().includes(q);
-  });
-
-  // SORT: last JSON row should appear first in table
-  filtered = filtered.slice().reverse();
-
+  // build visible keys
   const mappedOrderedKeys = buildOrderedKeys();
   const allNull = mappedOrderedKeys.every(k => k === null);
 
@@ -458,8 +505,8 @@ function render(){
     }
   }
 
-  buildTable("priorityTable", filtered, keysForTable, labelsForTable);
-  updateCards(filtered);
+  buildTable("dataTable", filtered, keysForTable, labelsForTable);
+  updateTotal(filtered.length);
 }
 
 function buildTable(id, data, keys, labels){
@@ -504,8 +551,8 @@ function buildTable(id, data, keys, labels){
   });
 }
 
-function updateCards(data){
-  document.getElementById("totalCount").innerText = data.length;
+function updateTotal(count){
+  document.getElementById("totalCount").innerText = count;
 }
 
 function exportCSV(){
@@ -531,7 +578,7 @@ function exportCSV(){
   }
 
   let csv = exportLabels.join(",") + "\n";
-  currentData.slice().reverse().forEach(r => {
+  currentData.filter(row => matchesFilters(row)).slice().reverse().forEach(r => {
     const row = exportKeys.map(k => `"${escapeCSV(String(r[k] ?? ""))}"`).join(",");
     csv += row + "\n";
   });
@@ -548,15 +595,17 @@ function exportCSV(){
 function escapeHtml(s){
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }
+
 function escapeCSV(s){
   return s.replace(/"/g,'""');
 }
 
 select.addEventListener("change", () => loadData(select.value));
-fieldSelect.addEventListener("change", render);
-searchBox.addEventListener("keyup", render);
+fieldSelects.forEach((sel, index) => {
+  sel.addEventListener("change", render);
+  filterInputs[index].addEventListener("keyup", render);
+});
 
-/* Initialize: fetch version first, then load data */
 async function init(){
   await getVersion();
   await loadData(select.value);
