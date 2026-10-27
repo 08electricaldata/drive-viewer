@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ERS MASTER DATA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body { font-family: Arial, sans-serif; margin:0; background:#f2f6ff; }
+
+/* HEADER */
+.header { background:#003f88; color:#fff; padding:10px 12px; }
+.header-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.header-btn {
+  background:#fff; color:#003f88; border:none;
+  padding:5px 8px; border-radius:6px;
+  font-size:14px; cursor:pointer;
+}
+.header-center { text-align:center; flex:1; }
+.header-center h1 { margin:0; font-size:20px; }
+
+.version-info {
+  background:#fff;
+  color:#003f88;
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:bold;
+}
+
+.status-indicator {
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#28a745;
+  margin-right:4px;
+}
+
+/* CONTROLS */
+.controls {
+  padding:10px;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.controls input, .controls select{
+  padding:5px 6px;
+  font-size:12px;
+}
+
+/* TABLE */
+.table-wrapper {
+  overflow:auto;
+  height:75vh;
+  padding:8px;
+}
+
+table {
+  border-collapse:collapse;
+  background:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  width:max-content;
+  min-width:100%;
+  table-layout:auto;
+}
+
+th,td {
+  border:1px solid #ccc;
+  padding:5px 6px;
+  text-align:center;
+  white-space:nowrap;
+  font-size:11px;
+}
+
+th {
+  background:#003f88;
+  color:#fff;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+
+th .th-content{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+th span {
+  font-size:10px;
+  font-weight:bold;
+}
+
+th input {
+  font-size:9px;
+  padding:2px 3px;
+  border:1px solid #ddd;
+  border-radius:3px;
+  width:100%;
+}
+
+tbody tr:hover { background:#eef5ff; }
+
+/* Loading spinner */
+.spinner {
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border:2px solid #ddd;
+  border-top-color:#003f88;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media print {
+  .header, .controls, .no-print { display:none; }
+  body { background:#fff; }
+  table { box-shadow:none; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-bar">
+    <button class="header-btn" onclick="goBack()">⬅ Back</button>
+    <button class="header-btn" onclick="goHome()">🏠 Home</button>
+    <div class="header-center">
+      <h1>ERS MASTER DATA</h1>
+    </div>
+    <div class="version-info no-print"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
+    <button class="header-btn no-print" onclick="printTable()">🖨️ Print</button>
+    <button class="header-btn no-print" onclick="downloadExcel()">📥 Excel</button>
+  </div>
+</div>
+
+<div class="controls no-print">
+  <input id="search" placeholder="Search any field">
+  <select id="areaFilter"><option value="">All Areas</option></select>
+  <select id="statusFilter"><option value="">All Status</option></select>
+  <select id="ersFilter"><option value="">All ERS Status</option></select>
+</div>
+
+<div class="table-wrapper">
+<table id="tbl">
+<thead>
+<tr>
+<th><div class="th-content"><span>SL</span><input type="text" class="col-filter" data-col="0" placeholder="S"></div></th>
+<th><div class="th-content"><span>DATE</span><input type="text" class="col-filter" data-col="1" placeholder="S"></div></th>
+<th><div class="th-content"><span>W.O NO</span><input type="text" class="col-filter" data-col="2" placeholder="S"></div></th>
+<th><div class="th-content"><span>ERS STATUS</span><input type="text" class="col-filter" data-col="3" placeholder="S"></div></th>
+<th><div class="th-content"><span>STATUS</span><input type="text" class="col-filter" data-col="4" placeholder="S"></div></th>
+<th><div class="th-content"><span>SHIFTED</span><input type="text" class="col-filter" data-col="5" placeholder="S"></div></th>
+<th><div class="th-content"><span>USE</span><input type="text" class="col-filter" data-col="6" placeholder="S"></div></th>
+<th><div class="th-content"><span>KW</span><input type="text" class="col-filter" data-col="7" placeholder="S"></div></th>
+<th><div class="th-content"><span>MAKE</span><input type="text" class="col-filter" data-col="8" placeholder="S"></div></th>
+<th><div class="th-content"><span>FRAME</span><input type="text" class="col-filter" data-col="9" placeholder="S"></div></th>
+<th><div class="th-content"><span>RPM</span><input type="text" class="col-filter" data-col="10" placeholder="S"></div></th>
+<th><div class="th-content"><span>MOUNT</span><input type="text" class="col-filter" data-col="11" placeholder="S"></div></th>
+<th><div class="th-content"><span>M.SL</span><input type="text" class="col-filter" data-col="12" placeholder="S"></div></th>
+<th><div class="th-content"><span>AREA</span><input type="text" class="col-filter" data-col="13" placeholder="S"></div></th>
+<th><div class="th-content"><span>EQPT</span><input type="text" class="col-filter" data-col="14" placeholder="S"></div></th>
+<th><div class="th-content"><span>TYPE</span><input type="text" class="col-filter" data-col="15" placeholder="S"></div></th>
+<th><div class="th-content"><span>DR1</span><input type="text" class="col-filter" data-col="16" placeholder="S"></div></th>
+<th><div class="th-content"><span>DR2</span><input type="text" class="col-filter" data-col="17" placeholder="S"></div></th>
+<th><div class="th-content"><span>DATE2</span><input type="text" class="col-filter" data-col="18" placeholder="S"></div></th>
+<th><div class="th-content"><span>W.O2</span><input type="text" class="col-filter" data-col="19" placeholder="S"></div></th>
+<th><div class="th-content"><span>KW2</span><input type="text" class="col-filter" data-col="20" placeholder="S"></div></th>
+<th><div class="th-content"><span>MAKE2</span><input type="text" class="col-filter" data-col="21" placeholder="S"></div></th>
+<th><div class="th-content"><span>MT2</span><input type="text" class="col-filter" data-col="22" placeholder="S"></div></th>
+<th><div class="th-content"><span>M/C</span><input type="text" class="col-filter" data-col="23" placeholder="S"></div></th>
+<th><div class="th-content"><span>AR2</span><input type="text" class="col-filter" data-col="24" placeholder="S"></div></th>
+<th><div class="th-content"><span>LAST</span><input type="text" class="col-filter" data-col="25" placeholder="S"></div></th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<script>
+/* ===== VERSION-BASED CACHE BUSTING SETUP ===== */
+const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
+const BASE_JSON_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/motor_transaction.json';
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let currentVersion = '1.0.0';
+
+function buildDataUrl() {
+  return `${BASE_JSON_URL}?v=${currentVersion}`;
+}
+
+function goHome(){ location.href="https://08electricaldata.github.io/"; }
+function goBack(){ window.history.back(); }
+
+const versionDisplayEl = document.getElementById("versionDisplay");
+
+/* Get latest version from version.json */
+async function getVersion(){
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now());
+    if(!res.ok) throw new Error('Version fetch failed');
+    const data = await res.json();
+    currentVersion = data.version || '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+    console.log('Loaded version:', currentVersion);
+  } catch(err) {
+    console.warn('Failed to fetch version, using default:', err);
+    currentVersion = '1.0.0';
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+function parseDate(v){
+  if(!v) return null;
+  const d=new Date(v);
+  return isNaN(d)?null:d;
+}
+function fmt(d){
+  if(!d) return "";
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+function printTable(){ window.print(); }
+
+function downloadExcel(){
+  const table = document.getElementById('tbl');
+  const rows = [];
+  
+  const headerRow = [];
+  table.querySelectorAll('thead th').forEach(th => {
+    const text = th.querySelector('span') ? th.querySelector('span').textContent : th.textContent;
+    headerRow.push(text);
+  });
+  rows.push(headerRow);
+  
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    const rowData = [];
+    tr.querySelectorAll('td').forEach(td => {
+      rowData.push(td.textContent.trim());
+    });
+    rows.push(rowData);
+  });
+  
+  let csv = rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'ERS_MASTER_DATA.csv');
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function getUrlSelectedWoNo(){
+  try{
+    const path = window.location.pathname || "";
+    const fileName = "ersmasterdata.html";
+
+    // Handles:
+    // /drive-viewer/ersmasterdata.html/481/22.10.26.html
+    // /drive-viewer/ersmasterdata.html?wo=481%2F22.10.26
+    // /drive-viewer/ersmasterdata.html?id=...
+    const idx = path.indexOf(fileName);
+    if (idx !== -1) {
+      const suffix = path.substring(idx + fileName.length);
+      if (suffix && suffix !== "/") {
+        const cleaned = decodeURIComponent(suffix).replace(/^\/+/, "").replace(/\.html$/i, "");
+        if (cleaned && cleaned !== "null") return cleaned;
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("wo") || params.get("WONo") || params.get("id");
+    if (q) return decodeURIComponent(q).trim();
+
+    return "";
+  } catch (err) {
+    return "";
+  }
+}
+
+let allRows = [];
+
+async function load(){
+  try{
+    const url = buildDataUrl();
+    console.log('Fetching from:', url);
+    const res=await fetch(url);
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data=await res.json();
+    allRows=data.rows;
+
+    // Sort by Column A descending
+    allRows.sort((a,b)=>(b[0]||0)-(a[0]||0));
+
+    const tbody=document.querySelector("#tbl tbody");
+    const areaFilter=document.getElementById("areaFilter");
+    const statusFilter=document.getElementById("statusFilter");
+    const ersFilter=document.getElementById("ersFilter");
+    const search=document.getElementById("search");
+
+    const shiftedColors={}, statusColors={};
+    let h1=0, h2=180;
+
+    const areas=new Set();
+    const statuses=new Set();
+    const ersStatuses=new Set();
+
+    allRows.forEach(r=>{
+      if(r[5] && !shiftedColors[r[5]]) shiftedColors[r[5]]=`hsl(${h1+=35},70%,45%)`;
+      if(r[4] && !statusColors[r[4]]) statusColors[r[4]]=`hsl(${h2+=35},65%,45%)`;
+
+      if(r[13]) areas.add(r[13]);
+      if(r[4]) statuses.add(r[4]);
+      if(r[3]) ersStatuses.add(r[3]);
+    });
+
+    // Fill dropdowns
+    areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+    statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+    ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
+
+    const urlWoFilter = getUrlSelectedWoNo();
+    if (urlWoFilter) {
+      search.value = urlWoFilter;
+    }
+
+    function render(){
+      tbody.innerHTML="";
+      const q=(search.value || "").toLowerCase();
+      const areaVal=areaFilter.value;
+      const statusVal=statusFilter.value;
+      const ersVal=ersFilter.value;
+
+      const colFilters = {};
+      document.querySelectorAll('.col-filter').forEach(inp => {
+        const col = parseInt(inp.getAttribute('data-col'));
+        const val = inp.value.toLowerCase();
+        if(val) colFilters[col] = val;
+      });
+
+      const effectiveQ = q || (urlWoFilter || "").toLowerCase();
+
+      allRows.forEach(r=>{
+        if(!r[2] && !r[19]) return;
+
+        const rowWo = String(r[2] || "").trim();
+        const urlMatch = urlWoFilter ? rowWo === urlWoFilter : true;
+
+        if (!urlMatch) return;
+
+        if(effectiveQ && !r.join(" ").toLowerCase().includes(effectiveQ)) return;
+        if(areaVal && r[13]!==areaVal) return;
+        if(statusVal && r[4]!==statusVal) return;
+        if(ersVal && r[3]!==ersVal) return;
+
+        for(const col in colFilters){
+          const val = String(r[col]||'').toLowerCase();
+          if(!val.includes(colFilters[col])) return;
+        }
+
+        let ersColor="";
+        if(r[3]){
+          ersColor=r[3].toUpperCase().includes("COMPLETED")?"#28a745":"#007bff";
+        }
+
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+<td>${r[0]||""}</td>
+<td>${fmt(parseDate(r[1]))}</td>
+<td>${r[2]||""}</td>
+<td style="background:${ersColor};color:#fff;">${r[3]||""}</td>
+<td style="background:${statusColors[r[4]]||""};color:#fff;">${r[4]||""}</td>
+<td style="background:${shiftedColors[r[5]]||""};color:#fff;">${r[5]||""}</td>
+<td>${r[6]||""}</td>
+<td>${r[7]||""}</td>
+<td>${r[8]||""}</td>
+<td>${r[9]||""}</td>
+<td>${r[10]||""}</td>
+<td>${r[11]||""}</td>
+<td>${r[12]||""}</td>
+<td>${r[13]||""}</td>
+<td>${r[14]||""}</td>
+<td>${r[15]||""}</td>
+<td>${r[16]||""}</td>
+<td>${r[17]||""}</td>
+<td>${fmt(parseDate(r[18]))}</td>
+<td>${r[19]||""}</td>
+<td>${r[20]||""}</td>
+<td>${r[21]||""}</td>
+<td>${r[22]||""}</td>
+<td>${r[23]||""}</td>
+<td>${r[24]||""}</td>
+<td>${r[25]||""}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    search.onkeyup=render;
+    areaFilter.onchange=render;
+    statusFilter.onchange=render;
+    ersFilter.onchange=render;
+    
+    document.querySelectorAll('.col-filter').forEach(inp => {
+      inp.addEventListener('input', render);
+    });
+
+    render();
+  }catch(err){
+    console.error("Error loading ERS data:", err);
+    document.querySelector("#tbl tbody").innerHTML =
+      `<tr><td colspan="26" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
+  }
+}
+
+/* Initialize: fetch version first, then load data */
+async function init(){
+  await getVersion();
+  await load();
+  
+  setInterval(async () => {
+    console.log('Auto-refreshing ERS data...');
+    await getVersion();
+    await load();
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+init();
+</script>
+
+</body>
+</html>
