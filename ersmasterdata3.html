@@ -279,6 +279,48 @@ function buildDataUrl(type){
   return `${JSON_FILES_BASE[type]}?v=${currentVersion}`;
 }
 
+/* Parse W.O No date like 481/22.10.26 or 896/19.03.18 */
+function parseWoDate(value) {
+  if (!value) return null;
+
+  const str = String(value).trim();
+  const parts = str.split("/");
+
+  const datePart = parts[parts.length - 1];
+  if (!datePart) return null;
+
+  const match = datePart.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const fullYear = year < 100 ? 2000 + year : year;
+
+  const d = new Date(fullYear, month - 1, day);
+  if (isNaN(d.getTime())) return null;
+
+  return d.getTime();
+}
+
+function sortNewestFirst(list) {
+  return list.slice().sort((a, b) => {
+    const dateA = parseWoDate(a["W.O No"]);
+    const dateB = parseWoDate(b["W.O No"]);
+
+    if (dateA != null && dateB != null) return dateB - dateA;
+
+    const aRow = Number(a.rowNumber ?? 0);
+    const bRow = Number(b.rowNumber ?? 0);
+
+    if (aRow && bRow) return bRow - aRow;
+
+    const aText = String(a["W.O No"] ?? "");
+    const bText = String(b["W.O No"] ?? "");
+    return bText.localeCompare(aText);
+  });
+}
+
 async function getVersion(){
   try {
     const res = await fetch(VERSION_URL + '?t=' + Date.now());
@@ -303,16 +345,7 @@ async function loadData(type){
     const json = await res.json();
 
     const rows = Array.isArray(json.data) ? json.data : [];
-
-    currentData = rows
-      .slice()
-      .sort((a, b) => {
-        const aRow = Number(a.rowNumber ?? 0);
-        const bRow = Number(b.rowNumber ?? 0);
-
-        if (aRow && bRow) return bRow - aRow; // newest first
-        return 0;
-      });
+    currentData = sortNewestFirst(rows);
 
     if(currentData.length === 0){
       headers = [];
@@ -467,7 +500,7 @@ function applyColumnFilters(data){
 
 function render(){
   const { keysForTable, labelsForTable } = getVisibleKeysAndLabels();
-  const filteredData = applyColumnFilters(currentData);
+  const filteredData = sortNewestFirst(applyColumnFilters(currentData));
 
   buildHeaderAndFilterRow(keysForTable, labelsForTable);
 
@@ -510,7 +543,7 @@ function render(){
 
 function exportExcel(){
   const { keysForTable, labelsForTable } = getVisibleKeysAndLabels();
-  const visibleData = applyColumnFilters(currentData);
+  const visibleData = sortNewestFirst(applyColumnFilters(currentData));
 
   let csv = [];
   csv.push(labelsForTable.map(label => `"${escapeCSV(label)}"`).join(","));
