@@ -265,11 +265,13 @@ tbody tr:last-child td{border-bottom:none;}
 /* ===== VERSION-BASED CACHE BUSTING ===== */
 const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
 const JSON_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/drive.json";
+const MOTOR_TRANSACTION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/motor_transaction.json";
 
 let currentVersion = "1.0.0";
 const versionDisplayEl = document.getElementById("versionDisplay");
 
-/* FETCH VERSION FOR CACHE BUSTING */
+let transactionTrMap = new Map();
+
 async function getVersion() {
   try {
     const res = await fetch(VERSION_URL + "?t=" + Date.now());
@@ -285,7 +287,6 @@ async function getVersion() {
   }
 }
 
-/* BUILD URLS WITH VERSION PARAM AND TIMESTAMP */
 function buildUrl(baseUrl) {
   return `${baseUrl}?v=${currentVersion}&t=${Date.now()}`;
 }
@@ -311,6 +312,60 @@ function formatDate(v){
   const d = new Date(v);
   if(isNaN(d)) return escapeHtml(v);
   return d.toLocaleDateString("en-GB");
+}
+
+function getNormalizedText(v){
+  return String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ").replace(/[^a-z0-9]/g, "");
+}
+
+function getJsonRows(json){
+  if (!json) return [];
+  if (Array.isArray(json)) return json;
+  if (Array.isArray(json.rows)) return json.rows;
+  if (Array.isArray(json.data)) return json.data;
+  if (json.table && Array.isArray(json.table.rows)) return json.table.rows;
+  return [];
+}
+
+function getRowCellValue(row, index){
+  if (Array.isArray(row)) return row[index];
+  if (row && typeof row === "object") {
+    const candidates = [
+      Object.keys(row)[index],
+      ["W.O No", "W.O number", "W.O#", "W.ONo", "WO No", "WO Number", "WONo"][index] || null
+    ];
+    for (const key of candidates) {
+      if (key && Object.prototype.hasOwnProperty.call(row, key)) return row[key];
+    }
+  }
+  return "";
+}
+
+// Build TR map from motor_transaction.json
+async function loadTransactionTrMap(){
+  try{
+    const res = await fetch(buildUrl(MOTOR_TRANSACTION_URL));
+    if (!res.ok) throw new Error("Transaction JSON fetch failed");
+    const json = await res.json();
+    const rows = getJsonRows(json);
+
+    const map = new Map();
+
+    rows.forEach((row) => {
+      const trNo = getRowCellValue(row, 0);
+      const woNo = getRowCellValue(row, 2);
+
+      if (trNo && woNo) {
+        map.set(getNormalizedText(woNo), String(trNo).trim());
+      }
+    });
+
+    transactionTrMap = map;
+    console.log("✓ Loaded TR map entries:", transactionTrMap.size);
+  } catch (err) {
+    console.error("loadTransactionTrMap error:", err);
+    transactionTrMap = new Map();
+  }
 }
 
 function createTableElement(title, headers, rows){
@@ -366,7 +421,7 @@ function createTableElement(title, headers, rows){
   return card;
 }
 
-/* ===== FETCH CURRENT MAKE FROM SHEET (WORKING VERSION) ===== */
+/* ===== FETCH CURRENT MAKE FROM SHEET ===== */
 async function fetchCurrentMakeData(driveID) {
   try {
     const id = String(driveID || "").trim();
@@ -405,8 +460,6 @@ async function fetchCurrentMakeData(driveID) {
     const json = JSON.parse(text.substring(start, end));
     const rows = json?.table?.rows || [];
 
-    console.log("Total rows:", rows.length);
-
     let matchedRow = null;
 
     for (const row of rows) {
@@ -416,7 +469,6 @@ async function fetchCurrentMakeData(driveID) {
 
       if (bValue.toUpperCase() === colB.toUpperCase() && 
           cValue.toUpperCase() === colC.toUpperCase()) {
-        console.log("✓ MATCH FOUND");
         matchedRow = row;
         break;
       }
@@ -429,12 +481,7 @@ async function fetchCurrentMakeData(driveID) {
 
     const cells = matchedRow.c || [];
     const rawColumnL = String(cells[11]?.v || "").trim();
-
-    console.log("MOTOR REPLACE DETAILS raw:", rawColumnL);
-
     const extracted = extractMakeValue(rawColumnL);
-
-    console.log("=== FETCH COMPLETE ===");
 
     return {
       columnL: rawColumnL || "N/A",
@@ -459,6 +506,17 @@ function extractMakeValue(fullString) {
   return value;
 }
 
+function parsePartsFromItemString(item){
+  if (!item) return [];
+  return String(item).split("!").map(v => String(v).trim());
+}
+
+function getTrNoFromWo(woNo){
+  if (!woNo) return "";
+  const key = getNormalizedText(woNo);
+  return transactionTrMap.get(key) || "";
+}
+
 async function loadMotor(){
   const app = document.getElementById("app");
   const id = getID();
@@ -471,9 +529,10 @@ async function loadMotor(){
   try{
     console.log(`⚡ Loading Motor details for ${id}...`);
     const startTime = performance.now();
-    
+
     await getVersion();
-    
+    await loadTransactionTrMap();
+
     const response = await fetch(buildUrl(JSON_URL));
     if(!response.ok) throw new Error("Unable to fetch JSON");
 
@@ -492,11 +551,9 @@ async function loadMotor(){
 
     const fragment = document.createDocumentFragment();
 
-    /* HEADER WITH LEFT AND RIGHT SECTIONS */
     const headerWrapper = document.createElement("div");
     headerWrapper.className = "header-wrapper";
 
-    /* LEFT: Motor Details Info */
     const headerLeft = document.createElement("div");
     headerLeft.className = "header-left";
     
@@ -513,11 +570,9 @@ async function loadMotor(){
     updatedDiv.textContent = "Last Updated : " + new Date(data.updated).toLocaleString("en-GB");
     headerLeft.appendChild(updatedDiv);
 
-    /* RIGHT: Only Current Make Information */
     const headerRight = document.createElement("div");
     headerRight.className = "header-right";
 
-    /* Current Make Item */
     const makeItem = document.createElement("div");
     makeItem.className = "make-info-item";
     
@@ -534,12 +589,10 @@ async function loadMotor(){
 
     headerRight.appendChild(makeItem);
 
-    /* Add left and right to wrapper */
     headerWrapper.appendChild(headerLeft);
     headerWrapper.appendChild(headerRight);
     fragment.appendChild(headerWrapper);
 
-    /* BUTTON BAR */
     const buttonBar = document.createElement("div");
     buttonBar.className = "button-bar";
     
@@ -584,51 +637,84 @@ async function loadMotor(){
     
     fragment.appendChild(createTableElement(null, motorHeaders, motorRows));
 
-    /* STORE MOTOR REPLACE DETAILS VALUE FOR LATER USE */
-    const columnLValueForTable = document.createElement("span");
-    columnLValueForTable.id = "columnLForTable";
-    columnLValueForTable.style.display = "none";
-    fragment.appendChild(columnLValueForTable);
-
     const replacementHeaders = ["Last Motor Replacement", "MOTOR REPLACE DETAILS", "Last Motor PM"];
     const replacementRows = [[
       formatDate(row[37]), 
-      `<span id="columnLTableValue">Loading...</span>`,
+      "Loading...",
       formatDate(row[38])
     ]];
-    
-    const replacementTable = createTableElement(null, replacementHeaders, [[formatDate(row[37]), "Loading...", formatDate(row[38])]]);
+    const replacementTable = createTableElement(null, replacementHeaders, replacementRows);
     fragment.appendChild(replacementTable);
-    const columnLTableCell = replacementTable.querySelector("tbody tr td:nth-child(2)");
-    columnLTableCell.id = "columnLTableCell";
 
-    const spareHeaders = ["Sl No.", "W/O number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
+    const spareHeaders = ["Sl No.", "W/O number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION", "TR No"];
     const spareRows = [];
     const spareData = (row[24] || "").trim();
     if(spareData){
       const spareList = spareData.split("@");
       spareList.forEach((item, index) => {
-        const parts = item.trim().split("!");
+        const parts = parsePartsFromItemString(item);
+
         const rowData = [String(index + 1)];
-        for(let i = 0; i < 8; i++){
-          rowData.push(escapeHtml(parts[i] ? parts[i].trim() : ""));
-        }
+
+        const woNo = (parts[0] || "").trim();
+        const kw = (parts[1] || "").trim();
+        const make = (parts[2] || "").trim();
+        const frame = (parts[3] || "").trim();
+        const rpm = (parts[4] || "").trim();
+        const mtg = (parts[5] || "").trim();
+        const drive = (parts[6] || "").trim();
+        const location = (parts[7] || "").trim();
+        const trNo = getTrNoFromWo(woNo);
+
+        rowData.push(
+          escapeHtml(woNo),
+          escapeHtml(kw),
+          escapeHtml(make),
+          escapeHtml(frame),
+          escapeHtml(rpm),
+          escapeHtml(mtg),
+          escapeHtml(drive),
+          escapeHtml(location),
+          escapeHtml(trNo)
+        );
+
         spareRows.push(rowData);
       });
     }
     fragment.appendChild(createTableElement("Spare Motor Details", spareHeaders, spareRows));
 
-    const pendingHeaders = ["Sl No.", "W/O Number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION"];
+    const pendingHeaders = ["Sl No.", "W/O Number", "KW", "MAKE", "FRAME", "RPM", "MTG", "DRIVE", "LOCATION", "TR No"];
     const pendingRows = [];
     const pendingData = (row[26] || "").trim();
     if(pendingData){
       const pendingList = pendingData.split("@");
       pendingList.forEach((item, index) => {
-        const parts = item.trim().split("!");
+        const parts = parsePartsFromItemString(item);
+
         const rowData = [String(index + 1)];
-        for(let i = 0; i < 8; i++){
-          rowData.push(escapeHtml(parts[i] ? parts[i].trim() : ""));
-        }
+
+        const woNo = (parts[0] || "").trim();
+        const kw = (parts[1] || "").trim();
+        const make = (parts[2] || "").trim();
+        const frame = (parts[3] || "").trim();
+        const rpm = (parts[4] || "").trim();
+        const mtg = (parts[5] || "").trim();
+        const drive = (parts[6] || "").trim();
+        const location = (parts[7] || "").trim();
+        const trNo = getTrNoFromWo(woNo);
+
+        rowData.push(
+          escapeHtml(woNo),
+          escapeHtml(kw),
+          escapeHtml(make),
+          escapeHtml(frame),
+          escapeHtml(rpm),
+          escapeHtml(mtg),
+          escapeHtml(drive),
+          escapeHtml(location),
+          escapeHtml(trNo)
+        );
+
         pendingRows.push(rowData);
       });
     }
@@ -637,20 +723,15 @@ async function loadMotor(){
     app.innerHTML = "";
     app.appendChild(fragment);
 
-    console.log(`✓ Motor details page rendered (ID: ${id})`);
-
-    /* FETCH AND SHOW CURRENT MAKE + MOTOR REPLACE DETAILS */
     const makeData = await fetchCurrentMakeData(id);
 
-    /* Update Current Make in header */
     const extractedEl = document.getElementById("extractedMakeValue");
     if (extractedEl) {
       extractedEl.textContent = escapeHtml(makeData.extracted);
       extractedEl.classList.remove("make-loading");
     }
 
-    /* Update MOTOR REPLACE DETAILS in table */
-    const columnLCell = document.getElementById("columnLTableCell");
+    const columnLCell = replacementTable.querySelector("tbody tr td:nth-child(2)");
     if (columnLCell) {
       columnLCell.textContent = escapeHtml(makeData.columnL);
     }
