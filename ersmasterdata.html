@@ -460,12 +460,12 @@ function openRowModal(row){
   document.getElementById("detailTitle").textContent = `WO: ${titleWo}`;
 
   const driveItems = [
-    { label: "DR2", value: displayValue(row, 16) },
-    { label: "DATE2", value: displayValue(row, 17) }
+    { label: "DRIVE", value: displayValue(row, 16) },
+    { label: "SUB-DRIVE", value: displayValue(row, 17) }
   ];
 
   const sentItems = [];
-  for (let i = 0; i <= 15; i++) {
+  for (let i = 1; i <= 15; i++) {
     sentItems.push({
       label: COLUMN_HEADERS[i] || `COL ${i + 1}`,
       value: displayValue(row, i)
