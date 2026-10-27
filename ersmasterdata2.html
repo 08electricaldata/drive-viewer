@@ -55,6 +55,7 @@ body{font-family:Arial;margin:0;background:#f4f7ff;}
   gap:10px;
   justify-content:center;
   flex-wrap:wrap;
+  align-items:center;
 }
 
 select,input,button{
@@ -146,12 +147,6 @@ th{
   text-align:left;
 }
 
-/* Priority styles (kept for card counts only, not rendered in table) */
-.priority-1{background:#ff4d4d;color:#fff;}
-.priority-2{background:#ff9933;color:#fff;}
-.priority-3{background:#ffcc00;color:#000;}
-.priority-4{background:#66cc66;color:#000;}
-
 .badge{
   padding:4px 8px;
   border-radius:4px;
@@ -160,10 +155,6 @@ th{
 }
 
 .completed{background:#28a745;}
-
-/* Loading spinner */
-.spinner{display:inline-block;width:12px;height:12px;border:2px solid #ddd;border-top-color:#003f88;border-radius:50%;animation:spin 0.8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Responsive tweaks */
 @media (max-width:720px){
@@ -179,7 +170,6 @@ th{
 <!-- HEADER -->
 <div class="header">
   <div class="header-bar">
-
     <div>
       <button class="header-btn" onclick="history.back()">⬅ Back</button>
       <button class="header-btn" onclick="location.href='https://08electricaldata.github.io/'">🏠 Home</button>
@@ -192,7 +182,6 @@ th{
     </div>
 
     <div></div>
-
   </div>
 </div>
 
@@ -203,6 +192,21 @@ th{
     <option value="overhauling">Overhauling</option>
     <option value="scrap">SCRAP</option>
   </select>
+
+  <select id="fieldSelect">
+    <option value="all">All Fields</option>
+    <option value="W.O No">W.O No</option>
+    <option value="kW">kW</option>
+    <option value="Make">Make</option>
+    <option value="Frame Size">Frame Size</option>
+    <option value="Mounting">Mounting</option>
+    <option value="RPM">RPM</option>
+    <option value="Sl No">Sl No</option>
+    <option value="Equipment details">Equipment details</option>
+    <option value="Problems">Problems</option>
+    <option value="Job Completion Dat">Job Completion Dat</option>
+  </select>
+
   <input type="text" id="searchBox" placeholder="Search...">
   <button onclick="exportCSV()">Export Excel</button>
   <div class="version-info"><span class="status-indicator"></span>Version: <span id="versionDisplay">—</span></div>
@@ -211,10 +215,6 @@ th{
 <!-- SUMMARY -->
 <div class="summary">
   <div class="card"><h3 id="totalCount">0</h3><span>Total</span></div>
-  <div class="card"><h3 id="highCount">0</h3><span>High Priority</span></div>
-  <div class="card"><h3 id="mediumCount">0</h3><span>Medium</span></div>
-  <div class="card"><h3 id="lowCount">0</h3><span>Low</span></div>
-  <div class="card"><h3 id="noPriorityCount">0</h3><span>No Priority</span></div>
 </div>
 
 <div class="section-title">Priority Assigned</div>
@@ -245,16 +245,16 @@ function buildDataUrl(type) {
 
 let currentData = [];
 let headers = [];
-let priorityKey = "";
 let currentType = 'rewinding';
 
 const select = document.getElementById("typeSelect");
+const fieldSelect = document.getElementById("fieldSelect");
 const searchBox = document.getElementById("searchBox");
 const versionDisplayEl = document.getElementById("versionDisplay");
 
 /* Desired visible columns (display order)
-   PRIORITY removed intentionally.
-   Problems column stays visible and wraps.
+   PRIORITY removed completely
+   Problems column wraps
 */
 const desiredDisplayCols = [
   "W.O No",
@@ -270,11 +270,10 @@ const desiredDisplayCols = [
 ];
 
 /* Columns to explicitly exclude if present */
-const excludedNames = ["voltage","area","storage","remarks","priority"];
+const excludedNames = ["voltage","area","storage","remarks","priority","columno","columno","priorityassigned"];
 
-/* helper to normalize header strings for matching */
 function normalize(s){
-  return String(s || "").toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
+  return String(s || "").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,"");
 }
 
 /* Get latest version from version.json */
@@ -305,18 +304,15 @@ async function loadData(type){
 
     if(currentData.length === 0){
       headers = [];
-      priorityKey = "";
       render();
       return;
     }
 
     headers = Object.keys(currentData[0] || {});
-    priorityKey = findKeyMatch("PRIORITY") || "";
   }catch(err){
     console.error("Error loading data:", err);
     currentData = [];
     headers = [];
-    priorityKey = "";
     alert("Error loading data. Please refresh the page.");
   }
   render();
@@ -343,12 +339,11 @@ function findKeyMatch(displayName){
   return null;
 }
 
-/* Build ordered keys without PRIORITY and without column O priority data */
+/* Build ordered keys without any priority/column O data */
 function buildOrderedKeys(){
   const orderedKeys = [];
 
   for(const display of desiredDisplayCols){
-    // Special case for SCRAP: use column L only if available
     if(display.toLowerCase() === "job completion dat" && currentType === 'scrap'){
       if(headers && headers.length > 11 && headers[11]) {
         orderedKeys.push(headers[11]);
@@ -391,11 +386,9 @@ function buildOrderedKeys(){
   });
 }
 
-function render(){
-  const q = (searchBox.value || "").toLowerCase();
-  const filtered = currentData.filter(r => {
-    return Object.values(r).join(" ").toLowerCase().includes(q);
-  });
+function getSelectedFieldKey(){
+  const selectedField = fieldSelect.value;
+  if(!selectedField || selectedField === "all") return null;
 
   const mappedOrderedKeys = buildOrderedKeys();
   const allNull = mappedOrderedKeys.every(k => k === null);
@@ -410,7 +403,54 @@ function render(){
     });
     labelsForTable = keysForTable.slice();
   } else {
-    for(let i = 0; i < desiredDisplayCols.length; i++){
+    for(let i=0;i<desiredDisplayCols.length;i++){
+      const key = mappedOrderedKeys[i];
+      if(key === null) continue;
+      keysForTable.push(key);
+      labelsForTable.push(desiredDisplayCols[i]);
+    }
+  }
+
+  for(let i=0;i<labelsForTable.length;i++){
+    if(labelsForTable[i] === selectedField){
+      return keysForTable[i];
+    }
+  }
+  return null;
+}
+
+function render(){
+  const q = (searchBox.value || "").trim().toLowerCase();
+  const selectedFieldKey = getSelectedFieldKey();
+
+  let filtered = currentData.filter(r => {
+    if(!q) return true;
+
+    if(selectedFieldKey){
+      const val = String(r[selectedFieldKey] ?? "");
+      return val.toLowerCase().includes(q);
+    }
+
+    return Object.values(r).join(" ").toLowerCase().includes(q);
+  });
+
+  // SORT: last JSON row should appear first in table
+  filtered = filtered.slice().reverse();
+
+  const mappedOrderedKeys = buildOrderedKeys();
+  const allNull = mappedOrderedKeys.every(k => k === null);
+
+  let keysForTable = [];
+  let labelsForTable = [];
+
+  if(allNull){
+    keysForTable = headers.filter(h => {
+      const kn = normalize(h);
+      return !excludedNames.some(ex => kn.includes(ex));
+    });
+    labelsForTable = keysForTable.slice();
+  } else {
+    for(let i=0;i<desiredDisplayCols.length;i++){
       const key = mappedOrderedKeys[i];
       if(key === null) continue;
       keysForTable.push(key);
@@ -422,22 +462,19 @@ function render(){
   updateCards(filtered);
 }
 
-/*
-  buildTable(id, data, keys, labels)
-*/
 function buildTable(id, data, keys, labels){
   const table = document.getElementById(id);
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
 
-  if(!data || data.length === 0){
+  if(!data || data.length===0){
     thead.innerHTML = "";
     tbody.innerHTML = "<tr><td style='padding:12px'>No Data</td></tr>";
     return;
   }
 
   let head = "<tr>";
-  for(let i = 0; i < keys.length; i++){
+  for(let i=0;i<keys.length;i++){
     const display = labels[i] || keys[i];
     head += `<th data-col="${escapeHtml(display)}">${escapeHtml(display)}</th>`;
   }
@@ -447,7 +484,7 @@ function buildTable(id, data, keys, labels){
   tbody.innerHTML = "";
   data.forEach(row => {
     let tr = "<tr>";
-    for(let i = 0; i < keys.length; i++){
+    for(let i=0;i<keys.length;i++){
       const key = keys[i];
       let val = row[key] ?? "";
 
@@ -467,32 +504,8 @@ function buildTable(id, data, keys, labels){
   });
 }
 
-/* Total card stays as before; other cards are based on priority key only if available */
 function updateCards(data){
-  let high = 0, med = 0, low = 0, noPriority = 0;
-
-  data.forEach(r => {
-    const pVal = priorityKey ? (r[priorityKey] ?? "") : "";
-    const num = Number(pVal);
-
-    if(pVal === "" || pVal === null || pVal === undefined){
-      noPriority++;
-    } else if(!isNaN(num) && num === 1){
-      high++;
-    } else if(!isNaN(num) && num === 2){
-      med++;
-    } else if(!isNaN(num) && num >= 3){
-      low++;
-    } else {
-      noPriority++;
-    }
-  });
-
   document.getElementById("totalCount").innerText = data.length;
-  document.getElementById("highCount").innerText = high;
-  document.getElementById("mediumCount").innerText = med;
-  document.getElementById("lowCount").innerText = low;
-  document.getElementById("noPriorityCount").innerText = noPriority;
 }
 
 function exportCSV(){
@@ -509,7 +522,7 @@ function exportCSV(){
     });
     exportLabels = exportKeys.slice();
   } else {
-    for(let i = 0; i < desiredDisplayCols.length; i++){
+    for(let i=0;i<desiredDisplayCols.length;i++){
       const key = mappedOrderedKeys[i];
       if(key === null) continue;
       exportKeys.push(key);
@@ -518,7 +531,7 @@ function exportCSV(){
   }
 
   let csv = exportLabels.join(",") + "\n";
-  currentData.forEach(r => {
+  currentData.slice().reverse().forEach(r => {
     const row = exportKeys.map(k => `"${escapeCSV(String(r[k] ?? ""))}"`).join(",");
     csv += row + "\n";
   });
@@ -540,8 +553,10 @@ function escapeCSV(s){
 }
 
 select.addEventListener("change", () => loadData(select.value));
+fieldSelect.addEventListener("change", render);
 searchBox.addEventListener("keyup", render);
 
+/* Initialize: fetch version first, then load data */
 async function init(){
   await getVersion();
   await loadData(select.value);
