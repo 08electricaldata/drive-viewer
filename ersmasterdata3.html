@@ -197,7 +197,6 @@ function goBack(){ window.history.back(); }
 
 const versionDisplayEl = document.getElementById("versionDisplay");
 
-/* Get latest version from version.json */
 async function getVersion(){
   try {
     const res = await fetch(VERSION_URL + '?t=' + Date.now());
@@ -257,15 +256,15 @@ function downloadExcel(){
   document.body.removeChild(link);
 }
 
-function getUrlSelectedWoNo(){
+function getRequestedWoNo(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  if (id && id.trim()) return id.trim();
+
+  // Optional fallback for old path-based format
   try{
     const path = window.location.pathname || "";
-    const fileName = "ersmasterdata.html";
-
-    // Handles:
-    // /drive-viewer/ersmasterdata.html/481/22.10.26.html
-    // /drive-viewer/ersmasterdata.html?wo=481%2F22.10.26
-    // /drive-viewer/ersmasterdata.html?id=...
+    const fileName = "ersmasterdata3.html";
     const idx = path.indexOf(fileName);
     if (idx !== -1) {
       const suffix = path.substring(idx + fileName.length);
@@ -274,15 +273,9 @@ function getUrlSelectedWoNo(){
         if (cleaned && cleaned !== "null") return cleaned;
       }
     }
+  } catch (err) {}
 
-    const params = new URLSearchParams(window.location.search);
-    const q = params.get("wo") || params.get("WONo") || params.get("id");
-    if (q) return decodeURIComponent(q).trim();
-
-    return "";
-  } catch (err) {
-    return "";
-  }
+  return "";
 }
 
 let allRows = [];
@@ -321,14 +314,13 @@ async function load(){
       if(r[3]) ersStatuses.add(r[3]);
     });
 
-    // Fill dropdowns
     areas.forEach(v=>areaFilter.innerHTML+=`<option value="${v}">${v}</option>`);
     statuses.forEach(v=>statusFilter.innerHTML+=`<option value="${v}">${v}</option>`);
     ersStatuses.forEach(v=>ersFilter.innerHTML+=`<option value="${v}">${v}</option>`);
 
-    const urlWoFilter = getUrlSelectedWoNo();
-    if (urlWoFilter) {
-      search.value = urlWoFilter;
+    const requestedWo = getRequestedWoNo();
+    if (requestedWo) {
+      search.value = requestedWo;
     }
 
     function render(){
@@ -345,17 +337,19 @@ async function load(){
         if(val) colFilters[col] = val;
       });
 
-      const effectiveQ = q || (urlWoFilter || "").toLowerCase();
+      const exactMatchWo = requestedWo ? String(requestedWo).trim() : "";
 
       allRows.forEach(r=>{
         if(!r[2] && !r[19]) return;
 
         const rowWo = String(r[2] || "").trim();
-        const urlMatch = urlWoFilter ? rowWo === urlWoFilter : true;
 
-        if (!urlMatch) return;
+        // If URL contains id=..., only show that matching W.O
+        if (exactMatchWo) {
+          if (rowWo.toLowerCase() !== exactMatchWo.toLowerCase()) return;
+        }
 
-        if(effectiveQ && !r.join(" ").toLowerCase().includes(effectiveQ)) return;
+        if(q && !r.join(" ").toLowerCase().includes(q)) return;
         if(areaVal && r[13]!==areaVal) return;
         if(statusVal && r[4]!==statusVal) return;
         if(ersVal && r[3]!==ersVal) return;
