@@ -100,6 +100,10 @@ th input {
   width:100%;
 }
 
+tbody tr {
+  cursor:pointer;
+}
+
 tbody tr:hover { background:#eef5ff; }
 
 /* Loading spinner */
@@ -114,8 +118,104 @@ tbody tr:hover { background:#eef5ff; }
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* MODAL POPUP */
+.modal {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:999;
+  padding:20px;
+  overflow:auto;
+}
+
+.modal.show {
+  display:block;
+}
+
+.modal-content {
+  max-width:1100px;
+  margin:40px auto;
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.25);
+  padding:20px 20px 15px;
+}
+
+.modal-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:2px solid #003f88;
+  margin-bottom:15px;
+  padding-bottom:8px;
+}
+
+.modal-header h2 {
+  margin:0;
+  color:#003f88;
+  font-size:22px;
+}
+
+.close-btn {
+  background:#003f88;
+  color:#fff;
+  border:none;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  font-size:20px;
+  cursor:pointer;
+}
+
+.detail-section {
+  margin-bottom:18px;
+  border:1px solid #d9e4f5;
+  border-radius:8px;
+  overflow:hidden;
+  background:#f8fbff;
+}
+
+.detail-section h3 {
+  margin:0;
+  padding:10px 14px;
+  background:#003f88;
+  color:#fff;
+  font-size:15px;
+}
+
+.detail-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+  gap:10px;
+  padding:12px;
+}
+
+.detail-item {
+  background:#fff;
+  border:1px solid #dfeaf8;
+  border-radius:6px;
+  padding:8px 10px;
+}
+
+.detail-label {
+  display:block;
+  font-size:10px;
+  color:#666;
+  text-transform:uppercase;
+  margin-bottom:4px;
+  font-weight:bold;
+}
+
+.detail-value {
+  font-size:13px;
+  color:#1d1d1d;
+  font-weight:600;
+  word-break:break-word;
+}
+
 @media print {
-  .header, .controls, .no-print { display:none; }
+  .header, .controls, .no-print, .modal { display:none; }
   body { background:#fff; }
   table { box-shadow:none; }
 }
@@ -180,6 +280,31 @@ tbody tr:hover { background:#eef5ff; }
 </table>
 </div>
 
+<!-- POPUP MODAL -->
+<div id="detailModal" class="modal" aria-modal="true" role="dialog">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="detailTitle">Motor Details</h2>
+      <button class="close-btn" id="closeModalBtn" aria-label="Close popup">×</button>
+    </div>
+
+    <div class="detail-section">
+      <h3>DRIVE</h3>
+      <div class="detail-grid" id="driveDetails"></div>
+    </div>
+
+    <div class="detail-section">
+      <h3>MOTORS SENT TO ERS</h3>
+      <div class="detail-grid" id="sentToErsDetails"></div>
+    </div>
+
+    <div class="detail-section">
+      <h3>MOTORS RECEIVED FROM ERS</h3>
+      <div class="detail-grid" id="receivedFromErsDetails"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ===== VERSION-BASED CACHE BUSTING SETUP ===== */
 const VERSION_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json';
@@ -187,6 +312,11 @@ const BASE_JSON_URL = 'https://cdn.jsdelivr.net/gh/08electricaldata/08electrical
 const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 let currentVersion = '1.0.0';
+
+const COLUMN_HEADERS = [
+  "SL","DATE","W.O NO","ERS STATUS","STATUS","SHIFTED","USE","KW","MAKE","FRAME","RPM",
+  "MOUNT","M.SL","AREA","EQPT","TYPE","DR1","DR2","DATE2","W.O2","KW2","MAKE2","MT2","M/C","AR2","LAST"
+];
 
 function buildDataUrl() {
   return `${BASE_JSON_URL}?v=${currentVersion}`;
@@ -217,9 +347,26 @@ function parseDate(v){
   const d=new Date(v);
   return isNaN(d)?null:d;
 }
+
 function fmt(d){
   if(!d) return "";
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+function getCellValue(row, index){
+  const value = row[index];
+  if (value === null || value === undefined || value === "") return "";
+  return value;
+}
+
+function displayValue(row, index){
+  const value = getCellValue(row, index);
+
+  if (index === 1 || index === 18) {
+    return fmt(parseDate(value));
+  }
+
+  return value;
 }
 
 function printTable(){ window.print(); }
@@ -276,6 +423,68 @@ function getRequestedWoNo(){
   } catch (err) {}
 
   return "";
+}
+
+function closeModal(){
+  document.getElementById("detailModal").classList.remove("show");
+}
+
+function buildDetailCard(label, value){
+  const wrapper = document.createElement("div");
+  wrapper.className = "detail-item";
+
+  const labelEl = document.createElement("span");
+  labelEl.className = "detail-label";
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement("div");
+  valueEl.className = "detail-value";
+  valueEl.textContent = value === "" || value === null || value === undefined ? "—" : value;
+
+  wrapper.appendChild(labelEl);
+  wrapper.appendChild(valueEl);
+
+  return wrapper;
+}
+
+function renderDetailGrid(containerId, items){
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  items.forEach(item => {
+    container.appendChild(buildDetailCard(item.label, item.value));
+  });
+}
+
+function openRowModal(row){
+  const titleWo = row[2] || row[19] || "N/A";
+  document.getElementById("detailTitle").textContent = `WO: ${titleWo}`;
+
+  const driveItems = [
+    { label: "DR2", value: displayValue(row, 16) },
+    { label: "DATE2", value: displayValue(row, 17) }
+  ];
+
+  const sentItems = [];
+  for (let i = 0; i <= 15; i++) {
+    sentItems.push({
+      label: COLUMN_HEADERS[i] || `COL ${i + 1}`,
+      value: displayValue(row, i)
+    });
+  }
+
+  const receivedItems = [];
+  for (let i = 18; i <= 25; i++) {
+    receivedItems.push({
+      label: COLUMN_HEADERS[i] || `COL ${i + 1}`,
+      value: displayValue(row, i)
+    });
+  }
+
+  renderDetailGrid("driveDetails", driveItems);
+  renderDetailGrid("sentToErsDetails", sentItems);
+  renderDetailGrid("receivedFromErsDetails", receivedItems);
+
+  document.getElementById("detailModal").classList.add("show");
 }
 
 let allRows = [];
@@ -392,6 +601,8 @@ async function load(){
 <td>${r[23]||""}</td>
 <td>${r[24]||""}</td>
 <td>${r[25]||""}</td>`;
+
+        tr.addEventListener("click", () => openRowModal(r));
         tbody.appendChild(tr);
       });
     }
@@ -417,6 +628,15 @@ async function load(){
 async function init(){
   await getVersion();
   await load();
+
+  document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+  document.getElementById("detailModal").addEventListener("click", function(e){
+    if (e.target === this) closeModal();
+  });
+
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") closeModal();
+  });
   
   setInterval(async () => {
     console.log('Auto-refreshing ERS data...');
