@@ -91,7 +91,6 @@ body {
   cursor: pointer;
   font-size: 14px;
 }
-
 .controls select {
   background: white;
   color: #003f88;
@@ -280,7 +279,6 @@ function buildDataUrl(type){
   return `${JSON_FILES_BASE[type]}?v=${currentVersion}`;
 }
 
-/* Get latest version from version.json */
 async function getVersion(){
   try {
     const res = await fetch(VERSION_URL + '?t=' + Date.now());
@@ -300,11 +298,21 @@ async function loadData(type){
   currentType = type;
   try{
     const url = buildDataUrl(type);
-    console.log('Fetching from:', url);
     const res = await fetch(url);
     if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const json = await res.json();
-    currentData = json.data || [];
+
+    const rows = Array.isArray(json.data) ? json.data : [];
+
+    currentData = rows
+      .slice()
+      .sort((a, b) => {
+        const aRow = Number(a.rowNumber ?? 0);
+        const bRow = Number(b.rowNumber ?? 0);
+
+        if (aRow && bRow) return bRow - aRow; // newest first
+        return 0;
+      });
 
     if(currentData.length === 0){
       headers = [];
@@ -457,14 +465,9 @@ function applyColumnFilters(data){
   });
 }
 
-// IMPORTANT: Always reverse for newest-first order on all dataset types
-function getSortedVisibleData(){
-  return applyColumnFilters(currentData).slice().reverse();
-}
-
 function render(){
   const { keysForTable, labelsForTable } = getVisibleKeysAndLabels();
-  const filteredData = getSortedVisibleData();
+  const filteredData = applyColumnFilters(currentData);
 
   buildHeaderAndFilterRow(keysForTable, labelsForTable);
 
@@ -507,7 +510,7 @@ function render(){
 
 function exportExcel(){
   const { keysForTable, labelsForTable } = getVisibleKeysAndLabels();
-  const visibleData = getSortedVisibleData();
+  const visibleData = applyColumnFilters(currentData);
 
   let csv = [];
   csv.push(labelsForTable.map(label => `"${escapeCSV(label)}"`).join(","));
