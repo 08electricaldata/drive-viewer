@@ -154,6 +154,7 @@ th {
   z-index: 10;
 }
 
+/* Filter row */
 .filter-row th {
   background: #eaf1ff;
   color: #003f88;
@@ -186,10 +187,6 @@ th:nth-child(9), td:nth-child(9) { width: auto; }
 .overdue-cell {
   background: red;
   color: yellow;
-  font-weight: bold;
-}
-.section-row {
-  background: #fff2a8;
   font-weight: bold;
 }
 
@@ -362,11 +359,6 @@ function createFilterRow() {
       const rows = document.querySelectorAll("#dataTable tbody tr");
 
       rows.forEach((tr) => {
-        if (tr.classList.contains("section-row")) {
-          tr.style.display = "";
-          return;
-        }
-
         const cell = tr.children[columnIndex];
         const value = cell ? cell.innerText.toLowerCase() : "";
         tr.style.display = (!q || value.includes(q)) ? "" : "none";
@@ -382,17 +374,48 @@ function bindGlobalSearch() {
     const rows = document.querySelectorAll("#dataTable tbody tr");
 
     rows.forEach((tr) => {
-      if (tr.classList.contains("section-row")) {
-        tr.style.display = "";
-        return;
-      }
       const rowText = tr.innerText.toLowerCase();
       tr.style.display = (!q || rowText.includes(q)) ? "" : "none";
     });
   });
 }
 
-/* LOAD DATA WITH OPTIMIZED PARSING */
+/* Detect section/header rows and remove them */
+function isSectionRow(values) {
+  const clean = values.map(v => (v === undefined || v === null) ? "" : String(v).trim());
+
+  const first = clean[0] || "";
+  const second = clean[1] || "";
+  const third = clean[2] || "";
+  const fourth = clean[3] || "";
+  const fifth = clean[4] || "";
+  const sixth = clean[5] || "";
+  const seventh = clean[6] || "";
+  const eighth = clean[7] || "";
+  const ninth = clean[8] || "";
+
+  const hasAnyRealData =
+    first || second || third || fourth || fifth || sixth || seventh || eighth || ninth;
+
+  if (!hasAnyRealData) return true;
+
+  // Common section labels like BATTERY-A, BATTERY-B, TANKAGE AREA
+  const isLabelOnly =
+    (first && second && first === second && !third && !fourth && !fifth && !sixth && !seventh && !eighth && !ninth) ||
+    (/^(BATTERY|TANKAGE|CIRCULATION|STEAM|PUMP|MOTOR|AREA)/i.test(first) && !third && !fourth && !fifth && !sixth && !seventh && !eighth && !ninth);
+
+  // If row is clearly a grouping header, skip it
+  if (isLabelOnly) return true;
+
+  // Additional skip: rows where only first 2-3 columns exist and rest are empty
+  if (!third && !fourth && !fifth && !sixth && !seventh && !eighth && !ninth) {
+    return true;
+  }
+
+  return false;
+}
+
+/* LOAD DATA */
 async function loadData() {
   try {
     const url = buildSheetUrl();
@@ -412,22 +435,32 @@ async function loadData() {
     const fragment = document.createDocumentFragment();
     const rows = j.table.rows || [];
 
-    rows.forEach(r => {
-      const c = r.c || [];
-      if (!c[1]?.v && !c[2]?.v) return;
+    rows.forEach(row => {
+      const c = row.c || [];
+
+      const values = c.map(cell => {
+        if (!cell || cell.v === undefined || cell.v === null) return "";
+        return String(cell.v).trim();
+      });
+
+      // Skip completely blank rows
+      if (values.every(v => v === "")) return;
+
+      // Skip section/header rows like BATTERY-A / TANKAGE AREA
+      if (isSectionRow(values)) return;
 
       const tr = document.createElement("tr");
-
-      if (!c[0]?.v) {
-        tr.classList.add("section-row");
-      } else {
-        total++;
-      }
 
       const oh = parseDate(c[8]?.v);
       const due = parseDate(c[9]?.v);
       const isOver = due && due < today;
       if (isOver) overdue++;
+
+      // Only count actual motor rows
+      const rowNumber = c[0]?.v;
+      if (rowNumber !== undefined && rowNumber !== null && String(rowNumber).trim() !== "") {
+        total++;
+      }
 
       if (c[0]?.v) {
         const id = `${c[1]?.v}-${c[2]?.v}`;
@@ -489,7 +522,7 @@ function exportExcel() {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-/* Initialize: load version first, then data */
+/* Initialize */
 async function init() {
   createFilterRow();
   bindGlobalSearch();
@@ -504,7 +537,6 @@ async function init() {
   }, AUTO_RELOAD_INTERVAL);
 }
 
-/* Start initialization */
 init();
 </script>
 
