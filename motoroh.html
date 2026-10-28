@@ -154,6 +154,24 @@ th {
   z-index: 10;
 }
 
+/* Filter row */
+.filter-row th {
+  background: #eaf1ff;
+  color: #003f88;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  padding: 6px;
+}
+.filter-row input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px;
+  font-size: 12px;
+  border: 1px solid #cdd9f2;
+  border-radius: 4px;
+}
+
 /* ===== COLUMN WIDTHS ===== */
 th:nth-child(1), td:nth-child(1) { width: 60px; }
 th:nth-child(2), td:nth-child(2) { width: 110px; }
@@ -169,10 +187,6 @@ th:nth-child(9), td:nth-child(9) { width: auto; }
 .overdue-cell {
   background: red;
   color: yellow;
-  font-weight: bold;
-}
-.section-row {
-  background: #fff2a8;
   font-weight: bold;
 }
 
@@ -196,7 +210,7 @@ tbody tr:hover {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media print {
-  .controls, .header-left, .version-info { display: none; }
+  .controls, .header-left, .version-info, .filter-row { display: none; }
 }
 </style>
 </head>
@@ -236,7 +250,7 @@ tbody tr:hover {
 </div>
 
 <div class="controls">
-  <input id="search" placeholder="Search by Column B or C">
+  <input id="search" placeholder="Search all fields">
   <button onclick="exportExcel()">📥 Export Excel</button>
   <button onclick="window.print()">🖨 Print</button>
 </div>
@@ -255,6 +269,7 @@ tbody tr:hover {
         <th>NEXT DUE</th>
         <th>REFERENCE</th>
       </tr>
+      <tr id="filterRow" class="filter-row"></tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -270,6 +285,7 @@ const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 let currentVersion = "1.0.0";
 const versionDisplayEl = document.getElementById("versionDisplay");
+const globalSearchInput = document.getElementById("search");
 
 /* FETCH VERSION FOR CACHE BUSTING */
 async function getVersion() {
@@ -319,47 +335,133 @@ function fmt(d) {
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-/* LOAD DATA WITH OPTIMIZED PARSING */
+/* ===== FILTER ROW ===== */
+function createFilterRow() {
+  const filterRow = document.getElementById("filterRow");
+  filterRow.innerHTML = "";
+
+  const totalColumns = document.querySelectorAll("#dataTable thead tr:first-child th").length;
+
+  for (let i = 0; i < totalColumns; i++) {
+    const th = document.createElement("th");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Filter";
+    input.dataset.index = i;
+    th.appendChild(input);
+    filterRow.appendChild(th);
+  }
+
+  document.querySelectorAll("#filterRow input").forEach((input) => {
+    input.addEventListener("input", function () {
+      const columnIndex = Number(this.dataset.index);
+      const q = this.value.trim().toLowerCase();
+      const rows = document.querySelectorAll("#dataTable tbody tr");
+
+      rows.forEach((tr) => {
+        const cell = tr.children[columnIndex];
+        const value = cell ? cell.innerText.toLowerCase() : "";
+        tr.style.display = (!q || value.includes(q)) ? "" : "none";
+      });
+    });
+  });
+}
+
+/* Global search across every field */
+function bindGlobalSearch() {
+  globalSearchInput.addEventListener("input", function () {
+    const q = this.value.trim().toLowerCase();
+    const rows = document.querySelectorAll("#dataTable tbody tr");
+
+    rows.forEach((tr) => {
+      const rowText = tr.innerText.toLowerCase();
+      tr.style.display = (!q || rowText.includes(q)) ? "" : "none";
+    });
+  });
+}
+
+/* Detect section/header rows and remove them */
+function isSectionRow(values) {
+  const clean = values.map(v => (v === undefined || v === null) ? "" : String(v).trim());
+
+  const first = clean[0] || "";
+  const second = clean[1] || "";
+  const third = clean[2] || "";
+  const fourth = clean[3] || "";
+  const fifth = clean[4] || "";
+  const sixth = clean[5] || "";
+  const seventh = clean[6] || "";
+  const eighth = clean[7] || "";
+  const ninth = clean[8] || "";
+
+  const hasAnyRealData =
+    first || second || third || fourth || fifth || sixth || seventh || eighth || ninth;
+
+  if (!hasAnyRealData) return true;
+
+  // Common section labels like BATTERY-A, BATTERY-B, TANKAGE AREA
+  const isLabelOnly =
+    (first && second && first === second && !third && !fourth && !fifth && !sixth && !seventh && !eighth && !ninth) ||
+    (/^(BATTERY|TANKAGE|CIRCULATION|STEAM|PUMP|MOTOR|AREA)/i.test(first) && !third && !fourth && !fifth && !sixth && !seventh && !eighth && !ninth);
+
+  // If row is clearly a grouping header, skip it
+  if (isLabelOnly) return true;
+
+  // Additional skip: rows where only first 2-3 columns exist and rest are empty
+  if (!third && !fourth && !fifth && !sixth && !seventh && !eighth && !ninth) {
+    return true;
+  }
+
+  return false;
+}
+
+/* LOAD DATA */
 async function loadData() {
   try {
     const url = buildSheetUrl();
     console.log("📊 Loading motor O/H data...");
     const startTime = performance.now();
-    
+
     const r = await fetch(url);
     const t = await r.text();
     const j = JSON.parse(t.substring(47, t.length - 2));
 
     const tbody = document.querySelector("#dataTable tbody");
-    const today = new Date(); 
+    const today = new Date();
     today.setHours(0,0,0,0);
 
     let total = 0, overdue = 0;
 
-    /* Use DocumentFragment for better performance */
     const fragment = document.createDocumentFragment();
-
-    /* Pre-calculate today's date once */
     const rows = j.table.rows || [];
-    
-    rows.forEach(r => {
-      const c = r.c || [];
-      if (!c[1]?.v && !c[2]?.v) return;
+
+    rows.forEach(row => {
+      const c = row.c || [];
+
+      const values = c.map(cell => {
+        if (!cell || cell.v === undefined || cell.v === null) return "";
+        return String(cell.v).trim();
+      });
+
+      // Skip completely blank rows
+      if (values.every(v => v === "")) return;
+
+      // Skip section/header rows like BATTERY-A / TANKAGE AREA
+      if (isSectionRow(values)) return;
 
       const tr = document.createElement("tr");
-
-      if (!c[0]?.v) {
-        tr.classList.add("section-row");
-      } else {
-        total++;
-      }
 
       const oh = parseDate(c[8]?.v);
       const due = parseDate(c[9]?.v);
       const isOver = due && due < today;
       if (isOver) overdue++;
 
-      /* Cache onclick handler to avoid creating new functions repeatedly */
+      // Only count actual motor rows
+      const rowNumber = c[0]?.v;
+      if (rowNumber !== undefined && rowNumber !== null && String(rowNumber).trim() !== "") {
+        total++;
+      }
+
       if (c[0]?.v) {
         const id = `${c[1]?.v}-${c[2]?.v}`;
         tr.onclick = () => {
@@ -370,7 +472,6 @@ async function loadData() {
         tr.style.cursor = "pointer";
       }
 
-      /* Build HTML efficiently */
       tr.innerHTML = `
         <td>${c[0]?.v || ""}</td>
         <td>${c[1]?.v || ""}</td>
@@ -382,39 +483,21 @@ async function loadData() {
         <td class="${isOver ? "overdue-cell" : ""}">${due ? fmt(due) : ""}</td>
         <td>${c[11]?.v || ""}</td>
       `;
-      
+
       fragment.appendChild(tr);
     });
 
-    /* Append fragment all at once */
     tbody.innerHTML = "";
     tbody.appendChild(fragment);
 
     document.getElementById("totalCount").innerText = total;
     document.getElementById("overdueCount").innerText = overdue;
 
-    /* Optimize search with cached lowercase values */
-    document.getElementById("search").addEventListener("input", function () {
-      const q = this.value.toLowerCase();
-      const tableRows = document.querySelectorAll("#dataTable tbody tr");
-      
-      if (!q) {
-        tableRows.forEach(tr => tr.style.display = "");
-        return;
-      }
-      
-      tableRows.forEach(tr => {
-        const col2 = tr.children[1]?.innerText?.toLowerCase() || "";
-        const col3 = tr.children[2]?.innerText?.toLowerCase() || "";
-        tr.style.display = col2.includes(q) || col3.includes(q) ? "" : "none";
-      });
-    });
-
     const loadTime = performance.now() - startTime;
     console.log(`✓ Motor O/H data loaded in ${loadTime.toFixed(2)}ms (${total} motors, ${overdue} overdue)`);
   } catch (err) {
     console.error("Error loading motor O/H data:", err);
-    document.querySelector("#dataTable tbody").innerHTML = 
+    document.querySelector("#dataTable tbody").innerHTML =
       `<tr><td colspan="9" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
   }
 }
@@ -423,14 +506,14 @@ async function loadData() {
 function exportExcel() {
   const rows = document.querySelectorAll("#dataTable tr");
   if (rows.length <= 1) { alert("No data to export"); return; }
-  
+
   const csv = [];
   rows.forEach(r => {
     csv.push([...r.children].map(td =>
       `"${td.innerText.replace(/"/g,'""')}"`
     ).join(","));
   });
-  
+
   const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -439,12 +522,14 @@ function exportExcel() {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-/* Initialize: load version first, then data */
+/* Initialize */
 async function init() {
+  createFilterRow();
+  bindGlobalSearch();
+
   await getVersion();
   await loadData();
-  
-  /* Auto-reload every 5 minutes */
+
   setInterval(async () => {
     console.log("🔄 Auto-refreshing motor O/H data...");
     await getVersion();
@@ -452,7 +537,6 @@ async function init() {
   }, AUTO_RELOAD_INTERVAL);
 }
 
-/* Start initialization */
 init();
 </script>
 
