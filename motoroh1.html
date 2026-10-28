@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MOTOR O/H DUE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f6ff;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: #003f88;
+  color: white;
+  padding: 14px 16px;
+}
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.header-left {
+  display: flex;
+  gap: 10px;
+}
+
+.header-btn {
+  background: white;
+  color: #003f88;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.header-btn:hover { opacity: 0.85; }
+
+.header-center {
+  text-align: center;
+  flex: 1;
+  min-width: 300px;
+}
+
+.header-center h1 {
+  margin: 0;
+  font-size: 30px;
+}
+.header-center p {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+.version-info {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  margin-right: 4px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.6}}
+
+/* ===== CONTAINER ===== */
+.container { padding: 20px; }
+
+/* ===== SUMMARY ===== */
+.summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+.summary .card {
+  flex: 1;
+  min-width: 200px;
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.summary .card h3 {
+  margin: 0;
+  color: #003f88;
+}
+.summary .card p {
+  font-size: 26px;
+  font-weight: bold;
+  margin: 6px 0 0;
+}
+.overdue-count { color: red; }
+
+/* ===== CONTROLS ===== */
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.controls input {
+  padding: 8px;
+  width: 240px;
+}
+.controls button {
+  padding: 8px 14px;
+  background: #003f88;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ===== TABLE ===== */
+.table-wrap {
+  overflow: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  min-width: 900px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+th {
+  background: #003f88;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.filter-row th {
+  background: #eaf1ff;
+  color: #003f88;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  padding: 6px;
+}
+.filter-row input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px;
+  font-size: 12px;
+  border: 1px solid #cdd9f2;
+  border-radius: 4px;
+}
+
+/* ===== COLUMN WIDTHS ===== */
+th:nth-child(1), td:nth-child(1) { width: 60px; }
+th:nth-child(2), td:nth-child(2) { width: 110px; }
+th:nth-child(3), td:nth-child(3) { width: 100px; }
+th:nth-child(4), td:nth-child(4) { width: 220px; }
+th:nth-child(5), td:nth-child(5) { width: 60px; }
+th:nth-child(6), td:nth-child(6) { width: 60px; }
+th:nth-child(7), td:nth-child(7) { width: 110px; }
+th:nth-child(8), td:nth-child(8) { width: 110px; }
+th:nth-child(9), td:nth-child(9) { width: auto; }
+
+/* ===== HIGHLIGHTS ===== */
+.overdue-cell {
+  background: red;
+  color: yellow;
+  font-weight: bold;
+}
+.section-row {
+  background: #fff2a8;
+  font-weight: bold;
+}
+
+/* ===== UX ===== */
+tbody tr {
+  cursor: pointer;
+}
+tbody tr:hover {
+  background: #eef5ff;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ddd;
+  border-top-color: #003f88;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media print {
+  .controls, .header-left, .version-info, .filter-row { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-bar">
+    <div class="header-left">
+      <button class="header-btn" onclick="goHome()" title="Home">🏠 Home</button>
+      <button class="header-btn" onclick="goBack()" title="Back">⬅ Back</button>
+      <button class="header-btn" onclick="openMotorList()">⚙️ Motor List</button>
+      <button class="header-btn" onclick="openMotorPM()">🧾 Motor PM Status</button>
+    </div>
+
+    <div class="header-center">
+      <h1>MOTOR O/H DUE</h1>
+      <p>Designed and maintained by Rakesh Chandra Sethy</p>
+    </div>
+
+    <div class="version-info"><span class="status-indicator"></span>V: <span id="versionDisplay">—</span></div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="summary">
+  <div class="card">
+    <h3>Total Motors</h3>
+    <p id="totalCount">0</p>
+  </div>
+  <div class="card">
+    <h3>Overdue Motors 🔔</h3>
+    <p id="overdueCount" class="overdue-count">0</p>
+  </div>
+</div>
+
+<div class="controls">
+  <input id="search" placeholder="Search all fields">
+  <button onclick="exportExcel()">📥 Export Excel</button>
+  <button onclick="window.print()">🖨 Print</button>
+</div>
+
+<div class="table-wrap">
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>RCS</th>
+        <th>BATTERY</th>
+        <th>EQPT NO</th>
+        <th>EQPT NAME</th>
+        <th>KW</th>
+        <th>FRQ</th>
+        <th>OH DATE</th>
+        <th>NEXT DUE</th>
+        <th>REFERENCE</th>
+      </tr>
+      <tr id="filterRow" class="filter-row"></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+/* ===== VERSION-BASED CACHE BUSTING ===== */
+const VERSION_URL = "https://cdn.jsdelivr.net/gh/08electricaldata/08electricaldata-json@main/master/version.json";
+const SHEET_BASE = "https://docs.google.com/spreadsheets/d/12cQ1EiZjDm9hbPU30aLGR7DFbbWqEpASAIabCbDXiEI/gviz/tq";
+const AUTO_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let currentVersion = "1.0.0";
+const versionDisplayEl = document.getElementById("versionDisplay");
+const globalSearchInput = document.getElementById("search");
+
+/* FETCH VERSION FOR CACHE BUSTING */
+async function getVersion() {
+  try {
+    const res = await fetch(VERSION_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    currentVersion = data.version || "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+    console.log("✓ Version loaded:", currentVersion);
+  } catch (err) {
+    console.warn("Failed to load version file:", err);
+    currentVersion = "1.0.0";
+    versionDisplayEl.textContent = currentVersion;
+  }
+}
+
+/* BUILD SHEET URL WITH VERSION PARAM FOR CACHE BUSTING */
+function buildSheetUrl() {
+  return `${SHEET_BASE}?gid=1041736083&tqx=out:json&v=${currentVersion}&t=${Date.now()}`;
+}
+
+/* NAV */
+function goHome() {
+  window.location.href = "https://08electricaldata.github.io/";
+}
+function goBack() {
+  history.back();
+}
+function openMotorList(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motor.html";
+}
+function openMotorPM(){
+  window.location.href="https://08electricaldata.github.io/drive-viewer/motorpm.html";
+}
+
+/* DATE */
+function parseDate(v) {
+  if (!v) return null;
+  if (typeof v === "string" && v.startsWith("Date(")) {
+    const p = v.match(/\d+/g);
+    return new Date(p[0], p[1], p[2]);
+  }
+  return null;
+}
+function fmt(d) {
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
+}
+
+/* ===== FILTER ROW ===== */
+function createFilterRow() {
+  const filterRow = document.getElementById("filterRow");
+  filterRow.innerHTML = "";
+
+  const totalColumns = document.querySelectorAll("#dataTable thead tr:first-child th").length;
+
+  for (let i = 0; i < totalColumns; i++) {
+    const th = document.createElement("th");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Filter";
+    input.dataset.index = i;
+    th.appendChild(input);
+    filterRow.appendChild(th);
+  }
+
+  document.querySelectorAll("#filterRow input").forEach((input) => {
+    input.addEventListener("input", function () {
+      const columnIndex = Number(this.dataset.index);
+      const q = this.value.trim().toLowerCase();
+      const rows = document.querySelectorAll("#dataTable tbody tr");
+
+      rows.forEach((tr) => {
+        if (tr.classList.contains("section-row")) {
+          tr.style.display = "";
+          return;
+        }
+
+        const cell = tr.children[columnIndex];
+        const value = cell ? cell.innerText.toLowerCase() : "";
+        tr.style.display = (!q || value.includes(q)) ? "" : "none";
+      });
+    });
+  });
+}
+
+/* Global search across every field */
+function bindGlobalSearch() {
+  globalSearchInput.addEventListener("input", function () {
+    const q = this.value.trim().toLowerCase();
+    const rows = document.querySelectorAll("#dataTable tbody tr");
+
+    rows.forEach((tr) => {
+      if (tr.classList.contains("section-row")) {
+        tr.style.display = "";
+        return;
+      }
+      const rowText = tr.innerText.toLowerCase();
+      tr.style.display = (!q || rowText.includes(q)) ? "" : "none";
+    });
+  });
+}
+
+/* LOAD DATA WITH OPTIMIZED PARSING */
+async function loadData() {
+  try {
+    const url = buildSheetUrl();
+    console.log("📊 Loading motor O/H data...");
+    const startTime = performance.now();
+
+    const r = await fetch(url);
+    const t = await r.text();
+    const j = JSON.parse(t.substring(47, t.length - 2));
+
+    const tbody = document.querySelector("#dataTable tbody");
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    let total = 0, overdue = 0;
+
+    const fragment = document.createDocumentFragment();
+    const rows = j.table.rows || [];
+
+    rows.forEach(r => {
+      const c = r.c || [];
+      if (!c[1]?.v && !c[2]?.v) return;
+
+      const tr = document.createElement("tr");
+
+      if (!c[0]?.v) {
+        tr.classList.add("section-row");
+      } else {
+        total++;
+      }
+
+      const oh = parseDate(c[8]?.v);
+      const due = parseDate(c[9]?.v);
+      const isOver = due && due < today;
+      if (isOver) overdue++;
+
+      if (c[0]?.v) {
+        const id = `${c[1]?.v}-${c[2]?.v}`;
+        tr.onclick = () => {
+          window.location.href =
+            "https://08electricaldata.github.io/drive-viewer/history.html?id=" +
+            encodeURIComponent(id);
+        };
+        tr.style.cursor = "pointer";
+      }
+
+      tr.innerHTML = `
+        <td>${c[0]?.v || ""}</td>
+        <td>${c[1]?.v || ""}</td>
+        <td>${c[2]?.v || ""}</td>
+        <td>${c[3]?.v || ""}</td>
+        <td>${c[4]?.v || ""}</td>
+        <td>${c[5]?.v || ""}</td>
+        <td>${oh ? fmt(oh) : ""}</td>
+        <td class="${isOver ? "overdue-cell" : ""}">${due ? fmt(due) : ""}</td>
+        <td>${c[11]?.v || ""}</td>
+      `;
+
+      fragment.appendChild(tr);
+    });
+
+    tbody.innerHTML = "";
+    tbody.appendChild(fragment);
+
+    document.getElementById("totalCount").innerText = total;
+    document.getElementById("overdueCount").innerText = overdue;
+
+    const loadTime = performance.now() - startTime;
+    console.log(`✓ Motor O/H data loaded in ${loadTime.toFixed(2)}ms (${total} motors, ${overdue} overdue)`);
+  } catch (err) {
+    console.error("Error loading motor O/H data:", err);
+    document.querySelector("#dataTable tbody").innerHTML =
+      `<tr><td colspan="9" style="text-align:center;color:red;padding:20px;">Error loading data. Please refresh the page.</td></tr>`;
+  }
+}
+
+/* EXPORT WITH BETTER PERFORMANCE */
+function exportExcel() {
+  const rows = document.querySelectorAll("#dataTable tr");
+  if (rows.length <= 1) { alert("No data to export"); return; }
+
+  const csv = [];
+  rows.forEach(r => {
+    csv.push([...r.children].map(td =>
+      `"${td.innerText.replace(/"/g,'""')}"`
+    ).join(","));
+  });
+
+  const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `motor_oh_due_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+/* Initialize: load version first, then data */
+async function init() {
+  createFilterRow();
+  bindGlobalSearch();
+
+  await getVersion();
+  await loadData();
+
+  setInterval(async () => {
+    console.log("🔄 Auto-refreshing motor O/H data...");
+    await getVersion();
+    await loadData();
+  }, AUTO_RELOAD_INTERVAL);
+}
+
+/* Start initialization */
+init();
+</script>
+
+</body>
+</html>
